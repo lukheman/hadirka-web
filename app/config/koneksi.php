@@ -8,6 +8,6 @@ if (mysqli_connect_errno()) {
 function url() {
     // return 'http://localhost/tjs/tjs-outsoorsing/';
     // return 'http://192.168.1.35/tjs-p-outsoorsing/';
-    return 'http://slip-gaji.triputrajayasultra.com/';
+    return 'https://slip-gaji.triputrajayasultra.com/';
 }
 ?>
