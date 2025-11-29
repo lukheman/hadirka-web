@@ -8,6 +8,6 @@ if (mysqli_connect_errno()) {
 function url() {
     // return 'http://localhost/payroll/';
     // return 'http://192.168.1.35/tjs-p-outsoorsing/';
-    return 'http://hris.triputrajayasultra.com/';
+    return 'https://hris.triputrajayasultra.com/';
 }
 ?>
