@@ -7,6 +7,7 @@ parse_str($_SERVER['QUERY_STRING'], $queris);
 error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="assets/" data-template="vertical-menu-template-free">
 
@@ -186,7 +187,7 @@ error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
                                 </g>
                             </svg>
                         </span> -->
-                        <span class="app-brand-text demo menu-text fw-bolder ms-2 text-uppercase">KPP</span>
+                        <span class="app-brand-text demo menu-text fw-bolder ms-2 text-uppercase">TJS</span>
                     </a>
 
                     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
