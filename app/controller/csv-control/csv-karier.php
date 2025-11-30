@@ -176,11 +176,11 @@ try {
 
             if ($cekPot->num_rows == 0) {
                 $koneksi->query("INSERT INTO tb_potongan
-                    (id_karier, jenis_potongan, nominal_potongan)
+                    (id_karier, jenis_potongan, jumlah_potongan)
                     VALUES ('$id_karier','$nama',$jumlah)");
             } else {
                 $id_pot = $cekPot->fetch_assoc()['id_potongan'];
-                $koneksi->query("UPDATE tb_potongan SET nominal_potongan=$jumlah
+                $koneksi->query("UPDATE tb_potongan SET jumlah_potongan=$jumlah
                     WHERE id_potongan='$id_pot'");
             }
         }
