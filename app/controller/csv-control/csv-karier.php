@@ -126,7 +126,7 @@ try {
                 ot2_spl=$ot2_spl,
                 pot_izin=$pot_izin,
                 pot_mangkir=$pot_mangkir
-            WHERE id_karier='$id_karier'";
+            WHERE id_karyawan='$id_karyawan'";
 
             $koneksi->query($sql);
         }
