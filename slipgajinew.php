@@ -413,7 +413,7 @@ require_once 'app/controller/read.php';
         </div>
 
         <div class="signature">
-            HR. CFO<br><br><strong>KANISIUS HAYON</strong>
+            HR. CFO<br><br><strong>MUH. FADLY SAPUTRA</strong>
         </div>
     </div>
 
