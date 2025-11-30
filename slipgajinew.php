@@ -555,11 +555,11 @@ require_once 'app/controller/read.php';
             });
 
             // 5) KELEBIHAN HARI
-            if (data.hari_kerja > 25) {
-                pendBody.innerHTML += `
-            <tr><td>KELEBIHAN HARI</td><td class="right">${fmt(data.pendapatan_kelebihan_hari)}</td></tr>
-        `;
-            }
+        //     if (data.hari_kerja > 25) {
+        //         pendBody.innerHTML += `
+        //     <tr><td>KELEBIHAN HARI</td><td class="right">${fmt(data.pendapatan_kelebihan_hari)}</td></tr>
+        // `;
+        //     }
 
             // 6) RAPEL
             if (Array.isArray(data.rapel)) {
