@@ -54,22 +54,23 @@ try {
         $t_hidup    = intval($row['G'] ?? 0);
         $t_makan    = intval($row['H'] ?? 0);
         $t_skill    = intval($row['I'] ?? 0);
+        $p_bonus    = intval($row['J'] ?? 0);
 
         // SPL & OT
-        $ot_pertama = intval($row['J'] ?? 0);
-        $ot_kedua   = intval($row['K'] ?? 0);
+        $ot_pertama = intval($row['K'] ?? 0);
+        $ot_kedua   = intval($row['L'] ?? 0);
 
-        $spl        = intval($row['L'] ?? 0);
-        $ot1_spl    = intval($row['M'] ?? 0);
-        $ot2_spl    = intval($row['N'] ?? 0);
+        $spl        = intval($row['M'] ?? 0);
+        $ot1_spl    = intval($row['N'] ?? 0);
+        $ot2_spl    = intval($row['O'] ?? 0);
 
         // POTONGAN (HARUS MASUK tb_potongan)
-        $pot_bpjs   = intval($row['O'] ?? 0);
-        $pot_jht    = intval($row['P'] ?? 0);
-        $pph21      = intval($row['Q'] ?? 0);
+        $pot_bpjs   = intval($row['P'] ?? 0);
+        $pot_jht    = intval($row['Q'] ?? 0);
+        $pph21      = intval($row['R'] ?? 0);
 
-        $pot_izin   = intval($row['S'] ?? 0);
-        $pot_mangkir= intval($row['T'] ?? 0);
+        $pot_izin   = intval($row['T'] ?? 0);
+        $pot_mangkir= intval($row['U'] ?? 0);
 
         // ================================
         //  CEK KARYAWAN ADA?
@@ -139,6 +140,7 @@ try {
             "TUNJANGAN HIDUP"  => $t_hidup,
             "TUNJANGAN MAKAN"  => $t_makan,
             "TUNJANGAN SKILL"  => $t_skill,
+            "PERFORMANCE BONUS"  => $p_bonus,
         ];
 
         foreach ($tunjanganTetap as $nama => $nominal) {
