@@ -65,11 +65,6 @@ while ($r = $q->fetch_assoc()) { ?>
 
                 data-gaji_pokok="<?= $r['gaji_pokok'] ?>"
 
-                data-t_hidup="<?= $r['t_hidup'] ?>"
-                data-t_daerah="<?= $r['t_daerah'] ?>"
-                data-t_makan="<?= $r['t_makan'] ?>"
-                data-t_skil="<?= $r['t_skil'] ?>"
-
                 data-ot_pertama="<?= $r['ot_pertama'] ?>"
                 data-ot_kedua="<?= $r['ot_kedua'] ?>"
                 data-spl="<?= $r['spl'] ?>"

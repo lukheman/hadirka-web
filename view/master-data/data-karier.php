@@ -376,10 +376,6 @@
             form.querySelector("select[name=id_departemen]").value = btn.dataset.id_departemen;
             form.querySelector("select[name=id_jabatan]").value = btn.dataset.id_jabatan;
             form.querySelector("input[name=gaji_pokok]").value = btn.dataset.gaji_pokok;
-            form.querySelector("input[name=t_hidup]").value = btn.dataset.t_hidup;
-            form.querySelector("input[name=t_daerah]").value = btn.dataset.t_daerah;
-            form.querySelector("input[name=t_makan]").value = btn.dataset.t_makan;
-            form.querySelector("input[name=t_skil]").value = btn.dataset.t_skil;
 
             form.querySelector("input[name=ot_pertama]").value = btn.dataset.ot_pertama;
             form.querySelector("input[name=ot_kedua]").value = btn.dataset.ot_kedua;
