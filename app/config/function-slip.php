@@ -337,7 +337,8 @@ if (!function_exists('generateSlipGaji')) {
         // PKWT potongan untuk hari NEW
         $total_potongan_pkwt = 0;
         if ($new_count > 0) {
-            $total_potongan_pkwt = ($basic / 25) * $new_count;
+            $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $new_count;
+            // $total_potongan_pkwt = ($basic / 25) * $new_count;
         }
 
         $total_potongan =
