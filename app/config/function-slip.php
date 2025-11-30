@@ -158,6 +158,7 @@ if (!function_exists('generateSlipGaji')) {
         $absenForUI = [];
         $hari_kerja_count = 0;
         $mangkir_count = 0;
+        $off_count = 0;
         $total_lembur = 0;
         $total_overtime = 0;
         $total_spl_1_7 = 0;
@@ -181,7 +182,7 @@ if (!function_exists('generateSlipGaji')) {
         );
 
         $new_count = 0;
-        $seenDates = []; // untuk mencegah duplikasi saat menambahkan NEW setelah tgl_selesai
+        $seenDates = []; // untuk mencegah duplikasi
 
         foreach ($period as $date) {
             $tgl = $date->format('Y-m-d');
@@ -190,9 +191,10 @@ if (!function_exists('generateSlipGaji')) {
             $hariNama = strtolower(date('l', strtotime($tgl)));
             $normal_hours = ($hariNama === 'friday') ? 5 : 7;
 
-            // Tandai sebagai sudah diproses (agar block setelah loop tidak menambahkan duplicate)
+            // Tandai sudah diproses
             $seenDates[$tgl] = true;
 
+            // 1) Sebelum mulai karier = NEW
             if ($tgl < $tgl_mulai_karier) {
                 $absenForUI[] = [
                     'tanggal' => $tgl,
@@ -205,6 +207,20 @@ if (!function_exists('generateSlipGaji')) {
                 continue;
             }
 
+            // 2) Setelah tgl_selesai karier = OFF (jangan mangkir)
+            if ($tgl_selesai_karier && $tgl > $tgl_selesai_karier) {
+                $absenForUI[] = [
+                    'tanggal' => $tgl,
+                    'jam' => 0,
+                    'wl' => 0,
+                    'ot' => 0,
+                    'ket' => 'OFF'
+                ];
+                $off_count++;
+                continue;
+            }
+
+            // 3) Cek data absen yang tersedia
             foreach ($absenRows as $a) {
                 if ($a['tgl_absen'] == $tgl) {
                     $found = true;
@@ -261,7 +277,7 @@ if (!function_exists('generateSlipGaji')) {
                         if ($jam < $normal_hours && $jam > 0) {
                             $kurang = $normal_hours - $jam;
                             $total_jam_kurang += $kurang;
-                            // bagi  normal_hours untuk membagi proporsional
+                            // bagi normal_hours untuk membagi proporsional
                             $total_potongan_perjam += $kurang * ($karier['pot_izin'] / $normal_hours);
                         }
                     }
@@ -283,7 +299,7 @@ if (!function_exists('generateSlipGaji')) {
 
             if ($found) continue;
 
-            // Cek izin, sakit, cuti
+            // 4) Cek izin, sakit, cuti
             $types = [
                 ['table' => 'tb_izin',  'start' => 'tgl_awal_izin', 'end' => 'tgl_akhir_izin', 'ket' => 'IZIN'],
                 ['table' => 'tb_sakit', 'start' => 'tgl_awal_sakit', 'end' => 'tgl_akhir_sakit', 'ket' => 'SAKIT'],
@@ -319,33 +335,6 @@ if (!function_exists('generateSlipGaji')) {
                 ];
             }
         } // end foreach period
-
-        // ===== NEW setelah tgl_selesai karier (DITAMBAHKAN di LUAR loop, tanpa duplikat) =====
-        if ($tgl_selesai_karier && $tgl_selesai_karier < $endDate) {
-            // mulai dari hari setelah tgl_selesai atau startDate (mana yang lebih besar)
-            $startNew = max($startDate, (new DateTime($tgl_selesai_karier))->modify('+1 day')->format('Y-m-d'));
-            $periodSelesai = new DatePeriod(
-                new DateTime($startNew),
-                new DateInterval('P1D'),
-                (new DateTime($endDate))->modify('+1 day')
-            );
-
-            foreach ($periodSelesai as $d) {
-                $dstr = $d->format('Y-m-d');
-                // jika tanggal ini belum dibuat / diproses di loop utama, tambahkan NEW
-                if (empty($seenDates[$dstr])) {
-                    $seenDates[$dstr] = true;
-                    $new_count++;
-                    $absenForUI[] = [
-                        'tanggal' => $dstr,
-                        'jam' => 0,
-                        'wl' => 0,
-                        'ot' => 0,
-                        'ket' => 'NEW'
-                    ];
-                }
-            }
-        }
 
         // ================= Hitung total pendapatan & potongan =================
         $basic = floatval($karier['gaji_pokok']);
@@ -453,6 +442,7 @@ if (!function_exists('generateSlipGaji')) {
             'pinjaman' => $pinjamanRows,
             'total_potongan_pinjaman' => $total_potongan_pinjaman,
             'mangkir' => $mangkir_count,
+            'off' => $off_count,
             'total_jam_kurang' => $total_jam_kurang,
             'potongan_perjam' => $total_potongan_perjam,
             'absen' => $absenForUI
