@@ -151,11 +151,11 @@ try {
 
             if ($cekTun->num_rows == 0) {
                 $koneksi->query("INSERT INTO tb_tunjangan
-                    (id_karier, nama_tunjangan, nominal_tunjangan)
+                    (id_karier, nama_tunjangan, jumlah_tunjangan)
                     VALUES ('$id_karier','$nama',$nominal)");
             } else {
                 $id_tunj = $cekTun->fetch_assoc()['id_tunjangan'];
-                $koneksi->query("UPDATE tb_tunjangan SET nominal_tunjangan=$nominal 
+                $koneksi->query("UPDATE tb_tunjangan SET jumlah_tunjangan=$nominal 
                     WHERE id_tunjangan='$id_tunj'");
             }
         }
