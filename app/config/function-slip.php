@@ -53,7 +53,6 @@ if (!function_exists('generateSlipGaji')) {
         $karier = mysqli_fetch_assoc($qk);
         if (!$karier) return ['error' => 'Karier aktif tidak ditemukan'];
         $tgl_mulai_karier = $karier['tgl_mulai'];
-        $tgl_selesai_karier = $karier['tgl_selesai'] ?? null;
 
         // ================= 2a) Ambil Tunjangan (Pendapatan) dari tb_tunjangan =================
         $tunjanganRows = [];
@@ -158,7 +157,6 @@ if (!function_exists('generateSlipGaji')) {
         $absenForUI = [];
         $hari_kerja_count = 0;
         $mangkir_count = 0;
-        $off_count = 0;
         $total_lembur = 0;
         $total_overtime = 0;
         $total_spl_1_7 = 0;
@@ -182,7 +180,6 @@ if (!function_exists('generateSlipGaji')) {
         );
 
         $new_count = 0;
-        $seenDates = []; // untuk mencegah duplikasi
 
         foreach ($period as $date) {
             $tgl = $date->format('Y-m-d');
@@ -191,10 +188,6 @@ if (!function_exists('generateSlipGaji')) {
             $hariNama = strtolower(date('l', strtotime($tgl)));
             $normal_hours = ($hariNama === 'friday') ? 5 : 7;
 
-            // Tandai sudah diproses
-            $seenDates[$tgl] = true;
-
-            // 1) Sebelum mulai karier = NEW
             if ($tgl < $tgl_mulai_karier) {
                 $absenForUI[] = [
                     'tanggal' => $tgl,
@@ -207,20 +200,6 @@ if (!function_exists('generateSlipGaji')) {
                 continue;
             }
 
-            // 2) Setelah tgl_selesai karier = OFF (jangan mangkir)
-            if ($tgl_selesai_karier && $tgl > $tgl_selesai_karier) {
-                $absenForUI[] = [
-                    'tanggal' => $tgl,
-                    'jam' => 0,
-                    'wl' => 0,
-                    'ot' => 0,
-                    'ket' => 'OFF'
-                ];
-                $off_count++;
-                continue;
-            }
-
-            // 3) Cek data absen yang tersedia
             foreach ($absenRows as $a) {
                 if ($a['tgl_absen'] == $tgl) {
                     $found = true;
@@ -277,7 +256,7 @@ if (!function_exists('generateSlipGaji')) {
                         if ($jam < $normal_hours && $jam > 0) {
                             $kurang = $normal_hours - $jam;
                             $total_jam_kurang += $kurang;
-                            // bagi normal_hours untuk membagi proporsional
+                            // bagi  normal_hours untuk membagi proporsional
                             $total_potongan_perjam += $kurang * ($karier['pot_izin'] / $normal_hours);
                         }
                     }
@@ -299,7 +278,7 @@ if (!function_exists('generateSlipGaji')) {
 
             if ($found) continue;
 
-            // 4) Cek izin, sakit, cuti
+            // Cek izin, sakit, cuti
             $types = [
                 ['table' => 'tb_izin',  'start' => 'tgl_awal_izin', 'end' => 'tgl_akhir_izin', 'ket' => 'IZIN'],
                 ['table' => 'tb_sakit', 'start' => 'tgl_awal_sakit', 'end' => 'tgl_akhir_sakit', 'ket' => 'SAKIT'],
@@ -334,7 +313,7 @@ if (!function_exists('generateSlipGaji')) {
                     'ket' => 'MANGKIR'
                 ];
             }
-        } // end foreach period
+        }
 
         // ================= Hitung total pendapatan & potongan =================
         $basic = floatval($karier['gaji_pokok']);
@@ -355,13 +334,11 @@ if (!function_exists('generateSlipGaji')) {
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
-        // PKWT potongan berdasarkan (25 - hari kerja)
-        $hari_tidak_bekerja = 25 - $hari_kerja_count;
-        if ($hari_tidak_bekerja < 0) $hari_tidak_bekerja = 0;
-
+        // PKWT potongan untuk hari NEW
         $total_potongan_pkwt = 0;
-        if ($hari_tidak_bekerja > 0) {
-            $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $hari_tidak_bekerja;
+        if ($new_count > 0) {
+            $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $new_count;
+            // $total_potongan_pkwt = ($basic / 25) * $new_count;
         }
 
         $total_potongan =
@@ -374,6 +351,14 @@ if (!function_exists('generateSlipGaji')) {
 
         $total_tunjangan = $total_tunjangan ?? 0;
 
+        // ===== Perhitungan kelebihan hari kerja (jika hari kerja > 25) =====
+        // $kelebihan_hari = 0;
+        // $pendapatan_kelebihan_hari = 0;
+        // if ($hari_kerja_count > 25) {
+        //     $kelebihan_hari = $hari_kerja_count - 25;
+        //     $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
+        // }
+
         // ================= Hitung total pendapatan =================
         $total_pendapatan =
             $basic +
@@ -383,7 +368,8 @@ if (!function_exists('generateSlipGaji')) {
             $total_spl_1_7 +
             $total_spl_8 +
             $total_spl_9_up +
-            $total_rapel;
+            $total_rapel ;
+            // $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
@@ -396,6 +382,9 @@ if (!function_exists('generateSlipGaji')) {
             'new' => $new_count,
             'rapel' => $rapelRows,
             'total_rapel' => $total_rapel,
+
+            // 'kelebihan_hari' => $kelebihan_hari,
+            // 'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
 
             'basic' => $basic,
             // keep legacy keys but values are moved into tunjangan list
@@ -442,7 +431,6 @@ if (!function_exists('generateSlipGaji')) {
             'pinjaman' => $pinjamanRows,
             'total_potongan_pinjaman' => $total_potongan_pinjaman,
             'mangkir' => $mangkir_count,
-            'off' => $off_count,
             'total_jam_kurang' => $total_jam_kurang,
             'potongan_perjam' => $total_potongan_perjam,
             'absen' => $absenForUI
