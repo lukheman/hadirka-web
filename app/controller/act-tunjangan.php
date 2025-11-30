@@ -1,11 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../config/function.php';
 
 $action = $_POST['action'];
 
 // ADD
 if ($action == "add") {
-    $id_karier = $_POST['id_karier'];
+    $id_karier = decrypt($_POST['id_karier']);
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
 
@@ -18,7 +19,7 @@ if ($action == "add") {
 
 // EDIT
 if ($action == "edit") {
-    $id = $_POST['id_tunjangan'];
+    $id_karier = decrypt($_POST['id_karier']);
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
 
@@ -33,7 +34,7 @@ if ($action == "edit") {
 
 // DELETE
 if ($action == "delete") {
-    $id = $_POST['id_tunjangan'];
+    $id_karier = decrypt($_POST['id_karier']);
 
     $q = $koneksi->query("DELETE FROM tb_tunjangan WHERE id_tunjangan='$id'");
 
