@@ -527,11 +527,11 @@ require_once 'app/controller/read.php';
             // 4) LEMBUR & SPL
             const lemburList = [{
                     key: "total_lembur",
-                    label: "LEMBUR"
+                    label: "OT PERTAMA"
                 },
                 {
                     key: "total_overtime",
-                    label: "OVERTIME"
+                    label: "OT KEDUA"
                 },
                 {
                     key: "total_spl_1_7",
