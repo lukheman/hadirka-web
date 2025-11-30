@@ -355,8 +355,33 @@ if (!function_exists('generateSlipGaji')) {
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
-        // PKWT potongan berdasarkan (25 - hari kerja)
-        $hari_tidak_bekerja = 25 - $hari_kerja_count;
+        // ================= PKWT: gunakan jumlah hari normal selama kontrak berjalan (Mon-Fri)
+        // Hitung interval kontrak yang berlaku di periode ini:
+        $contract_start = max($startDate, $tgl_mulai_karier);
+        $contract_end = $endDate;
+        if ($tgl_selesai_karier && $tgl_selesai_karier < $contract_end) {
+            $contract_end = $tgl_selesai_karier;
+        }
+
+        // Pastikan tanggal valid
+        $normal_contract_days = 0;
+        if (strtotime($contract_start) <= strtotime($contract_end)) {
+            $periodContract = new DatePeriod(
+                new DateTime($contract_start),
+                new DateInterval('P1D'),
+                (new DateTime($contract_end))->modify('+1 day')
+            );
+            foreach ($periodContract as $d) {
+                $dow = strtolower($d->format('l'));
+                // Hitung hanya hari kerja biasa: Monday - Friday (exclude Saturday, Sunday)
+                if ($dow !== 'saturday' && $dow !== 'sunday') {
+                    $normal_contract_days++;
+                }
+            }
+        }
+
+        // PKWT potongan berdasarkan (25 - jumlah hari normal kontrak)
+        $hari_tidak_bekerja = 25 - $normal_contract_days;
         if ($hari_tidak_bekerja < 0) $hari_tidak_bekerja = 0;
 
         $total_potongan_pkwt = 0;
@@ -445,7 +470,10 @@ if (!function_exists('generateSlipGaji')) {
             'off' => $off_count,
             'total_jam_kurang' => $total_jam_kurang,
             'potongan_perjam' => $total_potongan_perjam,
-            'absen' => $absenForUI
+            'absen' => $absenForUI,
+            // tambahan info untuk debugging/cek
+            'normal_contract_days' => $normal_contract_days,
+            'hari_tidak_bekerja' => $hari_tidak_bekerja
         ];
     }
 }
