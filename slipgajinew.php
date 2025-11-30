@@ -608,7 +608,7 @@ require_once 'app/controller/read.php';
                 },
                 {
                     key: "potongan_perjam",
-                    label: "POTONGAN PERJAM"
+                    label: "KE-KURANGAN JAM NORMAL"
                 }
             ];
 

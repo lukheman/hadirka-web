@@ -53,6 +53,7 @@ if (!function_exists('generateSlipGaji')) {
         $karier = mysqli_fetch_assoc($qk);
         if (!$karier) return ['error' => 'Karier aktif tidak ditemukan'];
         $tgl_mulai_karier = $karier['tgl_mulai'];
+        $tgl_selesai_karier = $karier['tgl_selesai'] ?? null;
 
         // ================= 2a) Ambil Tunjangan (Pendapatan) dari tb_tunjangan =================
         $tunjanganRows = [];
@@ -313,6 +314,28 @@ if (!function_exists('generateSlipGaji')) {
                     'ket' => 'MANGKIR'
                 ];
             }
+
+            // ===== NEW setelah tgl_selesai karier =====
+            if ($tgl_selesai_karier && $tgl_selesai_karier < $endDate) {
+
+                $periodSelesai = new DatePeriod(
+                    (new DateTime($tgl_selesai_karier))->modify('+1 day'),
+                    new DateInterval('P1D'),
+                    (new DateTime($endDate))->modify('+1 day')
+                );
+
+                foreach ($periodSelesai as $d) {
+                    $new_count++;
+
+                    $absenForUI[] = [
+                        'tanggal' => $d->format('Y-m-d'),
+                        'jam' => 0,
+                        'wl' => 0,
+                        'ot' => 0,
+                        'ket' => 'NEW'
+                    ];
+                }
+            }
         }
 
         // ================= Hitung total pendapatan & potongan =================
@@ -335,11 +358,15 @@ if (!function_exists('generateSlipGaji')) {
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
         // PKWT potongan untuk hari NEW
+        // Total potongan PKWT = (25 - hari kerja)
+        $hari_tidak_bekerja = 25 - $hari_kerja_count;
+        if ($hari_tidak_bekerja < 0) $hari_tidak_bekerja = 0;
+
         $total_potongan_pkwt = 0;
-        if ($new_count > 0) {
-            $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $new_count;
-            // $total_potongan_pkwt = ($basic / 25) * $new_count;
+        if ($hari_tidak_bekerja > 0) {
+            $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $hari_tidak_bekerja;
         }
+
 
         $total_potongan =
             $total_potongan_tunjangan +   // (BPJS,JHT,PPH21,dll) dari tb_potongan
@@ -368,8 +395,8 @@ if (!function_exists('generateSlipGaji')) {
             $total_spl_1_7 +
             $total_spl_8 +
             $total_spl_9_up +
-            $total_rapel ;
-            // $pendapatan_kelebihan_hari;
+            $total_rapel;
+        // $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
