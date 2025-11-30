@@ -181,6 +181,7 @@ if (!function_exists('generateSlipGaji')) {
         );
 
         $new_count = 0;
+        $seenDates = []; // untuk mencegah duplikasi saat menambahkan NEW setelah tgl_selesai
 
         foreach ($period as $date) {
             $tgl = $date->format('Y-m-d');
@@ -188,6 +189,9 @@ if (!function_exists('generateSlipGaji')) {
 
             $hariNama = strtolower(date('l', strtotime($tgl)));
             $normal_hours = ($hariNama === 'friday') ? 5 : 7;
+
+            // Tandai sebagai sudah diproses (agar block setelah loop tidak menambahkan duplicate)
+            $seenDates[$tgl] = true;
 
             if ($tgl < $tgl_mulai_karier) {
                 $absenForUI[] = [
@@ -314,21 +318,26 @@ if (!function_exists('generateSlipGaji')) {
                     'ket' => 'MANGKIR'
                 ];
             }
+        } // end foreach period
 
-            // ===== NEW setelah tgl_selesai karier =====
-            if ($tgl_selesai_karier && $tgl_selesai_karier < $endDate) {
+        // ===== NEW setelah tgl_selesai karier (DITAMBAHKAN di LUAR loop, tanpa duplikat) =====
+        if ($tgl_selesai_karier && $tgl_selesai_karier < $endDate) {
+            // mulai dari hari setelah tgl_selesai atau startDate (mana yang lebih besar)
+            $startNew = max($startDate, (new DateTime($tgl_selesai_karier))->modify('+1 day')->format('Y-m-d'));
+            $periodSelesai = new DatePeriod(
+                new DateTime($startNew),
+                new DateInterval('P1D'),
+                (new DateTime($endDate))->modify('+1 day')
+            );
 
-                $periodSelesai = new DatePeriod(
-                    (new DateTime($tgl_selesai_karier))->modify('+1 day'),
-                    new DateInterval('P1D'),
-                    (new DateTime($endDate))->modify('+1 day')
-                );
-
-                foreach ($periodSelesai as $d) {
+            foreach ($periodSelesai as $d) {
+                $dstr = $d->format('Y-m-d');
+                // jika tanggal ini belum dibuat / diproses di loop utama, tambahkan NEW
+                if (empty($seenDates[$dstr])) {
+                    $seenDates[$dstr] = true;
                     $new_count++;
-
                     $absenForUI[] = [
-                        'tanggal' => $d->format('Y-m-d'),
+                        'tanggal' => $dstr,
                         'jam' => 0,
                         'wl' => 0,
                         'ot' => 0,
@@ -357,8 +366,7 @@ if (!function_exists('generateSlipGaji')) {
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
-        // PKWT potongan untuk hari NEW
-        // Total potongan PKWT = (25 - hari kerja)
+        // PKWT potongan berdasarkan (25 - hari kerja)
         $hari_tidak_bekerja = 25 - $hari_kerja_count;
         if ($hari_tidak_bekerja < 0) $hari_tidak_bekerja = 0;
 
@@ -366,7 +374,6 @@ if (!function_exists('generateSlipGaji')) {
         if ($hari_tidak_bekerja > 0) {
             $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $hari_tidak_bekerja;
         }
-
 
         $total_potongan =
             $total_potongan_tunjangan +   // (BPJS,JHT,PPH21,dll) dari tb_potongan
@@ -378,14 +385,6 @@ if (!function_exists('generateSlipGaji')) {
 
         $total_tunjangan = $total_tunjangan ?? 0;
 
-        // ===== Perhitungan kelebihan hari kerja (jika hari kerja > 25) =====
-        // $kelebihan_hari = 0;
-        // $pendapatan_kelebihan_hari = 0;
-        // if ($hari_kerja_count > 25) {
-        //     $kelebihan_hari = $hari_kerja_count - 25;
-        //     $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
-        // }
-
         // ================= Hitung total pendapatan =================
         $total_pendapatan =
             $basic +
@@ -396,7 +395,6 @@ if (!function_exists('generateSlipGaji')) {
             $total_spl_8 +
             $total_spl_9_up +
             $total_rapel;
-        // $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
@@ -409,9 +407,6 @@ if (!function_exists('generateSlipGaji')) {
             'new' => $new_count,
             'rapel' => $rapelRows,
             'total_rapel' => $total_rapel,
-
-            // 'kelebihan_hari' => $kelebihan_hari,
-            // 'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
 
             'basic' => $basic,
             // keep legacy keys but values are moved into tunjangan list
