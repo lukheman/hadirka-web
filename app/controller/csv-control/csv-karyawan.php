@@ -15,8 +15,7 @@ function getId($koneksi, $table, $nama_field, $nama_value, $id_field)
 }
 
 // Fungsi tambah 3 bulan
-$ddd = date('Y-m-d');
-function tglAkhir3Bulan($ddd)
+function tglAkhir3Bulan($tgl_mulai)
 {
     if (empty($tgl_mulai)) return null;
 

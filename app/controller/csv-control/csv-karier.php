@@ -43,8 +43,13 @@ try {
             continue;
         }
 
-        // Payroll Base
+        // ================================
+        //  MAPPING EXCEL
+        // ================================
+
         $basic      = intval($row['E'] ?? 0);
+
+        // Tunjangan Tetap (HARUS MASUK tb_tunjangan)
         $t_daerah   = intval($row['F'] ?? 0);
         $t_hidup    = intval($row['G'] ?? 0);
         $t_makan    = intval($row['H'] ?? 0);
@@ -58,14 +63,18 @@ try {
         $ot1_spl    = intval($row['M'] ?? 0);
         $ot2_spl    = intval($row['N'] ?? 0);
 
-        // Potongan & Pajak
+        // POTONGAN (HARUS MASUK tb_potongan)
         $pot_bpjs   = intval($row['O'] ?? 0);
         $pot_jht    = intval($row['P'] ?? 0);
         $pph21      = intval($row['Q'] ?? 0);
+
         $pot_izin   = intval($row['S'] ?? 0);
         $pot_mangkir= intval($row['T'] ?? 0);
 
-        // Pastikan karyawan ada
+        // ================================
+        //  CEK KARYAWAN ADA?
+        // ================================
+
         $cek = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik'");
         if ($cek->num_rows == 0) {
             $response["gagal"]++;
@@ -74,35 +83,41 @@ try {
         }
         $id_karyawan = $cek->fetch_assoc()['id_karyawan'];
 
-        // Cek karier terbaru
-        $cekKarier = $koneksi->query("SELECT id_karier 
+        // ================================
+        // CEK KARIER TERBARU
+        // ================================
+
+        $cekKarier = $koneksi->query("
+            SELECT id_karier 
             FROM tb_karier
             WHERE id_karyawan='$id_karyawan'
             ORDER BY tgl_mulai DESC, id_karier DESC
-            LIMIT 1");
+            LIMIT 1
+        ");
 
         if ($cekKarier->num_rows == 0) {
-            // INSERT jika belum punya karier
+
+            // INSERT KARIER BARU
             $sql = "INSERT INTO tb_karier (
-                id_karyawan, gaji_pokok, t_daerah, t_hidup, t_makan, t_skil,
+                id_karyawan, gaji_pokok, 
                 ot_pertama, ot_kedua, spl, ot1_spl, ot2_spl,
                 pot_izin, pot_mangkir, tgl_mulai
             ) VALUES (
-                '$id_karyawan',$basic,$t_daerah,$t_hidup,$t_makan,$t_skill,
+                '$id_karyawan',$basic,
                 $ot_pertama,$ot_kedua,$spl,$ot1_spl,$ot2_spl,
                 $pot_izin,$pot_mangkir,NOW()
             )";
+
             $koneksi->query($sql);
             $id_karier = $koneksi->insert_id;
+
         } else {
-            // UPDATE jika sudah ada
+
+            // UPDATE KARIER EXISTING
             $id_karier = $cekKarier->fetch_assoc()['id_karier'];
+
             $sql = "UPDATE tb_karier SET
                 gaji_pokok=$basic,
-                t_daerah=$t_daerah,
-                t_hidup=$t_hidup,
-                t_makan=$t_makan,
-                t_skil=$t_skill,
                 ot_pertama=$ot_pertama,
                 ot_kedua=$ot_kedua,
                 spl=$spl,
@@ -111,29 +126,62 @@ try {
                 pot_izin=$pot_izin,
                 pot_mangkir=$pot_mangkir
             WHERE id_karier='$id_karier'";
+
             $koneksi->query($sql);
         }
 
-        // Tunjangan wajib
-        $tunjanganList = [
-            "BPJS KESEHATAN 1%" => $pot_bpjs,
-            "JHT 2%" => $pot_jht,
-            "PPH21" => $pph21,
+        // ================================
+        //  INSERT / UPDATE TUNJANGAN TETAP
+        // ================================
+
+        $tunjanganTetap = [
+            "TUNJANGAN DAERAH" => $t_daerah,
+            "TUNJANGAN HIDUP"  => $t_hidup,
+            "TUNJANGAN MAKAN"  => $t_makan,
+            "TUNJANGAN SKILL"  => $t_skill,
         ];
 
-        foreach ($tunjanganList as $nama_t => $jumlah) {
+        foreach ($tunjanganTetap as $nama => $nominal) {
+            if ($nominal <= 0) continue;
+
             $cekTun = $koneksi->query("SELECT id_tunjangan FROM tb_tunjangan 
-                WHERE id_karier='$id_karier' AND nama_tunjangan='$nama_t'");
-            
+                WHERE id_karier='$id_karier' AND nama_tunjangan='$nama'");
+
             if ($cekTun->num_rows == 0) {
-                $koneksi->query("INSERT INTO tb_tunjangan 
-                    (id_karier, nama_tunjangan, jumlah_tunjangan)
-                    VALUES ('$id_karier','$nama_t',$jumlah)");
+                $koneksi->query("INSERT INTO tb_tunjangan
+                    (id_karier, nama_tunjangan, nominal_tunjangan)
+                    VALUES ('$id_karier','$nama',$nominal)");
             } else {
-                $id_tunjangan = $cekTun->fetch_assoc()['id_tunjangan'];
-                $koneksi->query("UPDATE tb_tunjangan 
-                    SET jumlah_tunjangan=$jumlah
-                    WHERE id_tunjangan='$id_tunjangan'");
+                $id_tunj = $cekTun->fetch_assoc()['id_tunjangan'];
+                $koneksi->query("UPDATE tb_tunjangan SET nominal_tunjangan=$nominal 
+                    WHERE id_tunjangan='$id_tunj'");
+            }
+        }
+
+        // ================================
+        //  INSERT / UPDATE POTONGAN WAJIB
+        // ================================
+
+        $potonganList = [
+            "BPJS KESEHATAN 1%" => $pot_bpjs,
+            "JHT 2%" => $pot_jht,
+            "PPH21" => $pph21
+        ];
+
+        foreach ($potonganList as $nama => $jumlah) {
+            if ($jumlah <= 0) continue;
+
+            $cekPot = $koneksi->query("SELECT id_potongan FROM tb_potongan
+                WHERE id_karier='$id_karier' AND nama_potongan='$nama'");
+
+            if ($cekPot->num_rows == 0) {
+                $koneksi->query("INSERT INTO tb_potongan
+                    (id_karier, nama_potongan, nominal_potongan)
+                    VALUES ('$id_karier','$nama',$jumlah)");
+            } else {
+                $id_pot = $cekPot->fetch_assoc()['id_potongan'];
+                $koneksi->query("UPDATE tb_potongan SET nominal_potongan=$jumlah
+                    WHERE id_potongan='$id_pot'");
             }
         }
 

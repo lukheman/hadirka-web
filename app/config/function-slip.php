@@ -6,6 +6,7 @@ if (!function_exists('generateSlipGaji')) {
     {
         global $koneksi;
 
+        // ================= Helper functions =================
         if (!function_exists('daysOverlap')) {
             function daysOverlap($a_start, $a_end, $b_start, $b_end)
             {
@@ -15,6 +16,7 @@ if (!function_exists('generateSlipGaji')) {
                 return floor(($e - $s) / 86400) + 1;
             }
         }
+
         if (!function_exists('getOverlapDays')) {
             function getOverlapDays($conn, $table, $id, $start, $end, $awal, $akhir)
             {
@@ -40,43 +42,67 @@ if (!function_exists('generateSlipGaji')) {
         $id_karyawan = $k['id_karyawan'];
 
         // ================= 2) Get Karier aktif =================
-        $sqlKarier = "SELECT * FROM tb_karier kar
-        JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
-        WHERE kar.id_karyawan = '$id_karyawan'
-        AND kar.tgl_mulai <= '$endDate'
-        AND (kar.tgl_selesai IS NULL OR kar.tgl_selesai >= '$startDate')
-        ORDER BY kar.tgl_mulai DESC LIMIT 1";
+        $sqlKarier = "SELECT kar.*, jab.nama_jabatan 
+            FROM tb_karier kar
+            LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
+            WHERE kar.id_karyawan = '$id_karyawan'
+            AND kar.tgl_mulai <= '$endDate'
+            AND (kar.tgl_selesai IS NULL OR kar.tgl_selesai >= '$startDate')
+            ORDER BY kar.tgl_mulai DESC LIMIT 1";
         $qk = mysqli_query($koneksi, $sqlKarier);
         $karier = mysqli_fetch_assoc($qk);
         if (!$karier) return ['error' => 'Karier aktif tidak ditemukan'];
         $tgl_mulai_karier = $karier['tgl_mulai'];
 
-        // ================= 2a) Ambil Tunjangan =================
+        // ================= 2a) Ambil Tunjangan (Pendapatan) dari tb_tunjangan =================
         $tunjanganRows = [];
-        $potonganRows = [];
         $total_tunjangan = 0;
-        $total_potongan_tunjangan = 0;
-
         $sqlTunj = "SELECT nama_tunjangan, jumlah_tunjangan 
-                FROM tb_tunjangan 
-                WHERE id_karier = '" . $karier['id_karier'] . "'";
+                    FROM tb_tunjangan 
+                    WHERE id_karier = '" . $karier['id_karier'] . "'";
         $qt = mysqli_query($koneksi, $sqlTunj);
         while ($tr = mysqli_fetch_assoc($qt)) {
-            $nama = strtolower($tr['nama_tunjangan']);
             $row = [
                 'nama' => $tr['nama_tunjangan'],
                 'jumlah' => floatval($tr['jumlah_tunjangan'])
             ];
-            if (strpos($nama, 'bpjs') !== false || strpos($nama, 'jht') !== false || strpos($nama, 'pph') !== false) {
-                $total_potongan_tunjangan += floatval($tr['jumlah_tunjangan']);
-                $potonganRows[] = $row;
-            } else {
-                $total_tunjangan += floatval($tr['jumlah_tunjangan']);
-                $tunjanganRows[] = $row;
+            $tunjanganRows[] = $row;
+            $total_tunjangan += floatval($tr['jumlah_tunjangan']);
+        }
+
+        // ================= Ambil Potongan (BPJS/JHT/PPH21 dll) dari tb_potongan =================
+        // NOTE: sesuai perubahan, tb_potongan memakai id_karier
+        $potonganRows = [];
+        $total_potongan_tunjangan = 0;
+        $sqlPot = "SELECT jenis_potongan, jumlah_potongan 
+                   FROM tb_potongan 
+                   WHERE id_karier = '" . $karier['id_karier'] . "'";
+        $qp = mysqli_query($koneksi, $sqlPot);
+        while ($p = mysqli_fetch_assoc($qp)) {
+            $row = [
+                'nama' => $p['jenis_potongan'],
+                'jumlah' => floatval($p['jumlah_potongan'])
+            ];
+            $potonganRows[] = $row;
+            $total_potongan_tunjangan += floatval($p['jumlah_potongan']);
+        }
+
+        // dari potonganRows, ekstrak bpjs/jht/pph angka (jika perlu di output)
+        $bpjs_kesehatan = 0;
+        $jht = 0;
+        $pph21 = 0;
+        foreach ($potonganRows as $pr) {
+            $n = strtolower($pr['nama']);
+            if (strpos($n, 'bpjs') !== false) {
+                $bpjs_kesehatan += $pr['jumlah'];
+            } elseif (strpos($n, 'jht') !== false || strpos($n, 'jht ') !== false) {
+                $jht += $pr['jumlah'];
+            } elseif (strpos($n, 'pph') !== false) {
+                $pph21 += $pr['jumlah'];
             }
         }
 
-        // ================= 3) Get Pinjaman =================
+        // ================= 3) Get Rapel =================
         $total_rapel = 0;
         $rapelRows = [];
         $sqlRapel = "SELECT tgl_rapel, nominal_rapel, ket_rapel
@@ -112,9 +138,6 @@ if (!function_exists('generateSlipGaji')) {
             ];
         }
 
-
-
-
         // ================= 4) Get Absen =================
         $absenRows = [];
         $sqlAbs = "SELECT id_absen, tgl_absen, jam_kerja, ket_absen
@@ -125,7 +148,7 @@ if (!function_exists('generateSlipGaji')) {
         $qabs = mysqli_query($koneksi, $sqlAbs);
         while ($r = mysqli_fetch_assoc($qabs)) $absenRows[] = $r;
 
-        // ================= 4b) Overlap days =================
+        // ================= 4b) Overlap days (izin, sakit, cuti) =================
         $izin_days  = getOverlapDays($koneksi, "tb_izin",  $id_karyawan, $startDate, $endDate, "tgl_awal_izin", "tgl_akhir_izin");
         $sakit_days = getOverlapDays($koneksi, "tb_sakit", $id_karyawan, $startDate, $endDate, "tgl_awal_sakit", "tgl_akhir_sakit");
         $cuti_days  = getOverlapDays($koneksi, "tb_cuti",  $id_karyawan, $startDate, $endDate, "tgl_awal_cuti", "tgl_akhir_cuti");
@@ -156,7 +179,7 @@ if (!function_exists('generateSlipGaji')) {
             (new DateTime($endDate))->modify('+1 day')
         );
 
-        $new_count = 0; // <-- Tambahkan di sini
+        $new_count = 0;
 
         foreach ($period as $date) {
             $tgl = $date->format('Y-m-d');
@@ -174,7 +197,7 @@ if (!function_exists('generateSlipGaji')) {
                     'ket' => 'NEW'
                 ];
                 $new_count++;
-                continue; // langsung ke tanggal berikutnya
+                continue;
             }
 
             foreach ($absenRows as $a) {
@@ -185,6 +208,7 @@ if (!function_exists('generateSlipGaji')) {
 
                     // ===== LOGIKA SPL/WL/OVERTIME =====
                     if ($ket === 'OFF') {
+                        // untuk OFF hitung SPL (sama seperti semula)
                         if ($hariNama === 'friday') {
                             $h1_5 = min(5, $jam);
                             $h6   = ($jam > 5 ? 1 : 0);
@@ -210,6 +234,9 @@ if (!function_exists('generateSlipGaji')) {
                             $total_jam_spl_8   += $h8;
                             $total_jam_spl_9_up += $h9up;
                         }
+
+                        $wl = 0;
+                        $ot = 0;
                     } else {
                         // WL maksimal 1 jam, sisanya Overtime
                         if ($hariNama === 'friday') {
@@ -225,11 +252,11 @@ if (!function_exists('generateSlipGaji')) {
                         $total_jam_wl += $wl;
                         $total_jam_ot += $ot;
 
-
-                        // Potongan per jam
+                        // Potongan per jam (pot_izin tersedia di tb_karier)
                         if ($jam < $normal_hours && $jam > 0) {
                             $kurang = $normal_hours - $jam;
                             $total_jam_kurang += $kurang;
+                            // bagi  normal_hours untuk membagi proporsional
                             $total_potongan_perjam += $kurang * ($karier['pot_izin'] / $normal_hours);
                         }
                     }
@@ -237,8 +264,8 @@ if (!function_exists('generateSlipGaji')) {
                     $absenForUI[] = [
                         'tanggal' => $tgl,
                         'jam' => $jam,
-                        'wl' => $wl ?? 0,
-                        'ot' => $ot ?? 0,
+                        'wl' => isset($wl) ? $wl : 0,
+                        'ot' => isset($ot) ? $ot : 0,
                         'ket' => $ket
                     ];
 
@@ -290,34 +317,36 @@ if (!function_exists('generateSlipGaji')) {
 
         // ================= Hitung total pendapatan & potongan =================
         $basic = floatval($karier['gaji_pokok']);
-        $t_hidup = floatval($karier['t_hidup']);
-        $t_daerah = floatval($karier['t_daerah']);
-        $t_makan = floatval($karier['t_makan']);
-        $t_skil = floatval($karier['t_skil']);
 
-        $bpjs_kesehatan = floatval($karier['bpjs_kesehatan'] ?? 0);
-        $jht = floatval($karier['jht'] ?? 0);
-        $pph21 = floatval($karier['pph21'] ?? 0);
+        // t_hidup/t_daerah/t_makan/t_skil sudah dipindah ke tb_tunjangan,
+        // untuk backward-compatibility set 0 (nilai sebenarnya sudah di $total_tunjangan)
+        $t_hidup = 0;
+        $t_daerah = 0;
+        $t_makan = 0;
+        $t_skil = 0;
+
+        // nilai bpjs/jht/pph21 diambil dari tb_potongan
+        // ($bpjs_kesehatan, $jht, $pph21) sudah dihitung sebelumnya
+
         $pot_sio = floatval($karier['pot_sio'] ?? 0);
         $pot_pkwt = floatval($karier['pot_pkwt'] ?? 0);
 
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
-        // ===== Tambahkan potongan PKWT =====
+        // PKWT potongan untuk hari NEW
         $total_potongan_pkwt = 0;
         if ($new_count > 0) {
             $total_potongan_pkwt = ($basic / 25) * $new_count;
         }
 
         $total_potongan =
-            $total_potongan_tunjangan +
+            $total_potongan_tunjangan +   // (BPJS,JHT,PPH21,dll) dari tb_potongan
             $total_potongan_pinjaman +
             $total_pot_izin +
             $total_pot_mangkir +
             $total_potongan_perjam +
-            $total_potongan_pkwt; // <-- tambahkan PKWT
-
+            $total_potongan_pkwt;
 
         $total_tunjangan = $total_tunjangan ?? 0;
 
@@ -326,25 +355,28 @@ if (!function_exists('generateSlipGaji')) {
         $pendapatan_kelebihan_hari = 0;
         if ($hari_kerja_count > 25) {
             $kelebihan_hari = $hari_kerja_count - 25;
-            // sesuai rumus: (Jumlah hari kerja - 25) * (gaji basic / 25)
             $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
         }
 
-        // ================= Hitung total pendapatan & potongan =================
+        // ================= Hitung total pendapatan =================
         $total_pendapatan =
-            $basic + $t_hidup + $t_daerah + $t_makan + $t_skil +
-            $total_lembur + $total_overtime +
-            $total_spl_1_7 + $total_spl_8 + $total_spl_9_up +
-            $total_tunjangan + $total_rapel +
-            $pendapatan_kelebihan_hari; // <-- Tambah pendapatan kelebihan hari (jika ada)
-
+            $basic +
+            $total_tunjangan +      // semua tunjangan yang ada di tb_tunjangan
+            $total_lembur +
+            $total_overtime +
+            $total_spl_1_7 +
+            $total_spl_8 +
+            $total_spl_9_up +
+            $total_rapel +
+            $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
+        // ================= Build response =================
         return [
             'nik' => $nik,
             'nama' => $k['nama_lengkap'],
-            'jabatan' => $karier['nama_jabatan'],
+            'jabatan' => $karier['nama_jabatan'] ?? '',
             'period' => "$startDate - $endDate",
             'new' => $new_count,
             'rapel' => $rapelRows,
@@ -354,10 +386,12 @@ if (!function_exists('generateSlipGaji')) {
             'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
 
             'basic' => $basic,
+            // keep legacy keys but values are moved into tunjangan list
             't_hidup' => $t_hidup,
             't_daerah' => $t_daerah,
             't_makan' => $t_makan,
             't_skil' => $t_skil,
+
             'total_lembur' => $total_lembur,
             'total_overtime' => $total_overtime,
             'total_spl_1_7' => $total_spl_1_7,
@@ -371,6 +405,7 @@ if (!function_exists('generateSlipGaji')) {
             'total_jam_spl_8' => $total_jam_spl_8,
             'total_jam_spl_9_up' => $total_jam_spl_9_up,
 
+            // potongan spesifik hasil ekstraksi dari tb_potongan
             'bpjs_kesehatan' => $bpjs_kesehatan,
             'jht' => $jht,
             'pph21' => $pph21,
@@ -386,10 +421,12 @@ if (!function_exists('generateSlipGaji')) {
             'izin' => $izin_days,
             'sakit' => $sakit_days,
             'cuti' => $cuti_days,
+
             'tunjangan_pendapatan' => $tunjanganRows,
             'total_tunjangan_pendapatan' => $total_tunjangan,
             'potongan_tunjangan' => $potonganRows,
             'total_potongan_tunjangan' => $total_potongan_tunjangan,
+
             'pinjaman' => $pinjamanRows,
             'total_potongan_pinjaman' => $total_potongan_pinjaman,
             'mangkir' => $mangkir_count,
@@ -400,18 +437,17 @@ if (!function_exists('generateSlipGaji')) {
     }
 }
 
-
-// ================= Panggil function =================
+// ================= Panggil function (contoh) =================
 // $input = json_decode(file_get_contents('php://input'), true);
 // $nik = $input['nik'] ?? null;
 // $startDate = $input['startDate'] ?? null;
 // $endDate = $input['endDate'] ?? null;
-
+//
 // if (!$nik || !$startDate || !$endDate) {
 //     http_response_code(400);
 //     echo json_encode(['error' => 'nik, startDate, endDate wajib']);
 //     exit;
 // }
-
+//
 // $response = generateSlipGaji($nik, $startDate, $endDate);
 // echo json_encode($response, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
