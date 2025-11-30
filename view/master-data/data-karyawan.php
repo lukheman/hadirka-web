@@ -373,7 +373,7 @@
             let id = $(this).data("id");
 
             $.ajax({
-                url: "karyawan_action.php",
+                url: "app/controller/act-karyawan.php",
                 type: "POST",
                 data: {
                     action: "get",
@@ -404,7 +404,7 @@
             e.preventDefault();
 
             $.ajax({
-                url: "karyawan_action.php",
+                url: "app/controller/act-karyawan.php",
                 type: "POST",
                 data: $(this).serialize(),
                 success: function(res) {
@@ -432,7 +432,7 @@
             if (!confirm("Yakin ingin menghapus data ini?")) return;
 
             $.ajax({
-                url: "karyawan_action.php",
+                url: "app/controller/act-karyawan.php",
                 type: "POST",
                 data: {
                     action: "delete",

@@ -307,10 +307,10 @@ require_once 'app/controller/read.php';
     <div class="wrap" id="slip">
         <div class="header">
             <div class="company" style="display:flex; align-items:center; gap:10px;">
-                <img src="assets/img/logo/tjs-done.png" alt="Logo Perusahaan" style="height:50px; object-fit:contain;">
+                <img src="assets/img/logo/kpp-logo.jpg" alt="Logo Perusahaan" style="height:50px; object-fit:contain;">
                 <div>
-                    <div style="font-size:16px; font-weight:800;">PT. TRIPUTRA JAYASULTRA</div>
-                    <small>JL. EKONOMI · TLP/WA 0852-5526-4538</small>
+                    <div style="font-size:16px; font-weight:800;">PT. KARYA PUTRA POMALAA</div>
+                    <small>JL. BUNGA KAMBOJA NO. 8 PELAMBUA · TLP/WA 0852-9840-0028</small>
                     <small>POMALAA, KABUPATEN KOLAKA</small>
                 </div>
             </div>
@@ -413,7 +413,7 @@ require_once 'app/controller/read.php';
         </div>
 
         <div class="signature">
-            HR.<br><br><strong>MUH. FADLY</strong>
+            HR. CFO<br><br><strong>KANISIUS HAYON</strong>
         </div>
     </div>
 
@@ -467,7 +467,7 @@ require_once 'app/controller/read.php';
         }
 
         function render(data) {
-            // metadata
+            // =============== METADATA ===============
             document.getElementById('period').textContent = data.period || '-';
             document.getElementById('nikDisplay').textContent = data.nik || '-';
             document.getElementById('nama').textContent = data.nama || '-';
@@ -477,152 +477,169 @@ require_once 'app/controller/read.php';
             document.getElementById('total_jam_spl_1_7').textContent = data.total_jam_spl_1_7 || '-';
             document.getElementById('total_jam_spl_8').textContent = data.total_jam_spl_8 || '-';
             document.getElementById('total_jam_spl_9_up').textContent = data.total_jam_spl_9_up || '-';
-            // document.getElementById('kelebihan_hari').textContent = data.kelebihan_hari || '-';
-            // document.getElementById('pendapatan_kelebihan_hari').textContent = data.pendapatan_kelebihan_hari || '-';
 
-            // PENDAPATAN: order sesuai kesepakatan
-            const pendBody = document.getElementById('pendapatanBody');
-            pendBody.innerHTML = '';
-            // fixed items
-            const pendOrder = [{
-                    key: 'basic',
-                    label: 'BASIC'
-                },
-                {
-                    key: 't_hidup',
-                    label: 'TUNJANGAN HIDUP'
-                },
-                {
-                    key: 't_daerah',
-                    label: 'TUNJANGAN DAERAH'
-                },
-                {
-                    key: 't_makan',
-                    label: 'TUNJANGAN MAKAN'
-                },
-                {
-                    key: 't_skil',
-                    label: 'TUNJANGAN SKIL'
-                },
-                {
-                    key: 'total_lembur',
-                    label: 'LEMBUR'
-                },
-                {
-                    key: 'total_overtime',
-                    label: 'OVERTIME'
-                },
-                {
-                    key: 'total_spl_1_7',
-                    label: 'SPL 1–7'
-                },
-                {
-                    key: 'total_spl_8',
-                    label: 'SPL 8'
-                },
-                {
-                    key: 'total_spl_9_up',
-                    label: 'SPL 9+'
-                },
-                ...(data.hari_kerja > 25 ?
-                    [{
-                        key: 'pendapatan_kelebihan_hari',
-                        label: 'Kelebihan Hari'
-                    }] :
-                    [])
-            ];
+            // =======================================================
+            // ===============   SUSUN ULANG PENDAPATAN   ===============
+            // =======================================================
+            const pendBody = document.getElementById("pendapatanBody");
+            pendBody.innerHTML = "";
 
-            pendOrder.forEach(item => {
-                const tr = document.createElement('tr');
-                const value = (typeof data[item.key] !== 'undefined') ? data[item.key] : 0;
-                tr.innerHTML = `<td>${item.label}</td><td class="right">${fmt(value)}</td>`;
-                pendBody.appendChild(tr);
-            });
+            // 1) BASIC
+            pendBody.innerHTML += `
+        <tr><td>BASIC</td><td class="right">${fmt(data.basic)}</td></tr>
+    `;
 
-            // tunjangan dinamis (array)
-            if (Array.isArray(data.tunjangan_pendapatan) && data.tunjangan_pendapatan.length) {
+            // 2) TUNJANGAN TETAP
+            // const tetapList = [{
+            //         key: "t_hidup",
+            //         label: "TUNJANGAN HIDUP"
+            //     },
+            //     {
+            //         key: "t_daerah",
+            //         label: "TUNJANGAN DAERAH"
+            //     },
+            //     {
+            //         key: "t_makan",
+            //         label: "TUNJANGAN MAKAN"
+            //     },
+            //     {
+            //         key: "t_skil",
+            //         label: "TUNJANGAN SKIL"
+            //     }
+            // ];
+
+            // tetapList.forEach(t => {
+            //     let val = data[t.key] || 0;
+            //     pendBody.innerHTML += `
+            //     <tr><td>${t.label}</td><td class="right">${fmt(val)}</td></tr>
+            // `;
+            // });
+
+            // 3) TUNJANGAN DINAMIS
+            if (Array.isArray(data.tunjangan_pendapatan)) {
                 data.tunjangan_pendapatan.forEach(t => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${t.nama}</td><td class="right">${fmt(t.jumlah)}</td>`;
-                    pendBody.appendChild(tr);
+                    pendBody.innerHTML += `
+                <tr><td style="text-transform:uppercase;">${t.nama}</td><td class="right">${fmt(t.jumlah)}</td></tr>
+            `;
                 });
             }
 
-            // rapel (dynamic)
-            if (Array.isArray(data.rapel) && data.rapel.length) {
-                data.rapel.forEach(r => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>RAPEL - ${r.nama} (${r.tanggal})</td><td class="right">${fmt(r.jumlah)}</td>`;
-                    pendBody.appendChild(tr);
-                });
-            }
-
-            // SPL 
-            const spl = hitungSPL(data.absen);
-            data.total_spl_1_7 = spl.spl1_7;
-            data.total_spl_8 = spl.spl8;
-            data.total_spl_9_up = spl.spl9_up;
-
-            // total pendapatan (bold)
-            const lastRow = document.createElement('tr');
-            lastRow.className = 'bold';
-            lastRow.innerHTML = `<td>JUMLAH PENDAPATAN</td><td class="right">${fmt(data.total_pendapatan)}</td>`;
-            pendBody.appendChild(lastRow);
-
-            // POTONGAN
-            const potBody = document.getElementById('potonganBody');
-            potBody.innerHTML = '';
-
-            // fixed potongan order
-            const potOrder = [{
-                    key: 'pot_pkwt',
-                    label: 'POTONGAN PKWT'
+            // 4) LEMBUR & SPL
+            const lemburList = [{
+                    key: "total_lembur",
+                    label: "LEMBUR"
                 },
                 {
-                    key: 'pot_izin',
-                    label: 'POTONGAN IZIN'
+                    key: "total_overtime",
+                    label: "OVERTIME"
                 },
                 {
-                    key: 'pot_mangkir',
-                    label: 'POTONGAN MANGKIR'
+                    key: "total_spl_1_7",
+                    label: "SPL 1–7"
                 },
                 {
-                    key: 'potongan_perjam',
-                    label: 'POTONGAN PERJAM'
+                    key: "total_spl_8",
+                    label: "SPL 8"
+                },
+                {
+                    key: "total_spl_9_up",
+                    label: "SPL 9+"
                 }
             ];
-            // potongan tunjangan (dynamic)
-            if (Array.isArray(data.potongan_tunjangan) && data.potongan_tunjangan.length) {
-                data.potongan_tunjangan.forEach(t => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${t.nama}</td><td class="right">${fmt(t.jumlah)}</td>`;
-                    potBody.appendChild(tr);
-                });
-            }
-            potOrder.forEach(item => {
-                const val = (typeof data[item.key] !== 'undefined') ? data[item.key] : 0;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${item.label}</td><td class="right">${fmt(val)}</td>`;
-                potBody.appendChild(tr);
+
+            lemburList.forEach(l => {
+                let val = data[l.key] || 0;
+                pendBody.innerHTML += `
+            <tr><td>${l.label}</td><td class="right">${fmt(val)}</td></tr>
+        `;
             });
 
-            // pinjaman (dynamic)
-            if (Array.isArray(data.pinjaman) && data.pinjaman.length) {
-                data.pinjaman.forEach(p => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${p.nama}</td><td class="right">${fmt(p.jumlah)}</td>`;
-                    potBody.appendChild(tr);
+            // 5) KELEBIHAN HARI
+            if (data.hari_kerja > 25) {
+                pendBody.innerHTML += `
+            <tr><td>KELEBIHAN HARI</td><td class="right">${fmt(data.pendapatan_kelebihan_hari)}</td></tr>
+        `;
+            }
+
+            // 6) RAPEL
+            if (Array.isArray(data.rapel)) {
+                data.rapel.forEach(r => {
+                    pendBody.innerHTML += `
+                <tr><td>RAPEL - ${r.nama} (${r.tanggal})</td><td class="right">${fmt(r.jumlah)}</td></tr>
+            `;
                 });
             }
 
+            // 7) TOTAL PENDAPATAN
+            pendBody.innerHTML += `
+        <tr class="bold">
+            <td>JUMLAH PENDAPATAN</td>
+            <td class="right">${fmt(data.total_pendapatan)}</td>
+        </tr>
+    `;
 
-            // total potongan (bold)
-            const potLast = document.createElement('tr');
-            potLast.className = 'bold';
-            potLast.innerHTML = `<td>JUMLAH POTONGAN</td><td class="right">${fmt(data.total_potongan)}</td>`;
-            potBody.appendChild(potLast);
+            // =======================================================
+            // ===============     SUSUN ULANG POTONGAN     ===============
+            // =======================================================
+            const potBody = document.getElementById("potonganBody");
+            potBody.innerHTML = "";
 
-            // summary fields
+            // 1) POTONGAN DINAMIS (BPJS, JHT DLL)
+            if (Array.isArray(data.potongan_tunjangan)) {
+                data.potongan_tunjangan.forEach(p => {
+                    potBody.innerHTML += `
+                <tr><td>${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
+            `;
+                });
+            }
+
+            // 2) POTONGAN TETAP
+            const potTetap = [{
+                    key: "pot_pkwt",
+                    label: "POTONGAN PKWT"
+                },
+                {
+                    key: "pot_izin",
+                    label: "POTONGAN IZIN"
+                },
+                {
+                    key: "pot_mangkir",
+                    label: "POTONGAN MANGKIR"
+                },
+                {
+                    key: "potongan_perjam",
+                    label: "POTONGAN PERJAM"
+                }
+            ];
+
+            potTetap.forEach(p => {
+                let val = data[p.key] || 0;
+                potBody.innerHTML += `
+            <tr><td>${p.label}</td><td class="right">${fmt(val)}</td></tr>
+        `;
+            });
+
+
+            // 3) PINJAMAN
+            if (Array.isArray(data.pinjaman)) {
+                data.pinjaman.forEach(p => {
+                    potBody.innerHTML += `
+                <tr><td>${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
+            `;
+                });
+            }
+
+            // 4) TOTAL POTONGAN
+            potBody.innerHTML += `
+        <tr class="bold">
+            <td>JUMLAH POTONGAN</td>
+            <td class="right">${fmt(data.total_potongan)}</td>
+        </tr>
+    `;
+
+            // =============================
+            //        RENDER RINGKASAN
+            // =============================
             document.getElementById('gajiBersih').textContent = fmt(data.gaji_bersih);
             document.getElementById('hariKerja').textContent = data.hari_kerja || 0;
             document.getElementById('sakit').textContent = data.sakit || 0;
@@ -630,35 +647,40 @@ require_once 'app/controller/read.php';
             document.getElementById('mangkir').textContent = data.mangkir || 0;
             document.getElementById('total_jam_kurang').textContent = data.total_jam_kurang || 0;
 
-            // absensi
-            const absBody = document.getElementById('absenBody');
-            absBody.innerHTML = '';
+            // =============================
+            //        TABEL ABSENSI
+            // =============================
+            const absBody = document.getElementById("absenBody");
+            absBody.innerHTML = "";
+
             if (Array.isArray(data.absen)) {
                 data.absen.forEach(r => {
-                    const tr = document.createElement('tr');
-                    // highlight classes
-                    let cls = '';
-                    if (String(r.ket).toUpperCase().includes('OFF') || String(r.ket).toUpperCase().includes('SPL')) cls = 'off';
-                    if (String(r.ket).toUpperCase().includes('SAKIT')) cls = 'sd';
-                    if (String(r.ket).toUpperCase().includes('IZIN')) cls = 'izin';
-                    if (String(r.ket).toUpperCase().includes('CUTI')) cls = 'cm';
-                    if (r.jam == 0) {
-                        r.jam = r.ket;
-                    }
+                    let cls = "";
+                    const ket = String(r.ket).toUpperCase();
 
-                    const hariNama = (new Date(r.tanggal)).toLocaleString('id-ID', {
-                        weekday: 'long'
+                    if (ket.includes("OFF") || ket.includes("SPL")) cls = "off";
+                    if (ket.includes("SAKIT")) cls = "sd";
+                    if (ket.includes("IZIN")) cls = "izin";
+                    if (ket.includes("CUTI")) cls = "cm";
+
+                    const hariNama = new Date(r.tanggal).toLocaleString("id-ID", {
+                        weekday: "long",
                     }).toUpperCase();
-                    tr.innerHTML = `<td class="center ${cls}">${r.no || ''}</td>
-                        <td class="${cls}">${hariNama}<br><small style="color:var(--muted)">${r.tanggal}</small></td>
-                        <td class="center ${cls}">${r.jam}</td>`;
-                    // <td class="center ${cls}">${r.wl}</td>
-                    // <td class="center ${cls}">${r.ot}</td>
-                    // <td class="center ${cls}">${r.ket}</td>
-                    absBody.appendChild(tr);
+
+                    absBody.innerHTML += `
+                <tr>
+                    <td class="center ${cls}">${r.no || ''}</td>
+                    <td class="${cls}">
+                        ${hariNama}<br>
+                        <small style="color:var(--muted)">${r.tanggal}</small>
+                    </td>
+                    <td class="center ${cls}">${r.jam == 0 ? r.ket : r.jam}</td>
+                </tr>
+            `;
                 });
             }
         }
+
 
         // generateSlip: mandatory fetch from backend new-slip.php
         async function generateSlip() {
