@@ -23,10 +23,6 @@
                                 <th class="text-center">Departemen</th>
                                 <th class="text-center">Jabatan</th>
                                 <th class="text-center">Gaji Pokok</th>
-                                <th class="text-center">Tunjangan Hidup</th>
-                                <th class="text-center">Tunjangan Daerah</th>
-                                <th class="text-center">Tunjangan Makan</th>
-                                <th class="text-center">Tunjangan Skill</th>
                                 <th class="text-center">OT Pertama</th>
                                 <th class="text-center">OT Kedua</th>
                                 <th class="text-center">SPL</th>
@@ -106,28 +102,10 @@
                         </div>
 
                         <div class="col-md-12">
-                            <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
+                            <b class="text-secondary">Gaji Pokok Dan Lemburan</b>
                             <hr>
                         </div>
 
-
-                        <!-- Data Tunjagan  -->
-                        <div class="col-md-3">
-                            <label>Tunjangan Daerah</label>
-                            <input type="number" name="t_daerah" class="form-control" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label>Tunjangan Hidup</label>
-                            <input type="number" name="t_hidup" class="form-control" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label>Tunjangan Skill</label>
-                            <input type="number" name="t_skil" class="form-control" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label>Tunjangan Makan</label>
-                            <input type="number" name="t_makan" class="form-control" required>
-                        </div>
 
                         <!-- OT Pertama -->
                         <div class="col-md-3">
@@ -252,29 +230,8 @@
                         </div>
 
                         <div class="col-md-12">
-                            <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
+                            <b class="text-secondary">Gaji Pokok Dan Lemburan</b>
                             <hr>
-                        </div>
-
-                        <!-- Tunjangan -->
-                        <div class="col-md-3">
-                            <label>Tunjangan Daerah</label>
-                            <input type="number" name="t_daerah" class="form-control" required>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>Tunjangan Hidup</label>
-                            <input type="number" name="t_hidup" class="form-control" required>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>Tunjangan Skill</label>
-                            <input type="number" name="t_skil" class="form-control" required>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>Tunjangan Makan</label>
-                            <input type="number" name="t_makan" class="form-control" required>
                         </div>
 
                         <!-- OT -->

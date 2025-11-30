@@ -28,21 +28,8 @@ if ($id) {
         ORDER BY k.tgl_mulai DESC");
 }
 
-while ($r = $q->fetch_assoc()) { 
-
-    $id_karier  = $r['id_karier'];
-
-    // Cek BPJS nol → merah
-    $cek_tunjagan = mysqli_query($koneksi,
-        "SELECT * FROM tb_tunjangan 
-         WHERE id_karier='$id_karier' AND nama_tunjangan LIKE '%BPJS%'");
-
-    $rw = mysqli_fetch_array($cek_tunjagan); 
-    $rowcolor = ($id_karier == $rw['id_karier'] && $rw['jumlah_tunjangan'] == 0)
-                ? 'bg-danger'
-                : '';
-?>
-    <tr class="text-center <?= $rowcolor ?>">
+while ($r = $q->fetch_assoc()) { ?>
+    <tr class="text-center">
         <td><?= $no ?></td>
         <td><?= $r['nama_site'] ?></td>
         <td><?= $r['nama_departemen'] ?></td>
@@ -50,12 +37,6 @@ while ($r = $q->fetch_assoc()) {
 
         <!-- Gaji Pokok -->
         <td><?= rupiah($r['gaji_pokok']) ?></td>
-
-        <!-- Tunjangan -->
-        <td><?= rupiah($r['t_hidup']) ?></td>
-        <td><?= rupiah($r['t_daerah']) ?></td>
-        <td><?= rupiah($r['t_makan']) ?></td>
-        <td><?= rupiah($r['t_skil']) ?></td>
 
         <!-- OT -->
         <td><?= rupiah($r['ot_pertama']) ?></td>
