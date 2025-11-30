@@ -61,11 +61,6 @@ try {
         $pot_izin    = intOrZero($_POST['pot_izin']);
         $pot_mangkir = intOrZero($_POST['pot_mangkir']);
 
-        // Tambahan tunjangan baru
-        $t_hidup  = intOrZero($_POST['t_hidup']);
-        $t_daerah = intOrZero($_POST['t_daerah']);
-        $t_makan  = intOrZero($_POST['t_makan']);
-        $t_skil   = intOrZero($_POST['t_skil']);
 
         $tgl_mulai   = $_POST['tgl_mulai'];
         $tgl_selesai = !empty($_POST['tgl_selesai']) ? $_POST['tgl_selesai'] : null;
@@ -80,13 +75,12 @@ try {
                 (id_karyawan,id_site,id_departemen,id_jabatan,
                 gaji_pokok,ot_pertama,ot_kedua,spl,ot1_spl,ot2_spl,
                 pot_izin,pot_mangkir,
-                t_hidup,t_daerah,t_makan,t_skil,
                 tgl_mulai,tgl_selesai)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                VALUES (?,?,?,?,?,?,?,?,?,?)";
 
             $stmt = $koneksi->prepare($sql);
             $stmt->bind_param(
-                "iiiiiiiiiiiiiiiiss",
+                "iiiiiiiiiiiiss",
                 $id_karyawan,
                 $id_site,
                 $id_departemen,
@@ -99,10 +93,6 @@ try {
                 $ot2_spl,
                 $pot_izin,
                 $pot_mangkir,
-                $t_hidup,
-                $t_daerah,
-                $t_makan,
-                $t_skil,
                 $tgl_mulai,
                 $tgl_selesai
             );
@@ -117,13 +107,12 @@ try {
                     id_site=?, id_departemen=?, id_jabatan=?,
                     gaji_pokok=?, ot_pertama=?, ot_kedua=?, spl=?, 
                     ot1_spl=?, ot2_spl=?, pot_izin=?, pot_mangkir=?,
-                    t_hidup=?, t_daerah=?, t_makan=?, t_skil=?,
                     tgl_mulai=?, tgl_selesai=NULL
                     WHERE id_karier=?";
 
                 $stmt = $koneksi->prepare($sql);
                 $stmt->bind_param(
-                    "iiiidddddddiiiissi",
+                    "iiiidddssi",
                     $id_site,
                     $id_departemen,
                     $id_jabatan,
@@ -135,10 +124,6 @@ try {
                     $ot2_spl,
                     $pot_izin,
                     $pot_mangkir,
-                    $t_hidup,
-                    $t_daerah,
-                    $t_makan,
-                    $t_skil,
                     $tgl_mulai,
                     $id_karier
                 );
@@ -148,13 +133,12 @@ try {
                     id_site=?, id_departemen=?, id_jabatan=?,
                     gaji_pokok=?, ot_pertama=?, ot_kedua=?, spl=?, 
                     ot1_spl=?, ot2_spl=?, pot_izin=?, pot_mangkir=?,
-                    t_hidup=?, t_daerah=?, t_makan=?, t_skil=?,
                     tgl_mulai=?, tgl_selesai=?
                     WHERE id_karier=?";
 
                 $stmt = $koneksi->prepare($sql);
                 $stmt->bind_param(
-                    "iiiidddddddiiiissi",
+                    "iiiidddddddssi",
                     $id_site,
                     $id_departemen,
                     $id_jabatan,
@@ -166,10 +150,6 @@ try {
                     $ot2_spl,
                     $pot_izin,
                     $pot_mangkir,
-                    $t_hidup,
-                    $t_daerah,
-                    $t_makan,
-                    $t_skil,
                     $tgl_mulai,
                     $tgl_selesai,
                     $id_karier
