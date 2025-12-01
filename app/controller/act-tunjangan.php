@@ -19,7 +19,7 @@ if ($action == "add") {
 
 // EDIT
 if ($action == "edit") {
-    $id_karier = decrypt($_POST['id_karier']);
+    $id = decrypt($_POST['id_tunjagan']);
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
 
@@ -34,7 +34,7 @@ if ($action == "edit") {
 
 // DELETE
 if ($action == "delete") {
-    $id_karier = decrypt($_POST['id_karier']);
+    $id = decrypt($_POST['id_tunjangan']);
 
     $q = $koneksi->query("DELETE FROM tb_tunjangan WHERE id_tunjangan='$id'");
 
