@@ -188,7 +188,19 @@ if (!function_exists('generateSlipGaji')) {
             $hariNama = strtolower(date('l', strtotime($tgl)));
             $normal_hours = ($hariNama === 'friday') ? 5 : 7;
 
-            if ($tgl < $tgl_mulai_karier) {
+            // if ($tgl < $tgl_mulai_karier) {
+            //     $absenForUI[] = [
+            //         'tanggal' => $tgl,
+            //         'jam' => 0,
+            //         'wl' => 0,
+            //         'ot' => 0,
+            //         'ket' => 'NEW'
+            //     ];
+            //     $new_count++;
+            //     continue;
+            // }
+            $hariNama = strtolower(date('l', strtotime($tgl)));
+            if ($tgl < $tgl_mulai_karier && $hariNama !== 'sunday') {
                 $absenForUI[] = [
                     'tanggal' => $tgl,
                     'jam' => 0,
@@ -368,8 +380,8 @@ if (!function_exists('generateSlipGaji')) {
             $total_spl_1_7 +
             $total_spl_8 +
             $total_spl_9_up +
-            $total_rapel ;
-            // $pendapatan_kelebihan_hari;
+            $total_rapel;
+        // $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
