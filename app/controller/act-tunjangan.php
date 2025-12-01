@@ -4,9 +4,11 @@ require_once __DIR__ . '/../config/function.php';
 
 $action = $_POST['action'];
 
-// ADD
+// ADD =========================================
 if ($action == "add") {
-    $id_karier = decrypt($_POST['id_karier']);
+    // id_karier dari client adalah plain (tidak terenkripsi)
+    $id_karier = $_POST['id_karier'];
+
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
 
@@ -17,9 +19,12 @@ if ($action == "add") {
     exit;
 }
 
-// EDIT
+// EDIT =========================================
 if ($action == "edit") {
-    $id = decrypt($_POST['id_tunjagan']);
+
+    // FIX: nama variabel harus benar
+    $id = decrypt($_POST['id_tunjangan']);
+
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
 
@@ -32,7 +37,7 @@ if ($action == "edit") {
     exit;
 }
 
-// DELETE
+// DELETE =========================================
 if ($action == "delete") {
     $id = decrypt($_POST['id_tunjangan']);
 
