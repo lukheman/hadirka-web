@@ -23,7 +23,7 @@ if ($action == "add") {
 if ($action == "edit") {
 
     // FIX: nama variabel harus benar
-    $id = decrypt($_POST['id_tunjangan']);
+    $id = decrypt($_POST['id']);
 
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
@@ -39,7 +39,7 @@ if ($action == "edit") {
 
 // DELETE =========================================
 if ($action == "delete") {
-    $id = decrypt($_POST['id_tunjangan']);
+    $id = decrypt($_POST['id']);
 
     $q = $koneksi->query("DELETE FROM tb_tunjangan WHERE id_tunjangan='$id'");
 
