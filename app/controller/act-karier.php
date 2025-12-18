@@ -61,7 +61,6 @@ try {
         $pot_izin    = intOrZero($_POST['pot_izin']);
         $pot_mangkir = intOrZero($_POST['pot_mangkir']);
 
-
         $tgl_mulai   = $_POST['tgl_mulai'];
         $tgl_selesai = !empty($_POST['tgl_selesai']) ? $_POST['tgl_selesai'] : null;
 
@@ -76,7 +75,7 @@ try {
                 gaji_pokok,ot_pertama,ot_kedua,spl,ot1_spl,ot2_spl,
                 pot_izin,pot_mangkir,
                 tgl_mulai,tgl_selesai)
-                VALUES (?,?,?,?,?,?,?,?,?,?)";
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
             $stmt = $koneksi->prepare($sql);
             $stmt->bind_param(
@@ -112,7 +111,7 @@ try {
 
                 $stmt = $koneksi->prepare($sql);
                 $stmt->bind_param(
-                    "iiiidddssi",
+                    "iiiidddddddssi",
                     $id_site,
                     $id_departemen,
                     $id_jabatan,

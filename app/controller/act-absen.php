@@ -1,100 +1,78 @@
 <?php
-require __DIR__ . '/../../../config/koneksi.php'; // sesuaikan path jika perlu
+// act-absen.php
+require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../config/function.php';
 
-header('Content-Type: application/json');
-
-$action = $_POST['action'] ?? '';
-
-if (!$action) {
-    echo json_encode(['status' => 'error', 'message' => 'Action tidak ditemukan']);
+function json_out($arr)
+{
+    header('Content-Type: application/json');
+    echo json_encode($arr);
     exit;
 }
 
-$id_absen     = isset($_POST['id_absen']) && $_POST['id_absen'] !== '' ? intval($_POST['id_absen']) : null;
-$id_karyawan  = isset($_POST['id_karyawan']) && $_POST['id_karyawan'] !== '' ? intval($_POST['id_karyawan']) : null;
-$tgl_absen    = $_POST['tgl_absen'] ?? null;
-$jam_kerja    = isset($_POST['jam_kerja']) && $_POST['jam_kerja'] !== '' ? floatval($_POST['jam_kerja']) : null;
-$ket_absen    = $_POST['ket_absen'] ?? '';
+$action = $_POST['action'] ?? '';
 
-try {
+/* ADD */
+if ($action === 'add') {
+    $id_karyawan = intval($_POST['id_karyawan'] ?? 0);
+    $tgl = $_POST['tgl_absen'] ?? '';
+    $jam = $_POST['jam_kerja'] ?? '';
+    // prefer value passed in ket_absen (hidden) else fallback to keterangan_kehadiran or ket_select
+    $ket = $_POST['ket_absen'] ?? ($_POST['keterangan_kehadiran'] ?? '');
+    $ket = $koneksi->real_escape_string($ket);
 
-    /* ================================
-       =========== ADD ================
-       ================================ */
-    if ($action === 'add') {
-        if (!$id_karyawan || !$tgl_absen || $jam_kerja === null) {
-            throw new Exception("Data tidak lengkap (add)");
-        }
+    if ($id_karyawan <= 0) json_out(['status' => 'error', 'msg' => 'Karyawan harus dipilih']);
+    if (!$tgl) json_out(['status' => 'error', 'msg' => 'Tanggal wajib diisi']);
+    if ($jam === null) $jam = '';
+    if ($ket === null) $ket = '';
 
-        // Optional: hindari duplikasi (satu karyawan - satu tanggal)
-        $cek = $koneksi->prepare("SELECT id_absen FROM tb_absen WHERE id_karyawan = ? AND tgl_absen = ?");
-        $cek->bind_param("is", $id_karyawan, $tgl_absen);
-        $cek->execute();
-        $cek->store_result();
-        if ($cek->num_rows > 0) {
-            $cek->close();
-            throw new Exception("Data absen untuk tanggal ini sudah ada. Gunakan edit jika ingin mengubah.");
-        }
-        $cek->close();
+    // Insert
+    $ins = $koneksi->query("
+        INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen)
+        VALUES ($id_karyawan, '$tgl', '$jam', '$ket')
+    ");
 
-        $stmt = $koneksi->prepare("
-            INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen)
-            VALUES (?, ?, ?, ?)
-        ");
-        $stmt->bind_param("isds", $id_karyawan, $tgl_absen, $jam_kerja, $ket_absen);
-        if (!$stmt->execute()) {
-            throw new Exception("Gagal menambah absen: " . $stmt->error);
-        }
-        $stmt->close();
+    if ($ins) json_out(['status' => 'success', 'msg' => 'Data absensi berhasil ditambahkan']);
+    json_out(['status' => 'error', 'msg' => 'Gagal menambah absensi: ' . $koneksi->error]);
+}
 
-        echo json_encode(['status' => 'success', 'message' => 'Absen berhasil ditambahkan']);
-        exit;
-    }
+/* EDIT */
+elseif ($action === 'edit') {
+    $id = intval($_POST['id_absen'] ?? 0);
+    $id_karyawan = intval($_POST['id_karyawan'] ?? 0);
+    $tgl = $_POST['tgl_absen'] ?? '';
+    $jam = $_POST['jam_kerja'] ?? '';
+    $ket = $_POST['ket_absen'] ?? ($_POST['keterangan_kehadiran'] ?? '');
+    $ket = $koneksi->real_escape_string($ket);
 
-    /* ================================
-       =========== EDIT ===============
-       ================================ */
-    if ($action === 'edit') {
-        if (!$id_absen || !$id_karyawan || !$tgl_absen || $jam_kerja === null) {
-            throw new Exception("Data tidak lengkap (edit)");
-        }
+    if ($id <= 0) json_out(['status' => 'error', 'msg' => 'ID absensi tidak valid']);
+    if ($id_karyawan <= 0) json_out(['status' => 'error', 'msg' => 'Karyawan harus dipilih']);
+    if (!$tgl) json_out(['status' => 'error', 'msg' => 'Tanggal wajib diisi']);
 
-        $stmt = $koneksi->prepare("
-            UPDATE tb_absen 
-            SET id_karyawan = ?, tgl_absen = ?, jam_kerja = ?, ket_absen = ?
-            WHERE id_absen = ?
-        ");
-        $stmt->bind_param("isdsi", $id_karyawan, $tgl_absen, $jam_kerja, $ket_absen, $id_absen);
-        if (!$stmt->execute()) {
-            throw new Exception("Gagal update absen: " . $stmt->error);
-        }
-        $stmt->close();
+    $upd = $koneksi->query("
+        UPDATE tb_absen 
+        SET id_karyawan = $id_karyawan,
+            tgl_absen   = '$tgl',
+            jam_kerja   = '$jam',
+            ket_absen   = '$ket'
+        WHERE id_absen = $id
+    ");
 
-        echo json_encode(['status' => 'success', 'message' => 'Absen berhasil diperbarui']);
-        exit;
-    }
+    if ($upd) json_out(['status' => 'success', 'msg' => 'Data absensi berhasil diupdate']);
+    json_out(['status' => 'error', 'msg' => 'Gagal update absensi: ' . $koneksi->error]);
+}
 
-    /* ================================
-       ========== DELETE ==============
-       ================================ */
-    if ($action === 'delete') {
-        if (!$id_absen) {
-            throw new Exception("ID Absen tidak ditemukan (delete)");
-        }
+/* DELETE */
+elseif ($action === 'delete') {
+    $id = intval($_POST['id_absen'] ?? 0);
+    if ($id <= 0) json_out(['status' => 'error', 'msg' => 'ID absensi tidak valid']);
 
-        $stmt = $koneksi->prepare("DELETE FROM tb_absen WHERE id_absen = ?");
-        $stmt->bind_param("i", $id_absen);
-        if (!$stmt->execute()) {
-            throw new Exception("Gagal menghapus absen: " . $stmt->error);
-        }
-        $stmt->close();
+    $del = $koneksi->query("DELETE FROM tb_absen WHERE id_absen = $id");
+    if ($del) json_out(['status' => 'success', 'msg' => 'Data absensi berhasil dihapus']);
+    json_out(['status' => 'error', 'msg' => 'Gagal menghapus absensi: ' . $koneksi->error]);
+}
 
-        echo json_encode(['status' => 'success', 'message' => 'Absen berhasil dihapus']);
-        exit;
-    }
-
-    throw new Exception("Action tidak valid");
-} catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-    exit;
+/* ELSE */
+else {
+    json_out(['status' => 'error', 'msg' => 'Action tidak dikenali']);
 }

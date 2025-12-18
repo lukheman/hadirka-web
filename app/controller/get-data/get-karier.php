@@ -37,7 +37,6 @@ while ($r = $q->fetch_assoc()) { ?>
 
         <!-- Gaji Pokok -->
         <td><?= rupiah($r['gaji_pokok']) ?></td>
-
         <!-- OT -->
         <td><?= rupiah($r['ot_pertama']) ?></td>
         <td><?= rupiah($r['ot_kedua']) ?></td>
@@ -55,6 +54,7 @@ while ($r = $q->fetch_assoc()) { ?>
 
         <td class="text-center">
             <a href="data-tunjangan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Tunjangan</a>
+            <a href="data-potongan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Tanggungan</a>
 
             <button class="btn btn-primary btn-sm btnEditKarier"
                 data-id="<?= $r['id_karier'] ?>"

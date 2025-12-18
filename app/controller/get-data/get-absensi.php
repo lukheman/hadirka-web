@@ -1,161 +1,207 @@
 <?php
-require '../../config/koneksi.php';
+// path ini menyesuaikan struktur projectmu.
+// Jika file ini berada di app/controller/get-data/get-absensi.php, gunakan '../../../config/koneksi.php'
+require '../../config/koneksi.php'; // <-- ubah jika perlu
+// require '../../../config/function.php'; // jika perlu helper tambahan
 
-$tgl_a = $_GET['tgl_a'] ?? date('Y-m-01');
-$tgl_b = $_GET['tgl_b'] ?? date('Y-m-d');
+// Terima via POST
+$tgl_a  = $_POST['tgl_a']  ?? '';
+$tgl_b  = $_POST['tgl_b']  ?? '';
+$site   = $_POST['site']   ?? '';
+$jabatan= $_POST['jabatan']?? '';
 
-function dateRange($start, $end)
-{
+// Validasi minimal
+if (!$tgl_a || !$tgl_b || !$site) {
+    // echo "<tr><td colspan='15' class='text-center text-danger'>Filter (site / tanggal) tidak lengkap!</td></tr>";
+    exit;
+}
+
+// Helper: buat rentang tanggal (array YYYY-MM-DD)
+function dateRangeArray($start, $end) {
+    $period = new DatePeriod(
+        new DateTime($start),
+        new DateInterval('P1D'),
+        (new DateTime($end))->modify('+1 day')
+    );
     $dates = [];
-    $current = strtotime($start);
-    $endTime = strtotime($end);
-
-    while ($current <= $endTime) {
-        $dates[] = date('Y-m-d', $current);
-        $current = strtotime('+1 day', $current);
-    }
-
+    foreach ($period as $d) $dates[] = $d->format('Y-m-d');
     return $dates;
 }
 
-$allDates = dateRange($tgl_a, $tgl_b);
+$allDates = dateRangeArray($tgl_a, $tgl_b);
 
-/* -------------------------
-    LOAD DATA LIBUR SEKALI
---------------------------*/
-$liburArr = [];
-$liburQ = $koneksi->query("SELECT tgl_awal_libur, tgl_akhir_libur FROM tb_libur");
-while ($l = $liburQ->fetch_assoc()) {
-    $liburArr[] = $l;
+// -------------------------
+// Ambil semua absen di rentang sekaligus
+// -------------------------
+$absenAll = []; // [id_karyawan][tgl] => row
+$sqlAbs = "SELECT id_karyawan, tgl_absen, jam_kerja, ket_absen 
+           FROM tb_absen
+           WHERE tgl_absen BETWEEN '$tgl_a' AND '$tgl_b'";
+$resAbs = mysqli_query($koneksi, $sqlAbs);
+while ($r = mysqli_fetch_assoc($resAbs)) {
+    $id = $r['id_karyawan'];
+    $tgl = $r['tgl_absen'];
+    // Simpan raw values (trim utk safety)
+    $r['jam_kerja'] = trim((string)$r['jam_kerja']);
+    $r['ket_absen']  = isset($r['ket_absen']) ? trim((string)$r['ket_absen']) : '';
+    $absenAll[$id][$tgl] = $r;
 }
 
-function isLibur($tgl, $liburArr)
-{
-    foreach ($liburArr as $l) {
-        if ($tgl >= $l['tgl_awal_libur'] && $tgl <= $l['tgl_akhir_libur']) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/* -------------------------
-    LOAD SEMUA ABSEN SEKALI
---------------------------*/
-$absenAll = [];
-$absenQ = $koneksi->query("SELECT id_karyawan, tgl_absen, jam_kerja, ket_absen FROM tb_absen 
-                          WHERE tgl_absen BETWEEN '$tgl_a' AND '$tgl_b'");
-while ($a = $absenQ->fetch_assoc()) {
-    $absenAll[$a['id_karyawan']][$a['tgl_absen']] = $a;
-}
-
-/* -------------------------
-    LOAD IZIN SAKIT CUTI SEKALI
---------------------------*/
-function loadRange($table, $tgl_a, $tgl_b, $koneksi)
-{
-    $arr = [];
-    $q = $koneksi->query("SELECT id_karyawan, tgl_awal_$table AS awal, 
-                          tgl_akhir_$table AS akhir FROM tb_$table 
-                          WHERE tgl_awal_$table <= '$tgl_b' 
-                          AND tgl_akhir_$table >= '$tgl_a'");
-    while ($r = $q->fetch_assoc()) {
-        $arr[$r['id_karyawan']][] = $r;
-    }
-    return $arr;
-}
-
-$izinAll  = loadRange("izin",  $tgl_a, $tgl_b, $koneksi);
-$sakitAll = loadRange("sakit", $tgl_a, $tgl_b, $koneksi);
-$cutiAll  = loadRange("cuti",  $tgl_a, $tgl_b, $koneksi);
-
-/* -------------------------
-    AMBIL KARYAWAN AKTIF
---------------------------*/
-$site = $_GET['site'] ?? "";
-$jabatan = $_GET['jabatan'] ?? "";
-
-$where = " WHERE 1=1 ";
-if ($site !== "") $where .= " AND kar.id_site='$site'";
-if ($jabatan !== "") $where .= " AND kar.id_jabatan='$jabatan'";
+// -------------------------
+// Ambil karyawan sesuai site/jabatan (aktif berdasarkan tb_karier jika ada)
+// -------------------------
+// Struktur join menyesuaikan DB-mu: beberapa project menyimpan jabatan/dept di tb_karier.
+// Ubah nama kolom join bila berbeda.
+$whereJab = $jabatan ? " AND kar.id_jabatan = '$jabatan' " : "";
 
 $sqlKar = "
-SELECT k.id_karyawan, k.nama_lengkap, 
-       j.nama_jabatan, d.nama_departemen, s.nama_site
+SELECT k.id_karyawan, k.nama_lengkap,
+       COALESCE(d.nama_departemen, '') AS nama_departemen,
+       COALESCE(j.nama_jabatan, '') AS nama_jabatan,
+       COALESCE(s.nama_site, '') AS nama_site,
+       kar.tgl_mulai, kar.tgl_selesai,
+       kar.ot_pertama, kar.ot_kedua, kar.pot_izin, kar.pot_mangkir
 FROM tb_karyawan k
-LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan 
+LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan
 LEFT JOIN tb_jabatan j ON j.id_jabatan = kar.id_jabatan
 LEFT JOIN tb_departemen d ON d.id_departemen = kar.id_departemen
 LEFT JOIN tb_site s ON s.id_site = kar.id_site
-$where
+WHERE kar.id_site = '$site'
+$whereJab
+GROUP BY k.id_karyawan
+ORDER BY k.nama_lengkap ASC
 ";
-$karyawanQ = $koneksi->query($sqlKar);
+
+$qKar = mysqli_query($koneksi, $sqlKar);
+if (!$qKar) {
+    echo "<tr><td colspan='15' class='text-center text-danger'>Query karyawan error: " . mysqli_error($koneksi) . "</td></tr>";
+    exit;
+}
 
 $no = 1;
+while ($k = mysqli_fetch_assoc($qKar)) {
+    $idk = $k['id_karyawan'];
 
-while ($k = $karyawanQ->fetch_assoc()) {
+    // Inisialisasi counters
+    $hadir = 0;
+    $ot1 = 0;
+    $ot2 = 0;
+    $spl = 0;
+    $ot1_spl = 0;
+    $ot2_spl = 0;
+    $mangkir = 0;
+    $izin = 0;
+    $sakit = 0;
+    $cuti = 0;
 
-    $hadir = $ot1 = $ot2 = $spl = $ot1_spl = $ot2_spl = 0;
-    $mangkir = $izin = $sakit = $cuti = 0;
+    // Ambil absensi untuk karyawan ini (jika ada)
+    $absForK = $absenAll[$idk] ?? [];
 
+    // Loop per tanggal
     foreach ($allDates as $tgl) {
+        // Cek apakah ada record absensi
+        if (isset($absForK[$tgl])) {
+            $row = $absForK[$tgl];
+            $jamRaw = strtoupper(trim((string)$row['jam_kerja']));
 
-        $absen = $absenAll[$k['id_karyawan']][$tgl] ?? null;
+            // Jika jam_kerja berupa teks status
+            if (in_array($jamRaw, ['IZIN','SAKIT','CUTI'])) {
+                if ($jamRaw === 'IZIN')  $izin++;
+                if ($jamRaw === 'SAKIT') $sakit++;
+                if ($jamRaw === 'CUTI')  $cuti++;
 
-        $isIzin = isset($izinAll[$k['id_karyawan']]) && array_filter($izinAll[$k['id_karyawan']], fn($iz) => $tgl >= $iz['awal'] && $tgl <= $iz['akhir']);
-        $isSakit = isset($sakitAll[$k['id_karyawan']]) && array_filter($sakitAll[$k['id_karyawan']], fn($sk) => $tgl >= $sk['awal'] && $tgl <= $sk['akhir']);
-        $isCuti = isset($cutiAll[$k['id_karyawan']]) && array_filter($cutiAll[$k['id_karyawan']], fn($ct) => $tgl >= $ct['awal'] && $tgl <= $ct['akhir']);
-
-        if ($absen) {
-            $jk = floatval($absen['jam_kerja']);
-            $ket = strtoupper($absen['ket_absen'] ?? '');
-
-            if ($ket === 'OFF' && $jk == 0) {
-                continue; // tetap OFF
+                // tampilkan sebagai status (tidak hitung hadir/OT)
+                continue;
             }
 
-            if ($ket === 'OFF' && $jk > 0) {
-                // masuk hari OFF → SPL
-                $spl += min($jk, 7);
-                $ot1_spl += ($jk >= 8) ? 1 : 0;
-                $ot2_spl += ($jk >= 9) ? $jk - 8 : 0;
-            } else {
-                // hari normal → hadir & OT
+            // Ket kolom terpisah (ket_absen) juga bisa menyimpan 'OFF' dll — prioritas ke jam_kerja
+            $ket = strtoupper(trim((string)$row['ket_absen']));
+
+            // Jika ket OFF atau jam_kerja == 'OFF'
+            if ($jamRaw === 'OFF' || $ket === 'OFF') {
+                // Jika jam numeric juga disimpan, coba ambil jam numeric jika tersedia di jam_kerja (beberapa DB menyimpan 'OFF' dan jam)
+                // Tapi default: jika OFF tanpa jam -> anggap libur (skip)
+                // Jika jam numeric di kolom jam_kerja (bukan 'OFF'), di-handle di blok numeric di bawah.
+                // Di sini kita cek apakah jam_kerja berisi OFF (string) -> skip
+                if ($jamRaw === 'OFF') {
+                    // nothing to count
+                    continue;
+                }
+            }
+
+            // Jika jam_kerja numeric (string numeric)
+            if (is_numeric($jamRaw)) {
+                $jk = floatval($jamRaw);
+
+                if ($jk == 0) {
+                    // Ada record tapi jam = 0 => mangkir
+                    $mangkir++;
+                    continue;
+                }
+
+                // jika normal day? hitung aturan hari kerja: friday = normal 5 jam else 7
+                $hariNama = strtolower(date('l', strtotime($tgl)));
+                $normal_hours = ($hariNama === 'friday') ? 5 : 7;
+
+                // Hitung hadir (jumlah jam minimal 7/5 per hari - catat sesuai logic awal: hadirs += min(jk,7))
                 $hadir += min($jk, 7);
+
+                // OT1: jika jk >= 8 (artinya lembur level1 hari normal)
                 $ot1 += ($jk >= 8) ? 1 : 0;
-                $ot2 += ($jk >= 9) ? $jk - 8 : 0;
+
+                // OT2: sum of (jk - 8) when jk >= 9 (per logic sebelumnya)
+                $ot2 += ($jk >= 9) ? ($jk - 8) : 0;
+
+                // SPL only applies when day is OFF but someone worked (handled above if OFF had numeric jam)
+                // But if in your DB you store ket_absen = 'OFF' and jam_kerja numeric, handle:
+                if ($jamRaw !== 'OFF' && $ket === 'OFF') {
+                    // case off marked in ket_absen with numeric jam in jam_kerja
+                    $spl += min($jk, 7);
+                    $ot1_spl += ($jk >= 8) ? 1 : 0;
+                    $ot2_spl += ($jk >= 9) ? ($jk - 8) : 0;
+                }
+
+                continue;
             }
-        } else {
-            // Tidak ada absen
-            if (!$isIzin && !$isSakit && !$isCuti) {
+
+            // Jika jam_kerja berisi 'MANGKIR' secara eksplisit
+            if ($jamRaw === 'MANGKIR') {
                 $mangkir++;
+                continue;
             }
+
+            // Jika nilai tidak dikenali -> anggap mangkir
+            $mangkir++;
+            continue;
+        } else {
+            // Tidak ada record absen pada tanggal -> mangkir
+            $mangkir++;
+            continue;
         }
+    } // end foreach dates
 
-        if ($isIzin) $izin++;
-        if ($isSakit) $sakit++;
-        if ($isCuti) $cuti++;
-    }
-
-
+    // Cetak baris tabel sesuai kolom yang kamu mau (15 kolom)
     echo "
-    <tr data-id='{$k['id_karyawan']}'>
+    <tr data-id='{$idk}'>
         <td class='text-center'>{$no}</td>
         <td>{$k['nama_lengkap']}</td>
         <td>{$k['nama_departemen']}</td>
         <td>{$k['nama_jabatan']}</td>
         <td>{$k['nama_site']}</td>
+
         <td class='text-center'>{$hadir}</td>
         <td class='text-center'>{$ot1}</td>
         <td class='text-center'>{$ot2}</td>
         <td class='text-center'>{$spl}</td>
         <td class='text-center'>{$ot1_spl}</td>
         <td class='text-center'>{$ot2_spl}</td>
+
         <td class='text-center'>{$mangkir}</td>
         <td class='text-center'>{$izin}</td>
         <td class='text-center'>{$sakit}</td>
         <td class='text-center'>{$cuti}</td>
-    </tr>";
+    </tr>
+    ";
 
     $no++;
 }

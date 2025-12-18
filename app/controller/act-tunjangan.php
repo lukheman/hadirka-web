@@ -1,13 +1,11 @@
 <?php
 require_once __DIR__ . '/../config/koneksi.php';
-require_once __DIR__ . '/../config/function.php';
 
 $action = $_POST['action'];
 
-// ADD =======================================
+// ADD
 if ($action == "add") {
-
-    $id_karier = decrypt($_POST['id_karier']); // karena GET berisi ID terenkripsi
+    $id_karier = $_POST['id_karier'];
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
 
@@ -18,12 +16,9 @@ if ($action == "add") {
     exit;
 }
 
-// EDIT =======================================
+// EDIT
 if ($action == "edit") {
-
-    // menerima encrypted ID
-    $id = decrypt($_POST['id_tunjangan']);
-
+    $id = $_POST['id_tunjangan'];
     $nama = $_POST['nama_tunjangan'];
     $jumlah = $_POST['jumlah_tunjangan'];
 
@@ -36,10 +31,8 @@ if ($action == "edit") {
     exit;
 }
 
-// DELETE =======================================
+// DELETE
 if ($action == "delete") {
-
-    // menerima ID plain → jangan decrypt
     $id = $_POST['id_tunjangan'];
 
     $q = $koneksi->query("DELETE FROM tb_tunjangan WHERE id_tunjangan='$id'");
@@ -47,5 +40,4 @@ if ($action == "delete") {
     echo json_encode(["status" => $q ? "success" : "error"]);
     exit;
 }
-
 ?>

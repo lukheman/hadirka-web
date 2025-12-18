@@ -215,73 +215,41 @@ for ($i = 2; $i <= count($data); $i++) {
         }
 
         // ================================
-        // 4. JIKA KODE SD / IZIN / CM → MASUK TABEL SAKIT/IZIN/CUTI
+        // 4. JIKA KODE SD / IZIN / CM → MASUK TB_ABSEN (TIDAK KE TABEL IZIN/SAKIT/CUTI)
         // ================================
         if ($nilai !== '') {
 
             $kode = strtoupper($nilai);
-            $table = null;
 
-            // Mapping tabel dan field
-            switch ($kode) {
-                case 'SD':
-                    $table = 'tb_sakit';
-                    $tglField = 'tgl_awal_sakit';
-                    $tglAkhir = 'tgl_akhir_sakit';
-                    $ketField = 'ket_sakit';
-                    break;
-                case 'IZIN':
-                    $table = 'tb_izin';
-                    $tglField = 'tgl_awal_izin';
-                    $tglAkhir = 'tgl_akhir_izin';
-                    $ketField = 'ket_izin';
-                    break;
-                case 'CM':
-                    $table = 'tb_cuti';
-                    $tglField = 'tgl_awal_cuti';
-                    $tglAkhir = 'tgl_akhir_cuti';
-                    $ketField = 'ket_cuti';
-                    break;
-            }
+            // Mapping kode → keterangan
+            $mapKet = [
+                'SD'   => 'SAKIT',
+                'IZIN' => 'IZIN',
+                'CM'   => 'CUTI'
+            ];
 
-            if ($table) {
+            if (isset($mapKet[$kode])) {
 
-                // Hapus absen kalau ada
+                // jam_kerja = ket_absen = keterangan (SAKIT / IZIN / CUTI)
+                $jamKerja = $mapKet[$kode];
+                $ket = $mapKet[$kode];
+
+                // Hapus absen lama jika ada
                 $stmtDel = $koneksi->prepare("DELETE FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
                 $stmtDel->bind_param("is", $id_karyawan, $tgl);
                 $stmtDel->execute();
                 $stmtDel->close();
 
-                // Cek apakah data sakit/izin/cuti sudah ada
-                $stmtCheck = $koneksi->prepare("
-                    SELECT id_karyawan FROM $table 
-                    WHERE id_karyawan=? AND $tglField=? AND $tglAkhir=?
-                ");
-                $stmtCheck->bind_param("iss", $id_karyawan, $tgl, $tgl);
-                $stmtCheck->execute();
-                $stmtCheck->store_result();
+                // Insert absen baru
+                $stmtInsert = $koneksi->prepare("
+            INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen)
+            VALUES (?,?,?,?)
+        ");
+                $stmtInsert->bind_param("isss", $id_karyawan, $tgl, $jamKerja, $ket);
+                $stmtInsert->execute();
+                $stmtInsert->close();
 
-                if ($stmtCheck->num_rows == 0) {
-                    // Insert baru
-                    $stmtInsert = $koneksi->prepare("
-                        INSERT INTO $table (id_karyawan, $tglField, $tglAkhir, $ketField)
-                        VALUES (?,?,?,?)
-                    ");
-                    $stmtInsert->bind_param("isss", $id_karyawan, $tgl, $tgl, $kode);
-                    $stmtInsert->execute();
-                    $stmtInsert->close();
-                } else {
-                    // Update
-                    $stmtUpdate = $koneksi->prepare("
-                        UPDATE $table SET $ketField=? 
-                        WHERE id_karyawan=? AND $tglField=? AND $tglAkhir=?
-                    ");
-                    $stmtUpdate->bind_param("siss", $kode, $id_karyawan, $tgl, $tgl);
-                    $stmtUpdate->execute();
-                    $stmtUpdate->close();
-                }
-
-                $stmtCheck->close();
+                continue;
             }
         }
     }
