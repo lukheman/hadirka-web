@@ -102,10 +102,9 @@
                         </div>
 
                         <div class="col-md-12">
-                            <b class="text-secondary">Gaji Pokok Dan Lemburan</b>
+                            <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
                             <hr>
                         </div>
-
 
                         <!-- OT Pertama -->
                         <div class="col-md-3">
@@ -230,9 +229,10 @@
                         </div>
 
                         <div class="col-md-12">
-                            <b class="text-secondary">Gaji Pokok Dan Lemburan</b>
+                            <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
                             <hr>
                         </div>
+
 
                         <!-- OT -->
                         <div class="col-md-3">

@@ -140,25 +140,39 @@ if (!function_exists('generateSlipGaji')) {
 
         // ================= 4) Get Absen =================
         $absenRows = [];
-        $sqlAbs = "SELECT id_absen, tgl_absen, jam_kerja, ket_absen
-        FROM tb_absen
-        WHERE id_karyawan='$id_karyawan'
-        AND tgl_absen BETWEEN '$startDate' AND '$endDate'
-        ORDER BY tgl_absen ASC";
+        $sqlAbs = "SELECT tgl_absen, jam_kerja, ket_absen
+           FROM tb_absen
+           WHERE id_karyawan='$id_karyawan'
+           AND tgl_absen BETWEEN '$startDate' AND '$endDate'
+           ORDER BY tgl_absen ASC";
         $qabs = mysqli_query($koneksi, $sqlAbs);
-        while ($r = mysqli_fetch_assoc($qabs)) $absenRows[] = $r;
+        while ($r = mysqli_fetch_assoc($qabs)) {
+            $absenRows[$r['tgl_absen']] = $r; // pakai index tanggal
+        }
 
-        // ================= 4b) Overlap days (izin, sakit, cuti) =================
-        $izin_days  = getOverlapDays($koneksi, "tb_izin",  $id_karyawan, $startDate, $endDate, "tgl_awal_izin", "tgl_akhir_izin");
-        $sakit_days = getOverlapDays($koneksi, "tb_sakit", $id_karyawan, $startDate, $endDate, "tgl_awal_sakit", "tgl_akhir_sakit");
-        $cuti_days  = getOverlapDays($koneksi, "tb_cuti",  $id_karyawan, $startDate, $endDate, "tgl_awal_cuti", "tgl_akhir_cuti");
+        // ================= Hitung izin/sakit/cuti langsung dari tb_absen =================
+        $izin_days = 0;
+        $sakit_days = 0;
+        $cuti_days = 0;
+
+        foreach ($absenRows as $r) {
+            $jamRawUpper = strtoupper(trim((string)$r['jam_kerja']));
+
+            if ($jamRawUpper === 'IZIN')  $izin_days++;
+            if ($jamRawUpper === 'SAKIT') $sakit_days++;
+            if ($jamRawUpper === 'CUTI')  $cuti_days++;
+            // NOTE: tidak menghitung OFF/MANGKIR di sini — OFF ditangani per-hari saat loop period
+        }
+
 
         // ================= 5) Hitung Absen =================
         $absenForUI = [];
         $hari_kerja_count = 0;
         $mangkir_count = 0;
+
         $total_lembur = 0;
         $total_overtime = 0;
+
         $total_spl_1_7 = 0;
         $total_spl_8 = 0;
         $total_spl_9_up = 0;
@@ -173,34 +187,22 @@ if (!function_exists('generateSlipGaji')) {
         $total_potongan_perjam = 0;
         $total_jam_kurang = 0;
 
+        $new_count = 0;
+
         $period = new DatePeriod(
             new DateTime($startDate),
             new DateInterval('P1D'),
             (new DateTime($endDate))->modify('+1 day')
         );
 
-        $new_count = 0;
-
         foreach ($period as $date) {
-            $tgl = $date->format('Y-m-d');
-            $found = false;
 
+            $tgl = $date->format('Y-m-d');
             $hariNama = strtolower(date('l', strtotime($tgl)));
             $normal_hours = ($hariNama === 'friday') ? 5 : 7;
 
-            // if ($tgl < $tgl_mulai_karier) {
-            //     $absenForUI[] = [
-            //         'tanggal' => $tgl,
-            //         'jam' => 0,
-            //         'wl' => 0,
-            //         'ot' => 0,
-            //         'ket' => 'NEW'
-            //     ];
-            //     $new_count++;
-            //     continue;
-            // }
-            $hariNama = strtolower(date('l', strtotime($tgl)));
-            if ($tgl < $tgl_mulai_karier && $hariNama !== 'sunday') {
+            // ================= NEW =================
+            if ($tgl < $tgl_mulai_karier) {
                 $absenForUI[] = [
                     'tanggal' => $tgl,
                     'jam' => 0,
@@ -212,120 +214,134 @@ if (!function_exists('generateSlipGaji')) {
                 continue;
             }
 
-            foreach ($absenRows as $a) {
-                if ($a['tgl_absen'] == $tgl) {
-                    $found = true;
-                    $jam = floatval($a['jam_kerja']);
-                    $ket = strtoupper($a['ket_absen']);
+            // ================= ADA DATA ABSEN =================
+            if (isset($absenRows[$tgl])) {
 
-                    // ===== LOGIKA SPL/WL/OVERTIME =====
-                    if ($ket === 'OFF') {
-                        // untuk OFF hitung SPL (sama seperti semula)
-                        if ($hariNama === 'friday') {
-                            $h1_5 = min(5, $jam);
-                            $h6   = ($jam > 5 ? 1 : 0);
-                            $h7up = max(0, $jam - 6);
+                $ketAbsen = strtoupper(trim((string)$absenRows[$tgl]['ket_absen']));
+                $jamRaw   = trim((string)$absenRows[$tgl]['jam_kerja']);
+                $jam      = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
 
-                            $total_spl_1_7 += $h1_5 * floatval($karier['spl']);
-                            $total_spl_8   += $h6 * floatval($karier['ot1_spl']);
-                            $total_spl_9_up += $h7up * floatval($karier['ot2_spl']);
-
-                            $total_jam_spl_1_7 += $h1_5;
-                            $total_jam_spl_8   += $h6;
-                            $total_jam_spl_9_up += $h7up;
-                        } else {
-                            $h1_7 = min(7, $jam);
-                            $h8   = ($jam > 7 ? 1 : 0);
-                            $h9up = max(0, $jam - 8);
-
-                            $total_spl_1_7 += $h1_7 * floatval($karier['spl']);
-                            $total_spl_8   += $h8 * floatval($karier['ot1_spl']);
-                            $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
-
-                            $total_jam_spl_1_7 += $h1_7;
-                            $total_jam_spl_8   += $h8;
-                            $total_jam_spl_9_up += $h9up;
-                        }
-
-                        $wl = 0;
-                        $ot = 0;
-                    } else {
-                        // WL maksimal 1 jam, sisanya Overtime
-                        if ($hariNama === 'friday') {
-                            $wl = min(1, max(0, $jam - 5));
-                            $ot = max(0, $jam - 5 - $wl);
-                        } else {
-                            $wl = min(1, max(0, $jam - 7));
-                            $ot = max(0, $jam - 7 - $wl);
-                        }
-
-                        $total_lembur += $wl * floatval($karier['ot_pertama']);
-                        $total_overtime += $ot * floatval($karier['ot_kedua']);
-                        $total_jam_wl += $wl;
-                        $total_jam_ot += $ot;
-
-                        // Potongan per jam (pot_izin tersedia di tb_karier)
-                        if ($jam < $normal_hours && $jam > 0) {
-                            $kurang = $normal_hours - $jam;
-                            $total_jam_kurang += $kurang;
-                            // bagi  normal_hours untuk membagi proporsional
-                            $total_potongan_perjam += $kurang * ($karier['pot_izin'] / $normal_hours);
-                        }
-                    }
-
-                    $absenForUI[] = [
-                        'tanggal' => $tgl,
-                        'jam' => $jam,
-                        'wl' => isset($wl) ? $wl : 0,
-                        'ot' => isset($ot) ? $ot : 0,
-                        'ket' => $ket
-                    ];
-
-                    if ($ket !== 'OFF' && $ket !== 'IZIN' && $ket !== 'SAKIT' && $ket !== 'CUTI' && $ket !== 'MANGKIR') {
-                        $hari_kerja_count++;
-                    }
-                    break;
-                }
-            }
-
-            if ($found) continue;
-
-            // Cek izin, sakit, cuti
-            $types = [
-                ['table' => 'tb_izin',  'start' => 'tgl_awal_izin', 'end' => 'tgl_akhir_izin', 'ket' => 'IZIN'],
-                ['table' => 'tb_sakit', 'start' => 'tgl_awal_sakit', 'end' => 'tgl_akhir_sakit', 'ket' => 'SAKIT'],
-                ['table' => 'tb_cuti',  'start' => 'tgl_awal_cuti', 'end' => 'tgl_akhir_cuti', 'ket' => 'CUTI'],
-            ];
-
-            foreach ($types as $t) {
-                $sql = "SELECT 1 FROM {$t['table']} 
-                    WHERE id_karyawan='$id_karyawan' 
-                    AND '$tgl' BETWEEN {$t['start']} AND {$t['end']} LIMIT 1";
-                $q = mysqli_query($koneksi, $sql);
-                if (mysqli_num_rows($q) > 0) {
-                    $found = true;
+                // ===== IZIN / SAKIT / CUTI =====
+                if (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'])) {
                     $absenForUI[] = [
                         'tanggal' => $tgl,
                         'jam' => 0,
                         'wl' => 0,
                         'ot' => 0,
-                        'ket' => $t['ket']
+                        'ket' => $ketAbsen
                     ];
-                    break;
+                    continue;
+                }
+
+                // ===== OFF MURNI =====
+                if ($ketAbsen === 'OFF' && $jam == 0) {
+                    $absenForUI[] = [
+                        'tanggal' => $tgl,
+                        'jam' => 0,
+                        'wl' => 0,
+                        'ot' => 0,
+                        'ket' => 'OFF'
+                    ];
+                    continue;
+                }
+
+                // ===== SPL =====
+                if (
+                    $jam > 0 &&
+                    (
+                        strpos($ketAbsen, 'OFF') !== false ||
+                        strpos($ketAbsen, 'SPL') !== false ||
+                        strpos($ketAbsen, 'LEMBUR') !== false
+                    )
+                ) {
+
+                    if ($hariNama === 'friday') {
+                        $h1_5 = min(5, $jam);
+                        $h6   = ($jam > 5 ? 1 : 0);
+                        $h7up = max(0, $jam - 6);
+
+                        $total_spl_1_7  += $h1_5 * floatval($karier['spl']);
+                        $total_spl_8    += $h6   * floatval($karier['ot1_spl']);
+                        $total_spl_9_up += $h7up * floatval($karier['ot2_spl']);
+
+                        $total_jam_spl_1_7  += $h1_5;
+                        $total_jam_spl_8    += $h6;
+                        $total_jam_spl_9_up += $h7up;
+                    } else {
+                        $h1_7 = min(7, $jam);
+                        $h8   = ($jam > 7 ? 1 : 0);
+                        $h9up = max(0, $jam - 8);
+
+                        $total_spl_1_7  += $h1_7 * floatval($karier['spl']);
+                        $total_spl_8    += $h8   * floatval($karier['ot1_spl']);
+                        $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
+
+                        $total_jam_spl_1_7  += $h1_7;
+                        $total_jam_spl_8    += $h8;
+                        $total_jam_spl_9_up += $h9up;
+                    }
+
+                    $absenForUI[] = [
+                        'tanggal' => $tgl,
+                        'jam' => $jam,
+                        'wl' => 0,
+                        'ot' => 0,
+                        'ket' => 'SPL'
+                    ];
+                    continue;
+                }
+
+                // ===== HADIR =====
+                if ($jam > 0) {
+
+                    $wl = 0;
+                    $ot = 0;
+
+                    if ($hariNama === 'friday') {
+                        $wl = min(1, max(0, $jam - 5));
+                        $ot = max(0, $jam - 5 - $wl);
+                    } else {
+                        $wl = min(1, max(0, $jam - 7));
+                        $ot = max(0, $jam - 7 - $wl);
+                    }
+
+                    $total_lembur += $wl * $karier['ot_pertama'];
+                    $total_overtime += $ot * $karier['ot_kedua'];
+                    $total_jam_wl += $wl;
+                    $total_jam_ot += $ot;
+
+                    if ($jam < $normal_hours) {
+                        $kurang = $normal_hours - $jam;
+                        $total_jam_kurang += $kurang;
+                        $total_potongan_perjam += $kurang * ($karier['pot_izin'] / $normal_hours);
+                    }
+
+                    $hari_kerja_count++;
+
+                    $absenForUI[] = [
+                        'tanggal' => $tgl,
+                        'jam' => $jam,
+                        'wl' => $wl,
+                        'ot' => $ot,
+                        'ket' => 'HADIR'
+                    ];
+                    continue;
                 }
             }
 
-            if (!$found) {
-                $mangkir_count++;
-                $absenForUI[] = [
-                    'tanggal' => $tgl,
-                    'jam' => 0,
-                    'wl' => 0,
-                    'ot' => 0,
-                    'ket' => 'MANGKIR'
-                ];
-            }
+            // ================= TIDAK ADA DATA =================
+            $mangkir_count++;
+
+            $absenForUI[] = [
+                'tanggal' => $tgl,
+                'jam' => 0,
+                'wl' => 0,
+                'ot' => 0,
+                'ket' => 'MANGKIR'
+            ];
         }
+
+
 
         // ================= Hitung total pendapatan & potongan =================
         $basic = floatval($karier['gaji_pokok']);
@@ -349,8 +365,7 @@ if (!function_exists('generateSlipGaji')) {
         // PKWT potongan untuk hari NEW
         $total_potongan_pkwt = 0;
         if ($new_count > 0) {
-            $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $new_count;
-            // $total_potongan_pkwt = ($basic / 25) * $new_count;
+            $total_potongan_pkwt = ($basic / 25) * $new_count;
         }
 
         $total_potongan =
@@ -364,12 +379,12 @@ if (!function_exists('generateSlipGaji')) {
         $total_tunjangan = $total_tunjangan ?? 0;
 
         // ===== Perhitungan kelebihan hari kerja (jika hari kerja > 25) =====
-        // $kelebihan_hari = 0;
-        // $pendapatan_kelebihan_hari = 0;
-        // if ($hari_kerja_count > 25) {
-        //     $kelebihan_hari = $hari_kerja_count - 25;
-        //     $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
-        // }
+        $kelebihan_hari = 0;
+        $pendapatan_kelebihan_hari = 0;
+        if ($hari_kerja_count > 25) {
+            $kelebihan_hari = $hari_kerja_count - 25;
+            $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
+        }
 
         // ================= Hitung total pendapatan =================
         $total_pendapatan =
@@ -380,8 +395,8 @@ if (!function_exists('generateSlipGaji')) {
             $total_spl_1_7 +
             $total_spl_8 +
             $total_spl_9_up +
-            $total_rapel;
-        // $pendapatan_kelebihan_hari;
+            $total_rapel +
+            $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
@@ -395,8 +410,8 @@ if (!function_exists('generateSlipGaji')) {
             'rapel' => $rapelRows,
             'total_rapel' => $total_rapel,
 
-            // 'kelebihan_hari' => $kelebihan_hari,
-            // 'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
+            'kelebihan_hari' => $kelebihan_hari,
+            'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
 
             'basic' => $basic,
             // keep legacy keys but values are moved into tunjangan list

@@ -237,9 +237,9 @@ require_once 'app/controller/read.php';
 
 <div class="sheet" id="slip">
     <div class="header">
-        <img class="logo" id="logoImg" src="assets/img/logo/kpp-logo.jpg" alt="logo">
+        <img class="logo" id="logoImg" src="assets/img/logo/tjs-nobg.jpg" alt="logo">
         <div class="company">
-            <h1>PT. KARYA PUTRA POMALAA</h1>
+            <h1>PT. TRIPUTRA JAYA SULTRA</h1>
             <p>JL. BUNGA KAMBOJA NO. 8 PELAMBUA • TLP/WA 0852-9840-0028</p>
             <p>POMALAA, KABUPATEN KOLAKA</p>
         </div>

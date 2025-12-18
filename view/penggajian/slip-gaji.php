@@ -386,9 +386,9 @@
 
     <div class="slip-container" id="slip">
         <div class="header">
-            <img src="assets/img/logo/kpp-logo.jpg" alt="Logo Perusahaan" class="logo">
+            <img src="assets/img/logo/tjs-nobg.jpg" alt="Logo Perusahaan" class="logo">
             <div>
-                <h2>PT. KARYA PUTRA POMALAA</h2>
+                <h2>PT. TRIPUTRA JAYA SULTRA</h2>
                 <h3>SLIP GAJI</h3>
             </div>
         </div>
@@ -400,7 +400,7 @@
         <div class="employee-info">
             <div>
                 <label>NIK:</label>
-                <span id="nikDisplay">KPP-0058</span>
+                <span id="nikDisplay">TJS-0058</span>
             </div>
             <div>
                 <label>JABATAN:</label>

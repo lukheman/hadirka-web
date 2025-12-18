@@ -1,5 +1,5 @@
 <?php
-// include 'app/config/auth.php';
+include 'app/config/auth.php';
 require_once 'app/config/koneksi.php';
 require_once 'app/controller/read.php';
 $queris = array();
@@ -21,7 +21,7 @@ error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
     <meta name="description" content="" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="assets/img/favicon/favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="assets/img/logo/tjs-nobg.png" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -292,7 +292,7 @@ error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
                                         <div class="dropdown-divider"></div>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="auth-login-basic.html">
+                                        <a class="dropdown-item" href="logout">
                                             <i class="bx bx-power-off me-2"></i>
                                             <span class="align-middle">Log Out</span>
                                         </a>
@@ -350,17 +350,11 @@ error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
                         // END DATA MASTER 
 
                         // START DATA KEHADIRAN 
-                        case 'data-absensi':
-                            include 'view/kehadiran/data-absensi.php';
+                        case 'rekapan-absensi':
+                            include 'view/kehadiran/rekapan-absensi.php';
                             break;
-                        case 'data-izin':
-                            include 'view/kehadiran/data-izin.php';
-                            break;
-                        case 'data-sakit':
-                            include 'view/kehadiran/data-sakit.php';
-                            break;
-                        case 'data-libur':
-                            include 'view/kehadiran/data-libur.php';
+                        case 'dayli-absen':
+                            include 'view/kehadiran/dayli-absen.php';
                             break;
                         // END DATA KEHADIRAN
 
@@ -383,6 +377,13 @@ error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
                             include 'view/data-kandidat.php';
                             break;
 
+
+                        case 'data-users-login':
+                            include 'view/users.php';
+                            break;
+                        case 'logout':
+                            include 'app/controller/logout.php';
+                            break;
                         default:
                             include 'view/home.php';
                             break;

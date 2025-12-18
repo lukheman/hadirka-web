@@ -35,6 +35,10 @@
 
                     <!-- BUTTONS -->
                     <div>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#ModalAdd">
+                            <i class="fa fa-plus"></i> Tambah Karyawan
+                        </button>
+
                         <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#ModalImport" data-bs-toggle="tooltip" title="Klik untuk mengimpor data karyawan dari file Excel">
                             <i class="fa fa-upload"></i> Import Data
                         </button>
@@ -42,12 +46,19 @@
 
                     <!-- FILTER AJAX -->
                     <div class="d-flex align-items-center gap-2" style="max-width: 520px;">
-                        <select id="filterSite" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site">
-                            <option value="">-- Pilih Site --</option>
-                            <?php foreach (data_site() as $d) {
-                                echo "<option value='" . htmlspecialchars($d['id_site']) . "'>" . htmlspecialchars($d['nama_site']) . "</option>";
-                            } ?>
-                        </select>
+                        <?php
+                        if ($_SESSION['site'] == 0) { ?>
+                            <select id="filterSite" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site">
+                                <option value="">-- Pilih Site --</option>
+                                <?php foreach (data_site() as $d) { ?>
+                                    <option value="<?= htmlspecialchars($d['id_site']) ?>"><?= htmlspecialchars($d['nama_site']) ?></option>
+                                <?php } ?>
+                            </select>
+                        <?php } else { ?>
+                            <input id="filterSite" type="hidden" class="form-control-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site" value="<?= $_SESSION['site'] ?>">
+                        <?php
+                        }
+                        ?>
 
                         <select id="filterJabatan" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan jabatan">
                             <option value="">-- Semua Jabatan --</option>
@@ -134,66 +145,318 @@
         </div>
     </div>
 
+    <!-- MODAL TAMBAH -->
+    <div class="modal fade" id="modalTambahKaryawan" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Tambah Karyawan</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <form id="formTambahKaryawan" enctype="multipart/form-data">
+                    <div class="modal-body">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Nama Lengkap</label>
+                                <input type="text" class="form-control" name="nama_lengkap" required>
+
+                                <label class="form-label mt-3">Jenis Kelamin</label>
+                                <select class="form-control" name="jenis_kelamin">
+                                    <option value="L">Laki-laki</option>
+                                    <option value="P">Perempuan</option>
+                                </select>
+
+                                <label class="form-label mt-3">Agama</label>
+                                <input type="text" class="form-control" name="agama">
+
+                                <label class="form-label mt-3">Tempat Lahir</label>
+                                <input type="text" class="form-control" name="tempat_lahir">
+
+                                <label class="form-label mt-3">Tanggal Lahir</label>
+                                <input type="date" class="form-control" name="tgl_lahir">
+
+                                <label class="form-label mt-3">No. Telp</label>
+                                <input type="text" class="form-control" name="no_telp">
+
+                                <label class="form-label mt-3">Email Pribadi</label>
+                                <input type="email" class="form-control" name="email_pribadi">
+
+                                <label class="form-label mt-3">Nationality</label>
+                                <input type="text" class="form-control" name="nationality">
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">NIK (KTP)</label>
+                                <input type="text" class="form-control" name="nik_ktp">
+
+                                <label class="form-label mt-3">No. KK</label>
+                                <input type="text" class="form-control" name="kk_number">
+
+                                <label class="form-label mt-3">NPWP</label>
+                                <input type="text" class="form-control" name="npwp">
+
+                                <label class="form-label mt-3">BPJS TK</label>
+                                <input type="text" class="form-control" name="bpjs_tk">
+
+                                <label class="form-label mt-3">BPJS KES</label>
+                                <input type="text" class="form-control" name="bpjs_kes">
+
+                                <label class="form-label mt-3">Status Pernikahan</label>
+                                <select class="form-control" name="status_pernikahan">
+                                    <option value="">-- Pilih --</option>
+                                    <option>Kawin</option>
+                                    <option>Belum Kawin</option>
+                                </select>
+
+                                <label class="form-label mt-3">Nama Ibu Kandung</label>
+                                <input type="text" class="form-control" name="nama_ibu">
+                            </div>
+                        </div>
+
+                        <!-- Alamat -->
+                        <hr>
+                        <h6>Alamat KTP</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Alamat</label>
+                                <textarea class="form-control" name="alamat_ktp"></textarea>
+
+                                <label class="form-label mt-3">Provinsi</label>
+                                <input type="text" class="form-control" name="provinsi">
+
+                                <label class="form-label mt-3">Kabupaten/Kota</label>
+                                <input type="text" class="form-control" name="kabupaten">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Kecamatan</label>
+                                <input type="text" class="form-control" name="kecamatan">
+
+                                <label class="form-label mt-3">Desa</label>
+                                <input type="text" class="form-control" name="desa">
+
+                                <label class="form-label mt-3">RT/RW</label>
+                                <input type="text" class="form-control" name="rt_rw">
+                            </div>
+                        </div>
+
+                        <!-- Pendidikan -->
+                        <hr>
+                        <h6>Pendidikan</h6>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Pendidikan Terakhir</label>
+                                <input type="text" class="form-control" name="last_education">
+
+                                <label class="form-label mt-3">Jurusan</label>
+                                <input type="text" class="form-control" name="major">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tingkat Pendidikan</label>
+                                <input type="text" class="form-control" name="education_level">
+                            </div>
+                        </div>
+
+                        <!-- Karier -->
+                        <hr>
+                        <h6>Penempatan Kerja</h6>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Site</label>
+                                <select class="form-control" name="id_site" id="siteSelectAdd">
+                                    <option value="">-- Pilih Site --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Jabatan</label>
+                                <select class="form-control" name="id_jabatan" id="jabatanSelectAdd">
+                                    <option value="">-- Pilih Jabatan --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label">Tanggal Kontrak Selesai</label>
+                            <input type="date" class="form-control" name="tgl_selesai">
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+
 
     <div class="modal fade" id="ModalEdit" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form id="formEdit" class="modal-content">
+
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title"><i class="fa fa-edit"></i> Edit Data Karyawan</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
-                <div class="modal-body row g-3">
+                <div class="modal-body">
 
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="id_karyawan" id="edit_id_karyawan">
 
-                    <div class="col-md-6">
-                        <label>NIK Karyawan</label>
-                        <input type="text" class="form-control" name="nik_karyawan" id="edit_nik_karyawan" required>
+                    <h6 class="mt-1">Data Pribadi</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+
+                            <label>Nama Lengkap</label>
+                            <input type="text" class="form-control" name="nama_lengkap" id="edit_nama_lengkap" required>
+
+                            <label class="mt-3">Jenis Kelamin</label>
+                            <select class="form-control" name="jenis_kelamin" id="edit_jenis_kelamin">
+                                <option value="L">Laki-laki</option>
+                                <option value="P">Perempuan</option>
+                            </select>
+
+                            <label class="mt-3">Agama</label>
+                            <input type="text" id="edit_agama" name="agama" class="form-control">
+
+                            <label class="mt-3">Tempat Lahir</label>
+                            <input type="text" id="edit_tempat_lahir" name="tempat_lahir" class="form-control">
+
+                            <label class="mt-3">Tanggal Lahir</label>
+                            <input type="date" id="edit_tgl_lahir" name="tgl_lahir" class="form-control">
+
+                            <label class="mt-3">Status Pernikahan</label>
+                            <select id="edit_status_pernikahan" name="status_pernikahan" class="form-control">
+                                <option value="">-- Pilih --</option>
+                                <option value="Kawin">Kawin</option>
+                                <option value="Belum Kawin">Belum Kawin</option>
+                            </select>
+
+                            <label class="mt-3">Nama Ibu Kandung</label>
+                            <input type="text" id="edit_nama_ibu" name="nama_ibu" class="form-control">
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label>NIK (KTP)</label>
+                            <input type="text" id="edit_nik_ktp" name="nik_ktp" class="form-control">
+
+                            <label class="mt-3">No. KK</label>
+                            <input type="text" id="edit_kk_number" name="kk_number" class="form-control">
+
+                            <label class="mt-3">NPWP</label>
+                            <input type="text" id="edit_npwp" name="npwp" class="form-control">
+
+                            <label class="mt-3">BPJS TK</label>
+                            <input type="text" id="edit_bpjs_tk" name="bpjs_tk" class="form-control">
+
+                            <label class="mt-3">BPJS Kesehatan</label>
+                            <input type="text" id="edit_bpjs_kes" name="bpjs_kes" class="form-control">
+
+                            <label class="mt-3">Email Pribadi</label>
+                            <input type="email" id="edit_email_pribadi" name="email_pribadi" class="form-control">
+
+                            <label class="mt-3">No Telp</label>
+                            <input type="text" id="edit_no_telp" name="no_telp" class="form-control">
+                        </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label>Nama Lengkap</label>
-                        <input type="text" class="form-control" name="nama_lengkap" id="edit_nama_lengkap" required>
+                    <hr>
+                    <h6>Alamat KTP</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Alamat</label>
+                            <textarea id="edit_alamat_ktp" name="alamat_ktp" class="form-control"></textarea>
+
+                            <label class="mt-3">Provinsi</label>
+                            <input type="text" id="edit_provinsi" name="provinsi" class="form-control">
+
+                            <label class="mt-3">Kabupaten/Kota</label>
+                            <input type="text" id="edit_kabupaten" name="kabupaten" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Kecamatan</label>
+                            <input type="text" id="edit_kecamatan" name="kecamatan" class="form-control">
+
+                            <label class="mt-3">Desa</label>
+                            <input type="text" id="edit_desa" name="desa" class="form-control">
+
+                            <label class="mt-3">RT / RW</label>
+                            <input type="text" id="edit_rt_rw" name="rt_rw" class="form-control">
+                        </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label>Jenis Kelamin</label>
-                        <select class="form-select" name="jenis_kelamin" id="edit_jenis_kelamin">
-                            <option value="L">Laki-laki</option>
-                            <option value="P">Perempuan</option>
-                        </select>
+                    <hr>
+                    <h6>Pendidikan</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Pendidikan Terakhir</label>
+                            <input type="text" id="edit_last_education" name="last_education" class="form-control">
+
+                            <label class="mt-3">Jurusan</label>
+                            <input type="text" id="edit_major" name="major" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Tingkat Pendidikan</label>
+                            <input type="text" id="edit_education_level" name="education_level" class="form-control">
+                        </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label>Tanggal Lahir</label>
-                        <input type="date" class="form-control" name="tgl_lahir" id="edit_tgl_lahir">
+                    <hr>
+                    <h6>Penempatan Kerja</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Site</label>
+                            <select id="edit_id_site" name="id_site" class="form-control">
+                                <option value="">-- Pilih Site --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Jabatan</label>
+                            <select id="edit_id_jabatan" name="id_jabatan" class="form-control">
+                                <option value="">-- Pilih Jabatan --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <label>Tanggal Kontrak Selesai</label>
+                            <input type="date" id="edit_tgl_selesai" name="tgl_selesai" class="form-control">
+                        </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label>Email</label>
-                        <input type="email" class="form-control" name="email_pribadi" id="edit_email_pribadi">
-                    </div>
-
-                    <div class="col-md-6">
-                        <label>No Telp</label>
-                        <input type="text" class="form-control" name="no_telp" id="edit_no_telp">
-                    </div>
                 </div>
 
                 <div class="modal-footer">
                     <button class="btn btn-primary" type="submit">
-                        <i class="fa fa-save"></i> Perbarui
+                        <i class="fa fa-save"></i> Simpan Perubahan
                     </button>
                 </div>
+
             </form>
         </div>
     </div>
 
-
     <!-- JS: jQuery, Bootstrap, DataTables, Toastr -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <script>
         // format child detail (HTML) dari row.data().detail
         function formatDetail(detailHtml) {
@@ -368,6 +631,33 @@
     </script>
 
     <script>
+        $("#formAdd").on("submit", function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: "karyawan_action.php",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function(res) {
+                    try {
+                        let json = JSON.parse(res);
+
+                        if (json.status === "ok") {
+                            $("#ModalAdd").modal("hide");
+                            tableKaryawan.ajax.reload(null, false);
+                            showToast("Data karyawan berhasil ditambahkan!");
+                        } else {
+                            showToast("Gagal menambahkan data!", "danger");
+                        }
+
+                    } catch (e) {
+                        alert("Invalid response!");
+                    }
+                }
+            });
+        });
+
+
         // OPEN MODAL EDIT
         $(document).on("click", ".btnEdit", function() {
             let id = $(this).data("id");
@@ -381,23 +671,53 @@
                 },
                 dataType: "json",
                 success: function(res) {
-                    if (res.status === "ok") {
-                        // isi form
-                        $("#edit_id_karyawan").val(res.data.id_karyawan);
-                        $("#edit_nik_karyawan").val(res.data.nik_karyawan);
-                        $("#edit_nama_lengkap").val(res.data.nama_lengkap);
-                        $("#edit_jenis_kelamin").val(res.data.jenis_kelamin);
-                        $("#edit_tgl_lahir").val(res.data.tgl_lahir);
-                        $("#edit_email_pribadi").val(res.data.email_pribadi);
-                        $("#edit_no_telp").val(res.data.no_telp);
 
-                        $("#ModalEdit").modal("show");
-                    } else {
+                    if (res.status !== "ok") {
                         alert("Data tidak ditemukan!");
+                        return;
                     }
+
+                    let d = res.data;
+
+                    // isi semua field edit
+                    $("#edit_id_karyawan").val(d.id_karyawan);
+                    $("#edit_nama_lengkap").val(d.nama_lengkap);
+                    $("#edit_jenis_kelamin").val(d.jenis_kelamin);
+                    $("#edit_agama").val(d.agama);
+                    $("#edit_tempat_lahir").val(d.tempat_lahir);
+                    $("#edit_tgl_lahir").val(d.tgl_lahir);
+                    $("#edit_status_pernikahan").val(d.status_pernikahan);
+                    $("#edit_nama_ibu").val(d.nama_ibu);
+
+                    $("#edit_nik_ktp").val(d.nik_ktp);
+                    $("#edit_kk_number").val(d.kk_number);
+                    $("#edit_npwp").val(d.npwp);
+                    $("#edit_bpjs_tk").val(d.bpjs_tk);
+                    $("#edit_bpjs_kes").val(d.bpjs_kes);
+
+                    $("#edit_email_pribadi").val(d.email_pribadi);
+                    $("#edit_no_telp").val(d.no_telp);
+
+                    $("#edit_alamat_ktp").val(d.alamat_ktp);
+                    $("#edit_provinsi").val(d.provinsi);
+                    $("#edit_kabupaten").val(d.kabupaten);
+                    $("#edit_kecamatan").val(d.kecamatan);
+                    $("#edit_desa").val(d.desa);
+                    $("#edit_rt_rw").val(d.rt_rw);
+
+                    $("#edit_last_education").val(d.last_education);
+                    $("#edit_major").val(d.major);
+                    $("#edit_education_level").val(d.education_level);
+
+                    $("#edit_id_site").val(d.id_site);
+                    $("#edit_id_jabatan").val(d.id_jabatan);
+                    $("#edit_tgl_selesai").val(d.tgl_selesai);
+
+                    $("#ModalEdit").modal("show");
                 }
             });
         });
+
 
 
         $("#formEdit").on("submit", function(e) {
