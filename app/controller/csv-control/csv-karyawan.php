@@ -17,10 +17,10 @@ function getId($koneksi, $table, $nama_field, $nama_value, $id_field)
     $nama_value = mysqli_real_escape_string($koneksi, strtolower(trim($nama_value)));
     $nama_field_escaped = mysqli_real_escape_string($koneksi, $nama_field);
     $id_field_escaped = mysqli_real_escape_string($koneksi, $id_field);
-
+    
     $query = "SELECT $id_field_escaped FROM $table WHERE LOWER(TRIM($nama_field_escaped))='$nama_value'";
     $result = $koneksi->query($query);
-
+    
     return $result && $result->num_rows > 0 ? $result->fetch_assoc()[$id_field] : null;
 }
 
@@ -30,7 +30,7 @@ function getId($koneksi, $table, $nama_field, $nama_value, $id_field)
 function tglAkhir3Bulan($tgl_mulai)
 {
     if (empty($tgl_mulai)) return null;
-
+    
     return date('Y-m-d', strtotime("+3 months", strtotime($tgl_mulai)));
 }
 
@@ -45,25 +45,15 @@ function escapeString($koneksi, $value)
 /**
  * Format tanggal dari Excel
  */
-
-use PhpOffice\PhpSpreadsheet\Shared\Date;
-
 function formatTanggal($value)
 {
-    if ($value === null || $value === '') return null;
-
-    // Jika numeric (serial date Excel)
-    if (is_numeric($value)) {
-        try {
-            return Date::excelToDateTimeObject($value)->format('Y-m-d');
-        } catch (Exception $e) {
-            return null;
-        }
+    if (empty($value)) return null;
+    
+    try {
+        return date('Y-m-d', strtotime($value));
+    } catch (Exception $e) {
+        return null;
     }
-
-    // Jika string tanggal biasa
-    $ts = strtotime($value);
-    return $ts ? date('Y-m-d', $ts) : null;
 }
 
 // Response awal
@@ -118,13 +108,13 @@ try {
             $tgl_masuk_site = formatTanggal($row['H'] ?? '');
             $tgl_join_ipip  = formatTanggal($row['I'] ?? '');
             $tgl_akhir      = tglAkhir3Bulan($tgl_masuk_site);
-
+            
             // Data pribadi
             $tempat_lahir  = escapeString($koneksi, $row['J'] ?? '');
             $tgl_lahir      = formatTanggal($row['K'] ?? '');
             $nationality   = escapeString($koneksi, $row['L'] ?? '');
             $agama         = escapeString($koneksi, $row['M'] ?? '');
-
+            
             // Pendidikan - disesuaikan dengan kolom database
             $education_level  = escapeString($koneksi, $row['N'] ?? ''); // Jenjang pendidikan (jika ada di Excel)
             $last_education   = escapeString($koneksi, $row['O'] ?? ''); // Pendidikan terakhir
@@ -134,7 +124,7 @@ try {
             $atas_nama_rek = escapeString($koneksi, $row['Q'] ?? '');
             $no_rek        = escapeString($koneksi, $row['R'] ?? '');
             $nama_bank     = escapeString($koneksi, $row['S'] ?? '');
-
+            
             $nama_ibu      = escapeString($koneksi, $row['T'] ?? '');
             $nik_ktp       = escapeString($koneksi, $row['U'] ?? '');
             // Alamat
@@ -178,14 +168,8 @@ try {
             }
 
             // === Cek apakah karyawan sudah ada ===
-            $cekKaryawan = $koneksi->query(
-                "SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan'"
-            );
-
-            if (!$cekKaryawan) {
-                throw new Exception("Query cek karyawan gagal: " . $koneksi->error);
-            }
-
+            $cekKaryawan = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan'");
+            
             if ($cekKaryawan->num_rows > 0) {
                 // UPDATE - Karyawan sudah ada
                 $id_karyawan = $cekKaryawan->fetch_assoc()['id_karyawan'];
@@ -233,6 +217,7 @@ try {
                 if (!$koneksi->query($sqlIdentitas)) {
                     throw new Exception("Error update tb_identitas: " . $koneksi->error);
                 }
+
             } else {
                 // INSERT - Karyawan baru
                 $sqlKaryawan = "INSERT INTO tb_karyawan (
@@ -301,6 +286,7 @@ try {
 
             $response["berhasil"]++;
             $response["debug"][] = "Baris $rowNum: Berhasil - NIK: $nik_karyawan";
+
         } catch (Exception $e) {
             $response["gagal"]++;
             $response["errors"][] = "Baris $rowNum: " . $e->getMessage();
@@ -311,11 +297,13 @@ try {
     $koneksi->commit();
     $response["success"] = true;
     $response["message"] = "Import selesai. Berhasil: {$response['berhasil']}, Gagal: {$response['gagal']}";
+
 } catch (Exception $e) {
+    // Rollback jika terjadi error
     if (isset($koneksi)) {
         $koneksi->rollback();
     }
-    $response["error"] = "Gagal membaca file Excel: " . $e->getMessage();
+    $response["error"] = "Gagal membaca file Excel: " . $koneksi->error;
 }
 
 echo json_encode($response);
