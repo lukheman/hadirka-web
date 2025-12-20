@@ -575,78 +575,58 @@
             document.getElementById("formImport").addEventListener("submit", function(e) {
                 e.preventDefault();
 
-                if (!confirm("Yakin ingin mengimpor data karyawan?")) return;
+                if (!confirm("Apakah Anda yakin ingin mengimpor file Excel ini? Data lama mungkin tertimpa.")) {
+                    return;
+                }
 
                 const formData = new FormData(this);
-                const btnUpload = document.getElementById("btnUpload");
                 const progressWrapper = document.getElementById("progressWrapper");
                 const progressBar = document.getElementById("progressBar");
+                const btnUpload = document.getElementById("btnUpload");
 
-                if (btnUpload.disabled) return;
-
-                btnUpload.disabled = true;
-                btnUpload.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
                 progressWrapper.style.display = "block";
                 progressBar.style.width = "0%";
-                progressBar.textContent = "0%";
+                btnUpload.disabled = true;
+                btnUpload.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
 
                 const xhr = new XMLHttpRequest();
 
-                xhr.upload.onprogress = e => {
+                xhr.upload.addEventListener("progress", e => {
                     if (e.lengthComputable) {
                         let p = Math.round((e.loaded / e.total) * 100);
                         progressBar.style.width = p + "%";
                         progressBar.textContent = p + "%";
                     }
-                };
+                });
 
-                xhr.onload = () => {
-                    btnUpload.disabled = false;
-                    btnUpload.innerHTML = '<i class="fa fa-upload"></i> Upload';
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
 
-                    if (xhr.status !== 200) {
-                        toastr.error("Server error saat import");
-                        return;
-                    }
-
-                    let res;
-                    try {
-                        res = JSON.parse(xhr.responseText);
-                    } catch {
-                        toastr.error("Response server tidak valid");
-                        return;
-                    }
-
-                    if (res.success) {
-                        if (res.gagal > 0) {
-                            toastr.warning(
-                                `Import selesai.<br>Berhasil: ${res.berhasil}<br>Gagal: ${res.gagal}`,
-                                "Import sebagian"
-                            );
-                            console.table(res.errors);
-                        } else {
-                            toastr.success(`Import sukses (${res.berhasil} data)`);
+                            if (res.success) {
+                                toastr.success(`Berhasil: ${res.berhasil}<br>Gagal: ${res.gagal}`, "Import selesai");
+                                // reload tabel setelah import sukses
+                                tableKaryawan.ajax.reload();
+                            } else {
+                                showToast(res.error || "Gagal import!", "error");
+                            }
+                        } catch (err) {
+                            showToast("Terjadi kesalahan saat memproses respons server: " + err, "error");
                         }
 
-                        tableKaryawan.ajax.reload(null, false);
-                        $('#ModalImport').modal('hide');
-                        document.getElementById("file_excel").value = "";
-
-                    } else {
-                        toastr.error("Import gagal total");
-                        console.error(res.errors);
+                        setTimeout(() => {
+                            progressWrapper.style.display = "none";
+                            progressBar.style.width = "0%";
+                            btnUpload.disabled = false;
+                            btnUpload.innerHTML = '<i class="fa fa-upload"></i> Upload';
+                        }, 800);
                     }
-
-                    setTimeout(() => {
-                        progressWrapper.style.display = "none";
-                        progressBar.style.width = "0%";
-                    }, 800);
                 };
 
                 xhr.open("POST", "app/controller/csv-control/csv-karyawan.php");
                 xhr.send(formData);
             });
-
         });
     </script>
 
