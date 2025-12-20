@@ -57,7 +57,7 @@ for ($i = 2; $i <= count($data); $i++) {
     $row = $data[$i];
 
     $nik_karyawan = trim($row[$colNIK]);
-    $namaHariOff = trim($row[$colHariOff]);
+    $namaHariOff = ucfirst(strtolower(trim($row[$colHariOff] ?? '')));;
     $hariOff = $hariMap[$namaHariOff] ?? null;
 
     // ================================
