@@ -33,6 +33,7 @@ while ($r = mysqli_fetch_assoc($q)) {
     $data[] = [
         "no" => $no++,
         "nama" => $r['nama_lengkap'],
+        "nik" => $r['nik_karyawan'],
         "jabatan" => $jabatan,
         "gaji_bersih" => number_format($gaji_bersih, 0, ',', '.')
     ];

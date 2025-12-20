@@ -53,7 +53,7 @@
         </a>
         <ul class="menu-sub">
             <li class="menu-item">
-                <a class="menu-link" href="data-absensi">
+                <a class="menu-link" href="rekapan-absensi">
                     <div>Absensi Karyawan</div>
                 </a>
             </li>
