@@ -132,7 +132,7 @@ foreach ($sheet as $i => $r) {
         $jabatan        = esc($koneksi, $r['G']);
 
         $tgl_masuk_site = excelDate($r['H'] ?? null);
-        $tgl_join_ipip  = excelDate($r['I']);
+        $tgl_join_ipip  = excelDate($r['I'] ?? null);
         $tgl_akhir      = plus3Month($tgl_masuk_site);
 
         $tempat_lahir   = esc($koneksi, $r['J']);
