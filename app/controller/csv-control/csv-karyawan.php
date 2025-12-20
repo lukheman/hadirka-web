@@ -20,15 +20,29 @@ function esc($c, $v)
     return mysqli_real_escape_string($c, trim((string)$v));
 }
 
-function excelDate($v)
-{
-    if (!$v) return null;
+function excelDate($v) {
+
+    if ($v === null || $v === '') return null;
+
+    // Angka tapi TIDAK masuk range tanggal Excel
     if (is_numeric($v)) {
-        return Date::excelToDateTimeObject($v)->format('Y-m-d');
+        if ($v < 25569 || $v > 60000) {
+            return null; // abaikan angka aneh
+        }
+
+        try {
+            return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($v)
+                ->format('Y-m-d');
+        } catch (Exception $e) {
+            return null;
+        }
     }
+
+    // String tanggal biasa
     $t = strtotime($v);
     return $t ? date('Y-m-d', $t) : null;
 }
+
 
 function plus3Month($tgl)
 {
@@ -81,9 +95,20 @@ if (!in_array($ext, ['xls', 'xlsx'])) {
    LOAD EXCEL
 ========================= */
 
-$sheet = IOFactory::load($_FILES['file_excel']['tmp_name'])
-    ->getActiveSheet()
-    ->toArray(null, true, true, true);
+$spreadsheet = IOFactory::load($_FILES['file_excel']['tmp_name']);
+$worksheet = $spreadsheet->getActiveSheet();
+
+/**
+ * PARAMETER PENTING:
+ *  - formatData = false  ⬅️ MATIKAN AUTO DATE
+ */
+$sheet = $worksheet->toArray(
+    null,   // nullValue
+    true,   // calculateFormulas
+    false,  // formatData  ⬅️ INI KUNCINYA
+    true    // returnCellRef
+);
+
 
 /* =========================
    LOOP
@@ -106,7 +131,7 @@ foreach ($sheet as $i => $r) {
         $departemen     = esc($koneksi, $r['F']);
         $jabatan        = esc($koneksi, $r['G']);
 
-        $tgl_masuk_site = excelDate($r['H']);
+        $tgl_masuk_site = excelDate($r['H'] ?? null);
         $tgl_join_ipip  = excelDate($r['I']);
         $tgl_akhir      = plus3Month($tgl_masuk_site);
 
