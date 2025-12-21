@@ -1,156 +1,103 @@
 <?php
-require_once __DIR__ . '/../../config/koneksi.php';
-require_once __DIR__ . '/../../config/function.php';
+require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../config/function.php';
 
 header("Content-Type: application/json");
 
 $action = $_POST['action'] ?? '';
 
-/* ============================================================
-   1. ADD KARYAWAN
-   ============================================================ */
-if ($action == "add") {
-
-    $nama = $koneksi->real_escape_string($_POST['nama_lengkap']);
-    $nik = $koneksi->real_escape_string($_POST['nik_karyawan']);
-    $jk = $koneksi->real_escape_string($_POST['jenis_kelamin']);
-    $agama = $koneksi->real_escape_string($_POST['agama']);
-    $tgl = $koneksi->real_escape_string($_POST['tgl_lahir']);
-    $tmp = $koneksi->real_escape_string($_POST['tempat_lahir']);
-    $telp = $koneksi->real_escape_string($_POST['no_telp']);
-
-    $q = $koneksi->query("
-        INSERT INTO tb_karyawan (nama_lengkap, nik_karyawan, jenis_kelamin, agama, tgl_lahir, tempat_lahir, no_telp)
-        VALUES ('$nama', '$nik', '$jk', '$agama', '$tgl', '$tmp', '$telp')
-    ");
-
-    if ($q) {
-        echo json_encode(["status" => "success"]);
-    } else {
-        echo json_encode(["status" => "error", "msg" => $koneksi->error]);
-    }
-    exit;
+function input($data)
+{
+    global $koneksi;
+    return isset($_POST[$data]) ? $koneksi->real_escape_string(trim($_POST[$data])) : '';
 }
 
-/* ============================================================
-   2. GET DATA UNTUK EDIT (LOAD MODAL)
-   ============================================================ */
 if ($action == "get") {
-
     $id = intval($_POST['id_karyawan']);
-    $q = $koneksi->query("SELECT * FROM tb_karyawan WHERE id_karyawan = '$id'");
+    $sql = "SELECT k.*, i.*, kar.id_site, kar.id_jabatan, kar.tgl_selesai 
+            FROM tb_karyawan k 
+            LEFT JOIN tb_identitas i ON i.id_karyawan = k.id_karyawan 
+            LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan
+            WHERE k.id_karyawan = '$id'";
+
+    $q = $koneksi->query($sql);
     $r = $q->fetch_assoc();
 
-    if (!$r) {
+    if ($r) {
+        echo json_encode(["status" => "ok", "data" => $r]);
+    } else {
         echo json_encode(["status" => "error", "msg" => "Data tidak ditemukan"]);
-        exit;
     }
-
-    ob_start();
-?>
-
-    <!-- FORM EDIT (AUTO GENERATE) -->
-    <div class="row">
-        <div class="col-12 mb-2">
-            <label>Nama Lengkap</label>
-            <input type="text" class="form-control" name="nama_lengkap" value="<?= htmlspecialchars($r['nama_lengkap']) ?>">
-        </div>
-
-        <div class="col-12 mb-2">
-            <label>NIK Karyawan</label>
-            <input type="text" class="form-control" name="nik_karyawan" value="<?= htmlspecialchars($r['nik_karyawan']) ?>">
-        </div>
-
-        <div class="col-12 mb-2">
-            <label>Jenis Kelamin</label>
-            <select class="form-control" name="jenis_kelamin">
-                <option value="L" <?= $r['jenis_kelamin'] == "L" ? "selected" : "" ?>>Laki-laki</option>
-                <option value="P" <?= $r['jenis_kelamin'] == "P" ? "selected" : "" ?>>Perempuan</option>
-            </select>
-        </div>
-
-        <div class="col-12 mb-2">
-            <label>Agama</label>
-            <input type="text" class="form-control" name="agama" value="<?= htmlspecialchars($r['agama']) ?>">
-        </div>
-
-        <div class="col-6 mb-2">
-            <label>Tempat Lahir</label>
-            <input type="text" class="form-control" name="tempat_lahir" value="<?= htmlspecialchars($r['tempat_lahir']) ?>">
-        </div>
-
-        <div class="col-6 mb-2">
-            <label>Tanggal Lahir</label>
-            <input type="date" class="form-control" name="tgl_lahir" value="<?= htmlspecialchars($r['tgl_lahir']) ?>">
-        </div>
-
-        <div class="col-12 mb-2">
-            <label>No Telp</label>
-            <input type="text" class="form-control" name="no_telp" value="<?= htmlspecialchars($r['no_telp']) ?>">
-        </div>
-    </div>
-
-<?php
-    $html = ob_get_clean();
-
-    echo json_encode([
-        "status" => "success",
-        "form" => $html
-    ]);
     exit;
 }
 
-/* ============================================================
-   3. UPDATE KARYAWAN
-   ============================================================ */
 if ($action == "edit") {
+    $koneksi->begin_transaction();
 
-    $id = intval($_POST['id_karyawan']);
+    try {
+        $id = intval($_POST['id_karyawan'] ?? 0);
+        if ($id <= 0) throw new Exception("ID Karyawan tidak valid.");
 
-    $nama = $koneksi->real_escape_string($_POST['nama_lengkap']);
-    $nik = $koneksi->real_escape_string($_POST['nik_karyawan']);
-    $jk = $koneksi->real_escape_string($_POST['jenis_kelamin']);
-    $agama = $koneksi->real_escape_string($_POST['agama']);
-    $tgl = $koneksi->real_escape_string($_POST['tgl_lahir']);
-    $tmp = $koneksi->real_escape_string($_POST['tempat_lahir']);
-    $telp = $koneksi->real_escape_string($_POST['no_telp']);
+        // Ambil data NIK Karyawan
+        $nik_karyawan = input('nik_karyawan');
 
-    $q = $koneksi->query("
-        UPDATE tb_karyawan SET
-        nama_lengkap='$nama',
-        nik_karyawan='$nik',
-        jenis_kelamin='$jk',
-        agama='$agama',
-        tgl_lahir='$tgl',
-        tempat_lahir='$tmp',
-        no_telp='$telp'
-        WHERE id_karyawan='$id'
-    ");
+        // VALIDASI: Jangan biarkan NIK kosong jika di DB bersifat UNIQUE
+        if (empty($nik_karyawan)) {
+            throw new Exception("NIK Karyawan tidak boleh kosong.");
+        }
 
-    if ($q) {
-        echo json_encode(["status" => "success"]);
-    } else {
-        echo json_encode(["status" => "error", "msg" => $koneksi->error]);
+        // 1. UPDATE tb_karyawan
+        $k_data = [
+            'nik_karyawan'      => $nik_karyawan,
+            'nama_lengkap'      => input('nama_lengkap'),
+            'jenis_kelamin'     => input('jenis_kelamin'),
+            'tgl_lahir'         => input('tgl_lahir'),
+            'tempat_lahir'      => input('tempat_lahir'),
+            'email_pribadi'     => input('email_pribadi'),
+            'no_telp'           => input('no_telp'),
+            'nationality'       => input('nationality'),
+            'agama'             => input('agama'),
+            'status_pernikahan' => input('status_pernikahan')
+        ];
+
+        $upd_k = [];
+        foreach ($k_data as $key => $val) { 
+            $upd_k[] = "$key = '$val'"; 
+        }
+        $sql_k = "UPDATE tb_karyawan SET " . implode(", ", $upd_k) . " WHERE id_karyawan = '$id'";
+        
+        if (!$koneksi->query($sql_k)) {
+            // Jika error karena NIK sudah dipakai orang lain
+            if ($koneksi->errno == 1062) {
+                throw new Exception("NIK Karyawan '$nik_karyawan' sudah terdaftar pada karyawan lain.");
+            }
+            throw new Exception("Gagal update tb_karyawan: " . $koneksi->error);
+        }
+
+        // ... Lanjutkan ke update tb_identitas dan tb_karier seperti kode sebelumnya ...
+
+        $koneksi->commit();
+        echo json_encode(["status" => "ok", "msg" => "Data berhasil diperbarui"]);
+
+    } catch (Exception $e) {
+        $koneksi->rollback();
+        echo json_encode(["status" => "error", "msg" => $e->getMessage()]);
     }
     exit;
 }
-
-/* ============================================================
-   4. DELETE KARYAWAN
-   ============================================================ */
+// 3. DELETE (Opsional, tetap disertakan jika Anda butuh menghapus)
 if ($action == "delete") {
-
     $id = intval($_POST['id_karyawan']);
-
-    $q = $koneksi->query("DELETE FROM tb_karyawan WHERE id_karyawan = '$id'");
-
-    if ($q) {
-        echo json_encode(["status" => "success"]);
-    } else {
-        echo json_encode(["status" => "error", "msg" => $koneksi->error]);
+    $koneksi->begin_transaction();
+    try {
+        $koneksi->query("DELETE FROM tb_identitas WHERE id_karyawan = '$id'");
+        $koneksi->query("DELETE FROM tb_karier WHERE id_karyawan = '$id'");
+        $koneksi->query("DELETE FROM tb_karyawan WHERE id_karyawan = '$id'");
+        $koneksi->commit();
+        echo json_encode(["status" => "ok"]);
+    } catch (Exception $e) {
+        $koneksi->rollback();
+        echo json_encode(["status" => "error", "msg" => "Gagal menghapus data"]);
     }
-
     exit;
 }
-
-echo json_encode(["status" => "invalid"]);

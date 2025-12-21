@@ -321,6 +321,9 @@
 
                             <label>Nama Lengkap</label>
                             <input type="text" class="form-control" name="nama_lengkap" id="edit_nama_lengkap" required>
+                            <label>Nik Karyawan</label>
+                            <input type="text" name="nik_karyawan" id="edit_nik_karyawan" class="form-control" required>
+
 
                             <label class="mt-3">Jenis Kelamin</label>
                             <select class="form-control" name="jenis_kelamin" id="edit_jenis_kelamin">
@@ -458,22 +461,34 @@
     <!-- JS: jQuery, Bootstrap, DataTables, Toastr -->
     <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <script>
-        // format child detail (HTML) dari row.data().detail
+        // 1. Helper Function: Detail Expandable Row
         function formatDetail(detailHtml) {
-            return `<div class="p-2">${detailHtml}</div>`;
+            return `<div class="p-4 bg-light border-start border-primary border-4 rounded shadow-sm">${detailHtml}</div>`;
+        }
+
+        // 2. Helper Function: Toast Notifications
+        function showToast(message, type = "success") {
+            const toastEl = document.getElementById('toastAlert');
+            const toastBody = document.getElementById('toastMessage');
+
+            toastEl.className = `toast text-bg-${type} border-0`;
+            toastBody.innerHTML = message;
+
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
         }
 
         let tableKaryawan = null;
 
         $(document).ready(function() {
-            // tooltips
+            // Init Tooltip
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function(tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+            tooltipTriggerList.map(t => new bootstrap.Tooltip(t));
 
-            // Inisialisasi DataTable
+            // 3. Inisialisasi DataTable
             tableKaryawan = $('#tableKaryawan').DataTable({
+                processing: true,
+                serverSide: false, // Set true jika data ribuan dan filter dilakukan di PHP
                 ajax: {
                     url: "app/controller/get-data/get-karyawan.php",
                     type: "POST",
@@ -481,19 +496,17 @@
                         d.site = $("#filterSite").val();
                         d.jabatan = $("#filterJabatan").val();
                     },
-                    dataSrc: "data" // dari JSON { data: [...] }
+                    dataSrc: "data"
                 },
                 columns: [{
                         className: 'dt-control text-center',
                         orderable: false,
                         data: null,
-                        defaultContent: '<i class="fa fa-plus-circle text-primary"></i>',
-                        width: "40px"
+                        defaultContent: '<i class="fa fa-plus-circle text-primary"></i>'
                     },
                     {
                         data: "no",
-                        className: "text-center",
-                        width: "60px"
+                        className: "text-center"
                     },
                     {
                         data: "nama"
@@ -509,269 +522,198 @@
                     {
                         data: "action",
                         orderable: false,
-                        className: "text-center",
-                        width: "120px"
+                        className: "text-center"
                     }
                 ],
-                responsive: true,
-                pageLength: 10,
                 order: [
                     [1, "desc"]
                 ],
                 language: {
-                    search: "Cari:",
-                    lengthMenu: "Tampilkan _MENU_ entri per halaman",
-                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
-                    paginate: {
-                        first: "Pertama",
-                        last: "Terakhir",
-                        next: "Selanjutnya",
-                        previous: "Sebelumnya"
-                    },
-                    emptyTable: "Tidak ada data karyawan"
-                },
-                createdRow: function(row, data, dataIndex) {
-                    // tambahkan kelas baris jika diset dari server (misal expired atau bg-danger)
-                    if (data.rowClass) {
-                        $(row).addClass(data.rowClass);
-                    }
-                },
-                drawCallback: function(settings) {
-                    // animasi
-                    $('#tableKaryawan tbody').addClass('fade-in');
+                    url: "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"
                 }
             });
 
-            // handle expand / collapse child row
+            // 4. Handle Expand/Collapse
             $('#tableKaryawan tbody').on('click', 'td.dt-control', function() {
-                var tr = $(this).closest('tr');
-                var row = tableKaryawan.row(tr);
+                let tr = $(this).closest('tr');
+                let row = tableKaryawan.row(tr);
 
                 if (row.child.isShown()) {
-                    // hide
                     row.child.hide();
-                    tr.removeClass('shown');
                     $(this).html('<i class="fa fa-plus-circle text-primary"></i>');
                 } else {
-                    // show
                     row.child(formatDetail(row.data().detail)).show();
-                    tr.addClass('shown');
                     $(this).html('<i class="fa fa-minus-circle text-danger"></i>');
                 }
             });
 
-            // reload saat filter berubah
+            // 5. Filter Reload
             $("#filterSite, #filterJabatan").on("change", function() {
-                $('#loadingSpinner').show();
-                tableKaryawan.ajax.reload(function() {
-                    $('#loadingSpinner').hide();
-                });
+                tableKaryawan.ajax.reload();
             });
 
-            // load awal
-            tableKaryawan.ajax.reload();
-
-            // IMPORT SCRIPT (sama seperti milik Anda, disertakan)
-            document.getElementById("formImport").addEventListener("submit", function(e) {
+            // 6. ACTION: TAMBAH DATA (Pastikan ID formTambahKaryawan sesuai HTML)
+            $("#formTambahKaryawan").on("submit", function(e) {
                 e.preventDefault();
+                let formData = new FormData(this);
+                formData.append("action", "add"); // Menambahkan marker action
 
-                if (!confirm("Apakah Anda yakin ingin mengimpor file Excel ini? Data lama mungkin tertimpa.")) {
-                    return;
-                }
-
-                const formData = new FormData(this);
-                const progressWrapper = document.getElementById("progressWrapper");
-                const progressBar = document.getElementById("progressBar");
-                const btnUpload = document.getElementById("btnUpload");
-
-                progressWrapper.style.display = "block";
-                progressBar.style.width = "0%";
-                btnUpload.disabled = true;
-                btnUpload.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
-
-                const xhr = new XMLHttpRequest();
-
-                xhr.upload.addEventListener("progress", e => {
-                    if (e.lengthComputable) {
-                        let p = Math.round((e.loaded / e.total) * 100);
-                        progressBar.style.width = p + "%";
-                        progressBar.textContent = p + "%";
-                    }
-                });
-
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4) {
-                        try {
-                            const res = JSON.parse(xhr.responseText);
-
-                            if (res.success) {
-                                toastr.success(`Berhasil: ${res.berhasil}<br>Gagal: ${res.gagal}`, "Import selesai");
-                                // reload tabel setelah import sukses
-                                tableKaryawan.ajax.reload();
-                            } else {
-                                showToast(res.error || "Gagal import!", "error");
-                            }
-                        } catch (err) {
-                            showToast("Terjadi kesalahan saat memproses respons server: " + err, "error");
-                        }
-
-                        setTimeout(() => {
-                            progressWrapper.style.display = "none";
-                            progressBar.style.width = "0%";
-                            btnUpload.disabled = false;
-                            btnUpload.innerHTML = '<i class="fa fa-upload"></i> Upload';
-                        }, 800);
-                    }
-                };
-
-                xhr.open("POST", "app/controller/csv-control/csv-karyawan.php");
-                xhr.send(formData);
-            });
-        });
-    </script>
-
-    <script>
-        $("#formAdd").on("submit", function(e) {
-            e.preventDefault();
-
-            $.ajax({
-                url: "karyawan_action.php",
-                type: "POST",
-                data: $(this).serialize(),
-                success: function(res) {
-                    try {
-                        let json = JSON.parse(res);
-
-                        if (json.status === "ok") {
-                            $("#ModalAdd").modal("hide");
+                $.ajax({
+                    url: "app/controller/act-karyawan.php",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        if (res.status === "ok") {
+                            $("#modalTambahKaryawan").modal("hide");
+                            $("#formTambahKaryawan")[0].reset();
                             tableKaryawan.ajax.reload(null, false);
                             showToast("Data karyawan berhasil ditambahkan!");
                         } else {
-                            showToast("Gagal menambahkan data!", "danger");
+                            showToast("Gagal: " + (res.msg || "Terjadi kesalahan"), "danger");
                         }
-
-                    } catch (e) {
-                        alert("Invalid response!");
                     }
-                }
+                });
             });
-        });
 
+            // 7. ACTION: GET DATA UNTUK EDIT (Event Delegation)
+            $(document).on("click", ".btnEdit", function() {
+                let id = $(this).data("id");
+                $.ajax({
+                    url: "app/controller/act-karyawan.php",
+                    type: "POST",
+                    data: {
+                        action: "get",
+                        id_karyawan: id
+                    },
+                    dataType: "json",
+                    success: function(res) {
+                        if (res.status === "ok") {
+                            let d = res.data;
+                            // Isi data ke form modal edit
+                            $("#edit_id_karyawan").val(d.id_karyawan);
+                            $("#edit_nik_karyawan").val(res.data.nik_karyawan);
+                            $("#edit_nama_lengkap").val(d.nama_lengkap);
+                            $("#edit_jenis_kelamin").val(d.jenis_kelamin);
+                            $("#edit_agama").val(d.agama);
+                            $("#edit_tempat_lahir").val(d.tempat_lahir);
+                            $("#edit_tgl_lahir").val(d.tgl_lahir);
+                            $("#edit_status_pernikahan").val(d.status_pernikahan);
+                            $("#edit_nama_ibu").val(d.nama_ibu);
+                            $("#edit_nik_ktp").val(d.nik_ktp);
+                            $("#edit_kk_number").val(d.kk_number);
+                            $("#edit_npwp").val(d.npwp);
+                            $("#edit_bpjs_tk").val(d.bpjs_tk);
+                            $("#edit_bpjs_kes").val(d.bpjs_kes);
+                            $("#edit_email_pribadi").val(d.email_pribadi);
+                            $("#edit_no_telp").val(d.no_telp);
+                            $("#edit_alamat_ktp").val(d.alamat_ktp);
+                            $("#edit_provinsi").val(d.provinsi);
+                            $("#edit_kabupaten").val(d.kabupaten);
+                            $("#edit_kecamatan").val(d.kecamatan);
+                            $("#edit_desa").val(d.desa);
+                            $("#edit_rt_rw").val(d.rt_rw);
+                            $("#edit_last_education").val(d.last_education);
+                            $("#edit_major").val(d.major);
+                            $("#edit_education_level").val(d.education_level);
+                            $("#edit_id_site").val(d.id_site);
+                            $("#edit_id_jabatan").val(d.id_jabatan);
+                            $("#edit_tgl_selesai").val(d.tgl_selesai);
 
-        // OPEN MODAL EDIT
-        $(document).on("click", ".btnEdit", function() {
-            let id = $(this).data("id");
-
-            $.ajax({
-                url: "karyawan_action.php",
-                type: "POST",
-                data: {
-                    action: "get",
-                    id_karyawan: id
-                },
-                dataType: "json",
-                success: function(res) {
-
-                    if (res.status !== "ok") {
-                        alert("Data tidak ditemukan!");
-                        return;
+                            $("#ModalEdit").modal("show");
+                        }
                     }
-
-                    let d = res.data;
-
-                    // isi semua field edit
-                    $("#edit_id_karyawan").val(d.id_karyawan);
-                    $("#edit_nama_lengkap").val(d.nama_lengkap);
-                    $("#edit_jenis_kelamin").val(d.jenis_kelamin);
-                    $("#edit_agama").val(d.agama);
-                    $("#edit_tempat_lahir").val(d.tempat_lahir);
-                    $("#edit_tgl_lahir").val(d.tgl_lahir);
-                    $("#edit_status_pernikahan").val(d.status_pernikahan);
-                    $("#edit_nama_ibu").val(d.nama_ibu);
-
-                    $("#edit_nik_ktp").val(d.nik_ktp);
-                    $("#edit_kk_number").val(d.kk_number);
-                    $("#edit_npwp").val(d.npwp);
-                    $("#edit_bpjs_tk").val(d.bpjs_tk);
-                    $("#edit_bpjs_kes").val(d.bpjs_kes);
-
-                    $("#edit_email_pribadi").val(d.email_pribadi);
-                    $("#edit_no_telp").val(d.no_telp);
-
-                    $("#edit_alamat_ktp").val(d.alamat_ktp);
-                    $("#edit_provinsi").val(d.provinsi);
-                    $("#edit_kabupaten").val(d.kabupaten);
-                    $("#edit_kecamatan").val(d.kecamatan);
-                    $("#edit_desa").val(d.desa);
-                    $("#edit_rt_rw").val(d.rt_rw);
-
-                    $("#edit_last_education").val(d.last_education);
-                    $("#edit_major").val(d.major);
-                    $("#edit_education_level").val(d.education_level);
-
-                    $("#edit_id_site").val(d.id_site);
-                    $("#edit_id_jabatan").val(d.id_jabatan);
-                    $("#edit_tgl_selesai").val(d.tgl_selesai);
-
-                    $("#ModalEdit").modal("show");
-                }
+                });
             });
-        });
 
-
-
-        $("#formEdit").on("submit", function(e) {
-            e.preventDefault();
-
-            $.ajax({
-                url: "karyawan_action.php",
-                type: "POST",
-                data: $(this).serialize(),
-                success: function(res) {
-                    try {
-                        let json = JSON.parse(res);
-
-                        if (json.status === "ok") {
+            // 8. ACTION: SIMPAN PERUBAHAN (EDIT)
+            $("#formEdit").on("submit", function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: "app/controller/act-karyawan.php",
+                    type: "POST",
+                    data: $(this).serialize() + "&action=edit",
+                    success: function(res) {
+                        if (res.status === "ok") {
                             $("#ModalEdit").modal("hide");
-                            tableKaryawan.ajax.reload(null, false); // reload dt
+                            tableKaryawan.ajax.reload(null, false);
                             showToast("Data berhasil diperbarui!");
                         } else {
-                            showToast("Gagal memperbarui data!", "danger");
+                            showToast("Gagal memperbarui data", "danger");
                         }
-                    } catch (e) {
-                        alert("Invalid response!");
                     }
+                });
+            });
+
+            // 9. ACTION: DELETE DATA
+            $(document).on("click", ".btnDelete", function() {
+                let id = $(this).data("id");
+                let nama = $(this).data("nama");
+
+                if (confirm(`Hapus data karyawan: ${nama}?`)) {
+                    $.ajax({
+                        url: "app/controller/act-karyawan.php",
+                        type: "POST",
+                        data: {
+                            action: "delete",
+                            id_karyawan: id
+                        },
+                        success: function(res) {
+                            if (res.status === "ok") {
+                                tableKaryawan.ajax.reload(null, false);
+                                showToast("Data berhasil dihapus!", "success");
+                            } else {
+                                showToast("Gagal menghapus data!", "danger");
+                            }
+                        }
+                    });
                 }
             });
-        });
 
+            // 10. ACTION: IMPORT EXCEL
+            $("#formImport").on("submit", function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const btn = $("#btnUpload");
 
-        $(document).on("click", ".btnDelete", function() {
-            let id = $(this).data("id");
+                $("#progressWrapper").show();
+                btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
 
-            if (!confirm("Yakin ingin menghapus data ini?")) return;
-
-            $.ajax({
-                url: "karyawan_action.php",
-                type: "POST",
-                data: {
-                    action: "delete",
-                    id_karyawan: id
-                },
-                success: function(res) {
-                    try {
-                        let json = JSON.parse(res);
-
-                        if (json.status === "ok") {
-                            tableKaryawan.ajax.reload(null, false);
-                            showToast("Data berhasil dihapus!");
-                        } else {
-                            showToast("Gagal menghapus data!", "danger");
+                $.ajax({
+                    url: "app/controller/csv-control/csv-karyawan.php",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    xhr: function() {
+                        var xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener("progress", function(evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                                $("#progressBar").css("width", percentComplete + "%").text(percentComplete + "%");
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    success: function(res) {
+                        try {
+                            if (res.success) {
+                                showToast(`Import Berhasil! (${res.berhasil} data)`, "success");
+                                tableKaryawan.ajax.reload();
+                                $("#ModalImport").modal("hide");
+                            } else {
+                                showToast("Gagal: " + res.error, "danger");
+                            }
+                        } catch (e) {
+                            showToast("Error parsing response", "danger");
                         }
-                    } catch (e) {
-                        alert("Invalid response!");
+                    },
+                    complete: function() {
+                        $("#progressWrapper").hide();
+                        btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
                     }
-                }
+                });
             });
         });
     </script>
