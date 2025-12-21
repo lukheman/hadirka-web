@@ -35,20 +35,17 @@ if ($action == "edit") {
     $koneksi->begin_transaction();
 
     try {
-        $id = intval($_POST['id_karyawan'] ?? 0);
-        if ($id <= 0) throw new Exception("ID Karyawan tidak valid.");
-
-        // Ambil data NIK Karyawan
-        $nik_karyawan = input('nik_karyawan');
-
-        // VALIDASI: Jangan biarkan NIK kosong jika di DB bersifat UNIQUE
-        if (empty($nik_karyawan)) {
-            throw new Exception("NIK Karyawan tidak boleh kosong.");
+        // Ambil ID dari POST
+        $id = isset($_POST['id_karyawan']) ? intval($_POST['id_karyawan']) : 0;
+        
+        // Cek apakah ID kosong
+        if ($id <= 0) {
+            throw new Exception("ID Karyawan tidak terdeteksi oleh sistem.");
         }
 
         // 1. UPDATE tb_karyawan
         $k_data = [
-            'nik_karyawan'      => $nik_karyawan,
+            'nik_karyawan'      => input('nik_karyawan'),
             'nama_lengkap'      => input('nama_lengkap'),
             'jenis_kelamin'     => input('jenis_kelamin'),
             'tgl_lahir'         => input('tgl_lahir'),
@@ -61,23 +58,47 @@ if ($action == "edit") {
         ];
 
         $upd_k = [];
-        foreach ($k_data as $key => $val) { 
-            $upd_k[] = "$key = '$val'"; 
-        }
+        foreach ($k_data as $key => $val) { $upd_k[] = "$key = '$val'"; }
         $sql_k = "UPDATE tb_karyawan SET " . implode(", ", $upd_k) . " WHERE id_karyawan = '$id'";
         
-        if (!$koneksi->query($sql_k)) {
-            // Jika error karena NIK sudah dipakai orang lain
-            if ($koneksi->errno == 1062) {
-                throw new Exception("NIK Karyawan '$nik_karyawan' sudah terdaftar pada karyawan lain.");
+        $koneksi->query($sql_k);
+        
+        // VALIDASI: Jika ID tidak ditemukan di tb_karyawan
+        if ($koneksi->affected_rows === 0) {
+            // Kita tidak throw error di sini karena bisa jadi data memang tidak ada perubahan (isinya sama)
+            // Tapi untuk testing, mari kita pastikan ID nya ada
+            $check = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = '$id'");
+            if ($check->num_rows === 0) {
+                throw new Exception("Gagal Update: ID Karyawan ($id) tidak ditemukan di database.");
             }
-            throw new Exception("Gagal update tb_karyawan: " . $koneksi->error);
         }
 
-        // ... Lanjutkan ke update tb_identitas dan tb_karier seperti kode sebelumnya ...
+        // 2. UPDATE tb_identitas
+        $i_data = [
+            'nik_ktp'           => input('nik_ktp'),
+            'kk_number'         => input('kk_number'),
+            'npwp'              => input('npwp'),
+            'bpjs_tk'           => input('bpjs_tk'),
+            'bpjs_kes'          => input('bpjs_kes'),
+            'alamat_ktp'        => input('alamat_ktp'),
+            'provinsi'          => input('provinsi'),
+            'kabupaten'         => input('kabupaten'),
+            'kecamatan'         => input('kecamatan'),
+            'desa'              => input('desa'),
+            'rt_rw'             => input('rt_rw'),
+            'nama_ibu'          => input('nama_ibu'),
+            'last_education'    => input('last_education'),
+            'major'             => input('major'),
+            'education_level'   => input('education_level')
+        ];
+
+        $upd_i = [];
+        foreach ($i_data as $key => $val) { $upd_i[] = "$key = '$val'"; }
+        $sql_i = "UPDATE tb_identitas SET " . implode(", ", $upd_i) . " WHERE id_karyawan = '$id'";
+        $koneksi->query($sql_i);
 
         $koneksi->commit();
-        echo json_encode(["status" => "ok", "msg" => "Data berhasil diperbarui"]);
+        echo json_encode(["status" => "ok", "msg" => "Update berhasil untuk ID: $id"]);
 
     } catch (Exception $e) {
         $koneksi->rollback();
