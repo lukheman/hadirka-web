@@ -71,11 +71,11 @@
                     <div>Proses Gaji</div>
                 </a>
             </li>
-            <li class="menu-item">
+            <!-- <li class="menu-item">
                 <a class="menu-link" href="slip-gaji">
                     <div>Slip Gaji Karyawan</div>
                 </a>
-            </li>
+            </li> -->
             <li class="menu-item">
                 <a class="menu-link" href="data-pinjaman">
                     <div>Pinjaman Dana</div>

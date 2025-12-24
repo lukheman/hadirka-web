@@ -1,5 +1,5 @@
 <?php
-// include 'app/config/auth.php';
+include 'app/config/auth.php';
 require_once 'app/config/koneksi.php';
 require_once 'app/controller/read.php';
 $queris = array();
