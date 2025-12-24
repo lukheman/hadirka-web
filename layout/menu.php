@@ -1,103 +1,81 @@
 <ul class="menu-inner py-1">
 
-    <!-- Dashboard -->
     <li class="menu-item active">
         <a href="dashboard" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-home"></i>
+            <i class="menu-icon tf-icons bx bx-home-circle"></i>
             <div>Dashboard</div>
         </a>
     </li>
 
-    <!-- Master Data -->
-    <li class="menu-header small text-uppercase">Master Data</li>
+    <li class="menu-header small text-uppercase">Data Utama</li>
     <li class="menu-item">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-data"></i>
+            <i class="menu-icon tf-icons bx bx-collection"></i>
             <div>Master Data</div>
         </a>
         <ul class="menu-sub">
             <li class="menu-item">
-                <a class="menu-link" href="data-karyawan">
-                    <div>Data Karyawan</div>
-                </a>
+                <a class="menu-link" href="data-karyawan"><div>Data Karyawan</div></a>
             </li>
             <li class="menu-item">
-                <a class="menu-link" href="import-karier">
-                    <div>Import Karier</div>
-                </a>
+                <a class="menu-link" href="import-karier"><div>Riwayat Karier</div></a>
             </li>
             <li class="menu-item">
-                <a class="menu-link" href="data-site">
-                    <div>Data Site</div>
-                </a>
+                <a class="menu-link" href="data-site"><div>Data Site (Lokasi)</div></a>
             </li>
             <li class="menu-item">
-                <a class="menu-link" href="data-departemen">
-                    <div>Departemen</div>
-                </a>
+                <a class="menu-link" href="data-departemen"><div>Data Departemen</div></a>
             </li>
             <li class="menu-item">
-                <a class="menu-link" href="data-jabatan">
-                    <div>Jabatan</div>
-                </a>
+                <a class="menu-link" href="data-jabatan"><div>Data Jabatan</div></a>
             </li>
         </ul>
     </li>
 
-    <!-- Absensi -->
-    <li class="menu-header small text-uppercase">Absensi</li>
+    <li class="menu-header small text-uppercase">Presensi & Izin</li>
     <li class="menu-item">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-time"></i>
-            <div>Absensi</div>
+            <i class="menu-icon tf-icons bx bx-calendar-check"></i>
+            <div>Manajemen Absensi</div>
         </a>
         <ul class="menu-sub">
             <li class="menu-item">
-                <a class="menu-link" href="rekapan-absensi">
-                    <div>Absensi Karyawan</div>
-                </a>
+                <a class="menu-link" href="dayli-absen"><div>Absensi Harian</div></a>
             </li>
             <li class="menu-item">
-                <a class="menu-link" href="data-izin">
-                    <div>Data Izin</div>
-                </a>
+                <a class="menu-link" href="rekapan-absensi"><div>Rekapitulasi Bulanan</div></a>
             </li>
             <li class="menu-item">
-                <a class="menu-link" href="data-sakit">
-                    <div>Data Sakit</div>
-                </a>
+                <a class="menu-link" href="pengajuan-izin"><div>Pengajuan Izin</div></a>
             </li>
             <li class="menu-item">
-                <a class="menu-link" href="data-cuti">
-                    <div>Data Cuti</div>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a class="menu-link" href="data-libur">
-                    <div>Data Libur</div>
-                </a>
+                <a class="menu-link" href="bukti-sks"><div>Data SKS</div></a>
             </li>
         </ul>
     </li>
 
-    <!-- Penggajian -->
-    <li class="menu-header small text-uppercase">Penggajian</li>
+    <li class="menu-header small text-uppercase">Finance & Payroll</li>
     <li class="menu-item">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
-            <i class="menu-icon tf-icons bx bx-wallet"></i>
-            <div>Penggajian</div>
+            <i class="menu-icon tf-icons bx bx-money"></i>
+            <div>Payroll System</div>
         </a>
         <ul class="menu-sub">
+            <li class="menu-item">
+                <a class="menu-link" href="data-periode">
+                    <div>Periode Penggajian</div>
+                </a>
+            </li>
             <li class="menu-item">
                 <a class="menu-link" href="payroll">
-                    <div>Payroll</div>
+                    <div>Proses Gaji</div>
                 </a>
             </li>
-            <!-- <li class="menu-item">
+            <li class="menu-item">
                 <a class="menu-link" href="slip-gaji">
-                    <div>Slip Gaji</div>
+                    <div>Slip Gaji Karyawan</div>
                 </a>
-            </li> -->
+            </li>
             <li class="menu-item">
                 <a class="menu-link" href="data-pinjaman">
                     <div>Pinjaman Dana</div>
@@ -105,49 +83,59 @@
             </li>
             <li class="menu-item">
                 <a class="menu-link" href="data-rapel">
-                    <div>Data Rapel</div>
+                    <div>Kalkulasi Rapel</div>
                 </a>
             </li>
         </ul>
     </li>
 
-    <!-- System -->
-    <li class="menu-header small text-uppercase">System</li>
+    <li class="menu-header small text-uppercase">Inventaris K3</li>
     <li class="menu-item">
-        <a href="login" target="_blank" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-log-in"></i>
-            <div>Login</div>
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-shield-quarter"></i>
+            <div>Manajemen APD</div>
+        </a>
+        <ul class="menu-sub">
+            <li class="menu-item">
+                <a class="menu-link" href="master-apd"><div>Stok & Jenis APD</div></a>
+            </li>
+            <li class="menu-item">
+                <a class="menu-link" href="transaksi-apd"><div>Distribusi APD</div></a>
+            </li>
+        </ul>
+    </li>
+
+    <li class="menu-header small text-uppercase">Informasi</li>
+    <li class="menu-item">
+        <a href="pengumuman" class="menu-link">
+            <i class="menu-icon tf-icons bx bx-bullseye"></i>
+            <div>Broadcast Pengumuman</div>
+        </a>
+    </li>
+
+    <li class="menu-header small text-uppercase">Sistem & Akses</li>
+    <li class="menu-item">
+        <a href="data-users-login" class="menu-link">
+            <i class="menu-icon tf-icons bx bx-user-pin"></i>
+            <div>Manajemen User</div>
         </a>
     </li>
     <li class="menu-item">
-        <a href="register" target="_blank" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-user-plus"></i>
-            <div>Register</div>
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons bx bx-cog"></i>
+            <div>System Utility</div>
         </a>
-    </li>
-    <li class="menu-item">
-        <a href="error" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-error"></i>
-            <div>Error Pages</div>
-        </a>
-    </li>
-    <li class="menu-item">
-        <a href="maintenance" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-wrench"></i>
-            <div>Maintenance</div>
-        </a>
-    </li>
-    <li class="menu-item">
-        <a href="support" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-support"></i>
-            <div>Support</div>
-        </a>
-    </li>
-    <li class="menu-item">
-        <a href="documentation" class="menu-link">
-            <i class="menu-icon tf-icons bx bx-file"></i>
-            <div>Documentation</div>
-        </a>
+        <ul class="menu-sub">
+            <li class="menu-item">
+                <a class="menu-link" href="maintenance"><div>Maintenance Mode</div></a>
+            </li>
+            <li class="menu-item">
+                <a class="menu-link" href="error"><div>Log Errors</div></a>
+            </li>
+            <li class="menu-item">
+                <a class="menu-link" href="documentation"><div>Dokumentasi API</div></a>
+            </li>
+        </ul>
     </li>
 
 </ul>

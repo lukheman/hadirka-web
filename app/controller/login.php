@@ -1,4 +1,5 @@
 <?php
+$url = url();
 // ===================== AUTO LOGIN DARI COOKIE =====================
 if (!isset($_SESSION['id_user']) && isset($_COOKIE['remember_me']) && strpos($_COOKIE['remember_me'], ':') !== false) {
     list($selector, $validator) = explode(':', $_COOKIE['remember_me']);
@@ -21,7 +22,7 @@ if (!isset($_SESSION['id_user']) && isset($_COOKIE['remember_me']) && strpos($_C
             $_SESSION['level'] = $user_data['level'];
             $_SESSION['login_time'] = time();
 
-            header("Location: index.php");
+            header("Location: $url");
             exit;
         }
     }
@@ -74,14 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
 
-            header("Location: index.php");
+            header("Location: $url");
             exit;
         } else {
-            header("Location: login.php?error=wrongpass");
+            header("Location: login?error=wrongpass");
             exit;
         }
     } else {
-        header("Location: login.php?error=nouser");
+        header("Location: login?error=nouser");
         exit;
     }
 }

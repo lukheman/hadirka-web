@@ -94,6 +94,7 @@
                                     <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
                                     <th class="text-center"><i class="fa fa-id-card"></i> NIK KTP</th>
                                     <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
+                                    <th class="text-center"><i class="fa fa-users"></i> Status</th>
                                     <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
                                 </tr>
                             </thead>
@@ -520,13 +521,17 @@
                         className: "text-center"
                     },
                     {
+                        data: "status_karyawan",
+                        className: "text-center"
+                    },
+                    {
                         data: "action",
                         orderable: false,
                         className: "text-center"
                     }
                 ],
                 order: [
-                    [1, "desc"]
+                    [1, "asc"]
                 ],
                 language: {
                     url: "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"

@@ -378,6 +378,29 @@ error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
                             break;
 
 
+                        case 'data-periode':
+                            include 'view/finance-payrol/data-periode.php';
+                            break;
+
+                        case 'pengajuan-izin':
+                            include 'view/kehadiran/pengajuan-izin.php';
+                            break;
+                        case 'bukti-sks':
+                            include 'view/kehadiran/bukti-sks.php';
+                            break;
+
+                        case 'master-apd':
+                            include 'view/k3/master-apd.php';
+                            break;
+                        case 'transaksi-apd':
+                            include 'view/k3/transaksi-apd.php';
+                            break;
+
+                        case 'pengumuman':
+                            include 'view/broadcast/broadcast.php';
+                            break;
+
+
                         case 'data-users-login':
                             include 'view/users.php';
                             break;

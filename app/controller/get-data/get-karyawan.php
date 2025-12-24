@@ -31,8 +31,7 @@ try {
     $where_sql = implode(" AND ", $where);
     
     // Query utama dengan JOIN
-    $query = "
-        SELECT *  FROM tb_karyawan kar
+    $query = "SELECT *  FROM tb_karyawan kar
         LEFT JOIN tb_identitas i ON kar.id_karyawan = i.id_karyawan
         LEFT JOIN tb_karier k ON kar.id_karyawan = k.id_karyawan
         LEFT JOIN tb_site s ON k.id_site = s.id_site
@@ -52,7 +51,6 @@ try {
     $no = 1;
     
     while ($row = $result->fetch_assoc()) {
-        
         // Hitung usia
         $usia = '';
         if (!empty($row['tgl_lahir'])) {
@@ -155,6 +153,7 @@ try {
             'nama' => htmlspecialchars($row['nama_lengkap']),
             'nik' => htmlspecialchars($row['nik_karyawan'] ?? '-'),
             'jabatan' => htmlspecialchars($row['nama_jabatan'] ?? '-'),
+            'status_karyawan' => htmlspecialchars($row['status_karyawan'] ?? '-'),
             'action' => $action,
             'detail' => $detail,
             'rowClass' => $rowClass
