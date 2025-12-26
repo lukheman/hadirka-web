@@ -20,13 +20,64 @@ $sheet = $spreadsheet->getActiveSheet();
 $data = $sheet->toArray(null, true, true, true);
 
 // ================================
+// FUNGSI CEK WARNA CELL
+// ================================
+function getCellColor($sheet, $cell) {
+    $style = $sheet->getStyle($cell)->getFill();
+    $bgColor = strtoupper($style->getStartColor()->getRGB());
+    
+    // Jika warna default (hitam atau FFFFFF), cek apakah ada fill
+    if ($bgColor === '000000' || $style->getFillType() === \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_NONE) {
+        return null;
+    }
+    
+    return $bgColor;
+}
+
+function isYellowCell($sheet, $cell) {
+    $color = getCellColor($sheet, $cell);
+    
+    if (!$color) return false;
+    
+    // Daftar kode warna kuning (sesuai screenshot Anda)
+    $yellowColors = [
+        'FFFF00', // Kuning cerah standard
+        'FFFF99', // Kuning muda
+        'FFFFCC', // Kuning sangat muda
+        'FFFFE0', // Light yellow
+        'FFFACD', // Lemon chiffon
+        'FFF200', // Kuning terang
+        'FFED00', // Kuning Excel default
+    ];
+    
+    return in_array($color, $yellowColors);
+}
+
+function isCyanCell($sheet, $cell) {
+    $color = getCellColor($sheet, $cell);
+    
+    if (!$color) return false;
+    
+    // Warna biru muda/cyan (untuk IZIN/SD di screenshot)
+    $cyanColors = [
+        '00B0F0', // Cyan terang
+        '00FFFF', // Cyan
+        '00B4D8', // Sky blue
+        '90E0EF', // Light cyan
+        'ADE8F4', // Pale cyan
+        '48CAE4', // Medium cyan
+    ];
+    
+    return in_array($color, $cyanColors);
+}
+
+// ================================
 // DEFINISI KOLOM
 // ================================
 $colNIK = 'C';
-$colHariOff = 'D';
 
-// Ambil kolom tanggal mulai E sampai akhir header
-$startCol = 'E';
+// Ambil kolom tanggal mulai D sampai akhir header (kolom D tidak lagi untuk Hari Off)
+$startCol = 'D';
 $lastCol = $sheet->getHighestColumn();
 $colsTanggal = [];
 
@@ -38,17 +89,6 @@ while (true) {
     $col++;
 }
 
-// Mapping hari ke angka PHP date('w')
-$hariMap = [
-    'Minggu' => 0,
-    'Senin'  => 1,
-    'Selasa' => 2,
-    'Rabu'   => 3,
-    'Kamis'  => 4,
-    'Jumat'  => 5,
-    'Sabtu'  => 6
-];
-
 // ================================
 // LOOP PER BARIS KARYAWAN
 // ================================
@@ -57,8 +97,6 @@ for ($i = 2; $i <= count($data); $i++) {
     $row = $data[$i];
 
     $nik_karyawan = trim($row[$colNIK]);
-    $namaHariOff = ucfirst(strtolower(trim($row[$colHariOff] ?? '')));;
-    $hariOff = $hariMap[$namaHariOff] ?? null;
 
     // ================================
     // AMBIL ID KARYAWAN
@@ -78,6 +116,8 @@ for ($i = 2; $i <= count($data); $i++) {
     // ================================
     foreach ($colsTanggal as $col) {
 
+        $cellAddress = $col . $i;
+        
         // Konversi tanggal Excel ke Y-m-d
         $tglExcel = $sheet->getCell($col . '1')->getValue();
         $tgl = is_numeric($tglExcel)
@@ -86,8 +126,8 @@ for ($i = 2; $i <= count($data); $i++) {
 
         $nilai = trim($row[$col]);
 
-        // Cek apakah hari ini adalah hari libur OFF
-        $isHariOff = $hariOff !== null && (int)date('w', strtotime($tgl)) === $hariOff;
+        // CEK APAKAH CELL BERWARNA KUNING (HARI OFF)
+        $isHariOff = isYellowCell($sheet, $cellAddress);
 
         // ================================
         // 1. JIKA NUMERIC → MASUK TABEL ABSEN
@@ -128,7 +168,7 @@ for ($i = 2; $i <= count($data); $i++) {
         }
 
         // ================================
-        // 2. NILAI KOSONG + HARI OFF → MASUK ABSEN OFF
+        // 2. NILAI KOSONG + CELL KUNING → MASUK ABSEN OFF
         // ================================
         if ($isHariOff) {
 
@@ -170,22 +210,6 @@ for ($i = 2; $i <= count($data); $i++) {
             $jamKerja = 0;
             $ket = 'OFF';
 
-            if (!empty($list_id_izin)) {
-                $idList = implode(",", array_map('intval', $list_id_izin));
-                $koneksi->query("DELETE FROM tb_izin WHERE id_izin IN ($idList)");
-            }
-
-            if (!empty($list_id_sakit)) {
-                $idList = implode(",", array_map('intval', $list_id_sakit));
-                $koneksi->query("DELETE FROM tb_sakit WHERE id_sakit IN ($idList)");
-            }
-
-            if (!empty($list_id_cuti)) {
-                $idList = implode(",", array_map('intval', $list_id_cuti));
-                $koneksi->query("DELETE FROM tb_cuti WHERE id_cuti IN ($idList)");
-            }
-
-
             // Simpan absen
             $stmtCheck = $koneksi->prepare("SELECT id_absen FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
             $stmtCheck->bind_param("is", $id_karyawan, $tgl);
@@ -215,7 +239,7 @@ for ($i = 2; $i <= count($data); $i++) {
         }
 
         // ================================
-        // 4. JIKA KODE SD / IZIN / CM → MASUK TB_ABSEN (TIDAK KE TABEL IZIN/SAKIT/CUTI)
+        // 4. JIKA KODE SD / IZIN / CM → MASUK TB_ABSEN
         // ================================
         if ($nilai !== '') {
 
@@ -230,7 +254,6 @@ for ($i = 2; $i <= count($data); $i++) {
 
             if (isset($mapKet[$kode])) {
 
-                // jam_kerja = ket_absen = keterangan (SAKIT / IZIN / CUTI)
                 $jamKerja = $mapKet[$kode];
                 $ket = $mapKet[$kode];
 
@@ -242,9 +265,9 @@ for ($i = 2; $i <= count($data); $i++) {
 
                 // Insert absen baru
                 $stmtInsert = $koneksi->prepare("
-            INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen)
-            VALUES (?,?,?,?)
-        ");
+                    INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen)
+                    VALUES (?,?,?,?)
+                ");
                 $stmtInsert->bind_param("isss", $id_karyawan, $tgl, $jamKerja, $ket);
                 $stmtInsert->execute();
                 $stmtInsert->close();
@@ -262,3 +285,4 @@ echo json_encode([
     'status' => 'success',
     'message' => 'Import CSV/Excel selesai!'
 ]);
+?>
