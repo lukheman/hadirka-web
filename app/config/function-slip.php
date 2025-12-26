@@ -53,6 +53,7 @@ if (!function_exists('generateSlipGaji')) {
         $karier = mysqli_fetch_assoc($qk);
         if (!$karier) return ['error' => 'Karier aktif tidak ditemukan'];
         $tgl_mulai_karier = $karier['tgl_mulai'];
+        $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
 
         // ================= 2a) Ambil Tunjangan (Pendapatan) dari tb_tunjangan =================
         $tunjanganRows = [];
@@ -71,7 +72,6 @@ if (!function_exists('generateSlipGaji')) {
         }
 
         // ================= Ambil Potongan (BPJS/JHT/PPH21 dll) dari tb_potongan =================
-        // NOTE: sesuai perubahan, tb_potongan memakai id_karier
         $potonganRows = [];
         $total_potongan_tunjangan = 0;
         $sqlPot = "SELECT jenis_potongan, jumlah_potongan 
@@ -161,14 +161,13 @@ if (!function_exists('generateSlipGaji')) {
             if ($jamRawUpper === 'IZIN')  $izin_days++;
             if ($jamRawUpper === 'SAKIT') $sakit_days++;
             if ($jamRawUpper === 'CUTI')  $cuti_days++;
-            // NOTE: tidak menghitung OFF/MANGKIR di sini — OFF ditangani per-hari saat loop period
         }
-
 
         // ================= 5) Hitung Absen =================
         $absenForUI = [];
         $hari_kerja_count = 0;
         $mangkir_count = 0;
+        $resign_count = 0;
 
         $total_lembur = 0;
         $total_overtime = 0;
@@ -332,6 +331,22 @@ if (!function_exists('generateSlipGaji')) {
             }
 
             // ================= TIDAK ADA DATA =================
+            // ================= LOGIKA BARU: CEK RESIGN =================
+            if (!empty($tgl_selesai_karier) && $tgl > $tgl_selesai_karier) {
+                // Jika tanggal absen > tgl_selesai_karier dan tidak ada data absen
+                $resign_count++;
+                
+                $absenForUI[] = [
+                    'tanggal' => $tgl,
+                    'jam' => 0,
+                    'wl' => 0,
+                    'ot' => 0,
+                    'ket' => 'RESIGN'
+                ];
+                continue;
+            }
+
+            // Jika bukan resign, berarti mangkir
             $mangkir_count++;
 
             $absenForUI[] = [
@@ -343,20 +358,13 @@ if (!function_exists('generateSlipGaji')) {
             ];
         }
 
-
-
         // ================= Hitung total pendapatan & potongan =================
         $basic = floatval($karier['gaji_pokok']);
 
-        // t_hidup/t_daerah/t_makan/t_skil sudah dipindah ke tb_tunjangan,
-        // untuk backward-compatibility set 0 (nilai sebenarnya sudah di $total_tunjangan)
         $t_hidup = 0;
         $t_daerah = 0;
         $t_makan = 0;
         $t_skil = 0;
-
-        // nilai bpjs/jht/pph21 diambil dari tb_potongan
-        // ($bpjs_kesehatan, $jht, $pph21) sudah dihitung sebelumnya
 
         $pot_sio = floatval($karier['pot_sio'] ?? 0);
         $pot_pkwt = floatval($karier['pot_pkwt'] ?? 0);
@@ -367,11 +375,16 @@ if (!function_exists('generateSlipGaji')) {
         // PKWT potongan untuk hari NEW
         $total_potongan_pkwt = 0;
         if ($new_count > 0) {
-            $total_potongan_pkwt = (($basic + $total_tunjangan) / 25) * $new_count;
+            $total_potongan_pkwt = (($total_tunjangan + $basic) / 25) * $new_count;
+        }
+
+        // ================= LOGIKA BARU: POTONGAN PKWT UNTUK RESIGN =================
+        if ($resign_count > 0) {
+            $total_potongan_pkwt += (($total_tunjangan + $basic) / 25) * $resign_count;
         }
 
         $total_potongan =
-            $total_potongan_tunjangan +   // (BPJS,JHT,PPH21,dll) dari tb_potongan
+            $total_potongan_tunjangan +
             $total_potongan_pinjaman +
             $total_pot_izin +
             $total_pot_mangkir +
@@ -391,7 +404,7 @@ if (!function_exists('generateSlipGaji')) {
         // ================= Hitung total pendapatan =================
         $total_pendapatan =
             $basic +
-            $total_tunjangan +      // semua tunjangan yang ada di tb_tunjangan
+            $total_tunjangan +
             $total_lembur +
             $total_overtime +
             $total_spl_1_7 +
@@ -409,6 +422,7 @@ if (!function_exists('generateSlipGaji')) {
             'jabatan' => $karier['nama_jabatan'] ?? '',
             'period' => "$startDate - $endDate",
             'new' => $new_count,
+            'resign' => $resign_count,
             'rapel' => $rapelRows,
             'total_rapel' => $total_rapel,
 
@@ -416,7 +430,6 @@ if (!function_exists('generateSlipGaji')) {
             'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
 
             'basic' => $basic,
-            // keep legacy keys but values are moved into tunjangan list
             't_hidup' => $t_hidup,
             't_daerah' => $t_daerah,
             't_makan' => $t_makan,
@@ -435,7 +448,6 @@ if (!function_exists('generateSlipGaji')) {
             'total_jam_spl_8' => $total_jam_spl_8,
             'total_jam_spl_9_up' => $total_jam_spl_9_up,
 
-            // potongan spesifik hasil ekstraksi dari tb_potongan
             'bpjs_kesehatan' => $bpjs_kesehatan,
             'jht' => $jht,
             'pph21' => $pph21,
@@ -466,18 +478,3 @@ if (!function_exists('generateSlipGaji')) {
         ];
     }
 }
-
-// ================= Panggil function (contoh) =================
-// $input = json_decode(file_get_contents('php://input'), true);
-// $nik = $input['nik'] ?? null;
-// $startDate = $input['startDate'] ?? null;
-// $endDate = $input['endDate'] ?? null;
-//
-// if (!$nik || !$startDate || !$endDate) {
-//     http_response_code(400);
-//     echo json_encode(['error' => 'nik, startDate, endDate wajib']);
-//     exit;
-// }
-//
-// $response = generateSlipGaji($nik, $startDate, $endDate);
-// echo json_encode($response, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
