@@ -386,21 +386,21 @@
 
     <div class="slip-container" id="slip">
         <div class="header">
-            <img src="assets/img/logo/tjs-nobg.png" alt="Logo Perusahaan" class="logo">
+            <img src="assets/img/logo/kpp-logo.jpg" alt="Logo Perusahaan" class="logo">
             <div>
-                <h2>PT. TRIPUTRA JAYA SULTRA</h2>
+                <h2>PT. KARYA PUTRA POMALAA</h2>
                 <h3>SLIP GAJI</h3>
             </div>
         </div>
         <p class="center">
-            JL. EKONOMI, TONGGONI | <span id="period">21/09 - 20/10 2025</span><br>
-            TLP/WA 085255264538 | POMALAA, KABUPATEN KOLAKA
+            JL. BUNGA KAMBOJA NO. 8 PELAMBUA | <span id="period">21/09 - 20/10 2025</span><br>
+            TLP/WA 0852-9840-0028 | POMALAA, KABUPATEN KOLAKA
         </p>
 
         <div class="employee-info">
             <div>
                 <label>NIK:</label>
-                <span id="nikDisplay">TJS-0058</span>
+                <span id="nikDisplay">KPP-0058</span>
             </div>
             <div>
                 <label>JABATAN:</label>

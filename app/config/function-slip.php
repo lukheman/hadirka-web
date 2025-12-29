@@ -1,4 +1,5 @@
 <?php
+// funtion-slip.php
 // header('Content-Type: application/json; charset=utf-8');
 
 if (!function_exists('generateSlipGaji')) {
@@ -202,6 +203,7 @@ if (!function_exists('generateSlipGaji')) {
 
             // ================= NEW =================
             if ($tgl < $tgl_mulai_karier) {
+                $isMinggu = ($hariNama === 'sunday');
                 $absenForUI[] = [
                     'tanggal' => $tgl,
                     'jam' => 0,
@@ -209,7 +211,10 @@ if (!function_exists('generateSlipGaji')) {
                     'ot' => 0,
                     'ket' => 'NEW'
                 ];
-                $new_count++;
+                // Hanya tambah count jika BUKAN hari minggu
+                if (!$isMinggu) {
+                    $new_count++;
+                }
                 continue;
             }
 
@@ -232,7 +237,7 @@ if (!function_exists('generateSlipGaji')) {
                     continue;
                 }
 
-                // ===== OFF MURNI =====
+                // ===== OFF MURNI (tidak ada jam kerja) =====
                 if ($ketAbsen === 'OFF' && $jam == 0) {
                     $absenForUI[] = [
                         'tanggal' => $tgl,
@@ -244,7 +249,7 @@ if (!function_exists('generateSlipGaji')) {
                     continue;
                 }
 
-                // ===== SPL =====
+                // ===== SPL (ket OFF/SPL/LEMBUR dengan jam kerja) =====
                 if (
                     $jam > 0 &&
                     (
@@ -292,16 +297,18 @@ if (!function_exists('generateSlipGaji')) {
                     continue;
                 }
 
-                // ===== HADIR =====
+                // ===== HADIR (ket bukan OFF/SPL/LEMBUR/IZIN/SAKIT/CUTI) =====
                 if ($jam > 0) {
 
                     $wl = 0;
                     $ot = 0;
 
                     if ($hariNama === 'friday') {
+                        // Jumat: jam normal 5, WL jam ke-6, OT jam ke-7+
                         $wl = min(1, max(0, $jam - 5));
                         $ot = max(0, $jam - 5 - $wl);
                     } else {
+                        // Hari biasa: jam normal 7, WL jam ke-8, OT jam ke-9+
                         $wl = min(1, max(0, $jam - 7));
                         $ot = max(0, $jam - 7 - $wl);
                     }
@@ -311,6 +318,7 @@ if (!function_exists('generateSlipGaji')) {
                     $total_jam_wl += $wl;
                     $total_jam_ot += $ot;
 
+                    // Potongan jika jam kerja kurang dari normal
                     if ($jam < $normal_hours) {
                         $kurang = $normal_hours - $jam;
                         $total_jam_kurang += $kurang;
@@ -330,12 +338,11 @@ if (!function_exists('generateSlipGaji')) {
                 }
             }
 
-            // ================= TIDAK ADA DATA =================
-            // ================= LOGIKA BARU: CEK RESIGN =================
+            // ================= TIDAK ADA DATA ABSEN =================
+            // ================= CEK RESIGN =================
             if (!empty($tgl_selesai_karier) && $tgl > $tgl_selesai_karier) {
-                // Jika tanggal absen > tgl_selesai_karier dan tidak ada data absen
                 $resign_count++;
-                
+
                 $absenForUI[] = [
                     'tanggal' => $tgl,
                     'jam' => 0,
@@ -378,7 +385,7 @@ if (!function_exists('generateSlipGaji')) {
             $total_potongan_pkwt = (($total_tunjangan + $basic) / 25) * $new_count;
         }
 
-        // ================= LOGIKA BARU: POTONGAN PKWT UNTUK RESIGN =================
+        // PKWT potongan untuk hari RESIGN
         if ($resign_count > 0) {
             $total_potongan_pkwt += (($total_tunjangan + $basic) / 25) * $resign_count;
         }

@@ -9,8 +9,9 @@ $id = isset($_GET['id']) ? decrypt($_GET['id']) : null;
 $no = 1;
 
 if ($id) {
-    $stmt = $koneksi->prepare("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site 
-        FROM tb_karier k
+    $stmt = $koneksi->prepare("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap
+        FROM tb_karyawan kr
+        INNER JOIN tb_karier k ON k.id_karyawan = kr.id_karyawan
         INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
         INNER JOIN tb_departemen d ON k.id_departemen = d.id_departemen
         INNER JOIN tb_site s ON k.id_site = s.id_site
@@ -31,6 +32,8 @@ if ($id) {
 while ($r = $q->fetch_assoc()) { ?>
     <tr class="text-center">
         <td><?= $no ?></td>
+        <td><?= $r['nik_karyawan'] ?></td>
+        <td><?= $r['nama_lengkap'] ?></td>
         <td><?= $r['nama_site'] ?></td>
         <td><?= $r['nama_departemen'] ?></td>
         <td><?= $r['nama_jabatan'] ?></td>

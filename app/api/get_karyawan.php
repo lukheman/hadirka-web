@@ -49,15 +49,12 @@ if (!function_exists('hitungMasaKerja')) {
 if (!function_exists('hitungSisaKontrak')) {
     function hitungSisaKontrak($tgl_selesai)
     {
-        if (
-            empty($tgl_selesai) ||
-            $tgl_selesai === '0000-00-00'
-        ) {
+        if (empty($tgl_selesai) || $tgl_selesai === '0000-00-00') {
             return 'Kontrak Tetap';
         }
 
         try {
-            $hari_ini = new DateTime(date('Y-m-d'));
+            $hari_ini = new DateTime('today');
             $akhir_kontrak = new DateTime($tgl_selesai);
 
             if ($akhir_kontrak < $hari_ini) {
@@ -66,23 +63,33 @@ if (!function_exists('hitungSisaKontrak')) {
 
             $diff = $hari_ini->diff($akhir_kontrak);
 
-            $tahun = $diff->y;
-            $bulan = $diff->m;
+            // Konversi total tahun ke bulan
+            $total_bulan = ($diff->y * 12) + $diff->m;
+            $hari = $diff->d;
 
-            if ($tahun > 0) {
-                $sisa = "$tahun Tahun";
-                if ($bulan > 0) {
-                    $sisa .= " $bulan Bulan";
-                }
-            } elseif ($bulan > 0) {
-                $sisa = "$bulan Bulan";
-            } else {
-                $sisa = "Kurang dari 1 Bulan";
+            $output = [];
+            if ($total_bulan > 0) {
+                $output[] = "$total_bulan Bulan";
+            }
+            if ($hari > 0) {
+                $output[] = "$hari Hari";
             }
 
-            return $sisa;
+            if (empty($output)) {
+                return 'Berakhir Hari Ini';
+            }
+
+            $teks_sisa = implode(' ', $output);
+
+            // Tambahkan styling jika sisa waktu kritis (misal di bawah 30 hari)
+            if ($total_bulan == 0 && $hari <= 30) {
+                return "$teks_sisa";
+            }
+
+            return $teks_sisa;
+
         } catch (Exception $e) {
-            return 'Error Hitung Kontrak';
+            return 'Format Tanggal Salah';
         }
     }
 }

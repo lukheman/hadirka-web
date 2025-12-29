@@ -28,7 +28,7 @@ function getAvailablePeriods()
     }
 
     if (mysqli_num_rows($q) == 0) {
-        return ['error' => 'Tidak ada periode slip gaji yang terbuka (Open).'];
+        return []; // Mengembalikan array kosong jika tidak ada data
     }
 
     $is_first = true;
@@ -62,14 +62,12 @@ function getAvailablePeriods()
 
 $response = getAvailablePeriods();
 
-// Tutup koneksi database
 if (isset($koneksi) && is_object($koneksi)) $koneksi->close(); 
 
-if (isset($response['error'])) {
-    http_response_code(404);
-    echo json_encode($response);
-    exit;
-}
+// Kirim header 200 OK
+http_response_code(200);
 
+// Jika kosong, $response akan berisi []
+// Jika ada data, $response akan berisi daftar periode
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
 ?>

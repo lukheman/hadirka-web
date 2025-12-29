@@ -109,6 +109,15 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl_izin)) {
 }
 
 // ============================================
+// VALIDASI WAJIB UPLOAD FOTO/FILE
+// ============================================
+if (!isset($_FILES['bukti_izin']) || $_FILES['bukti_izin']['error'] === UPLOAD_ERR_NO_FILE) {
+    sendResponse('error', 'Bukti izin wajib diupload. Harap lampirkan foto/dokumen pendukung.', null, 400);
+}
+
+file_put_contents($log_file, "Step 4.5: File validation passed\n", FILE_APPEND);
+
+// ============================================
 // ESCAPE STRING untuk SQL
 // ============================================
 $id_karyawan_safe = mysqli_real_escape_string($koneksi, $id_karyawan);
@@ -140,7 +149,7 @@ if (mysqli_num_rows($check_result) > 0) {
 file_put_contents($log_file, "Step 7: No duplicate found\n", FILE_APPEND);
 
 // ============================================
-// PROSES UPLOAD FILE
+// PROSES UPLOAD FILE (WAJIB)
 // ============================================
 $bukti_izin = null;
 
@@ -157,11 +166,11 @@ if (isset($_FILES['bukti_izin']) && $_FILES['bukti_izin']['error'] === UPLOAD_ER
     $file_ext = strtolower(pathinfo($file_name_original, PATHINFO_EXTENSION));
     
     if (!in_array($file_ext, $allowed_ext)) {
-        sendResponse('error', 'Format file tidak didukung: ' . $file_ext, null, 400);
+        sendResponse('error', 'Format file tidak didukung: ' . $file_ext . '. Hanya jpg, jpeg, png, webp, pdf yang diperbolehkan.', null, 400);
     }
     
     if ($file_size > 5 * 1024 * 1024) {
-        sendResponse('error', 'Ukuran file terlalu besar: ' . round($file_size/1024/1024, 2) . 'MB', null, 400);
+        sendResponse('error', 'Ukuran file terlalu besar: ' . round($file_size/1024/1024, 2) . 'MB. Maksimal 5MB.', null, 400);
     }
     
     // Lokasi upload - SESUAIKAN DENGAN STRUKTUR FOLDER ANDA
@@ -196,15 +205,15 @@ if (isset($_FILES['bukti_izin']) && $_FILES['bukti_izin']['error'] === UPLOAD_ER
         sendResponse('error', 'Gagal move_uploaded_file. Check permission.', null, 500);
     }
     
-} elseif (isset($_FILES['bukti_izin']) && $_FILES['bukti_izin']['error'] !== UPLOAD_ERR_NO_FILE) {
-    // Error upload
+} else {
+    // Error upload lainnya
     $error_msgs = [
-        UPLOAD_ERR_INI_SIZE => 'File > upload_max_filesize',
-        UPLOAD_ERR_FORM_SIZE => 'File > MAX_FILE_SIZE',
-        UPLOAD_ERR_PARTIAL => 'File ter-upload sebagian',
-        UPLOAD_ERR_NO_TMP_DIR => 'Tmp dir tidak ada',
-        UPLOAD_ERR_CANT_WRITE => 'Gagal write ke disk',
-        UPLOAD_ERR_EXTENSION => 'Extension stopped upload'
+        UPLOAD_ERR_INI_SIZE => 'File melebihi upload_max_filesize di php.ini',
+        UPLOAD_ERR_FORM_SIZE => 'File melebihi MAX_FILE_SIZE',
+        UPLOAD_ERR_PARTIAL => 'File hanya ter-upload sebagian',
+        UPLOAD_ERR_NO_TMP_DIR => 'Temporary directory tidak ada',
+        UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk',
+        UPLOAD_ERR_EXTENSION => 'Extension PHP menghentikan upload'
     ];
     
     $err_code = $_FILES['bukti_izin']['error'];
@@ -212,7 +221,12 @@ if (isset($_FILES['bukti_izin']) && $_FILES['bukti_izin']['error'] === UPLOAD_ER
     sendResponse('error', 'Upload error: ' . $err_msg . ' (Code: ' . $err_code . ')', null, 400);
 }
 
-file_put_contents($log_file, "Step 13: File processing done. Bukti: " . ($bukti_izin ?: 'NULL') . "\n", FILE_APPEND);
+// Validasi final: bukti_izin harus terisi
+if (empty($bukti_izin)) {
+    sendResponse('error', 'Bukti izin gagal diproses. Harap coba lagi.', null, 500);
+}
+
+file_put_contents($log_file, "Step 13: File processing done. Bukti: $bukti_izin\n", FILE_APPEND);
 
 // ============================================
 // PREPARE INSERT DATA
@@ -222,7 +236,7 @@ $tgl_izin_timestamp = $tgl_izin_safe . ' ' . $waktu_saat_ini;
 $status_awal = 'pending';
 
 // ============================================
-// INSERT KE DATABASE (TANPA tgl_pengajuan)
+// INSERT KE DATABASE
 // ============================================
 $sql = "INSERT INTO tb_pengajuan_izin 
         (id_karyawan, tgl_izin, alasan_izin, bukti_izin, status_izin)
@@ -230,7 +244,7 @@ $sql = "INSERT INTO tb_pengajuan_izin
             '$id_karyawan_safe',
             '$tgl_izin_timestamp', 
             '$alasan_izin_safe',
-            " . ($bukti_izin ? "'" . mysqli_real_escape_string($koneksi, $bukti_izin) . "'" : "NULL") . ",
+            '" . mysqli_real_escape_string($koneksi, $bukti_izin) . "',
             '$status_awal'
         )";
 
@@ -244,6 +258,7 @@ if (mysqli_query($koneksi, $sql)) {
         'id_pengajuan' => $insert_id,
         'id_karyawan' => $id_karyawan,
         'tgl_izin' => $tgl_izin,
+        'bukti_izin' => $bukti_izin,
         'status' => $status_awal
     ]);
 } else {

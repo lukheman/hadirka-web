@@ -117,6 +117,7 @@ if (!function_exists('generateSlipGaji')) {
 
             // ================= NEW =================
             if ($tgl < $tgl_mulai_karier) {
+                $isMinggu = ($hariNama === 'sunday');
                 $absenForUI[] = [
                     'no' => $i++,
                     'tanggal' => date('d M', strtotime($tgl)),
@@ -124,7 +125,10 @@ if (!function_exists('generateSlipGaji')) {
                     'jam' => 0,
                     'ket' => 'NEW'
                 ];
-                $new_count++;
+                // $new_count++;
+                if (!$isMinggu) {
+                    $new_count++;
+                }
                 continue;
             }
 
@@ -277,6 +281,7 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 6) Final Perhitungan =================
         $basic = floatval($karier['gaji_pokok']);
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
+        // $total_pot_sakit = ($sakit_days * (750000/25));
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
         
         // PKWT potongan untuk hari NEW
@@ -323,6 +328,7 @@ if (!function_exists('generateSlipGaji')) {
 
         $listPotongan = array_merge($potonganRows, $pinjamanRows);
         if ($total_pot_izin > 0) $listPotongan[] = ['nama' => 'Potongan Izin', 'jumlah' => $total_pot_izin];
+        // if ($total_pot_sakit > 0) $listPotongan[] = ['nama' => 'Potongan Sakit', 'jumlah' => $total_pot_sakit];
         if ($total_pot_mangkir > 0) $listPotongan[] = ['nama' => 'Potongan Mangkir', 'jumlah' => $total_pot_mangkir];
         if ($total_potongan_perjam > 0) $listPotongan[] = ['nama' => 'Potongan Kurang Jam', 'jumlah' => $total_potongan_perjam];
         if ($total_pot_pkwt > 0) $listPotongan[] = ['nama' => 'Potongan PKWT (NEW/RESIGN)', 'jumlah' => $total_pot_pkwt];

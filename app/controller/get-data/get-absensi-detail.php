@@ -158,7 +158,7 @@ $karyawan = $karyawanQ->fetch_assoc();
                     <td>
                         <?php if ($absen): ?>
                             <!-- EDIT (pakai id_absen) -->
-                            <button class="btn btn-sm btn-warning btnEdit"
+                            <button class="btn btn-sm btn-warning btnEditDetail"
                                 data-id_absen="<?= $absen['id_absen'] ?>"
                                 data-tgl="<?= $tgl ?>"
                                 data-jk="<?= $absen['jam_kerja'] ?>"
@@ -168,14 +168,15 @@ $karyawan = $karyawanQ->fetch_assoc();
                             </button>
 
                             <!-- HAPUS (pakai id_absen) -->
-                            <button class="btn btn-sm btn-danger btnHapus"
+                            <button class="btn btn-sm btn-danger btnHapusDetail"
                                 data-id_absen="<?= $absen['id_absen'] ?>"
-                                data-tgl="<?= $tgl ?>">
+                                data-tgl="<?= $tgl ?>"
+                                data-id_karyawan="<?= $id_karyawan ?>">
                                 <i class="fa fa-trash"></i>
                             </button>
                         <?php else: ?>
                             <!-- TAMBAH (pakai id_karyawan + tgl) -->
-                            <button class="btn btn-sm btn-success btnTambah"
+                            <button class="btn btn-sm btn-success btnTambahDetail"
                                 data-id_karyawan="<?= $id_karyawan ?>"
                                 data-tgl="<?= $tgl ?>">
                                 <i class="fa fa-plus"></i>
@@ -201,11 +202,11 @@ $karyawan = $karyawanQ->fetch_assoc();
 </div>
 
 
-<!-- Modal Form Absen -->
-<div class="modal fade" id="modalFormAbsen" tabindex="-1">
+<!-- Modal Form Absen (di dalam detail) -->
+<div class="modal fade" id="modalFormAbsenDetail" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="formAbsen">
+            <form id="formAbsenDetail">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">Form Absensi</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -213,18 +214,18 @@ $karyawan = $karyawanQ->fetch_assoc();
 
                 <div class="modal-body">
                     <!-- id_absen untuk edit (kosong saat tambah) -->
-                    <input type="hidden" name="id_absen" id="form_id_absen" value="">
-                    <input type="hidden" name="id_karyawan" id="form_id_karyawan" value="">
-                    <input type="hidden" name="tgl_absen" id="form_tgl" value="">
+                    <input type="hidden" name="id_absen" id="form_id_absen_detail" value="">
+                    <input type="hidden" name="id_karyawan" id="form_id_karyawan_detail" value="">
+                    <input type="hidden" name="tgl_absen" id="form_tgl_detail" value="">
 
                     <div class="mb-3">
                         <label class="form-label">Jam Kerja</label>
-                        <input type="number" step="0.1" class="form-control" name="jam_kerja" id="form_jk" required>
+                        <input type="number" step="0.1" class="form-control" name="jam_kerja" id="form_jk_detail" required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Keterangan</label>
-                        <select class="form-select" name="ket_absen" id="form_ket">
+                        <select class="form-select" name="ket_absen" id="form_ket_detail">
                             <option value="Masuk">Masuk</option>
                             <option value="OFF">OFF</option>
                             <option value="SPL">SPL</option>
@@ -235,7 +236,7 @@ $karyawan = $karyawanQ->fetch_assoc();
 
                 <div class="modal-footer">
                     <!-- action akan di-set di JS: add / edit -->
-                    <input type="hidden" name="action" id="form_action" value="add">
+                    <input type="hidden" name="action" id="form_action_detail" value="add">
                     <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
             </form>
@@ -245,46 +246,67 @@ $karyawan = $karyawanQ->fetch_assoc();
 
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    // GUNAKAN IMMEDIATELY INVOKED FUNCTION untuk menghindari konflik
+    (function() {
+        console.log("Script detail absensi loaded");
 
-        const modal = new bootstrap.Modal(document.getElementById('modalFormAbsen'));
+        // Inisialisasi modal form
+        let modalFormAbsen = null;
+        
+        // Tunggu sebentar untuk memastikan modal sudah ter-render
+        setTimeout(function() {
+            const modalElement = document.getElementById('modalFormAbsenDetail');
+            if (modalElement) {
+                modalFormAbsen = new bootstrap.Modal(modalElement);
+                console.log("Modal form initialized");
+            }
+        }, 100);
 
         // === TOMBOL TAMBAH ===
-        $(document).on("click", ".btnTambah", function() {
+        $(document).on("click", ".btnTambahDetail", function() {
+            console.log("Tombol Tambah diklik");
             const id_karyawan = $(this).data("id_karyawan");
             const tgl = $(this).data("tgl");
 
-            $("#form_id_absen").val('');
-            $("#form_id_karyawan").val(id_karyawan);
-            $("#form_tgl").val(tgl);
-            $("#form_jk").val('');
-            $("#form_ket").val("Masuk");
-            $("#form_action").val("add");
-            modal.show();
+            $("#form_id_absen_detail").val('');
+            $("#form_id_karyawan_detail").val(id_karyawan);
+            $("#form_tgl_detail").val(tgl);
+            $("#form_jk_detail").val('');
+            $("#form_ket_detail").val("Masuk");
+            $("#form_action_detail").val("add");
+            
+            if (modalFormAbsen) {
+                modalFormAbsen.show();
+            }
         });
 
         // === TOMBOL EDIT ===
-        $(document).on("click", ".btnEdit", function() {
+        $(document).on("click", ".btnEditDetail", function() {
+            console.log("Tombol Edit diklik");
             const id_absen = $(this).data("id_absen");
             const id_karyawan = $(this).data("id_karyawan");
             const tgl = $(this).data("tgl");
             const jk = $(this).data("jk");
             const ket = $(this).data("ket");
 
-            $("#form_id_absen").val(id_absen);
-            $("#form_id_karyawan").val(id_karyawan);
-            $("#form_tgl").val(tgl);
-            $("#form_jk").val(jk);
-            $("#form_ket").val(ket);
-            $("#form_action").val("edit");
-            modal.show();
+            $("#form_id_absen_detail").val(id_absen);
+            $("#form_id_karyawan_detail").val(id_karyawan);
+            $("#form_tgl_detail").val(tgl);
+            $("#form_jk_detail").val(jk);
+            $("#form_ket_detail").val(ket);
+            $("#form_action_detail").val("edit");
+            
+            if (modalFormAbsen) {
+                modalFormAbsen.show();
+            }
         });
 
         // === TOMBOL HAPUS ===
-        $(document).on("click", ".btnHapus", function() {
+        $(document).on("click", ".btnHapusDetail", function() {
             if (!confirm("Hapus absensi tanggal ini?")) return;
 
             const id_absen = $(this).data("id_absen");
+            const id_karyawan = $(this).data("id_karyawan");
 
             fetch("app/controller/absensi/act-absen.php", {
                     method: "POST",
@@ -296,15 +318,35 @@ $karyawan = $karyawanQ->fetch_assoc();
                 .then(res => res.json())
                 .then(data => {
                     showToast(data.message, data.status);
-                    if (typeof loadAbsensi === "function") loadAbsensi();
+                    
+                    // Reload detail absensi
+                    const tglAwal = document.getElementById("tglAwal").value;
+                    const tglAkhir = document.getElementById("tglAkhir").value;
+                    
+                    fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${id_karyawan}&tgl_a=${tglAwal}&tgl_b=${tglAkhir}`)
+                        .then(res => res.text())
+                        .then(html => {
+                            document.getElementById("detailAbsensiBody").innerHTML = html;
+                        });
+                    
+                    // Reload tabel utama
+                    if (typeof loadAbsensi === "function") {
+                        loadAbsensi();
+                    }
+                })
+                .catch(err => {
+                    console.error("Error:", err);
+                    showToast("Terjadi kesalahan saat menghapus data", "error");
                 });
         });
 
         // === SUBMIT TAMBAH / EDIT ===
-        $("#formAbsen").on("submit", function(e) {
+        $(document).on("submit", "#formAbsenDetail", function(e) {
             e.preventDefault();
+            console.log("Form submitted");
 
             const fd = new FormData(this);
+            const id_karyawan = $("#form_id_karyawan_detail").val();
 
             fetch("app/controller/absensi/act-absen.php", {
                     method: "POST",
@@ -313,10 +355,31 @@ $karyawan = $karyawanQ->fetch_assoc();
                 .then(res => res.json())
                 .then(data => {
                     showToast(data.message, data.status);
-                    modal.hide();
-                    if (typeof loadAbsensi === "function") loadAbsensi();
+                    
+                    if (modalFormAbsen) {
+                        modalFormAbsen.hide();
+                    }
+                    
+                    // Reload detail absensi
+                    const tglAwal = document.getElementById("tglAwal").value;
+                    const tglAkhir = document.getElementById("tglAkhir").value;
+                    
+                    fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${id_karyawan}&tgl_a=${tglAwal}&tgl_b=${tglAkhir}`)
+                        .then(res => res.text())
+                        .then(html => {
+                            document.getElementById("detailAbsensiBody").innerHTML = html;
+                        });
+                    
+                    // Reload tabel utama
+                    if (typeof loadAbsensi === "function") {
+                        loadAbsensi();
+                    }
+                })
+                .catch(err => {
+                    console.error("Error:", err);
+                    showToast("Terjadi kesalahan saat menyimpan data", "error");
                 });
         });
 
-    });
+    })();
 </script>

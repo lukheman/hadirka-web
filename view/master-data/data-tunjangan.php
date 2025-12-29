@@ -31,66 +31,65 @@
         </div>
     </div>
 
-    <!-- Modal Tambah -->
-    <div class="modal fade" id="modalTambahTunjangan">
+    <div class="modal fade" id="modalTambahTunjangan" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <form id="formTambahTunjangan" class="modal-content">
-                <div class="modal-header bg-info text-white">
+                <div class="modal-header bg-info">
                     <h5 class="modal-title text-white"><i class="fa fa-plus"></i> Tambah Tunjangan</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-
                 <div class="modal-body">
-                    <label>Nama Tunjangan</label>
-                    <input type="text" name="nama_tunjangan" class="form-control" required>
-
-                    <label class="mt-2">Jumlah</label>
-                    <input type="number" name="jumlah_tunjangan" class="form-control" required>
+                    <div class="mb-3">
+                        <label class="form-label">Nama Tunjangan</label>
+                        <input type="text" name="nama_tunjangan" class="form-control" placeholder="Contoh: Tunjangan Makan" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jumlah (Rp)</label>
+                        <input type="number" name="jumlah_tunjangan" class="form-control" placeholder="0" required>
+                    </div>
                 </div>
-
                 <div class="modal-footer">
-                    <button class="btn btn-success"><i class="fa fa-save"></i> Simpan</button>
+                    <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> Simpan</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Edit -->
-    <div class="modal fade" id="modalEditTunjangan">
+    <div class="modal fade" id="modalEditTunjangan" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <form id="formEditTunjangan" class="modal-content">
                 <input type="hidden" name="id_tunjangan">
-
                 <div class="modal-header bg-warning">
                     <h5 class="modal-title text-white">Edit Tunjangan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-
                 <div class="modal-body">
-                    <label>Nama Tunjangan</label>
-                    <input type="text" name="nama_tunjangan" class="form-control" required>
-
-                    <label class="mt-2">Jumlah</label>
-                    <input type="number" name="jumlah_tunjangan" class="form-control" required>
+                    <div class="mb-3">
+                        <label class="form-label">Nama Tunjangan</label>
+                        <input type="text" name="nama_tunjangan" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jumlah (Rp)</label>
+                        <input type="number" name="jumlah_tunjangan" class="form-control" required>
+                    </div>
                 </div>
-
                 <div class="modal-footer">
-                    <button class="btn btn-primary">Update</button>
+                    <button type="submit" class="btn btn-primary">Update Data</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                 </div>
             </form>
         </div>
     </div>
-
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-
+        // Ambil ID Karier dari URL PHP
         const karierId = "<?= $_GET['id'] ?>";
         const tbody = document.getElementById("tbodyTunjangan");
 
-        // Load Tunjangan
+        // Fungsi Load Data
         function loadTunjangan() {
             fetch("app/controller/get-data/get-tunjangan.php?id=" + karierId)
                 .then(res => res.text())
@@ -106,7 +105,7 @@
                 });
         }
 
-        // Add
+        // Tambah Data
         document.getElementById("formTambahTunjangan").addEventListener("submit", function(e) {
             e.preventDefault();
             let fd = new FormData(this);
@@ -121,27 +120,31 @@
                 .then(res => {
                     if (res.status == "success") {
                         loadTunjangan();
-                        showToast("Tunjangan berhasil ditambah!", "success");
+                        alert("Tunjangan berhasil ditambah!"); // Ganti dengan showToast jika ada
                         bootstrap.Modal.getInstance(document.getElementById("modalTambahTunjangan")).hide();
                         this.reset();
+                    } else {
+                        alert("Gagal menambah data: " + res.message);
                     }
-                });
+                })
+                .catch(err => console.error("Error:", err));
         });
 
-        // Edit
+        // Munculkan Modal Edit & Isi Data
         document.addEventListener("click", e => {
             let btn = e.target.closest(".btnEditTunjangan");
             if (!btn) return;
 
             const form = document.getElementById("formEditTunjangan");
-
             form.querySelector("input[name=id_tunjangan]").value = btn.dataset.id;
             form.querySelector("input[name=nama_tunjangan]").value = btn.dataset.nama;
             form.querySelector("input[name=jumlah_tunjangan]").value = btn.dataset.jumlah;
 
-            new bootstrap.Modal(document.getElementById("modalEditTunjangan")).show();
+            let modalEdit = new bootstrap.Modal(document.getElementById("modalEditTunjangan"));
+            modalEdit.show();
         });
 
+        // Update Data
         document.getElementById("formEditTunjangan").addEventListener("submit", function(e) {
             e.preventDefault();
             let fd = new FormData(this);
@@ -151,23 +154,33 @@
                     method: "POST",
                     body: fd
                 })
-                .then(res => res.json())
+                .then(async res => {
+                    const text = await res.text(); // Ambil teks mentah dulu
+                    try {
+                        return JSON.parse(text); // Coba ubah ke JSON
+                    } catch (err) {
+                        console.error("Respon bukan JSON:", text); // Ini akan memunculkan error PHP yang sebenarnya di Console
+                        throw new Error("Server mengembalikan format yang salah");
+                    }
+                })
                 .then(res => {
                     if (res.status == "success") {
                         loadTunjangan();
-                        showToast("Tunjangan berhasil diupdate!", "success");
-                        bootstrap.Modal.getInstance(document.getElementById("modalEditTunjangan")).hide();
+                        alert("Berhasil!");
+                        // Tutup modal sesuai ID masing-masing
+                    } else {
+                        alert("Gagal: " + res.message);
                     }
-                });
+                })
+                .catch(err => console.error("Error Detail:", err));
         });
 
-        // Delete
+        // Hapus Data
         document.addEventListener("click", e => {
             let btn = e.target.closest(".btnDeleteTunjangan");
             if (!btn) return;
 
-            if (confirm("Yakin hapus tunjangan?")) {
-
+            if (confirm("Yakin ingin menghapus tunjangan ini?")) {
                 let fd = new FormData();
                 fd.append("action", "delete");
                 fd.append("id_tunjangan", btn.dataset.id);
@@ -179,14 +192,14 @@
                     .then(res => res.json())
                     .then(res => {
                         if (res.status == "success") {
-                            showToast("Berhasil menghapus!", "success");
+                            alert("Berhasil menghapus!");
                             loadTunjangan();
                         }
                     });
             }
         });
 
+        // Jalankan load data pertama kali
         loadTunjangan();
-
     });
 </script>
