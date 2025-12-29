@@ -61,7 +61,7 @@ $routes = [
 
     <title>Dashboard | Outsourcing System</title>
 
-    <link rel="icon" type="image/x-icon" href="assets/img/logo/tjs-logo-nobg.png" />
+    <link rel="icon" type="image/x-icon" href="assets/img/logo/tjs-nobg.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -120,7 +120,7 @@ $routes = [
             <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
                 <div class="app-brand demo">
                     <a href="?page=home" class="app-brand-link">
-                        <img src="assets/img/logo/tjs-logo-nobg.png" alt="Logo TJS">
+                        <img src="assets/img/logo/tjs-nobg.png" alt="Logo TJS">
                     </a>
                     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
                         <i class="bx bx-chevron-left bx-sm align-middle"></i>
