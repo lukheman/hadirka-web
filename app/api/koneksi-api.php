@@ -2,7 +2,6 @@
 
 // Menggunakan variabel $koneksi sesuai permintaan
 // $koneksi = mysqli_connect('localhost', 'root', '', 'database_outsoorsing');
-// $koneksi = mysqli_connect('localhost', 'karc1582_onehr', 'Onehrkpp1505', 'karc1582_new_database_os');
 $koneksi = mysqli_connect('localhost', 'trie8884_userrian', 'Raufjum1505', 'trie8884_tjs_db');
 
 // Cek Koneksi

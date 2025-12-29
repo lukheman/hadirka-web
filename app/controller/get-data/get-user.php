@@ -16,7 +16,7 @@ while ($row = $q->fetch_assoc()) {
     $site = (htmlspecialchars($row['site']) == 0) ? 0 : $qrSq['nama_site'];
     $level = (htmlspecialchars($row['level']) == 1 ? 'Admin' : 'Karyawan');
     $foto = $row['foto'];
-    $foto_url = ($foto && file_exists($alamat_foto . $foto)) ? $alamat_foto . $foto : 'assets/img/logo/kpp-logo-nobg.png';
+    $foto_url = ($foto && file_exists($alamat_foto . $foto)) ? $alamat_foto . $foto : 'assets/img/logo/tjs-nobg.png';
     $foto_url_esc = htmlspecialchars($foto_url);
 
     // data attributes untuk edit
