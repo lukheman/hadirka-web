@@ -489,7 +489,7 @@
             // 3. Inisialisasi DataTable
             tableKaryawan = $('#tableKaryawan').DataTable({
                 processing: true,
-                serverSide: false, // Set true jika data ribuan dan filter dilakukan di PHP
+                serverSide: false,
                 ajax: {
                     url: "app/controller/get-data/get-karyawan.php",
                     type: "POST",
@@ -557,11 +557,11 @@
                 tableKaryawan.ajax.reload();
             });
 
-            // 6. ACTION: TAMBAH DATA (Pastikan ID formTambahKaryawan sesuai HTML)
+            // 6. ACTION: TAMBAH DATA
             $("#formTambahKaryawan").on("submit", function(e) {
                 e.preventDefault();
                 let formData = new FormData(this);
-                formData.append("action", "add"); // Menambahkan marker action
+                formData.append("action", "add");
 
                 $.ajax({
                     url: "app/controller/act-karyawan.php",
@@ -582,7 +582,7 @@
                 });
             });
 
-            // 7. ACTION: GET DATA UNTUK EDIT (Event Delegation)
+            // 7. ACTION: GET DATA UNTUK EDIT
             $(document).on("click", ".btnEdit", function() {
                 let id = $(this).data("id");
                 $.ajax({
@@ -596,7 +596,6 @@
                     success: function(res) {
                         if (res.status === "ok") {
                             let d = res.data;
-                            // Isi data ke form modal edit
                             $("#edit_id_karyawan").val(d.id_karyawan);
                             $("#edit_nik_karyawan").val(res.data.nik_karyawan);
                             $("#edit_nama_lengkap").val(d.nama_lengkap);
@@ -676,21 +675,27 @@
                 }
             });
 
-            // 10. ACTION: IMPORT EXCEL
+            // ============================================================
+            // 10. ACTION: IMPORT EXCEL - FINAL VERSION ✅
+            // ============================================================
             $("#formImport").on("submit", function(e) {
                 e.preventDefault();
                 const formData = new FormData(this);
                 const btn = $("#btnUpload");
 
+                // Show progress bar
                 $("#progressWrapper").show();
                 btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
 
                 $.ajax({
                     url: "app/controller/csv-control/csv-karyawan.php",
                     type: "POST",
+                    dataType: "json", // ← PENTING! Auto-parse JSON response
                     data: formData,
                     contentType: false,
                     processData: false,
+
+                    // Progress bar handler
                     xhr: function() {
                         var xhr = new window.XMLHttpRequest();
                         xhr.upload.addEventListener("progress", function(evt) {
@@ -701,26 +706,105 @@
                         }, false);
                         return xhr;
                     },
+
+                    // Success handler
                     success: function(res) {
-                        console.log("Full Response:", res); // ← TAMBAHKAN INI DULU
-                        console.log("Type:", typeof res);
-                        try {
-                            if (res.success) {
-                                showToast(`Import Berhasil! (${res.berhasil} data)`, "success");
-                                tableKaryawan.ajax.reload();
-                                $("#ModalImport").modal("hide");
-                            } else {
-                                showToast("Gagal: " + res.error, "danger");
+                        console.log("=== Import Response ===");
+                        console.log("Response:", res);
+                        console.log("Success:", res.success);
+                        console.log("Berhasil:", res.berhasil);
+                        console.log("Gagal:", res.gagal);
+
+                        if (res.success) {
+                            // Buat pesan detail
+                            let msg = `📊 IMPORT SELESAI!\n\n`;
+                            msg += `✅ Berhasil: ${res.berhasil} data\n`;
+                            msg += `❌ Gagal: ${res.gagal} data`;
+
+                            // Tampilkan error jika ada (maksimal 5 error pertama)
+                            if (res.errors && res.errors.length > 0) {
+                                msg += `\n\n━━━━━━━━━━━━━━━━━━━━━━`;
+                                msg += `\n📋 ERROR DETAIL:\n`;
+                                msg += res.errors.slice(0, 5).join('\n');
+
+                                if (res.errors.length > 5) {
+                                    msg += `\n\n... dan ${res.errors.length - 5} error lainnya`;
+                                    msg += `\n(Cek console browser untuk detail lengkap)`;
+                                }
+
+                                // Log semua error ke console
+                                console.log("=== All Errors ===");
+                                console.log(res.errors);
                             }
-                        } catch (e) {
-                            showToast("Error parsing response", "danger");
+
+                            // Tampilkan debug info jika ada
+                            if (res.debug && res.debug.length > 0) {
+                                console.log("=== Debug Info ===");
+                                console.log(res.debug);
+                            }
+
+                            // Tampilkan alert dengan hasil
+                            alert(msg);
+
+                            // Reload table dan tutup modal
+                            tableKaryawan.ajax.reload();
+                            $("#ModalImport").modal("hide");
+                            $("#formImport")[0].reset();
+
+                            // Toast notification
+                            if (res.gagal > 0) {
+                                showToast(`Import selesai dengan ${res.gagal} error. Cek detail!`, "warning");
+                            } else {
+                                showToast(`Semua ${res.berhasil} data berhasil diimport!`, "success");
+                            }
+
+                        } else {
+                            // Jika success = false
+                            let errorMsg = "❌ IMPORT GAGAL!\n\n";
+                            errorMsg += res.error || "Terjadi kesalahan tidak diketahui";
+
+                            // Tampilkan detail error jika ada
+                            if (res.error_detail) {
+                                errorMsg += `\n\nDetail:\n`;
+                                errorMsg += `File: ${res.error_detail.file}\n`;
+                                errorMsg += `Line: ${res.error_detail.line}`;
+                            }
+
+                            alert(errorMsg);
+                            showToast("Import gagal! Cek console untuk detail.", "danger");
+
+                            console.error("=== Import Error ===");
+                            console.error(res);
                         }
                     },
+
+                    // Error handler (untuk AJAX error, bukan logic error)
+                    error: function(xhr, status, error) {
+                        console.error("=== AJAX Error ===");
+                        console.error("Status:", status);
+                        console.error("Error:", error);
+                        console.error("Response:", xhr.responseText);
+
+                        let errorMsg = "⚠️ TERJADI KESALAHAN SERVER!\n\n";
+                        errorMsg += `Status: ${status}\n`;
+                        errorMsg += `Error: ${error}\n\n`;
+                        errorMsg += "Cek console browser (F12) untuk detail lengkap.";
+
+                        alert(errorMsg);
+                        showToast("Terjadi kesalahan server!", "danger");
+                    },
+
+                    // Complete handler (selalu dijalankan)
                     complete: function() {
+                        // Hide progress bar dan restore button
                         $("#progressWrapper").hide();
+                        $("#progressBar").css("width", "0%").text("0%");
                         btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
                     }
                 });
             });
+            // ============================================================
+            // END: IMPORT EXCEL
+            // ============================================================
         });
     </script>
