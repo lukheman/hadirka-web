@@ -250,8 +250,8 @@ try {
             
             if (isset($mapKet[$nilaiUpper])) {
                 // Sakit/Izin/Cuti = 0 jam kerja
-                $jamKerja = $mapKet[$nilaiUpper]; 
                 $ket = $mapKet[$nilaiUpper];
+                $jamKerja = $ket; 
                 $isProcessed = true;
                 $debugLog[] = "NIK: $nik_karyawan | Tgl: $tgl | Cell: $nilaiRaw | Proses: KODE KHUSUS ($ket)";
             }
