@@ -290,8 +290,8 @@ try {
             
             // PRIORITAS 1: Kode Khusus
             if (isset($mapKet[$nilaiUpper])) {
-                $jamKerja = 0;
                 $ket = $mapKet[$nilaiUpper];
+                $jamKerja = $ket;
                 $isProcessed = true;
                 $reason = "Kode khusus: $ket";
             }
@@ -359,12 +359,12 @@ try {
                     if ($ada == 0) {
                         // INSERT
                         $stmt = $koneksi->prepare("INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen) VALUES (?,?,?,?)");
-                        $stmt->bind_param("isds", $id_karyawan, $tgl, $jamKerja, $ket);
+                        $stmt->bind_param("isss", $id_karyawan, $tgl, $jamKerja, $ket);
                         $action = "INSERT";
                     } else {
                         // UPDATE
                         $stmt = $koneksi->prepare("UPDATE tb_absen SET jam_kerja=?, ket_absen=? WHERE id_karyawan=? AND tgl_absen=?");
-                        $stmt->bind_param("dsis", $jamKerja, $ket, $id_karyawan, $tgl);
+                        $stmt->bind_param("ssis", $jamKerja, $ket, $id_karyawan, $tgl);
                         $action = "UPDATE";
                     }
                     
