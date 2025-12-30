@@ -1,9 +1,12 @@
 <?php
 require '../../config/koneksi.php';
 
-$query = "SELECT p.id_pinjaman, k.id_karyawan, k.nik_karyawan, k.nama_lengkap, p.nominal_pinjaman, p.tgl_pinjaman, p.tgl_bayar_pinjaman, p.ket_pinjaman
+$query = "SELECT p.id_pinjaman, k.id_karyawan, k.nik_karyawan, k.nama_lengkap, p.nominal_pinjaman, p.tgl_pinjaman, p.tgl_bayar_pinjaman, p.ket_pinjaman, j.nama_jabatan
           FROM tb_pinjaman p
           JOIN tb_karyawan k ON p.id_karyawan = k.id_karyawan
+          JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
+          JOIN tb_jabatan j ON j.id_jabatan = kr.id_jabatan
+          JOIN tb_site s ON s.id_site = kr.id_site
           ORDER BY p.tgl_pinjaman DESC";
 $result = mysqli_query($koneksi, $query);
 $no = 1;
@@ -13,6 +16,7 @@ while($row = mysqli_fetch_assoc($result)){
     echo "<td class='text-center'>{$no}</td>";
     echo "<td>{$row['nik_karyawan']}</td>";
     echo "<td>{$row['nama_lengkap']}</td>";
+    echo "<td>{$row['nama_jabatan']}</td>";
     echo "<td>{$row['tgl_pinjaman']}</td>";
     echo "<td>{$row['tgl_bayar_pinjaman']}</td>";
     echo "<td>".number_format($row['nominal_pinjaman'],0,",",".")."</td>";

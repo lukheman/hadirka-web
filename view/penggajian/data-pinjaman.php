@@ -101,6 +101,7 @@
                                         <th class="text-center" width="50">No</th>
                                         <th>NIK</th>
                                         <th>Karyawan</th>
+                                        <th>Jabatan</th>
                                         <th>Tgl Pinjaman</th>
                                         <th>Tgl Bayar</th>
                                         <th>Nominal</th>
