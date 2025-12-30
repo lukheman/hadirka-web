@@ -195,7 +195,7 @@ try {
         }
 
         // Get ID Karyawan
-        $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_karyawan FROM tb_karyawan WHERE nik_karyawan=?");
+        $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE nik_karyawan=?");
         $stmtK->bind_param("s", $nik_karyawan);
         $stmtK->execute();
         $stmtK->bind_result($id_karyawan, $nama_karyawan);
