@@ -22,6 +22,7 @@ try {
     $endDate   = $_POST['endDate']   ?? date("Y-m-t");
 
     // Ambil semua karyawan dengan data identitas (rekening dan site)
+    // HANYA yang kariernya aktif pada periode yang dipilih
     $sql = "SELECT 
                 k.id_karyawan, 
                 k.nik_karyawan, 
@@ -34,6 +35,8 @@ try {
             LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
             LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
             LEFT JOIN tb_site s ON kr.id_site = s.id_site
+            WHERE kr.tgl_mulai <= '$endDate' 
+              AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= '$startDate')
             ORDER BY k.nama_lengkap ASC";
 
     $q = mysqli_query($koneksi, $sql);
