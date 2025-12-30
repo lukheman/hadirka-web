@@ -32,7 +32,7 @@ $routes = [
     'bukti-sks'       => 'view/kehadiran/bukti-sks.php',
 
     // Penggajian & Finance
-    'slip-gaji'       => 'view/penggajian/slip-gaji.php',
+    // 'slipgaji'       => 'view/penggajian/slip-gaji.php',
     'data-pinjaman'   => 'view/penggajian/data-pinjaman.php',
     'data-rapel'      => 'view/penggajian/data-rapel.php',
     'payroll'         => 'view/penggajian/data-payrol.php',
