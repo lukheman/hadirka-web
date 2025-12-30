@@ -462,34 +462,34 @@
     <!-- JS: jQuery, Bootstrap, DataTables, Toastr -->
     <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <script>
+        // 1. Helper Function: Detail Expandable Row
+        function formatDetail(detailHtml) {
+            return `<div class="p-4 bg-light border-start border-primary border-4 rounded shadow-sm">${detailHtml}</div>`;
+        }
+
+        // 2. Helper Function: Toast Notifications
+        function showToast(message, type = "success") {
+            const toastEl = document.getElementById('toastAlert');
+            const toastBody = document.getElementById('toastMessage');
+
+            toastEl.className = `toast text-bg-${type} border-0`;
+            toastBody.innerHTML = message;
+
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        let tableKaryawan = null;
+
         $(document).ready(function() {
             // Init Tooltip
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(t => new bootstrap.Tooltip(t));
 
-            // 1. Helper Function: Detail Expandable Row
-            function formatDetail(detailHtml) {
-                return `<div class="p-4 bg-light border-start border-primary border-4 rounded shadow-sm">${detailHtml}</div>`;
-            }
-
-            // 2. Helper Function: Toast Notifications
-            function showToast(message, type = "success") {
-                const toastEl = document.getElementById('toastAlert');
-                const toastBody = document.getElementById('toastMessage');
-
-                toastEl.className = `toast text-bg-${type} border-0`;
-                toastBody.innerHTML = message;
-
-                const toast = new bootstrap.Toast(toastEl);
-                toast.show();
-            }
-
-            let tableKaryawan = null;
-
             // 3. Inisialisasi DataTable
             tableKaryawan = $('#tableKaryawan').DataTable({
                 processing: true,
-                serverSide: false,
+                serverSide: false, // Set true jika data ribuan dan filter dilakukan di PHP
                 ajax: {
                     url: "app/controller/get-data/get-karyawan.php",
                     type: "POST",
@@ -497,11 +497,7 @@
                         d.site = $("#filterSite").val();
                         d.jabatan = $("#filterJabatan").val();
                     },
-                    dataSrc: "data",
-                    error: function(xhr, error, thrown) {
-                        console.error('DataTable Error:', error, thrown);
-                        showToast('Gagal memuat data karyawan', 'danger');
-                    }
+                    dataSrc: "data"
                 },
                 columns: [{
                         className: 'dt-control text-center',
@@ -561,11 +557,11 @@
                 tableKaryawan.ajax.reload();
             });
 
-            // 6. ACTION: TAMBAH DATA
+            // 6. ACTION: TAMBAH DATA (Pastikan ID formTambahKaryawan sesuai HTML)
             $("#formTambahKaryawan").on("submit", function(e) {
                 e.preventDefault();
                 let formData = new FormData(this);
-                formData.append("action", "add");
+                formData.append("action", "add"); // Menambahkan marker action
 
                 $.ajax({
                     url: "app/controller/act-karyawan.php",
@@ -573,7 +569,6 @@
                     data: formData,
                     processData: false,
                     contentType: false,
-                    dataType: 'json',
                     success: function(res) {
                         if (res.status === "ok") {
                             $("#modalTambahKaryawan").modal("hide");
@@ -583,15 +578,11 @@
                         } else {
                             showToast("Gagal: " + (res.msg || "Terjadi kesalahan"), "danger");
                         }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Add Error:', xhr.responseText);
-                        showToast("Error: " + error, "danger");
                     }
                 });
             });
 
-            // 7. ACTION: GET DATA UNTUK EDIT
+            // 7. ACTION: GET DATA UNTUK EDIT (Event Delegation)
             $(document).on("click", ".btnEdit", function() {
                 let id = $(this).data("id");
                 $.ajax({
@@ -605,8 +596,9 @@
                     success: function(res) {
                         if (res.status === "ok") {
                             let d = res.data;
+                            // Isi data ke form modal edit
                             $("#edit_id_karyawan").val(d.id_karyawan);
-                            $("#edit_nik_karyawan").val(d.nik_karyawan);
+                            $("#edit_nik_karyawan").val(res.data.nik_karyawan);
                             $("#edit_nama_lengkap").val(d.nama_lengkap);
                             $("#edit_jenis_kelamin").val(d.jenis_kelamin);
                             $("#edit_agama").val(d.agama);
@@ -635,13 +627,7 @@
                             $("#edit_tgl_selesai").val(d.tgl_selesai);
 
                             $("#ModalEdit").modal("show");
-                        } else {
-                            showToast("Gagal mengambil data", "danger");
                         }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Get Error:', xhr.responseText);
-                        showToast("Error: " + error, "danger");
                     }
                 });
             });
@@ -653,7 +639,6 @@
                     url: "app/controller/act-karyawan.php",
                     type: "POST",
                     data: $(this).serialize() + "&action=edit",
-                    dataType: 'json',
                     success: function(res) {
                         if (res.status === "ok") {
                             $("#ModalEdit").modal("hide");
@@ -662,10 +647,6 @@
                         } else {
                             showToast("Gagal memperbarui data", "danger");
                         }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Edit Error:', xhr.responseText);
-                        showToast("Error: " + error, "danger");
                     }
                 });
             });
@@ -683,7 +664,6 @@
                             action: "delete",
                             id_karyawan: id
                         },
-                        dataType: 'json',
                         success: function(res) {
                             if (res.status === "ok") {
                                 tableKaryawan.ajax.reload(null, false);
@@ -691,52 +671,18 @@
                             } else {
                                 showToast("Gagal menghapus data!", "danger");
                             }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('Delete Error:', xhr.responseText);
-                            showToast("Error: " + error, "danger");
                         }
                     });
                 }
             });
 
-            // 10. ACTION: IMPORT EXCEL - PERBAIKAN UTAMA
+            // 10. ACTION: IMPORT EXCEL
             $("#formImport").on("submit", function(e) {
                 e.preventDefault();
-
-                const fileInput = $("#file_excel")[0];
-
-                // Validasi file ada
-                if (!fileInput.files || fileInput.files.length === 0) {
-                    showToast("Pilih file Excel terlebih dahulu!", "warning");
-                    return false;
-                }
-
-                const file = fileInput.files[0];
-                const fileSize = file.size / 1024 / 1024; // Convert to MB
-
-                // Validasi ukuran file (max 10MB)
-                if (fileSize > 10) {
-                    showToast("Ukuran file terlalu besar! Maksimal 10MB", "warning");
-                    return false;
-                }
-
-                // Validasi ekstensi
-                const fileName = file.name;
-                const fileExt = fileName.split('.').pop().toLowerCase();
-                if (!['xls', 'xlsx'].includes(fileExt)) {
-                    showToast("Format file harus XLS atau XLSX!", "warning");
-                    return false;
-                }
-
                 const formData = new FormData(this);
                 const btn = $("#btnUpload");
 
-                // Show progress bar
                 $("#progressWrapper").show();
-                $("#progressBar").css("width", "0%").text("0%");
-
-                // Disable button
                 btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
 
                 $.ajax({
@@ -745,173 +691,34 @@
                     data: formData,
                     contentType: false,
                     processData: false,
-                    dataType: 'json', // PENTING: Expect JSON response
-                    timeout: 300000, // 5 menit timeout untuk file besar
-
                     xhr: function() {
                         var xhr = new window.XMLHttpRequest();
-
-                        // Upload progress
                         xhr.upload.addEventListener("progress", function(evt) {
                             if (evt.lengthComputable) {
                                 var percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                                $("#progressBar")
-                                    .css("width", percentComplete + "%")
-                                    .text(percentComplete + "%")
-                                    .removeClass("bg-danger")
-                                    .addClass("bg-success");
+                                $("#progressBar").css("width", percentComplete + "%").text(percentComplete + "%");
                             }
                         }, false);
-
                         return xhr;
                     },
-
                     success: function(res) {
-                        console.log('Import Response:', res);
-
-                        // Cek response valid
-                        if (typeof res !== 'object') {
-                            console.error('Invalid response type:', typeof res, res);
-                            showToast("Response tidak valid dari server", "danger");
-                            return;
-                        }
-
-                        if (res.success === true) {
-                            // Success
-                            let message = `Import Berhasil!<br>✓ Berhasil: ${res.berhasil} data`;
-
-                            if (res.gagal > 0) {
-                                message += `<br>✗ Gagal: ${res.gagal} data`;
-                            }
-
-                            showToast(message, "success");
-
-                            // Show errors if any
-                            if (res.errors && res.errors.length > 0) {
-                                console.warn('Import Errors:', res.errors);
-                                let errorHtml = '<div class="alert alert-warning mt-2">';
-                                errorHtml += '<strong>Detail Error:</strong><ul class="mb-0">';
-                                res.errors.slice(0, 5).forEach(err => {
-                                    errorHtml += `<li>${err}</li>`;
-                                });
-                                if (res.errors.length > 5) {
-                                    errorHtml += `<li>... dan ${res.errors.length - 5} error lainnya</li>`;
-                                }
-                                errorHtml += '</ul></div>';
-
-                                // Bisa tampilkan di modal atau console
-                                console.log('Errors:', errorHtml);
-                            }
-
-                            // Reload table
-                            tableKaryawan.ajax.reload(null, false);
-
-                            // Close modal
-                            setTimeout(function() {
+                        console.log("Full Response:", res); // ← TAMBAHKAN INI DULU
+                        console.log("Type:", typeof res);
+                        try {
+                            if (res.success) {
+                                showToast(`Import Berhasil! (${res.berhasil} data)`, "success");
+                                tableKaryawan.ajax.reload();
                                 $("#ModalImport").modal("hide");
-                                $("#formImport")[0].reset();
-                            }, 2000);
-
-                        } else {
-                            // Failed
-                            let errorMsg = res.error || res.message || "Terjadi kesalahan saat import";
-                            showToast("Gagal: " + errorMsg, "danger");
-
-                            // Log errors untuk debugging
-                            if (res.errors && res.errors.length > 0) {
-                                console.error('Import Errors:', res.errors);
+                            } else {
+                                showToast("Gagal: " + res.error, "danger");
                             }
-
-                            $("#progressBar")
-                                .removeClass("bg-success")
-                                .addClass("bg-danger");
+                        } catch (e) {
+                            showToast("Error parsing response", "danger");
                         }
                     },
-
-                    error: function(xhr, status, error) {
-                        console.error('AJAX Error:', {
-                            status: status,
-                            error: error,
-                            responseText: xhr.responseText,
-                            statusCode: xhr.status
-                        });
-
-                        let errorMessage = "Terjadi kesalahan pada server";
-
-                        // Parse error response
-                        if (xhr.status === 500) {
-                            errorMessage = "Server Error (500). Cek error log PHP";
-                        } else if (xhr.status === 413) {
-                            errorMessage = "File terlalu besar untuk diupload";
-                        } else if (xhr.status === 0) {
-                            errorMessage = "Tidak dapat terhubung ke server";
-                        } else if (xhr.responseText) {
-                            try {
-                                const errRes = JSON.parse(xhr.responseText);
-                                errorMessage = errRes.error || errRes.message || errorMessage;
-                            } catch (e) {
-                                // Jika bukan JSON, ambil sebagian text
-                                errorMessage += ": " + xhr.responseText.substring(0, 100);
-                            }
-                        }
-
-                        showToast(errorMessage, "danger");
-
-                        $("#progressBar")
-                            .css("width", "100%")
-                            .text("Error!")
-                            .removeClass("bg-success")
-                            .addClass("bg-danger");
-                    },
-
                     complete: function() {
-                        // Re-enable button
+                        $("#progressWrapper").hide();
                         btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
-
-                        // Hide progress after 2 seconds
-                        setTimeout(function() {
-                            $("#progressWrapper").fadeOut();
-                        }, 2000);
-                    }
-                });
-
-                return false;
-            });
-
-            // Reset form ketika modal ditutup
-            $('#ModalImport').on('hidden.bs.modal', function() {
-                $("#formImport")[0].reset();
-                $("#progressWrapper").hide();
-                $("#progressBar").css("width", "0%").text("0%");
-            });
-
-            // Load data untuk dropdown Site dan Jabatan saat modal tambah dibuka
-            $('#ModalAdd, #modalTambahKaryawan').on('show.bs.modal', function() {
-                // Load sites
-                $.ajax({
-                    url: 'app/controller/get-data/get-sites.php',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(data) {
-                        let options = '<option value="">-- Pilih Site --</option>';
-                        data.forEach(function(item) {
-                            options += `<option value="${item.id_site}">${item.nama_site}</option>`;
-                        });
-                        $('#siteSelectAdd, #edit_id_site').html(options);
-                    }
-                });
-
-                // Load jabatan
-                $.ajax({
-                    url: 'app/controller/get-data/get-jabatan.php',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(data) {
-                        let options = '<option value="">-- Pilih Jabatan --</option>';
-                        data.forEach(function(item) {
-                            options += `<option value="${item.id_jabatan}">${item.nama_jabatan}</option>`;
-                        });
-                        $('#jabatanSelectAdd, #edit_id_jabatan').html(options);
                     }
                 });
             });
