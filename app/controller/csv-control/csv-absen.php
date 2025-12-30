@@ -11,7 +11,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-// DEBUGGING: Cek koneksi database
 if (!$koneksi) {
     echo json_encode(['status' => 'error', 'message' => 'Koneksi database gagal']);
     exit;
@@ -23,7 +22,7 @@ if (!isset($_FILES['file_csv'])) {
 }
 
 if ($_FILES['file_csv']['error'] !== UPLOAD_ERR_OK) {
-    echo json_encode(['status' => 'error', 'message' => 'Error upload file: ' . $_FILES['file_csv']['error']]);
+    echo json_encode(['status' => 'error', 'message' => 'Error upload file']);
     exit;
 }
 
@@ -38,27 +37,59 @@ try {
     $reader->setReadDataOnly(false); 
     $spreadsheet = $reader->load($fileTmpPath);
     $sheet = $spreadsheet->getActiveSheet();
-    $data = $sheet->toArray(null, true, true, true);
 
     // ================================
-    // FUNGSI CEK WARNA
+    // FUNGSI CEK WARNA (DIPERLUAS)
     // ================================
+    function getCellColorInfo($sheet, $cell) {
+        try {
+            $style = $sheet->getStyle($cell)->getFill();
+            $fillType = $style->getFillType();
+            $bgColor = strtoupper($style->getStartColor()->getRGB());
+            
+            return [
+                'color' => $bgColor,
+                'fillType' => $fillType,
+                'isYellow' => false
+            ];
+        } catch (Exception $e) {
+            return ['color' => 'ERROR', 'fillType' => 'ERROR', 'isYellow' => false];
+        }
+    }
+
     function isYellowCell($sheet, $cell) {
         try {
             $style = $sheet->getStyle($cell)->getFill();
             $bgColor = strtoupper($style->getStartColor()->getRGB());
+            $fillType = $style->getFillType();
             
-            if ($style->getFillType() === Fill::FILL_NONE || 
+            // Jika tidak ada fill, langsung false
+            if ($fillType === Fill::FILL_NONE || 
                 $bgColor === '000000' || 
                 $bgColor === 'FFFFFF' || 
                 $bgColor === '') {
                 return false;
             }
             
+            // List warna kuning DIPERLUAS
             $yellowColors = [
-                'FFFF00', 'FFFF99', 'FFFFCC', 'FFFFE0', 'FFFACD',
-                'FFF200', 'FFED00', 'FFFF0000', 'FFFFFF00', 'FFFFC000',
-                'FFFFCC00', 'FFFFE599', 'FFFFFFCC'
+                'FFFF00',      // Kuning standar
+                'FFFF99',      // Kuning muda
+                'FFFFCC',      // Kuning pucat
+                'FFFFE0',      // Kuning sangat pucat
+                'FFFACD',      // Lemon chiffon
+                'FFF200',      // Kuning terang
+                'FFED00',      // Kuning emas
+                'FFFF0000',    // Kuning dengan alpha
+                'FFFFFF00',    // Kuning penuh
+                'FFFFC000',    // Emas/kuning tua
+                'FFFFCC00',    // Kuning medium
+                'FFFFE599',    // Kuning Excel theme
+                'FFFFFFCC',    // Kuning sangat muda
+                'FFC000',      // Kuning tua (tanpa FF prefix)
+                'FFFE00',      // Kuning cerah
+                'FFD700',      // Gold
+                'FFEF00',      // Kuning neon
             ];
             
             return in_array($bgColor, $yellowColors);
@@ -68,17 +99,64 @@ try {
     }
 
     // ================================
+    // FUNGSI AMBIL NILAI CELL (DIPERBAIKI)
+    // ================================
+    function getCellValue($sheet, $cell) {
+        try {
+            $cellObj = $sheet->getCell($cell);
+            
+            // Cek apakah cell adalah formula
+            $isFormula = false;
+            try {
+                $formula = $cellObj->getValue();
+                if (is_string($formula) && strpos($formula, '=') === 0) {
+                    $isFormula = true;
+                    // Ambil calculated value (hasil formula)
+                    $value = $cellObj->getCalculatedValue();
+                } else {
+                    $value = $cellObj->getValue();
+                }
+            } catch (Exception $e) {
+                $value = $cellObj->getValue();
+            }
+            
+            // Trim whitespace
+            if (is_string($value)) {
+                $value = trim($value);
+                // Hapus non-breaking space (ASCII 160)
+                $value = str_replace("\xc2\xa0", '', $value);
+                $value = preg_replace('/\s+/', ' ', $value); // Normalisasi spasi
+            }
+            
+            return [
+                'value' => $value,
+                'isFormula' => $isFormula,
+                'dataType' => $cellObj->getDataType()
+            ];
+        } catch (Exception $e) {
+            return [
+                'value' => '',
+                'isFormula' => false,
+                'dataType' => 'error',
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    // ================================
     // DEFINISI KOLOM
     // ================================
     $colNIK = 'C';
     $startCol = 'D';
     $highestCol = $sheet->getHighestColumn();
+    $highestRow = $sheet->getHighestRow();
     $colsTanggal = [];
 
+    // Ambil kolom tanggal
     $currentCol = $startCol;
     while (true) {
-        $val = trim($sheet->getCell($currentCol . '1')->getValue());
-        if ($val !== '') {
+        $cellValue = getCellValue($sheet, $currentCol . '1');
+        if ($cellValue['value'] !== '') {
             $colsTanggal[] = $currentCol;
         }
         if ($currentCol === $highestCol) break;
@@ -97,70 +175,52 @@ try {
     $insertCount = 0;
     $errorMessages = [];
     $debugLog = [];
+    $anomalyLog = []; // Log khusus untuk kasus aneh
     
-    // DEBUGGING: Info file
     $debugLog[] = "=== FILE INFO ===";
-    $debugLog[] = "Total baris: " . count($data);
+    $debugLog[] = "Total baris: $highestRow";
     $debugLog[] = "Kolom tanggal: " . implode(', ', $colsTanggal);
-    $debugLog[] = "Highest column: $highestCol";
 
     // ================================
     // LOOP PER BARIS
     // ================================
-    $processedRows = 0;
-    for ($i = 2; $i <= count($data); $i++) {
-        $row = $data[$i];
-        $nik_karyawan = isset($row[$colNIK]) ? trim($row[$colNIK]) : '';
+    for ($i = 2; $i <= $highestRow; $i++) {
+        $nikData = getCellValue($sheet, $colNIK . $i);
+        $nik_karyawan = $nikData['value'];
         $nik_karyawan = str_replace(' ', '', $nik_karyawan);
 
-        // DEBUGGING: Log setiap baris
-        $debugLog[] = "\n=== BARIS $i ===";
-        $debugLog[] = "NIK Raw: " . (isset($row[$colNIK]) ? "'{$row[$colNIK]}'" : 'NULL');
-        $debugLog[] = "NIK Cleaned: '$nik_karyawan'";
-
         if (empty($nik_karyawan)) {
-            $debugLog[] = "SKIP: NIK kosong";
             $skipCount++;
             continue;
         }
 
-        // Get ID Karyawan dengan error handling
-        $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan=?");
-        if (!$stmtK) {
-            $debugLog[] = "ERROR: Prepare statement gagal - " . $koneksi->error;
-            $errorCount++;
-            continue;
-        }
-        
+        // Get ID Karyawan
+        $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_karyawan FROM tb_karyawan WHERE nik_karyawan=?");
         $stmtK->bind_param("s", $nik_karyawan);
         $stmtK->execute();
-        $stmtK->bind_result($id_karyawan);
+        $stmtK->bind_result($id_karyawan, $nama_karyawan);
         $stmtK->fetch();
         $stmtK->close();
 
-        $debugLog[] = "ID Karyawan: " . ($id_karyawan ? $id_karyawan : 'TIDAK DITEMUKAN');
-
         if (!$id_karyawan) {
-            $errorMessages[] = "NIK $nik_karyawan tidak ditemukan di database";
-            $debugLog[] = "ERROR: NIK tidak ada di tb_karyawan";
+            $errorMessages[] = "NIK $nik_karyawan tidak ditemukan";
             $errorCount++;
             continue;
         }
 
-        $processedRows++;
-        
         // Loop per kolom tanggal
         foreach ($colsTanggal as $col) {
             $cellAddress = $col . $i;
             $headerCell = $col . '1';
-            $cellObj = $sheet->getCell($headerCell);
-            $valTgl = $cellObj->getValue();
+            
+            // AMBIL TANGGAL HEADER
+            $headerData = getCellValue($sheet, $headerCell);
+            $valTgl = $headerData['value'];
 
-            // ================================
-            // KONVERSI TANGGAL
-            // ================================
+            // Konversi tanggal
             $tgl = null;
             try {
+                $cellObj = $sheet->getCell($headerCell);
                 if (Date::isDateTime($cellObj)) {
                     $dateObj = Date::excelToDateTimeObject($valTgl);
                     $tgl = $dateObj->format('Y-m-d');
@@ -176,23 +236,23 @@ try {
                     $tgl = $dateObj->format('Y-m-d');
                 }
             } catch (Exception $e) {
-                $debugLog[] = "ERROR parsing tanggal di $col: " . $e->getMessage();
-            }
-
-            if (!$tgl) {
-                $debugLog[] = "SKIP kolom $col: Tanggal tidak valid";
+                // Skip kolom ini
                 continue;
             }
 
-            $nilaiRaw = isset($row[$col]) ? trim($row[$col]) : '';
+            if (!$tgl) continue;
+
+            // AMBIL NILAI CELL DENGAN DETAIL
+            $cellData = getCellValue($sheet, $cellAddress);
+            $nilaiRaw = $cellData['value'];
             $nilaiUpper = strtoupper($nilaiRaw);
             $isHariOff = isYellowCell($sheet, $cellAddress);
-
-            $debugLog[] = "  Kolom $col | Tgl: $tgl | Cell: '$nilaiRaw' | Kuning: " . ($isHariOff ? 'YA' : 'TIDAK');
+            $colorInfo = getCellColorInfo($sheet, $cellAddress);
 
             $jamKerja = null;
             $ket = '';
             $isProcessed = false;
+            $reason = ''; // Alasan kenapa diproses/tidak
 
             // ================================
             // HANDLE M dan NEW
@@ -211,10 +271,6 @@ try {
                     if ($stmtDel->execute()) {
                         $deleteCount++;
                         $successCount++;
-                        $debugLog[] = "  ✓ DELETE sukses";
-                    } else {
-                        $errorCount++;
-                        $debugLog[] = "  ✗ DELETE gagal: " . $stmtDel->error;
                     }
                     $stmtDel->close();
                 }
@@ -222,7 +278,7 @@ try {
             }
 
             // ================================
-            // LOGIKA VALIDASI
+            // LOGIKA VALIDASI (DENGAN LOGGING)
             // ================================
             $mapKet = [
                 'SD' => 'SAKIT', 
@@ -232,106 +288,108 @@ try {
                 'CUTI' => 'CUTI'
             ];
             
+            // PRIORITAS 1: Kode Khusus
             if (isset($mapKet[$nilaiUpper])) {
                 $jamKerja = 0;
                 $ket = $mapKet[$nilaiUpper];
                 $isProcessed = true;
-                $debugLog[] = "  → Match: KODE KHUSUS ($ket)";
+                $reason = "Kode khusus: $ket";
             }
+            // PRIORITAS 2: Kuning + Angka = Kerja di Hari OFF
             elseif ($isHariOff && $nilaiRaw !== '' && is_numeric(str_replace(',', '.', $nilaiRaw))) {
                 $jamKerja = floatval(str_replace(',', '.', $nilaiRaw));
                 $ket = 'OFF';
                 $isProcessed = true;
-                $debugLog[] = "  → Match: KERJA DI HARI OFF (Jam: $jamKerja)";
+                $reason = "Kerja di hari OFF (kuning + angka)";
             }
+            // PRIORITAS 3: Hari OFF (Kuning atau text OFF)
             elseif ($isHariOff || $nilaiUpper === 'OFF') {
                 $jamKerja = 0;
                 $ket = 'OFF';
                 $isProcessed = true;
-                $debugLog[] = "  → Match: HARI OFF";
+                $reason = $isHariOff ? "Hari OFF (cell kuning)" : "Hari OFF (text)";
             }
+            // PRIORITAS 4: Angka (Jam Kerja Normal)
             elseif ($nilaiRaw !== '' && is_numeric(str_replace(',', '.', $nilaiRaw))) {
                 $jamKerja = floatval(str_replace(',', '.', $nilaiRaw));
                 $ket = '';
                 $isProcessed = true;
-                $debugLog[] = "  → Match: JAM KERJA ($jamKerja)";
+                $reason = "Jam kerja normal: $jamKerja";
             }
+            // PRIORITAS 5: Cell Kosong = ALPHA
             elseif (!$isHariOff && $nilaiRaw === '') {
                 $jamKerja = 0;
                 $ket = 'ALPHA';
                 $isProcessed = true;
-                $debugLog[] = "  → Match: ALPHA";
-            } else {
-                $debugLog[] = "  → NO MATCH - Skip";
+                $reason = "Cell kosong = Alpha";
+            }
+            else {
+                $reason = "TIDAK DIPROSES - Cell: '$nilaiRaw' | Kuning: " . ($isHariOff ? 'Ya' : 'Tidak');
+                
+                // LOG ANOMALI untuk debugging
+                $anomalyLog[] = [
+                    'nik' => $nik_karyawan,
+                    'nama' => $nama_karyawan,
+                    'tanggal' => $tgl,
+                    'cell_address' => $cellAddress,
+                    'cell_value' => $nilaiRaw,
+                    'cell_upper' => $nilaiUpper,
+                    'is_yellow' => $isHariOff,
+                    'color_code' => $colorInfo['color'],
+                    'fill_type' => $colorInfo['fillType'],
+                    'is_formula' => $cellData['isFormula'],
+                    'data_type' => $cellData['dataType'],
+                    'reason' => $reason
+                ];
             }
 
             // ================================
             // EKSEKUSI DATABASE
             // ================================
             if ($isProcessed) {
-                $debugLog[] = "  → Akan eksekusi: Jam=$jamKerja, Ket='$ket'";
-                
                 try {
                     // Check existing
                     $stmtCheck = $koneksi->prepare("SELECT id_absen FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
-                    if (!$stmtCheck) {
-                        throw new Exception("Prepare check failed: " . $koneksi->error);
-                    }
-                    
                     $stmtCheck->bind_param("is", $id_karyawan, $tgl);
                     $stmtCheck->execute();
                     $stmtCheck->store_result();
                     $ada = $stmtCheck->num_rows;
                     $stmtCheck->close();
 
-                    $debugLog[] = "  → Data existing: " . ($ada > 0 ? "ADA (UPDATE)" : "TIDAK ADA (INSERT)");
-
                     if ($ada == 0) {
                         // INSERT
                         $stmt = $koneksi->prepare("INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen) VALUES (?,?,?,?)");
-                        if (!$stmt) {
-                            throw new Exception("Prepare INSERT failed: " . $koneksi->error);
-                        }
-                        
-                        // PENTING: Cek tipe kolom jam_kerja di database (DECIMAL, VARCHAR, atau INT?)
-                        // Gunakan "d" untuk DECIMAL/FLOAT, "s" untuk VARCHAR
                         $stmt->bind_param("isds", $id_karyawan, $tgl, $jamKerja, $ket);
                         $action = "INSERT";
                     } else {
                         // UPDATE
                         $stmt = $koneksi->prepare("UPDATE tb_absen SET jam_kerja=?, ket_absen=? WHERE id_karyawan=? AND tgl_absen=?");
-                        if (!$stmt) {
-                            throw new Exception("Prepare UPDATE failed: " . $koneksi->error);
-                        }
-                        
                         $stmt->bind_param("dsis", $jamKerja, $ket, $id_karyawan, $tgl);
                         $action = "UPDATE";
                     }
-                    
-                    $debugLog[] = "  → Execute $action...";
                     
                     if ($stmt->execute()) {
                         $successCount++;
                         if ($action == "INSERT") $insertCount++;
                         if ($action == "UPDATE") $updateCount++;
-                        $debugLog[] = "  ✓ $action SUKSES!";
+                        
+                        // Log detail untuk tracking
+                        $debugLog[] = "✓ $action | NIK: $nik_karyawan | Tgl: $tgl | Jam: $jamKerja | Ket: '$ket' | Alasan: $reason";
                     } else {
                         $errorCount++;
-                        $debugLog[] = "  ✗ $action GAGAL: " . $stmt->error;
-                        $errorMessages[] = "$action gagal untuk NIK $nik_karyawan tgl $tgl: " . $stmt->error;
+                        $errorMessages[] = "$action gagal NIK $nik_karyawan tgl $tgl: " . $stmt->error;
                     }
                     $stmt->close();
                     
                 } catch (Exception $e) {
                     $errorCount++;
-                    $debugLog[] = "  ✗ EXCEPTION: " . $e->getMessage();
-                    $errorMessages[] = "Exception untuk NIK $nik_karyawan tgl $tgl: " . $e->getMessage();
+                    $errorMessages[] = "Exception NIK $nik_karyawan tgl $tgl: " . $e->getMessage();
                 }
             }
         }
     }
 
-    // Response
+    // Response dengan anomaly log
     echo json_encode([
         'status' => $successCount > 0 ? 'success' : 'error',
         'message' => $successCount > 0 ? "Berhasil memproses $successCount data" : "Tidak ada data yang berhasil diproses",
@@ -342,19 +400,18 @@ try {
             'delete' => $deleteCount,
             'error' => $errorCount,
             'skipped' => $skipCount,
-            'total_rows' => count($data) - 1,
-            'processed_rows' => $processedRows
+            'total_rows' => $highestRow - 1
         ],
-        'debug_log' => $debugLog, // Tampilkan SEMUA log
-        'errors' => $errorMessages
+        'debug_log' => array_slice($debugLog, -100),
+        'anomaly_log' => $anomalyLog, // LOG KHUSUS UNTUK CEK MASALAH
+        'errors' => array_slice($errorMessages, 0, 20)
     ], JSON_PRETTY_PRINT);
 
 } catch (Exception $e) {
     error_log("Import Error: " . $e->getMessage());
     echo json_encode([
         'status' => 'error',
-        'message' => 'Error sistem: ' . $e->getMessage(),
-        'trace' => $e->getTraceAsString()
-    ], JSON_PRETTY_PRINT);
+        'message' => 'Error sistem: ' . $e->getMessage()
+    ]);
 }
 ?>
