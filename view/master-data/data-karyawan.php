@@ -679,10 +679,40 @@
             // 10. ACTION: IMPORT EXCEL
             $("#formImport").on("submit", function(e) {
                 e.preventDefault();
+
+                const fileInput = $("#file_excel")[0];
+
+                // Validasi file ada
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    showToast("Pilih file Excel terlebih dahulu!", "warning");
+                    return false;
+                }
+
+                const file = fileInput.files[0];
+                const fileSize = file.size / 1024 / 1024; // Convert to MB
+
+                // Validasi ukuran file (max 10MB)
+                if (fileSize > 10) {
+                    showToast("Ukuran file terlalu besar! Maksimal 10MB", "warning");
+                    return false;
+                }
+
+                // Validasi ekstensi
+                const fileName = file.name;
+                const fileExt = fileName.split('.').pop().toLowerCase();
+                if (!['xls', 'xlsx'].includes(fileExt)) {
+                    showToast("Format file harus XLS atau XLSX!", "warning");
+                    return false;
+                }
+
                 const formData = new FormData(this);
                 const btn = $("#btnUpload");
 
+                // Show progress bar
                 $("#progressWrapper").show();
+                $("#progressBar").css("width", "0%").text("0%");
+
+                // Disable button
                 btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
 
                 $.ajax({
@@ -691,34 +721,137 @@
                     data: formData,
                     contentType: false,
                     processData: false,
+                    dataType: 'json', // PENTING: Expect JSON response
+                    timeout: 300000, // 5 menit timeout untuk file besar
+
                     xhr: function() {
                         var xhr = new window.XMLHttpRequest();
+
+                        // Upload progress
                         xhr.upload.addEventListener("progress", function(evt) {
                             if (evt.lengthComputable) {
                                 var percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                                $("#progressBar").css("width", percentComplete + "%").text(percentComplete + "%");
+                                $("#progressBar")
+                                    .css("width", percentComplete + "%")
+                                    .text(percentComplete + "%")
+                                    .removeClass("bg-danger")
+                                    .addClass("bg-success");
                             }
                         }, false);
+
                         return xhr;
                     },
+
                     success: function(res) {
-                        try {
-                            if (res.success) {
-                                showToast(`Import Berhasil! (${res.berhasil} data)`, "success");
-                                tableKaryawan.ajax.reload();
-                                $("#ModalImport").modal("hide");
-                            } else {
-                                showToast("Gagal: " + res.error, "danger");
+                        console.log('Import Response:', res);
+
+                        // Cek response valid
+                        if (typeof res !== 'object') {
+                            console.error('Invalid response type:', typeof res, res);
+                            showToast("Response tidak valid dari server", "danger");
+                            return;
+                        }
+
+                        if (res.success === true) {
+                            // Success
+                            let message = `Import Berhasil!<br>✓ Berhasil: ${res.berhasil} data`;
+
+                            if (res.gagal > 0) {
+                                message += `<br>✗ Gagal: ${res.gagal} data`;
                             }
-                        } catch (e) {
-                            showToast("Error parsing response", "danger");
+
+                            showToast(message, "success");
+
+                            // Show errors if any
+                            if (res.errors && res.errors.length > 0) {
+                                console.warn('Import Errors:', res.errors);
+                                let errorHtml = '<div class="alert alert-warning mt-2">';
+                                errorHtml += '<strong>Detail Error:</strong><ul class="mb-0">';
+                                res.errors.slice(0, 5).forEach(err => {
+                                    errorHtml += `<li>${err}</li>`;
+                                });
+                                if (res.errors.length > 5) {
+                                    errorHtml += `<li>... dan ${res.errors.length - 5} error lainnya</li>`;
+                                }
+                                errorHtml += '</ul></div>';
+
+                                // Bisa tampilkan di modal atau console
+                                console.log('Errors:', errorHtml);
+                            }
+
+                            // Reload table
+                            tableKaryawan.ajax.reload(null, false);
+
+                            // Close modal
+                            setTimeout(function() {
+                                $("#ModalImport").modal("hide");
+                                $("#formImport")[0].reset();
+                            }, 2000);
+
+                        } else {
+                            // Failed
+                            let errorMsg = res.error || res.message || "Terjadi kesalahan saat import";
+                            showToast("Gagal: " + errorMsg, "danger");
+
+                            // Log errors untuk debugging
+                            if (res.errors && res.errors.length > 0) {
+                                console.error('Import Errors:', res.errors);
+                            }
+
+                            $("#progressBar")
+                                .removeClass("bg-success")
+                                .addClass("bg-danger");
                         }
                     },
+
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', {
+                            status: status,
+                            error: error,
+                            responseText: xhr.responseText,
+                            statusCode: xhr.status
+                        });
+
+                        let errorMessage = "Terjadi kesalahan pada server";
+
+                        // Parse error response
+                        if (xhr.status === 500) {
+                            errorMessage = "Server Error (500). Cek error log PHP";
+                        } else if (xhr.status === 413) {
+                            errorMessage = "File terlalu besar untuk diupload";
+                        } else if (xhr.status === 0) {
+                            errorMessage = "Tidak dapat terhubung ke server";
+                        } else if (xhr.responseText) {
+                            try {
+                                const errRes = JSON.parse(xhr.responseText);
+                                errorMessage = errRes.error || errRes.message || errorMessage;
+                            } catch (e) {
+                                // Jika bukan JSON, ambil sebagian text
+                                errorMessage += ": " + xhr.responseText.substring(0, 100);
+                            }
+                        }
+
+                        showToast(errorMessage, "danger");
+
+                        $("#progressBar")
+                            .css("width", "100%")
+                            .text("Error!")
+                            .removeClass("bg-success")
+                            .addClass("bg-danger");
+                    },
+
                     complete: function() {
-                        $("#progressWrapper").hide();
+                        // Re-enable button
                         btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
+
+                        // Hide progress after 2 seconds
+                        setTimeout(function() {
+                            $("#progressWrapper").fadeOut();
+                        }, 2000);
                     }
                 });
+
+                return false;
             });
         });
     </script>
