@@ -303,7 +303,7 @@ try {
                     if ($ada == 0) {
                         // INSERT
                         $stmt = $koneksi->prepare("INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen) VALUES (?,?,?,?)");
-                        $stmt->bind_param("isss", $id_karyawan, $tgl, $jamKerja, $ket);
+                        $stmt->bind_param("isSs", $id_karyawan, $tgl, $jamKerja, $ket);
                         $action = "INSERT";
                     } else {
                         // UPDATE
