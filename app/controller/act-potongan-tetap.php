@@ -1,14 +1,17 @@
 <?php
 require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../config/function.php';
 
 $action = $_POST['action'] ?? '';
 
 if ($action == "add") {
-    $id_karier = $_POST['id_karier'];
+    // Tambahkan dekripsi di sini
+    $id_karier = decrypt($_POST['id_karier']); 
     $nama = $_POST['jenis_potongan'];
     $jumlah = $_POST['jumlah_potongan'];
 
     $stmt = $koneksi->prepare("INSERT INTO tb_potongan (id_karier, jenis_potongan, jumlah_potongan) VALUES (?, ?, ?)");
+    // Pastikan bind_param sesuai (i = integer, s = string, d = double/decimal)
     $stmt->bind_param("isd", $id_karier, $nama, $jumlah);
     $status = $stmt->execute();
 
