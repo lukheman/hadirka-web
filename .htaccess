@@ -16,6 +16,7 @@ RewriteCond $1 !^(index\.php)
 # PEMAGIILAN BERDASARKAN ID USER
 RewriteRule ^karier/([^/\.]+)/?$ index.php?page=karier&id=$1 [L]
 RewriteRule ^data-tunjangan/([^/\.]+)/?$ index.php?page=data-tunjangan&id=$1 [L]
+RewriteRule ^data-potongan/([^/\.]+)/?$ index.php?page=data-potongan&id=$1 [L]
 
 # DELETE 
 RewriteRule ^delete-konselor/([^/\.]+)/?$ index.php?page=delete-konselor&id=$1 [L]
