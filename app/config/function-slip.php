@@ -259,33 +259,19 @@ if (!function_exists('generateSlipGaji')) {
                     )
                 ) {
 
-                    if ($hariNama === 'friday') {
-                        // Jumat: Normal 5 jam, OT1 jam ke-6, OT2 jam ke-7+
-                        $h1_5 = min(5, $jam);
-                        $h6   = ($jam > 5) ? min(1, $jam - 5) : 0;
-                        $h7up = max(0, $jam - 6);
+                    // SPL: Normal selalu 7 jam di semua hari (termasuk Jumat)
+                    // OT1 jam ke-8, OT2 jam ke-9+
+                    $h1_7 = min(7, $jam);
+                    $h8   = ($jam > 7) ? min(1, $jam - 7) : 0;
+                    $h9up = max(0, $jam - 8);
 
-                        $total_spl_1_7  += $h1_5 * floatval($karier['spl']);
-                        $total_spl_8    += $h6   * floatval($karier['ot1_spl']);
-                        $total_spl_9_up += $h7up * floatval($karier['ot2_spl']);
+                    $total_spl_1_7  += $h1_7 * floatval($karier['spl']);
+                    $total_spl_8    += $h8   * floatval($karier['ot1_spl']);
+                    $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
 
-                        $total_jam_spl_1_7  += $h1_5;
-                        $total_jam_spl_8    += $h6;
-                        $total_jam_spl_9_up += $h7up;
-                    } else {
-                        // Hari biasa: Normal 7 jam, OT1 jam ke-8, OT2 jam ke-9+
-                        $h1_7 = min(7, $jam);
-                        $h8   = ($jam > 7) ? min(1, $jam - 7) : 0;
-                        $h9up = max(0, $jam - 8);
-
-                        $total_spl_1_7  += $h1_7 * floatval($karier['spl']);
-                        $total_spl_8    += $h8   * floatval($karier['ot1_spl']);
-                        $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
-
-                        $total_jam_spl_1_7  += $h1_7;
-                        $total_jam_spl_8    += $h8;
-                        $total_jam_spl_9_up += $h9up;
-                    }
+                    $total_jam_spl_1_7  += $h1_7;
+                    $total_jam_spl_8    += $h8;
+                    $total_jam_spl_9_up += $h9up;
 
                     $absenForUI[] = [
                         'tanggal' => $tgl,
