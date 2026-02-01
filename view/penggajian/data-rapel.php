@@ -3,7 +3,7 @@
 
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
-        
+
         <div class="mb-4">
             <h4 class="fw-bold mb-1">
                 <i class="fa fa-money-bill-wave text-success"></i> Manajemen Rapel
@@ -94,8 +94,8 @@
                     <div class="col-md-4">
                         <form id="formImportRapel" enctype="multipart/form-data">
                             <div class="input-group">
-                                <input type="file" name="file_csv_rapel" id="file_csv_rapel" 
-                                       class="form-control" required accept=".csv,.xlsx,.xls">
+                                <input type="file" name="file_csv_rapel" id="file_csv_rapel"
+                                    class="form-control" required accept=".csv,.xlsx,.xls">
                                 <button type="submit" class="btn btn-success" id="btnImportRapel">
                                     <i class="fa fa-upload"></i> <span class="d-none d-sm-inline">Import</span>
                                 </button>
@@ -145,7 +145,7 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyRapel">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -243,34 +243,92 @@
 </div>
 
 <style>
-    .hover-lift { transition: all 0.3s ease; cursor: pointer; }
-    .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
-    .blur-loading { opacity: 0.6; pointer-events: none; filter: blur(2px); transition: all 0.3s ease; }
-    .avatar { width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; }
-    .avatar-sm { width: 2rem; height: 2rem; }
-    .avatar-lg { width: 3.5rem; height: 3.5rem; }
-    .avatar-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-    .bg-label-success { background-color: rgba(40, 167, 69, 0.1); color: #28a745; }
+    .hover-lift {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .blur-loading {
+        opacity: 0.6;
+        pointer-events: none;
+        filter: blur(2px);
+        transition: all 0.3s ease;
+    }
+
+    .avatar {
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .avatar-sm {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .avatar-lg {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
+
+    .avatar-initial {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .bg-label-success {
+        background-color: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+
     /* Perbaikan agar Select2 terlihat bagus di BS5 */
-    .select2-container--bootstrap-5 .select2-selection { border: 1px solid #ced4da; }
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 1px solid #ced4da;
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
     const container = document.querySelector(".container-xxl");
-    
-    // 1. Inisialisasi Select2
+
+    // Tambahkan setelah initSelect2()
     function initSelect2() {
         $('.select2-init').each(function() {
+            // Destroy existing select2 if any
+            if ($(this).hasClass("select2-hidden-accessible")) {
+                $(this).select2('destroy');
+            }
+
             $(this).select2({
                 theme: 'bootstrap-5',
-                dropdownParent: $(this).closest('.modal'),
+                dropdownParent: $(this).closest('.modal').length ? $(this).closest('.modal') : $(document.body),
                 width: '100%',
-                placeholder: '-- Pilih Karyawan --'
+                placeholder: '-- Pilih Karyawan --',
+                allowClear: true
             });
         });
     }
+
+    // Re-initialize Select2 when modal is shown
+    $('#modalTambahRapel, #modalEditRapel').on('shown.bs.modal', function() {
+        initSelect2();
+    });
+
+    // Destroy Select2 when modal is hidden to prevent memory leaks
+    $('#modalTambahRapel, #modalEditRapel').on('hidden.bs.modal', function() {
+        $(this).find('.select2-init').select2('destroy');
+    });
 
     document.addEventListener("DOMContentLoaded", () => {
         const tbody = document.getElementById("tbodyRapel");
@@ -290,7 +348,9 @@
                     tbody.innerHTML = html;
                     $(".MyTable").DataTable({
                         responsive: true,
-                        language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json' }
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
+                        }
                     });
                     updateStats();
                 });
@@ -312,7 +372,10 @@
             e.preventDefault();
             let fd = new FormData(formTambah);
             fd.append("action", "add");
-            fetch("app/controller/act-rapel.php", { method: "POST", body: fd })
+            fetch("app/controller/act-rapel.php", {
+                    method: "POST",
+                    body: fd
+                })
                 .then(res => res.json())
                 .then(res => {
                     if (res.status === "success") {
@@ -336,10 +399,10 @@
                 formEdit.querySelector("input[name=tgl_rapel]").value = d.tgl;
                 formEdit.querySelector("input[name=nominal_rapel]").value = d.nominal;
                 formEdit.querySelector("textarea[name=ket_rapel]").value = d.ket;
-                
+
                 // Update Select2 di modal edit
                 $(formEdit).find('select[name=id_karyawan]').val(d.karyawan).trigger('change');
-                
+
                 new bootstrap.Modal(document.getElementById("modalEditRapel")).show();
             }
 
@@ -361,7 +424,10 @@
             e.preventDefault();
             let fd = new FormData(formEdit);
             fd.append("action", "edit");
-            fetch("app/controller/act-rapel.php", { method: "POST", body: fd })
+            fetch("app/controller/act-rapel.php", {
+                    method: "POST",
+                    body: fd
+                })
                 .then(res => res.json())
                 .then(res => {
                     if (res.status === "success") {
@@ -375,10 +441,15 @@
         function hapusRapel(id) {
             fetch("app/controller/act-rapel.php", {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
                 body: "action=delete&id_rapel=" + id
             }).then(res => res.json()).then(res => {
-                if (res.status === "success") { showToast("Dihapus!", "success"); loadRapel(); }
+                if (res.status === "success") {
+                    showToast("Dihapus!", "success");
+                    loadRapel();
+                }
             });
         }
 
@@ -390,11 +461,17 @@
             btn.disabled = true;
             container.classList.add("blur-loading");
 
-            fetch("app/controller/csv-control/csv-rapel.php", { method: "POST", body: fd })
+            fetch("app/controller/csv-control/csv-rapel.php", {
+                    method: "POST",
+                    body: fd
+                })
                 .then(res => res.json())
                 .then(data => {
                     showToast(data.message, data.status);
-                    if(data.status === "success") { loadRapel(); this.reset(); }
+                    if (data.status === "success") {
+                        loadRapel();
+                        this.reset();
+                    }
                 })
                 .finally(() => {
                     btn.disabled = false;
@@ -403,7 +480,7 @@
         });
 
         window.exportToExcel = () => window.location.href = "app/controller/export/export-rapel.php";
-        
+
         loadRapel();
     });
 </script>

@@ -1,5 +1,14 @@
 <?php
-header("Content-Type: application/json");
+/**
+ * ============================================
+ * CSV/EXCEL IMPORT - RAPEL DATA
+ * ============================================
+ * File: csv-rapel.php
+ * Purpose: Import rapel data from CSV/Excel files
+ * Format: B=NIK | E=Tanggal | F=Nominal | G=Keterangan
+ */
+
+header("Content-Type: application/json; charset=utf-8");
 require '../../config/koneksi.php';
 require '../../../vendor/autoload.php';
 
@@ -7,116 +16,198 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 // ================================
-// CEK FILE CSV / EXCEL
+// FUNCTION: Send JSON Response
 // ================================
-if (!isset($_FILES['file_csv_rapel'])) {
-    echo json_encode([
-        'status' => 'error', 
-        'message' => 'File CSV/Excel tidak ditemukan'
-    ]);
+function sendJsonResponse($status, $message, $data = []) {
+    echo json_encode(array_merge([
+        'status' => $status,
+        'message' => $message
+    ], $data));
     exit;
 }
 
+// ================================
+// CHECK DATABASE CONNECTION
+// ================================
+if (!isset($koneksi) || !$koneksi) {
+    sendJsonResponse('error', 'Koneksi database gagal');
+}
+
+// ================================
+// CHECK FILE UPLOAD
+// ================================
+if (!isset($_FILES['file_csv_rapel'])) {
+    sendJsonResponse('error', 'File CSV/Excel tidak ditemukan');
+}
+
 $file = $_FILES['file_csv_rapel'];
+
+// Check upload errors
+if ($file['error'] !== UPLOAD_ERR_OK) {
+    $uploadErrors = [
+        UPLOAD_ERR_INI_SIZE => 'File terlalu besar (melebihi upload_max_filesize)',
+        UPLOAD_ERR_FORM_SIZE => 'File terlalu besar (melebihi MAX_FILE_SIZE)',
+        UPLOAD_ERR_PARTIAL => 'File hanya terupload sebagian',
+        UPLOAD_ERR_NO_FILE => 'Tidak ada file yang diupload',
+        UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary tidak ditemukan',
+        UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk',
+        UPLOAD_ERR_EXTENSION => 'Upload dihentikan oleh ekstensi PHP'
+    ];
+    
+    $errorMsg = isset($uploadErrors[$file['error']]) ? $uploadErrors[$file['error']] : 'Unknown upload error';
+    sendJsonResponse('error', 'Upload gagal: ' . $errorMsg);
+}
+
 $fileTmpPath = $file['tmp_name'];
 $fileName = $file['name'];
 $fileSize = $file['size'];
 $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
-// Validasi ekstensi file
+// ================================
+// VALIDATE FILE EXTENSION
+// ================================
 $allowedExtensions = ['csv', 'xlsx', 'xls'];
 if (!in_array($fileExtension, $allowedExtensions)) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Format file tidak didukung! Gunakan CSV, XLSX, atau XLS'
-    ]);
-    exit;
+    sendJsonResponse('error', 'Format file tidak didukung! Gunakan CSV, XLSX, atau XLS');
 }
 
-// Validasi ukuran file (max 10MB)
+// ================================
+// VALIDATE FILE SIZE (max 10MB)
+// ================================
 $maxFileSize = 10 * 1024 * 1024; // 10MB
 if ($fileSize > $maxFileSize) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Ukuran file terlalu besar! Maksimal 10MB'
-    ]);
-    exit;
+    $fileSizeMB = round($fileSize / (1024 * 1024), 2);
+    sendJsonResponse('error', "Ukuran file terlalu besar ({$fileSizeMB}MB)! Maksimal 10MB");
 }
 
+// Check if file is empty
+if ($fileSize == 0) {
+    sendJsonResponse('error', 'File kosong atau tidak valid');
+}
+
+// ================================
+// VALIDATE FILE MIME TYPE
+// ================================
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mimeType = finfo_file($finfo, $fileTmpPath);
+finfo_close($finfo);
+
+$allowedMimeTypes = [
+    'text/csv',
+    'text/plain',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/octet-stream'
+];
+
+if (!in_array($mimeType, $allowedMimeTypes)) {
+    sendJsonResponse('error', 'Tipe file tidak valid');
+}
+
+// ================================
+// READ FILE WITH PHPSPREADSHEET
+// ================================
 try {
     $spreadsheet = IOFactory::load($fileTmpPath);
     $sheet = $spreadsheet->getActiveSheet();
     $data = $sheet->toArray(null, true, true, true);
 } catch (Exception $e) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Gagal membaca file: ' . $e->getMessage()
-    ]);
-    exit;
+    sendJsonResponse('error', 'Gagal membaca file: ' . $e->getMessage());
+}
+
+// Check if data is empty
+if (empty($data) || count($data) < 2) {
+    sendJsonResponse('error', 'File tidak berisi data atau hanya berisi header');
 }
 
 // ================================
-// DEFINISI KOLOM
+// COLUMN DEFINITIONS
 // ================================
 $colNIK = 'B';
 $colTglRapel = 'E';
 $colNominal = 'F';
 $colKeterangan = 'G';
 
+// ================================
+// INITIALIZE COUNTERS
+// ================================
 $successCount = 0;
 $errorCount = 0;
 $updateCount = 0;
 $insertCount = 0;
 $errors = [];
 $skippedRows = [];
+$logData = []; // Initialize log data array
 
 // ================================
-// VALIDASI HEADER (OPSIONAL)
+// DETECT HEADER ROW
 // ================================
-$headerRow = $data[1];
-if (empty($headerRow[$colNIK]) && empty($headerRow[$colTglRapel])) {
-    // Kemungkinan baris 1 adalah header, mulai dari baris 2
-    $startRow = 2;
-} else {
-    $startRow = 2; // Default mulai dari baris 2
+$headerRow = $data[1] ?? [];
+$startRow = 2; // Default start from row 2
+
+// Check if first row looks like header
+if (isset($headerRow[$colNIK])) {
+    $firstCellValue = strtolower(trim($headerRow[$colNIK]));
+    if (in_array($firstCellValue, ['nik', 'nik karyawan', 'no', 'nomor'])) {
+        $startRow = 2; // Skip header
+    }
 }
 
 // ================================
-// LOOP PER BARIS
+// PROCESS EACH ROW
 // ================================
-for ($i = $startRow; $i <= count($data); $i++) {
+$processedRows = 0;
+$maxProcessRows = 1000; // Limit untuk mencegah timeout
 
+for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i++) {
+    
+    if (!isset($data[$i])) {
+        continue;
+    }
+    
     $row = $data[$i];
+    $processedRows++;
 
-    // Skip jika baris kosong
+    // ================================
+    // SKIP EMPTY ROWS
+    // ================================
     if (empty($row) || !isset($row[$colNIK])) {
         $skippedRows[] = $i;
         continue;
     }
 
-    // Ambil nilai dari setiap kolom
-    $nik_karyawan = trim($row[$colNIK]);
-    $tglRapel = trim($row[$colTglRapel]);
-    $nominal = trim($row[$colNominal]);
+    // ================================
+    // EXTRACT DATA FROM COLUMNS
+    // ================================
+    $nik_karyawan = isset($row[$colNIK]) ? trim($row[$colNIK]) : '';
+    $tglRapel = isset($row[$colTglRapel]) ? trim($row[$colTglRapel]) : '';
+    $nominal = isset($row[$colNominal]) ? trim($row[$colNominal]) : '';
     $keterangan = isset($row[$colKeterangan]) ? trim($row[$colKeterangan]) : '';
 
-    // Skip jika NIK kosong
+    // Skip if NIK is empty
     if (empty($nik_karyawan)) {
         $skippedRows[] = $i;
         continue;
     }
 
     // ================================
-    // AMBIL ID KARYAWAN
+    // GET EMPLOYEE ID BY NIK
     // ================================
-    $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE nik_karyawan=?");
+    $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE nik_karyawan = ?");
+    
+    if (!$stmtK) {
+        $errorCount++;
+        $errors[] = "Baris $i: Error prepare statement - " . $koneksi->error;
+        continue;
+    }
+    
     $stmtK->bind_param("s", $nik_karyawan);
     $stmtK->execute();
     $stmtK->bind_result($id_karyawan, $nama_lengkap);
     $stmtK->fetch();
     $stmtK->close();
 
-    // Jika NIK tidak ditemukan → catat error
+    // Check if employee exists
     if (!$id_karyawan) {
         $errorCount++;
         $errors[] = "Baris $i: NIK $nik_karyawan tidak ditemukan di database";
@@ -124,7 +215,7 @@ for ($i = $startRow; $i <= count($data); $i++) {
     }
 
     // ================================
-    // KONVERSI TANGGAL
+    // CONVERT DATE
     // ================================
     try {
         if (empty($tglRapel)) {
@@ -133,19 +224,46 @@ for ($i = $startRow; $i <= count($data); $i++) {
             continue;
         }
 
+        // Handle Excel serial number
         if (is_numeric($tglRapel)) {
-            // Jika tanggal dalam format Excel serial number
             $tgl_rapel = Date::excelToDateTimeObject($tglRapel)->format('Y-m-d');
         } else {
-            // Jika tanggal dalam format string
-            $timestamp = strtotime($tglRapel);
-            if ($timestamp === false) {
-                $errorCount++;
-                $errors[] = "Baris $i: Format tanggal tidak valid untuk NIK $nik_karyawan";
-                continue;
+            // Handle string date formats
+            // Try multiple date formats
+            $dateFormats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y/m/d'];
+            $tgl_rapel = null;
+            
+            foreach ($dateFormats as $format) {
+                $dateObj = DateTime::createFromFormat($format, $tglRapel);
+                if ($dateObj && $dateObj->format($format) === $tglRapel) {
+                    $tgl_rapel = $dateObj->format('Y-m-d');
+                    break;
+                }
             }
-            $tgl_rapel = date('Y-m-d', $timestamp);
+            
+            // If no format matched, try strtotime
+            if (!$tgl_rapel) {
+                $timestamp = strtotime($tglRapel);
+                if ($timestamp === false) {
+                    $errorCount++;
+                    $errors[] = "Baris $i: Format tanggal tidak valid '$tglRapel' untuk NIK $nik_karyawan";
+                    continue;
+                }
+                $tgl_rapel = date('Y-m-d', $timestamp);
+            }
         }
+        
+        // Validate date range
+        $dateObj = new DateTime($tgl_rapel);
+        $minDate = new DateTime('1900-01-01');
+        $maxDate = new DateTime('+1 year');
+        
+        if ($dateObj < $minDate || $dateObj > $maxDate) {
+            $errorCount++;
+            $errors[] = "Baris $i: Tanggal rapel di luar jangkauan yang valid untuk NIK $nik_karyawan";
+            continue;
+        }
+        
     } catch (Exception $e) {
         $errorCount++;
         $errors[] = "Baris $i: Error konversi tanggal untuk NIK $nik_karyawan - " . $e->getMessage();
@@ -153,74 +271,152 @@ for ($i = $startRow; $i <= count($data); $i++) {
     }
 
     // ================================
-    // KONVERSI NOMINAL (HAPUS KARAKTER NON-NUMERIC)
+    // CONVERT NOMINAL
     // ================================
-    if (empty($nominal)) {
+    if (empty($nominal) && $nominal !== '0') {
         $errorCount++;
         $errors[] = "Baris $i: Nominal rapel kosong untuk NIK $nik_karyawan";
         continue;
     }
 
-    // Hapus karakter non-numeric kecuali titik dan koma
-    $nominal_clean = str_replace([',', '.'], ['', '.'], $nominal);
-    $nominal_rapel = (float) preg_replace('/[^0-9.]/', '', $nominal_clean);
+    // Clean nominal value
+    // Remove currency symbols, thousands separators
+    $nominal_clean = preg_replace('/[^0-9,.-]/', '', $nominal);
+    
+    // Handle different decimal separators
+    // Indonesian format: 1.000.000,50 or 1000000,50
+    // International format: 1,000,000.50 or 1000000.50
+    
+    if (strpos($nominal_clean, ',') !== false && strpos($nominal_clean, '.') !== false) {
+        // Has both comma and dot
+        // Determine which is decimal separator
+        $lastComma = strrpos($nominal_clean, ',');
+        $lastDot = strrpos($nominal_clean, '.');
+        
+        if ($lastDot > $lastComma) {
+            // Dot is decimal separator (1,000.50)
+            $nominal_clean = str_replace(',', '', $nominal_clean);
+        } else {
+            // Comma is decimal separator (1.000,50)
+            $nominal_clean = str_replace('.', '', $nominal_clean);
+            $nominal_clean = str_replace(',', '.', $nominal_clean);
+        }
+    } elseif (strpos($nominal_clean, ',') !== false) {
+        // Only comma, assume it's decimal separator
+        $nominal_clean = str_replace(',', '.', $nominal_clean);
+    }
+    // If only dot or nothing, use as is
+    
+    $nominal_rapel = (float) $nominal_clean;
 
     if ($nominal_rapel <= 0) {
         $errorCount++;
-        $errors[] = "Baris $i: Nominal rapel tidak valid untuk NIK $nik_karyawan";
+        $errors[] = "Baris $i: Nominal rapel tidak valid '$nominal' untuk NIK $nik_karyawan";
+        continue;
+    }
+    
+    // Check maximum nominal
+    if ($nominal_rapel > 999999999) {
+        $errorCount++;
+        $errors[] = "Baris $i: Nominal rapel terlalu besar untuk NIK $nik_karyawan";
         continue;
     }
 
+    // Sanitize keterangan
+    $keterangan = substr($keterangan, 0, 500); // Limit length
+
     // ================================
-    // CEK APAKAH DATA SUDAH ADA
+    // CHECK IF DATA EXISTS
     // ================================
-    $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan=? AND tgl_rapel=?");
+    $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ?");
+    
+    if (!$stmtCheck) {
+        $errorCount++;
+        $errors[] = "Baris $i: Error prepare check statement - " . $koneksi->error;
+        continue;
+    }
+    
     $stmtCheck->bind_param("is", $id_karyawan, $tgl_rapel);
     $stmtCheck->execute();
     $stmtCheck->store_result();
 
     if ($stmtCheck->num_rows == 0) {
-        // INSERT baru
+        // ================================
+        // INSERT NEW DATA
+        // ================================
+        $stmtCheck->close();
+        
         $stmtInsert = $koneksi->prepare("
             INSERT INTO tb_rapel (id_karyawan, tgl_rapel, nominal_rapel, ket_rapel)
-            VALUES (?,?,?,?)
+            VALUES (?, ?, ?, ?)
         ");
+        
+        if (!$stmtInsert) {
+            $errorCount++;
+            $errors[] = "Baris $i: Error prepare insert statement - " . $koneksi->error;
+            continue;
+        }
+        
         $stmtInsert->bind_param("isds", $id_karyawan, $tgl_rapel, $nominal_rapel, $keterangan);
         
         if ($stmtInsert->execute()) {
             $successCount++;
             $insertCount++;
-            $logData[] = ['status' => 'INSERT', 'nik' => $nik_karyawan, 'nama' => $nama_lengkap, 'tgl' => $tgl_rapel, 'nominal' => $nominal_rapel];
+            $logData[] = [
+                'status' => 'INSERT',
+                'row' => $i,
+                'nik' => $nik_karyawan,
+                'nama' => $nama_lengkap,
+                'tgl' => $tgl_rapel,
+                'nominal' => $nominal_rapel
+            ];
         } else {
             $errorCount++;
             $errors[] = "Baris $i: Gagal menyimpan data untuk NIK $nik_karyawan - " . $stmtInsert->error;
         }
         $stmtInsert->close();
+        
     } else {
-        // UPDATE data yang sudah ada
+        // ================================
+        // UPDATE EXISTING DATA
+        // ================================
+        $stmtCheck->close();
+        
         $stmtUpdate = $koneksi->prepare("
             UPDATE tb_rapel 
-            SET nominal_rapel=?, ket_rapel=? 
-            WHERE id_karyawan=? AND tgl_rapel=?
+            SET nominal_rapel = ?, ket_rapel = ? 
+            WHERE id_karyawan = ? AND tgl_rapel = ?
         ");
+        
+        if (!$stmtUpdate) {
+            $errorCount++;
+            $errors[] = "Baris $i: Error prepare update statement - " . $koneksi->error;
+            continue;
+        }
+        
         $stmtUpdate->bind_param("dsis", $nominal_rapel, $keterangan, $id_karyawan, $tgl_rapel);
         
         if ($stmtUpdate->execute()) {
             $successCount++;
             $updateCount++;
-            $logData[] = ['status' => 'UPDATE', 'nik' => $nik_karyawan, 'nama' => $nama_lengkap, 'tgl' => $tgl_rapel, 'nominal' => $nominal_rapel];
+            $logData[] = [
+                'status' => 'UPDATE',
+                'row' => $i,
+                'nik' => $nik_karyawan,
+                'nama' => $nama_lengkap,
+                'tgl' => $tgl_rapel,
+                'nominal' => $nominal_rapel
+            ];
         } else {
             $errorCount++;
             $errors[] = "Baris $i: Gagal mengupdate data untuk NIK $nik_karyawan - " . $stmtUpdate->error;
         }
         $stmtUpdate->close();
     }
-
-    $stmtCheck->close();
 }
 
 // ================================
-// RESPONSE DETAIL
+// BUILD RESPONSE MESSAGE
 // ================================
 $message = "Import selesai! ";
 $details = [];
@@ -243,19 +439,37 @@ if (count($skippedRows) > 0) {
 
 $message .= implode(", ", $details);
 
-// Ambil 5 error pertama untuk ditampilkan
+// Determine overall status
+$status = 'success';
+if ($errorCount > 0 && $successCount == 0) {
+    $status = 'error';
+    $message = "Import gagal! Semua data gagal diproses.";
+} elseif ($errorCount > 0) {
+    $status = 'warning';
+}
+
+// Get sample errors (max 5)
 $errorSample = array_slice($errors, 0, 5);
 
+// ================================
+// SEND RESPONSE
+// ================================
 echo json_encode([
-    'status' => $errorCount < $successCount ? 'success' : 'warning',
+    'status' => $status,
     'message' => $message,
     'success_count' => $successCount,
-    'log_details' => $logData,
     'insert_count' => $insertCount,
     'update_count' => $updateCount,
     'error_count' => $errorCount,
     'skipped_count' => count($skippedRows),
     'errors' => $errorSample,
-    'total_errors' => count($errors)
-]);
+    'total_errors' => count($errors),
+    'log_details' => $logData,
+    'processed_rows' => $processedRows
+], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+// Close connection
+if (isset($koneksi)) {
+    $koneksi->close();
+}
 ?>
