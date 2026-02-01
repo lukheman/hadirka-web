@@ -31,7 +31,7 @@ if ($result->num_rows == 0) {
         $nominal = number_format($row['nominal_rapel'], 0, ',', '.');
         $tgl = date('d/m/Y', strtotime($row['tgl_rapel']));
         $tgl_sort = date('Y-m-d', strtotime($row['tgl_rapel']));
-        
+
         // Badge untuk nominal besar
         $badge = '';
         if ($row['nominal_rapel'] >= 5000000) {
@@ -39,7 +39,7 @@ if ($result->num_rows == 0) {
         } elseif ($row['nominal_rapel'] >= 2000000) {
             $badge = '<span class="badge bg-warning ms-2">Medium</span>';
         }
-        
+
         echo "<tr>
                 <td class='text-center fw-bold'>{$no}</td>
                 <td>
@@ -70,6 +70,7 @@ if ($result->num_rows == 0) {
                                 data-karyawan='{$row['id_karyawan']}'
                                 data-tgl='{$tgl_sort}'
                                 data-nominal='{$row['nominal_rapel']}'
+                                data-ket='" . htmlspecialchars($row['ket_rapel'], ENT_QUOTES) . "'
                                 data-ket='{$row['ket_rapel']}'
                                 data-bs-toggle='tooltip' 
                                 title='Edit Data'>
@@ -87,4 +88,3 @@ if ($result->num_rows == 0) {
         $no++;
     }
 }
-?>
