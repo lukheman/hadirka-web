@@ -281,7 +281,6 @@ if (!function_exists('generateSlipGaji')) {
                         'ket' => 'SPL'
                     ];
                     continue;
-                    
                 }
 
                 // ===== HADIR (ket bukan OFF/SPL/LEMBUR/IZIN/SAKIT/CUTI) =====
