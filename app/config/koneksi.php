@@ -7,7 +7,6 @@ if (mysqli_connect_errno()) {
 
 function url() {
     // return 'http://localhost/tjs-outsoorsing/';
-    // return 'http://192.168.1.35/tjs-p-outsoorsing/';
     return 'https://hris.triputrajayasultra.com/';
 }
 ?>
