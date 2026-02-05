@@ -109,7 +109,7 @@ $routes = [
         .blur-loading { filter: blur(2px); pointer-events: none; opacity: 0.6; }
         
         /* Branding Fix */
-        .app-brand-link img { max-width: 180px; object-fit: contain; }
+        .app-brand-link img { padding-left: 70px; max-width: 180px; object-fit: contain; }
     </style>
 </head>
 
@@ -120,7 +120,7 @@ $routes = [
             <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
                 <div class="app-brand demo">
                     <a href="?page=home" class="app-brand-link">
-                        <img src="assets/img/logo/tjs-nobg.png" alt="Logo TJS">
+                        <img src="assets/img/logo/tjs-done.png" alt="Logo TJS" style="height: 11vh;">
                     </a>
                     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
                         <i class="bx bx-chevron-left bx-sm align-middle"></i>
