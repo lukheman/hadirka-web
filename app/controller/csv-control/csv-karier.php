@@ -44,22 +44,22 @@ try {
         $id_karyawan = $dataKaryawan['id_karyawan'];
 
         // Ambil Nilai dari Excel
-        $basic      = intval($row['E'] ?? 0);
-        $t_daerah   = intval($row['F'] ?? 0);
-        $t_hidup    = intval($row['G'] ?? 0);
-        $t_makan    = intval($row['H'] ?? 0);
-        $t_skill    = intval($row['I'] ?? 0);
-        $p_bonus    = intval($row['J'] ?? 0);
-        $ot_pertama = intval($row['K'] ?? 0);
-        $ot_kedua   = intval($row['L'] ?? 0);
-        $spl        = intval($row['M'] ?? 0);
-        $ot1_spl    = intval($row['N'] ?? 0);
-        $ot2_spl    = intval($row['O'] ?? 0);
-        $pot_bpjs   = intval($row['P'] ?? 0);
-        $pot_jht    = intval($row['Q'] ?? 0);
-        $pph21      = intval($row['R'] ?? 0);
-        $pot_izin   = intval($row['S'] ?? 0);
-        $pot_mangkir= intval($row['T'] ?? 0);
+        $basic      = intval($row['G'] ?? 0);
+        $t_daerah   = intval($row['H'] ?? 0);
+        $t_hidup    = intval($row['I'] ?? 0);
+        $t_makan    = intval($row['J'] ?? 0);
+        $t_skill    = intval($row['K'] ?? 0);
+        $p_bonus    = intval($row['L'] ?? 0);
+        $ot_pertama = intval($row['M'] ?? 0);
+        $ot_kedua   = intval($row['N'] ?? 0);
+        $spl        = intval($row['O'] ?? 0);
+        $ot1_spl    = intval($row['P'] ?? 0);
+        $ot2_spl    = intval($row['Q'] ?? 0);
+        $pot_bpjs   = intval($row['R'] ?? 0);
+        $pot_jht    = intval($row['S'] ?? 0);
+        $pph21      = intval($row['T'] ?? 0);
+        $pot_izin   = intval($row['U'] ?? 0);
+        $pot_mangkir= intval($row['V'] ?? 0);
 
         // 2. Kelola tb_karier
         $cekKarier = $koneksi->query("SELECT id_karier FROM tb_karier WHERE id_karyawan='$id_karyawan' ORDER BY tgl_mulai DESC, id_karier DESC LIMIT 1");
