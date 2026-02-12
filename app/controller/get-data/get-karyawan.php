@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Get Karyawan Data for DataTables
  * =================================
@@ -16,40 +17,69 @@ try {
     // Ambil filter dari POST
     $filter_site = isset($_POST['site']) ? $koneksi->real_escape_string($_POST['site']) : '';
     $filter_jabatan = isset($_POST['jabatan']) ? $koneksi->real_escape_string($_POST['jabatan']) : '';
-    
+    $filter_status = isset($_POST['status']) ? $koneksi->real_escape_string($_POST['status']) : '';
+
+
     // Build WHERE clause
     $where = ["1=1"];
-    
+
+    if (!empty($filter_status)) {
+        $where[] = "kar.status_karyawan = '$filter_status'";
+    } else {
+        // Jika filter status kosong, tampilkan semua karyawan aktif
+        $where[] = "kar.status_karyawan = 'Aktif'";
+    }
+
     if (!empty($filter_site)) {
         $where[] = "k.id_site = '$filter_site'";
     }
-    
+
     if (!empty($filter_jabatan)) {
         $where[] = "k.id_jabatan = '$filter_jabatan'";
     }
-    
+
     $where_sql = implode(" AND ", $where);
-    
-    // Query utama dengan JOIN
-    $query = "SELECT *  FROM tb_karyawan kar
+
+    $query = "SELECT 
+            kar.*,
+            i.*,
+            k.*,
+            s.nama_site,
+            d.nama_departemen,
+            j.nama_jabatan,
+            te.tgl_keluar, te.alasan_keluar,
+
+            kon1.nama_kontak AS nama_kontak1,
+            kon1.hubungan AS hubungan1,
+            kon1.no_telp_darurat AS no_telp_darurat1,
+
+            kon2.nama_kontak AS nama_kontak2,
+            kon2.hubungan AS hubungan2,
+            kon2.no_telp_darurat AS no_telp_darurat2
+        FROM tb_karyawan kar
         LEFT JOIN tb_identitas i ON kar.id_karyawan = i.id_karyawan
         LEFT JOIN tb_karier k ON kar.id_karyawan = k.id_karyawan
         LEFT JOIN tb_site s ON k.id_site = s.id_site
         LEFT JOIN tb_departemen d ON k.id_departemen = d.id_departemen
         LEFT JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
+        LEFT JOIN tb_tereliminasi te ON kar.id_karyawan = te.id_karyawan
+        LEFT JOIN tb_kontak_darurat kon1 
+            ON kar.id_karyawan = kon1.id_karyawan AND kon1.nomor_urut = 1
+        LEFT JOIN tb_kontak_darurat kon2 
+            ON kar.id_karyawan = kon2.id_karyawan AND kon2.nomor_urut = 2
         WHERE $where_sql
         ORDER BY kar.nik_karyawan ASC
     ";
-    
+
     $result = $koneksi->query($query);
-    
+
     if (!$result) {
         throw new Exception("Query Error: " . $koneksi->error);
     }
-    
+
     $data = [];
     $no = 1;
-    
+
     while ($row = $result->fetch_assoc()) {
         // Hitung usia
         $usia = '';
@@ -58,35 +88,66 @@ try {
             $sekarang = new DateTime();
             $usia = $sekarang->diff($lahir)->y . ' tahun';
         }
-        
+
         // Cek kontrak expired (merah jika kurang dari 30 hari)
         $rowClass = '';
         if (!empty($row['tgl_selesai'])) {
             $selesai = new DateTime($row['tgl_selesai']);
             $sekarang = new DateTime();
             $diff = $sekarang->diff($selesai)->days;
-            
+
             if ($sekarang > $selesai) {
                 $rowClass = 'table-danger'; // Sudah expired
             } elseif ($diff <= 30) {
                 $rowClass = 'table-warning'; // Kurang dari 30 hari
             }
         }
-        
+
         // Format tanggal Indonesia
         $tgl_lahir_format = !empty($row['tgl_lahir']) ? date('d-m-Y', strtotime($row['tgl_lahir'])) : '-';
         $tgl_mulai_format = !empty($row['tgl_mulai']) ? date('d-m-Y', strtotime($row['tgl_mulai'])) : '-';
         $tgl_selesai_format = !empty($row['tgl_selesai']) ? date('d-m-Y', strtotime($row['tgl_selesai'])) : '-';
-        
+
+
+        // Cek status apakah karyawan aktif atau bukan, klo bukan tampilkan alasan keluar dan tanggal keluar
+        $isNonAktif = ($row['status_karyawan'] !== 'Aktif');
+
+        $eliminasiHtml = '';
+
+        if ($isNonAktif) {
+            $tgl_keluar_format = !empty($row['tgl_keluar'])
+                ? date('d-m-Y', strtotime($row['tgl_keluar']))
+                : '-';
+
+            $eliminasiHtml = "   
+                <h6 class='text-danger'><i class='fa fa-user-slash'></i> Data Eliminasi</h6>
+                <table class='table table-sm table-borderless info-table'>
+                    <tr>
+                        <td><strong>Status Karyawan</strong></td>
+                        <td>: <span class='badge bg-danger'>{$row['status_karyawan']}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tanggal Keluar</strong></td>
+                        <td>: {$tgl_keluar_format}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Alasan Keluar</strong></td>
+                        <td>: " . htmlspecialchars($row['alasan_keluar'] ?? '-') . "</td>
+                    </tr>
+                </table>
+            ";
+        }
+
+
         // Build detail HTML (child row)
         $detail = "
         <div class='card'>
             <div class='card-body'>
-                <div class='row'>
+                <div class='row '>
                     <!-- Kolom 1 -->
-                    <div class='col-md-4'>
+                    <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-user'></i> Data Pribadi</h6>
-                        <table class='table table-sm table-borderless'>
+                        <table class='table table-sm table-borderless info-table'>
                             <tr><td><strong>Tempat Lahir</strong></td><td>: " . htmlspecialchars($row['tempat_lahir'] ?? '-') . "</td></tr>
                             <tr><td><strong>Tanggal Lahir</strong></td><td>: $tgl_lahir_format ($usia)</td></tr>
                             <tr><td><strong>Jenis Kelamin</strong></td><td>: " . ($row['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "</td></tr>
@@ -97,9 +158,9 @@ try {
                     </div>
                     
                     <!-- Kolom 2 -->
-                    <div class='col-md-4'>
+                    <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-id-card'></i> Identitas & Kontak</h6>
-                        <table class='table table-sm table-borderless'>
+                        <table class='table table-sm table-borderless info-table'>
                             <tr><td><strong>NIK KTP</strong></td><td>: " . htmlspecialchars($row['nik_ktp'] ?? '-') . "</td></tr>
                             <tr><td><strong>No. KK</strong></td><td>: " . htmlspecialchars($row['kk_number'] ?? '-') . "</td></tr>
                             <tr><td><strong>NPWP</strong></td><td>: " . htmlspecialchars($row['npwp'] ?? '-') . "</td></tr>
@@ -111,43 +172,78 @@ try {
                     </div>
                     
                     <!-- Kolom 3 -->
-                    <div class='col-md-4'>
+                    <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-briefcase'></i> Karier & Pendidikan</h6>
-                        <table class='table table-sm table-borderless'>
+                        <table class='table table-sm table-borderless info-table'>
                             <tr><td><strong>Site</strong></td><td>: " . htmlspecialchars($row['nama_site'] ?? '-') . "</td></tr>
                             <tr><td><strong>Departemen</strong></td><td>: " . htmlspecialchars($row['nama_departemen'] ?? '-') . "</td></tr>
                             <tr><td><strong>Jabatan</strong></td><td>: " . htmlspecialchars($row['nama_jabatan'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Tgl Mulai</strong></td><td>: $tgl_mulai_format</td></tr>
-                            <tr><td><strong>Tgl Selesai</strong></td><td>: <span class='badge bg-danger'>$tgl_selesai_format</span></td></tr>
+                            <tr><td><strong>Tanggal Mulai</strong></td><td>: $tgl_mulai_format</td></tr>
+                            <tr><td><strong>Tanggal Selesai</strong></td><td>: <span class='badge bg-danger'>$tgl_selesai_format</span></td></tr>
                             <tr><td><strong>Pendidikan</strong></td><td>: " . htmlspecialchars($row['last_education'] ?? '-') . "</td></tr>
                             <tr><td><strong>Jurusan</strong></td><td>: " . htmlspecialchars($row['major'] ?? '-') . "</td></tr>
                         </table>
                     </div>
-                </div>
-                
-                <div class='row mt-2'>
-                    <div class='col-12'>
+                </div>   
+
+                <div class='row'>
+                    <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-map-marker'></i> Alamat KTP</h6>
                         <p>" . htmlspecialchars($row['alamat_ktp'] ?? '-') . "<br>
                         Desa " . htmlspecialchars($row['desa'] ?? '') . ", Kec. " . htmlspecialchars($row['kecamatan'] ?? '') . ", " . htmlspecialchars($row['kabupaten'] ?? '') . ", " . htmlspecialchars($row['provinsi'] ?? '') . " 
                         (RT/RW: " . htmlspecialchars($row['rt_rw'] ?? '-') . ")</p>
                     </div>
+                    <div class='col-md-4 mb-4'>
+                        <h6 class='text-primary'><i class='fa fa-phone'></i> Kontak Darurat 1</h6>
+                        <table class='table table-sm table-borderless info-table'>
+                            <tr><td><strong>Nama Kontak</strong></td><td>: " . htmlspecialchars($row['nama_kontak1'] ?? '-') . "</td></tr>
+                            <tr><td><strong>Hubungan</strong></td><td>: " . htmlspecialchars($row['hubungan1'] ?? '-') . "</td></tr>
+                            <tr><td><strong>No. Telepon</strong></td><td>: " . htmlspecialchars($row['no_telp_darurat1'] ?? '-') . "</td></tr>
+                        </table>
+                    </div>
+                    <div class='col-md-4 mb-4'>
+                        <h6 class='text-primary'><i class='fa fa-phone'></i> Kontak Darurat 2</h6>
+                        <table class='table table-sm table-borderless info-table'>
+                            <tr><td><strong>Nama Kontak</strong></td><td>: " . htmlspecialchars($row['nama_kontak2'] ?? '-') . "</td></tr>
+                            <tr><td><strong>Hubungan</strong></td><td>: " . htmlspecialchars($row['hubungan2'] ?? '-') . "</td></tr>
+                            <tr><td><strong>No. Telepon</strong></td><td>: " . htmlspecialchars($row['no_telp_darurat2'] ?? '-') . "</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class='row'>
+                    <div class='col-md-4'>
+                        $eliminasiHtml
+                    </div>
                 </div>
             </div>
         </div>
         ";
-        
-        // Action buttons
-        $action = "
-            <a href='karier/".encrypt($row['id_karyawan'])."' class='btn btn-sm btn-info'>Karir</a>
-            <button class='btn btn-sm btn-warning btnEdit' data-id='" . $row['id_karyawan'] . "' title='Edit'>
-                <i class='fa fa-edit'></i>
-            </button>
-            <button class='btn btn-sm btn-danger btnDelete' data-id='" . $row['id_karyawan'] . "' title='Hapus'>
-                <i class='fa fa-trash'></i>
-            </button>
-        ";
-        
+
+        // Di bagian build action buttons
+        $eliminatedStatuses = ['Habis Kontrak', 'Pensiun', 'PHK', 'Resign', 'Black List'];
+
+        if (in_array($row['status_karyawan'], $eliminatedStatuses)) {
+            $action = "
+                <span class='badge bg-danger'>TERELIMINASI</span><br>
+                <small class='text-muted'>Tidak dapat diedit</small>
+            ";
+        } else {
+            $action = "
+                <a href='karier/" . encrypt($row['id_karyawan']) . "' class='btn btn-sm btn-info' title='Lihat Karier'>
+                    <i class='fa fa-briefcase'></i>
+                </a>
+                <button class='btn btn-sm btn-warning btnEdit' data-id='" . $row['id_karyawan'] . "' title='Edit'>
+                    <i class='fa fa-edit'></i>
+                </button>
+                <button class='btn btn-sm btn-danger btnDelete' data-id='" . $row['id_karyawan'] . "' data-nama='" . htmlspecialchars($row['nama_lengkap']) . "' title='Hapus'>
+                    <i class='fa fa-trash'></i>
+                </button>
+                <button class='btn btn-sm btn-dark btnElimination' data-id='" . $row['id_karyawan'] . "' title='Eliminasi'>
+                    <i class='fa fa-user-slash'></i>
+                </button>
+            ";
+        }
+
         $data[] = [
             'no' => $no++,
             'nama' => htmlspecialchars($row['nama_lengkap']),
@@ -159,18 +255,17 @@ try {
             'rowClass' => $rowClass
         ];
     }
-    
+
     // Response JSON untuk DataTables
     echo json_encode([
         'data' => $data,
         'recordsTotal' => count($data),
         'recordsFiltered' => count($data)
     ]);
-    
 } catch (Exception $e) {
     // Log error
     error_log("Get Karyawan Error: " . $e->getMessage());
-    
+
     // Return empty data dengan error message
     echo json_encode([
         'data' => [],
@@ -178,4 +273,3 @@ try {
         'debug' => $e->getMessage() // Hapus di production
     ]);
 }
-?>

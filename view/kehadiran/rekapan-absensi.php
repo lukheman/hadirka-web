@@ -24,6 +24,16 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
 
     <!-- Import CSV -->
     <div class="mb-4 p-3 bg-light rounded-3 shadow-sm">
+        <p class="instruction-text mb-3">
+            Unggah file Excel/CSV sesuai urutan kolom untuk memperbarui database secara masal.
+        </p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class='badge bg-primary'>B: NIK</span>
+            <span class='badge bg-primary'>E: Nominal</span>
+            <span class='badge bg-primary'>F: Tgl Pinjam</span>
+            <span class='badge bg-primary'>G: Tgl Bayar</span>
+            <span class='badge bg-primary'>H: Ket</span>
+        </div>
         <label for="file_csv" class="form-label fw-bold text-primary">
             <i class="fa fa-upload fa-lg"></i> Import CSV Absensi
         </label>

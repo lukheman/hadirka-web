@@ -8,6 +8,16 @@
         <div class="card-body">
 
             <form id="formImportPayroll" enctype="multipart/form-data">
+                <p class="instruction-text mb-3">
+                    Unggah file Excel/CSV sesuai urutan kolom untuk memperbarui database secara masal.
+                </p>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class='badge bg-primary'>B: NIK</span>
+                    <span class='badge bg-primary'>E: Nominal</span>
+                    <span class='badge bg-primary'>F: Tgl Pinjam</span>
+                    <span class='badge bg-primary'>G: Tgl Bayar</span>
+                    <span class='badge bg-primary'>H: Ket</span>
+                </div>
                 <label class="form-label">Upload File Excel Karier</label>
                 <input type="file" name="file_excel" class="form-control" accept=".xls,.xlsx" required>
                 <a href="assets/teamplate-csv/Format Teamplate Import Data Karier.xlsx">Download Teamplate CSV</a> <br>
