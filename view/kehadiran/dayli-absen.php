@@ -1,4 +1,3 @@
-
 <div class="container-xxl mt-3">
     <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -66,7 +65,7 @@
     <!-- Table Card -->
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-table me-2"></i>Data Absensi</h6>
+            <h6 class="mb-0 text-white"><i class="bi bi-table me-2"></i>Data Absensi</h6>
             <small>Total Records: <span id="totalRecords">0</span></small>
         </div>
         <div class="card-body p-0">
@@ -102,7 +101,7 @@
         <div class="modal-content">
             <form id="formAbsen">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Form Absensi</h5>
+                    <h5 class="modal-title text-white">Form Absensi</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -148,10 +147,10 @@
                     <!-- Keterangan (select untuk pilihan umum) -->
                     <div class="mb-2">
                         <label>Keterangan</label>
-                        <select class="form-select" id="ket" name="ket_select">
+                        <select class="form-select" id="ket" name="ket_absen">
                             <option value="">-- Pilih Keterangan --</option>
                             <option value="HADIR">HADIR</option>
-                            <option value="SPL">SPL/OFF</option>
+                            <option value="OFF">SPL/OFF</option>
                             <option value="IZIN">IZIN</option>
                             <option value="SAKIT">SAKIT</option>
                             <option value="CUTI">CUTI</option>
@@ -164,14 +163,6 @@
                         <input type="text" class="form-control" id="jam" name="jam_kerja">
                     </div>
 
-                    <!-- Keterangan Kehadiran (nilai dari DB ket_absen ditampilkan di sini) -->
-                    <div class="mb-2" id="fieldKeteranganKehadiran">
-                        <label>Keterangan Kehadiran</label>
-                        <input type="text" class="form-control" id="keterangan_kehadiran" name="keterangan_kehadiran">
-                    </div>
-
-                    <!-- Hidden final ket_absen yang akan dikirim ke backend -->
-                    <input type="hidden" id="ket_absen" name="ket_absen">
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Simpan</button>
@@ -183,222 +174,237 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
 
-    // mapping untuk UI behaviour (jam selalu tampil)
-    const ketMapping = {
-        "HADIR": { showJam: true, showKetInput: false, ketValue: "" },
-        "SPL":   { showJam: true, showKetInput: true,  ketValue: "OFF" },
-        "IZIN":  { showJam: true, showKetInput: true,  ketValue: "" },
-        "SAKIT": { showJam: true, showKetInput: true,  ketValue: "" },
-        "CUTI":  { showJam: true, showKetInput: true,  ketValue: "" },
-    };
+        // mapping untuk UI behaviour (jam selalu tampil)
+        const ketMapping = {
+            "HADIR": {
+                showJam: true
+            },
+            "SPL/OFF": {
+                showJam: true
+            },
+            "IZIN": {
+                showJam: false
+            },
+            "SAKIT": {
+                showJam: false
+            },
+            "CUTI": {
+                showJam: false
+            },
+        };
 
-    const modalEl = document.getElementById("modalAbsen");
-    const modal = new bootstrap.Modal(modalEl);
+        const modalEl = document.getElementById("modalAbsen");
+        const modal = new bootstrap.Modal(modalEl);
 
-    function updateFieldsByKeterangan() {
-        const ketSelect = document.getElementById("ket").value;
-        const config = ketMapping[ketSelect] || { showJam: true, showKetInput: true, ketValue: "" };
+        function updateFieldsByKeterangan() {
+            const ketSelect = document.getElementById("ket").value;
+            const config = ketMapping[ketSelect] || {
+                showJam: true
+            };
 
-        // jam selalu tampil (user requested)
-        document.getElementById("fieldJamKerja").style.display = config.showJam ? "block" : "none";
+            // jam selalu tampil (user requested)
+            document.getElementById("fieldJamKerja").style.display = config.showJam ? "block" : "none";
 
-        // tampilkan/ sembunyikan keterangan_kehadiran input
-        document.getElementById("fieldKeteranganKehadiran").style.display = config.showKetInput ? "block" : "none";
-        if (config.showKetInput && !document.getElementById("keterangan_kehadiran").value) {
-            document.getElementById("keterangan_kehadiran").value = config.ketValue;
-        }
-    }
-
-    // event change pada select ket
-    document.getElementById("ket").addEventListener("change", updateFieldsByKeterangan);
-
-    // ================= Load Jabatan & Karyawan =================
-    async function loadJabatan(siteId, selectedJabId = null) {
-        if (!siteId) return [];
-        const res = await fetch("app/controller/get-data/get-jabatan-by-site.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ site: siteId })
-        });
-        const data = await res.json();
-        let html = '<option value="">-- Pilih Jabatan --</option>';
-        data.forEach(j => {
-            html += `<option value="${j.id_jabatan}" ${selectedJabId && j.id_jabatan==selectedJabId ? 'selected' : ''}>${j.nama_jabatan}</option>`;
-        });
-        document.getElementById("jabatan").innerHTML = html;
-        return data;
-    }
-
-    async function loadKaryawan(siteId, jabId, selectedKaryawanId = null) {
-        if (!siteId || !jabId) return [];
-        const res = await fetch("app/controller/get-data/get-karyawan-by-site-jabatan.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ site: siteId, jabatan: jabId })
-        });
-        const data = await res.json();
-        let html = '<option value="">-- Pilih Karyawan --</option>';
-        data.forEach(k => {
-            html += `<option value="${k.id_karyawan}" ${selectedKaryawanId && k.id_karyawan==selectedKaryawanId ? 'selected' : ''}>${k.nama_lengkap}</option>`;
-        });
-        document.getElementById("karyawan").innerHTML = html;
-        return data;
-    }
-
-    document.getElementById("site").addEventListener("change", async function() {
-        const siteId = this.value;
-        await loadJabatan(siteId);
-        document.getElementById("karyawan").innerHTML = '<option value="">-- Pilih Karyawan --</option>';
-    });
-
-    document.getElementById("jabatan").addEventListener("change", async function() {
-        const siteId = document.getElementById("site").value;
-        const jabId = this.value;
-        await loadKaryawan(siteId, jabId);
-    });
-
-    // ================= Load Data Absen =================
-    async function loadData() {
-        const site = document.getElementById("filterSite").value;
-        const tgl = document.getElementById("filterTanggal").value;
-        const status = document.getElementById("filterStatus").value;
-
-        const tbody = document.getElementById("tabelAbsen");
-        tbody.innerHTML = "<tr><td colspan='8'>Loading...</td></tr>";
-
-        try {
-            const res = await fetch("app/controller/get-data/get-absen.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ site, tgl, status })
-            });
-            const html = await res.text();
-            tbody.innerHTML = html;
-            const total = html.trim() ? document.querySelectorAll("#tabelAbsen tr").length : 0;
-            document.getElementById("totalRecords").textContent = total;
-        } catch (err) {
-            console.error(err);
-            tbody.innerHTML = "<tr><td colspan='8'>Terjadi kesalahan saat memuat data!</td></tr>";
-        }
-    }
-
-    // ================= Tambah Absensi =================
-    document.getElementById("btnTambahAbsen").addEventListener("click", () => {
-        document.getElementById("formAbsen").reset();
-        document.getElementById("idAbsen").value = "";
-        document.getElementById("ket_absen").value = "";
-        document.getElementById("keterangan_kehadiran").value = "";
-        updateFieldsByKeterangan();
-        modal.show();
-    });
-
-    // ================= Edit Absensi =================
-    document.addEventListener("click", async function(e) {
-        // handle both icon or button click
-        const btn = e.target.closest(".btn-edit");
-        if (!btn) return;
-
-        const tr = btn.closest("tr");
-        const siteId = tr.querySelector(".td-site")?.dataset.siteId || "";
-        const jabId = tr.querySelector(".td-jabatan")?.dataset.jabatanId || "";
-        const karyawanId = tr.querySelector(".td-nama")?.dataset.karyawanId || "";
-        const ketDb = tr.querySelector(".td-ket")?.dataset.ket ?? "";
-        const jamDb = tr.querySelector(".td-jam")?.dataset.jam ?? "";
-        const tglDb = tr.querySelector(".td-tanggal")?.dataset.tgl ?? "";
-
-        // populate form (names match act-absen.php)
-        document.getElementById("idAbsen").value = btn.dataset.id || "";
-        document.getElementById("site").value = siteId;
-
-        await loadJabatan(siteId, jabId);
-        await loadKaryawan(siteId, jabId, karyawanId);
-
-        document.getElementById("karyawan").value = karyawanId;
-        document.getElementById("tgl").value = tglDb;
-
-        // show ket_absen from DB in the visible input keterangan_kehadiran
-        // ketDb stored raw from DB
-        document.getElementById("keterangan_kehadiran").value = ketDb;
-
-        // set select ket to DB value if matches (otherwise leave blank)
-        // we use select named ket_select for UI only
-        if (["HADIR","SPL","IZIN","SAKIT","CUTI"].includes((ketDb || "").toUpperCase())) {
-            document.getElementById("ket").value = ketDb.toUpperCase();
-        } else {
-            document.getElementById("ket").value = "";
-        }
-
-        // jam kerja
-        document.getElementById("jam").value = jamDb;
-
-        updateFieldsByKeterangan();
-        modal.show();
-    });
-
-    // ================= Submit Form =================
-    document.getElementById("formAbsen").addEventListener("submit", async function(e) {
-        e.preventDefault();
-
-        // Before sending, set final ket_absen based on keterangan_kehadiran if provided,
-        // otherwise use select ket (ket_select)
-        const keteranganInput = document.getElementById("keterangan_kehadiran").value.trim();
-        const ketSelect = document.getElementById("ket").value.trim();
-
-        const finalKet = keteranganInput !== "" ? keteranganInput : (ketSelect !== "" ? ketSelect : "");
-        document.getElementById("ket_absen").value = finalKet;
-
-        const formData = new FormData(this);
-
-        // decide action add/edit
-        const action = formData.get("id_absen") ? "edit" : "add";
-        formData.append("action", action);
-
-        try {
-            const res = await fetch("app/controller/act-absen.php", { method: "POST", body: formData });
-            const data = await res.json();
-            showToast(data.msg || (data.message ? data.message : JSON.stringify(data)), "success");
-            if (data.status === "success") {
-                modal.hide();
-                loadData();
+            // jika OFF, kosongkan jam
+            if (!config.showJam) {
+                document.getElementById("jam").value = "";
             }
-        } catch (err) {
-            console.error(err);
-            showToast("Gagal menyimpan data!", "error");
         }
-    });
 
-    // ================= Delete =================
-    document.addEventListener("click", async function(e) {
-        const btn = e.target.closest(".btn-delete");
-        if (!btn) return;
-        if (!confirm("Yakin ingin menghapus data ini?")) return;
+        // event change pada select ket
+        document.getElementById("ket").addEventListener("change", updateFieldsByKeterangan);
 
-        const id = btn.dataset.id;
-        const formData = new FormData();
-        formData.append("action", "delete");
-        formData.append("id_absen", id);
-
-        try {
-            const res = await fetch("app/controller/act-absen.php", { method: "POST", body: formData });
+        // ================= Load Jabatan & Karyawan =================
+        async function loadJabatan(siteId, selectedJabId = null) {
+            if (!siteId) return [];
+            const res = await fetch("app/controller/get-data/get-jabatan-by-site.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    site: siteId
+                })
+            });
             const data = await res.json();
-            showToast(data.msg || (data.message ? data.message : JSON.stringify(data)), "berhasil");
-            if (data.status === "success") loadData();
-        } catch (err) {
-            console.error(err);
-            showToast("Gagal menghapus data!", "error");
+            let html = '<option value="">-- Pilih Jabatan --</option>';
+            data.forEach(j => {
+                html += `<option value="${j.id_jabatan}" ${selectedJabId && j.id_jabatan==selectedJabId ? 'selected' : ''}>${j.nama_jabatan}</option>`;
+            });
+            document.getElementById("jabatan").innerHTML = html;
+            return data;
         }
+
+        async function loadKaryawan(siteId, jabId, selectedKaryawanId = null) {
+            if (!siteId || !jabId) return [];
+            const res = await fetch("app/controller/get-data/get-karyawan-by-site-jabatan.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    site: siteId,
+                    jabatan: jabId
+                })
+            });
+            const data = await res.json();
+            let html = '<option value="">-- Pilih Karyawan --</option>';
+            data.forEach(k => {
+                html += `<option value="${k.id_karyawan}" ${selectedKaryawanId && k.id_karyawan==selectedKaryawanId ? 'selected' : ''}>${k.nama_lengkap}</option>`;
+            });
+            document.getElementById("karyawan").innerHTML = html;
+            return data;
+        }
+
+        document.getElementById("site").addEventListener("change", async function() {
+            const siteId = this.value;
+            await loadJabatan(siteId);
+            document.getElementById("karyawan").innerHTML = '<option value="">-- Pilih Karyawan --</option>';
+        });
+
+        document.getElementById("jabatan").addEventListener("change", async function() {
+            const siteId = document.getElementById("site").value;
+            const jabId = this.value;
+            await loadKaryawan(siteId, jabId);
+        });
+
+        // ================= Load Data Absen =================
+        async function loadData() {
+            const site = document.getElementById("filterSite").value;
+            const tgl = document.getElementById("filterTanggal").value;
+            const status = document.getElementById("filterStatus").value;
+
+            const tbody = document.getElementById("tabelAbsen");
+            tbody.innerHTML = "<tr><td colspan='8'>Loading...</td></tr>";
+
+            try {
+                const res = await fetch("app/controller/get-data/get-absen.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        site,
+                        tgl,
+                        status
+                    })
+                });
+                const html = await res.text();
+                tbody.innerHTML = html;
+                const total = html.trim() ? document.querySelectorAll("#tabelAbsen tr").length : 0;
+                document.getElementById("totalRecords").textContent = total;
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = "<tr><td colspan='8'>Terjadi kesalahan saat memuat data!</td></tr>";
+            }
+        }
+
+        // ================= Tambah Absensi =================
+        document.getElementById("btnTambahAbsen").addEventListener("click", () => {
+            document.getElementById("formAbsen").reset();
+            document.getElementById("idAbsen").value = "";
+            document.getElementById("ket").value = "";
+            updateFieldsByKeterangan();
+            modal.show();
+        });
+
+        // ================= Edit Absensi =================
+        document.addEventListener("click", async function(e) {
+            // handle both icon or button click
+            const btn = e.target.closest(".btn-edit");
+            if (!btn) return;
+
+            const tr = btn.closest("tr");
+            const siteId = tr.querySelector(".td-site")?.dataset.siteId || "";
+            const jabId = tr.querySelector(".td-jabatan")?.dataset.jabatanId || "";
+            const karyawanId = tr.querySelector(".td-nama")?.dataset.karyawanId || "";
+            const ketDb = tr.querySelector(".td-ket")?.dataset.ket ?? "";
+            const jamDb = tr.querySelector(".td-jam")?.dataset.jam ?? "";
+            const tglDb = tr.querySelector(".td-tanggal")?.dataset.tgl ?? "";
+
+            // populate form (names match act-absen.php)
+            document.getElementById("idAbsen").value = btn.dataset.id || "";
+            document.getElementById("site").value = siteId;
+
+            await loadJabatan(siteId, jabId);
+            await loadKaryawan(siteId, jabId, karyawanId);
+
+            document.getElementById("karyawan").value = karyawanId;
+            document.getElementById("tgl").value = tglDb;
+
+            // set select ket to DB value if matches (otherwise leave blank)
+            // we use select named ket_select for UI only
+            document.getElementById("ket").value = ketDb;
+            
+            // jam kerja
+            document.getElementById("jam").value = jamDb;
+
+            updateFieldsByKeterangan();
+            modal.show();
+        });
+
+        // ================= Submit Form =================
+        document.getElementById("formAbsen").addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            // decide action add/edit
+            const action = formData.get("id_absen") ? "edit" : "add";
+            formData.append("action", action);
+
+            try {
+                const res = await fetch("app/controller/act-absen.php", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                showToast(data.msg || (data.message ? data.message : JSON.stringify(data)), "success");
+                if (data.status === "success") {
+                    modal.hide();
+                    loadData();
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal menyimpan data!", "error");
+            }
+        });
+
+        // ================= Delete =================
+        document.addEventListener("click", async function(e) {
+            const btn = e.target.closest(".btn-delete");
+            if (!btn) return;
+            if (!confirm("Yakin ingin menghapus data ini?")) return;
+
+            const id = btn.dataset.id;
+            const formData = new FormData();
+            formData.append("action", "delete");
+            formData.append("id_absen", id);
+
+            try {
+                const res = await fetch("app/controller/act-absen.php", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                showToast(data.msg || (data.message ? data.message : JSON.stringify(data)), "berhasil");
+                if (data.status === "success") loadData();
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal menghapus data!", "error");
+            }
+        });
+
+        // Filters
+        document.getElementById("filterSite").addEventListener("change", loadData);
+        document.getElementById("filterTanggal").addEventListener("change", loadData);
+        document.getElementById("filterStatus").addEventListener("change", loadData);
+        document.getElementById("refreshBtn").addEventListener("click", loadData);
+
+        // initial load
+        loadData();
+
     });
-
-    // Filters
-    document.getElementById("filterSite").addEventListener("change", loadData);
-    document.getElementById("filterTanggal").addEventListener("change", loadData);
-    document.getElementById("filterStatus").addEventListener("change", loadData);
-    document.getElementById("refreshBtn").addEventListener("click", loadData);
-
-    // initial load
-    loadData();
-
-});
 </script>

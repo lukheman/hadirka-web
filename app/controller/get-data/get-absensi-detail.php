@@ -108,36 +108,50 @@ $karyawan = $karyawanQ->fetch_assoc();
                 // ==== CEK ABSEN ====
                 if ($absen) {
                     $jk = floatval($absen['jam_kerja']);
-                    $ket = strtoupper($absen['ket_absen']);
+                    $ket = strtoupper(trim($absen['ket_absen']));
 
-                    if ($jk > 0) {
-                        $jamNormal = min($jk, 7);
-                        $ot1 = max(0, min($jk - 7, 1));
-                        $ot2 = max(0, $jk - 8);
-                        $keterangan = ($ket === "OFF" ? "SPL" : "Masuk");
-
-                        $rowClass = ($ket === "OFF" ? "bg-warning text-dark" : "");
-                    } else {
-                        if ($ket === "OFF") {
+                    // ===== PRIORITAS STATUS KHUSUS =====
+                    if ($ket === 'IZIN') {
+                        $keterangan = "Izin";
+                        $rowClass = "bg-primary text-white";
+                    } elseif ($ket === 'SAKIT') {
+                        $keterangan = "Sakit";
+                        $rowClass = "bg-info text-dark";
+                    } elseif ($ket === 'CUTI') {
+                        $keterangan = "Cuti";
+                        $rowClass = "bg-warning text-dark";
+                    } elseif ($ket === 'RESIGN') {
+                        $keterangan = "Resign";
+                        $rowClass = "bg-danger text-white";
+                    } elseif ($ket === 'NEW') {
+                        $keterangan = "New";
+                        $rowClass = "bg-secondary text-white";
+                    } elseif ($ket === 'OFF') {
+                        if ($jk > 0) {
+                            $keterangan = "SPL";
+                            $rowClass = "bg-warning text-dark";
+                            $jamNormal = min($jk, 7);
+                            $ot1 = max(0, min($jk - 7, 1));
+                            $ot2 = max(0, $jk - 8);
+                        } else {
                             $keterangan = "OFF";
                             $rowClass = "bg-warning text-dark";
+                        }
+                    } else {
+                        // ===== HARI KERJA NORMAL =====
+                        if ($jk > 0) {
+                            $jamNormal = min($jk, 7);
+                            $ot1 = max(0, min($jk - 7, 1));
+                            $ot2 = max(0, $jk - 8);
+                            $keterangan = "Masuk";
+                            $rowClass = "";
                         } else {
                             $keterangan = "Mangkir";
                             $rowClass = "bg-danger text-white";
                         }
                     }
-                } else {
-                    if ($isIzin) {
-                        $keterangan = "Izin";
-                        $rowClass = "bg-primary text-white";
-                    } elseif ($isSakit) {
-                        $keterangan = "Sakit";
-                        $rowClass = "bg-info text-white";
-                    } else {
-                        $keterangan = "Mangkir";
-                        $rowClass = "bg-danger text-white";
-                    }
                 }
+
 
                 // ==== HITUNG TOTAL ====
                 $totalNormal += is_numeric($jamNormal) ? $jamNormal : 0;
@@ -203,7 +217,7 @@ $karyawan = $karyawanQ->fetch_assoc();
 
 
 <!-- Modal Form Absen (di dalam detail) -->
-<div class="modal fade" id="modalFormAbsenDetail" tabindex="-1">
+<!-- <div class="modal fade" id="modalFormAbsenDetail" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="formAbsenDetail">
@@ -213,46 +227,49 @@ $karyawan = $karyawanQ->fetch_assoc();
                 </div>
 
                 <div class="modal-body">
-                    <!-- id_absen untuk edit (kosong saat tambah) -->
+                    
                     <input type="hidden" name="id_absen" id="form_id_absen_detail" value="">
                     <input type="hidden" name="id_karyawan" id="form_id_karyawan_detail" value="">
                     <input type="hidden" name="tgl_absen" id="form_tgl_detail" value="">
 
                     <div class="mb-3">
-                        <label class="form-label">Jam Kerja</label>
-                        <input type="number" step="0.1" class="form-control" name="jam_kerja" id="form_jk_detail" required>
+                        <label class="form-label">Keterangan</label>
+                        <select class="form-select" name="ket_absen" id="form_ket_detail">
+                            <option value="">-- Pilih Keterangan --</option>
+                            <option value="HADIR">HADIR</option>
+                            <option value="OFF">SPL/OFF</option>
+                            <option value="IZIN">IZIN</option>
+                            <option value="SAKIT">SAKIT</option>
+                            <option value="CUTI">CUTI</option>
+                        </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Keterangan</label>
-                        <select class="form-select" name="ket_absen" id="form_ket_detail">
-                            <option value="Masuk">Masuk</option>
-                            <option value="OFF">OFF</option>
-                            <option value="SPL">SPL</option>
-                            <option value="Mangkir">Mangkir</option>
-                        </select>
+                        <label class="form-label">Jam Kerja</label>
+                        <input type="number" step="0.1" class="form-control" name="jam_kerja" id="form_jk_detail" required>
                     </div>
                 </div>
 
                 <div class="modal-footer">
-                    <!-- action akan di-set di JS: add / edit -->
+                    
                     <input type="hidden" name="action" id="form_action_detail" value="add">
                     <button type="submit" class="btn btn-primary">Simpan</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</div> -->
 
 
-<script>
+<!-- <script>
     // GUNAKAN IMMEDIATELY INVOKED FUNCTION untuk menghindari konflik
     (function() {
         console.log("Script detail absensi loaded");
 
         // Inisialisasi modal form
         let modalFormAbsen = null;
-        
+
         // Tunggu sebentar untuk memastikan modal sudah ter-render
         setTimeout(function() {
             const modalElement = document.getElementById('modalFormAbsenDetail');
@@ -272,9 +289,9 @@ $karyawan = $karyawanQ->fetch_assoc();
             $("#form_id_karyawan_detail").val(id_karyawan);
             $("#form_tgl_detail").val(tgl);
             $("#form_jk_detail").val('');
-            $("#form_ket_detail").val("Masuk");
+            $("#form_ket_detail").val("HADIR");
             $("#form_action_detail").val("add");
-            
+
             if (modalFormAbsen) {
                 modalFormAbsen.show();
             }
@@ -295,7 +312,7 @@ $karyawan = $karyawanQ->fetch_assoc();
             $("#form_jk_detail").val(jk);
             $("#form_ket_detail").val(ket);
             $("#form_action_detail").val("edit");
-            
+
             if (modalFormAbsen) {
                 modalFormAbsen.show();
             }
@@ -308,7 +325,7 @@ $karyawan = $karyawanQ->fetch_assoc();
             const id_absen = $(this).data("id_absen");
             const id_karyawan = $(this).data("id_karyawan");
 
-            fetch("app/controller/absensi/act-absen.php", {
+            fetch("app/controller/act-absen.php", {
                     method: "POST",
                     body: new URLSearchParams({
                         action: "delete",
@@ -317,18 +334,18 @@ $karyawan = $karyawanQ->fetch_assoc();
                 })
                 .then(res => res.json())
                 .then(data => {
-                    showToast(data.message, data.status);
-                    
+                    showToast(data.msg, data.status);
+
                     // Reload detail absensi
                     const tglAwal = document.getElementById("tglAwal").value;
                     const tglAkhir = document.getElementById("tglAkhir").value;
-                    
+
                     fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${id_karyawan}&tgl_a=${tglAwal}&tgl_b=${tglAkhir}`)
                         .then(res => res.text())
                         .then(html => {
                             document.getElementById("detailAbsensiBody").innerHTML = html;
                         });
-                    
+
                     // Reload tabel utama
                     if (typeof loadAbsensi === "function") {
                         loadAbsensi();
@@ -348,28 +365,28 @@ $karyawan = $karyawanQ->fetch_assoc();
             const fd = new FormData(this);
             const id_karyawan = $("#form_id_karyawan_detail").val();
 
-            fetch("app/controller/absensi/act-absen.php", {
+            fetch("app/controller/act-absen.php", {
                     method: "POST",
                     body: fd
                 })
                 .then(res => res.json())
                 .then(data => {
-                    showToast(data.message, data.status);
-                    
+                    showToast(data.msg, data.status);
+
                     if (modalFormAbsen) {
                         modalFormAbsen.hide();
                     }
-                    
+
                     // Reload detail absensi
                     const tglAwal = document.getElementById("tglAwal").value;
                     const tglAkhir = document.getElementById("tglAkhir").value;
-                    
+
                     fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${id_karyawan}&tgl_a=${tglAwal}&tgl_b=${tglAkhir}`)
                         .then(res => res.text())
                         .then(html => {
                             document.getElementById("detailAbsensiBody").innerHTML = html;
                         });
-                    
+
                     // Reload tabel utama
                     if (typeof loadAbsensi === "function") {
                         loadAbsensi();
@@ -382,4 +399,4 @@ $karyawan = $karyawanQ->fetch_assoc();
         });
 
     })();
-</script>
+</script> -->

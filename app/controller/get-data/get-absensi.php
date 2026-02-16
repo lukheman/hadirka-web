@@ -8,7 +8,7 @@ require '../../config/koneksi.php'; // <-- ubah jika perlu
 $tgl_a  = $_POST['tgl_a']  ?? '';
 $tgl_b  = $_POST['tgl_b']  ?? '';
 $site   = $_POST['site']   ?? '';
-$jabatan= $_POST['jabatan']?? '';
+$jabatan = $_POST['jabatan'] ?? '';
 
 // Validasi minimal
 if (!$tgl_a || !$tgl_b || !$site) {
@@ -17,7 +17,8 @@ if (!$tgl_a || !$tgl_b || !$site) {
 }
 
 // Helper: buat rentang tanggal (array YYYY-MM-DD)
-function dateRangeArray($start, $end) {
+function dateRangeArray($start, $end)
+{
     $period = new DatePeriod(
         new DateTime($start),
         new DateInterval('P1D'),
@@ -102,34 +103,36 @@ while ($k = mysqli_fetch_assoc($qKar)) {
         // Cek apakah ada record absensi
         if (isset($absForK[$tgl])) {
             $row = $absForK[$tgl];
-            $jamRaw = strtoupper(trim((string)$row['jam_kerja']));
+            $jamRaw = trim((string)$row['jam_kerja']);
+            $ket = strtoupper(trim((string)$row['ket_absen']));
 
-            // Jika jam_kerja berupa teks status
-            if (in_array($jamRaw, ['IZIN','SAKIT','CUTI'])) {
-                if ($jamRaw === 'IZIN')  $izin++;
-                if ($jamRaw === 'SAKIT') $sakit++;
-                if ($jamRaw === 'CUTI')  $cuti++;
-
-                // tampilkan sebagai status (tidak hitung hadir/OT)
+            // PRIORITAS 0: R / NEW / M (tidak dihitung apa-apa)
+            if (in_array($ket, ['R', 'NEW'])) {
                 continue;
             }
 
-            // Ket kolom terpisah (ket_absen) juga bisa menyimpan 'OFF' dll — prioritas ke jam_kerja
-            $ket = strtoupper(trim((string)$row['ket_absen']));
-
-            // Jika ket OFF atau jam_kerja == 'OFF'
-            if ($jamRaw === 'OFF' || $ket === 'OFF') {
-                // Jika jam numeric juga disimpan, coba ambil jam numeric jika tersedia di jam_kerja (beberapa DB menyimpan 'OFF' dan jam)
-                // Tapi default: jika OFF tanpa jam -> anggap libur (skip)
-                // Jika jam numeric di kolom jam_kerja (bukan 'OFF'), di-handle di blok numeric di bawah.
-                // Di sini kita cek apakah jam_kerja berisi OFF (string) -> skip
-                if ($jamRaw === 'OFF') {
-                    // nothing to count
-                    continue;
-                }
+            // PRIORITAS 1: status khusus dari ket_absen
+            if (in_array($ket, ['IZIN', 'SAKIT', 'CUTI'])) {
+                if ($ket === 'IZIN')  $izin++;
+                if ($ket === 'SAKIT') $sakit++;
+                if ($ket === 'CUTI')  $cuti++;
+                continue;
             }
 
-            // Jika jam_kerja numeric (string numeric)
+            // PRIORITAS 2: OFF atau SPL
+            if ($ket === 'OFF') {
+                // jika ada jam kerja (SPL di hari off)
+                if (floatval($jamRaw) > 0) {
+                    // case off marked in ket_absen with numeric jam in jam_kerja
+                    $jk = floatval($jamRaw);
+                    $spl += min($jk, 7);
+                    $ot1_spl += ($jk >= 8) ? 1 : 0;
+                    $ot2_spl += ($jk >= 9) ? ($jk - 8) : 0;
+                }
+                continue;
+            }
+
+            // PRIORITAS 3: Hari kerja normal (hadir)
             if (is_numeric($jamRaw)) {
                 $jk = floatval($jamRaw);
 
@@ -151,21 +154,11 @@ while ($k = mysqli_fetch_assoc($qKar)) {
 
                 // OT2: sum of (jk - 8) when jk >= 9 (per logic sebelumnya)
                 $ot2 += ($jk >= 9) ? ($jk - 8) : 0;
-
-                // SPL only applies when day is OFF but someone worked (handled above if OFF had numeric jam)
-                // But if in your DB you store ket_absen = 'OFF' and jam_kerja numeric, handle:
-                if ($jamRaw !== 'OFF' && $ket === 'OFF') {
-                    // case off marked in ket_absen with numeric jam in jam_kerja
-                    $spl += min($jk, 7);
-                    $ot1_spl += ($jk >= 8) ? 1 : 0;
-                    $ot2_spl += ($jk >= 9) ? ($jk - 8) : 0;
-                }
-
                 continue;
             }
 
-            // Jika jam_kerja berisi 'MANGKIR' secara eksplisit
-            if ($jamRaw === 'MANGKIR') {
+            // Jika ket berisi 'MANGKIR' secara eksplisit
+            if ($ket === 'MANGKIR') {
                 $mangkir++;
                 continue;
             }

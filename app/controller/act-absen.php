@@ -17,8 +17,7 @@ if ($action === 'add') {
     $id_karyawan = intval($_POST['id_karyawan'] ?? 0);
     $tgl = $_POST['tgl_absen'] ?? '';
     $jam = $_POST['jam_kerja'] ?? '';
-    // prefer value passed in ket_absen (hidden) else fallback to keterangan_kehadiran or ket_select
-    $ket = $_POST['ket_absen'] ?? ($_POST['keterangan_kehadiran'] ?? '');
+    $ket = $_POST['ket_absen'] ?? '';
     $ket = $koneksi->real_escape_string($ket);
 
     if ($id_karyawan <= 0) json_out(['status' => 'error', 'msg' => 'Karyawan harus dipilih']);
@@ -42,7 +41,7 @@ elseif ($action === 'edit') {
     $id_karyawan = intval($_POST['id_karyawan'] ?? 0);
     $tgl = $_POST['tgl_absen'] ?? '';
     $jam = $_POST['jam_kerja'] ?? '';
-    $ket = $_POST['ket_absen'] ?? ($_POST['keterangan_kehadiran'] ?? '');
+    $ket = $_POST['ket_absen'] ?? '';
     $ket = $koneksi->real_escape_string($ket);
 
     if ($id <= 0) json_out(['status' => 'error', 'msg' => 'ID absensi tidak valid']);

@@ -17,35 +17,35 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
     <h4 class="fw-bold mb-3">
         <span class="text-muted fw-light">Data Karyawan /</span> Absensi
     </h4>
-    <button class="btn btn-success mb-3" id="btnTambahAbsensi">
+    <!-- <button class="btn btn-success mb-3" id="btnTambahAbsensi">
         <i class="fa fa-plus"></i> Tambah Absensi
-    </button>
+    </button> -->
 
 
     <!-- Import CSV -->
     <div class="mb-4 p-3 bg-light rounded-3 shadow-sm">
         <p class="instruction-text mb-3">
-            Unggah file Excel/CSV sesuai urutan kolom untuk memperbarui database secara masal.
+            Unggah file Excel/CSV sesuai format kolom untuk memperbarui database secara masal. Dengan Ketentuan Warna:
         </p>
         <div class="d-flex flex-wrap gap-2 mb-3">
-            <span class='badge bg-primary'>B: NIK</span>
-            <span class='badge bg-primary'>E: Nominal</span>
-            <span class='badge bg-primary'>F: Tgl Pinjam</span>
-            <span class='badge bg-primary'>G: Tgl Bayar</span>
-            <span class='badge bg-primary'>H: Ket</span>
+            <span class='badge' style="background-color: yellow; color: black;">SPL / OFF</span>
+            <span class='badge bg-primary'>IZIN</span>
+            <span class='badge bg-info'>SAKIT / SD</span>
+            <span class='badge bg-warning'>CUTI / CM</span>
+            <span class='badge bg-danger'>MANGKIR / RESIGN</span>
         </div>
         <label for="file_csv" class="form-label fw-bold text-primary">
-            <i class="fa fa-upload fa-lg"></i> Import CSV Absensi
+            <i class="fa fa-upload fa-lg"></i> Import File Excel Absensi
         </label>
         <form id="formImportCSV" enctype="multipart/form-data">
             <div class="input-group mb-2">
-                <input type="file" name="file_csv" id="file_csv" class="form-control" required data-bs-toggle="tooltip" title="Pilih file CSV untuk import data absensi">
+                <input type="file" name="file_csv" id="file_csv" class="form-control" required data-bs-toggle="tooltip" title="Pilih file Excel untuk import data absensi">
                 <button type="submit" class="btn btn-success" id="btnImportCSV" data-bs-toggle="tooltip" title="Klik untuk mengimpor data dari file CSV">
                     <i class="fa fa-upload"></i> Import CSV
                 </button>
             </div>
         </form>
-        <a href="assets/template-csv/Format Template Import Rekapitulasi Absensi.xlsx" style="font-size: 2vh;">Download Template Format xlsx</a>
+        <a href="assets/template-csv/Format Template Import Rekapitulasi Absensi.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
     </div>
 
     <!-- Filter Tanggal -->
@@ -130,11 +130,11 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
 
 <!-- Modal Detail -->
 <div class="modal fade" id="modalDetailAbsensi" tabindex="-1" aria-labelledby="modalDetailAbsensiLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg ">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="modalDetailAbsensiLabel"><i class="fa fa-info-circle"></i> Detail Absensi</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="modalDetailAbsensiLabel"><i class="fa fa-info-circle"></i> Detail Absensi</h5>
+                <button type="button" class="btn-close btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="detailAbsensiBody">
                 <!-- Akan di-load via fetch -->
@@ -152,8 +152,53 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
     </div>
 </div>
 
+<!-- Modal Form Absen (di dalam detail) -->
+<div class="modal fade" id="modalFormAbsenDetail" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formAbsenDetail">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title text-white">Form Absensi</h5>
+                    <button type="button" class="btn-close btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- id_absen untuk edit (kosong saat tambah) -->
+                    <input type="hidden" name="id_absen" id="form_id_absen_detail" value="">
+                    <input type="hidden" name="id_karyawan" id="form_id_karyawan_detail" value="">
+                    <input type="hidden" name="tgl_absen" id="form_tgl_detail" value="">
+
+                    <div class="mb-3">
+                        <label class="form-label">Keterangan</label>
+                        <select class="form-select" name="ket_absen" id="form_ket_detail">
+                            <option value="">-- Pilih Keterangan --</option>
+                            <option value="HADIR">HADIR</option>
+                            <option value="OFF">SPL/OFF</option>
+                            <option value="IZIN">IZIN</option>
+                            <option value="SAKIT">SAKIT</option>
+                            <option value="CUTI">CUTI</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Jam Kerja</label>
+                        <input type="number" step="0.1" class="form-control" name="jam_kerja" id="form_jk_detail" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-info">Simpan</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Scripts -->
 <script>
+    let currentIdKaryawan = null;
+
     document.addEventListener("DOMContentLoaded", () => {
         const tabelBody = document.querySelector("#tabelAbsensi tbody");
         const modalEl = document.getElementById("modalDetailAbsensi");
@@ -169,21 +214,16 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
             const tr = e.target.closest("tr");
             if (!tr || !tr.dataset.id) return;
 
-            const idKaryawan = tr.dataset.id;
+            currentIdKaryawan = tr.dataset.id;
 
             modalBody.innerHTML = `
-            <div class="text-center">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p>Memuat detail absensi...</p>
-            </div>
-        `;
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p>Memuat detail absensi...</p>
+                </div>
+            `;
             modal.show();
-
-            fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${idKaryawan}&tgl_a=${tglAwalInput.value}&tgl_b=${tglAkhirInput.value}`)
-                .then(res => res.text())
-                .then(htmlDetail => {
-                    modalBody.innerHTML = htmlDetail;
-                });
+            loadDetailAbsensi();
         });
 
         window.loadAbsensi = function() {
@@ -282,11 +322,167 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                 });
         });
 
-
         // Auto reload filter
         filterSite.addEventListener("change", loadAbsensi);
         filterJabatan.addEventListener("change", loadAbsensi);
         tglAwalInput.addEventListener("change", loadAbsensi);
         tglAkhirInput.addEventListener("change", loadAbsensi);
+
+
+        // Reload Detail Absensi
+        function loadDetailAbsensi() {
+            if (!currentIdKaryawan) return;
+
+            modalBody.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary"></div>
+                    <p>Memuat detail absensi...</p>
+                </div>
+            `;
+
+            fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${currentIdKaryawan}&tgl_a=${tglAwalInput.value}&tgl_b=${tglAkhirInput.value}`)
+                .then(res => res.text())
+                .then(html => {
+                    modalBody.innerHTML = html;
+                });
+        }
+
+
+
+        // FOR ACTION BUTTON IN DETAIL ABSENSI
+        (function() {
+            console.log("Script detail absensi loaded");
+
+            // mapping untuk UI behaviour (jam selalu tampil)
+            const ketMapping = {
+                "HADIR": {
+                    showJam: true
+                },
+                "SPL/OFF": {
+                    showJam: true
+                },
+                "IZIN": {
+                    showJam: false
+                },
+                "SAKIT": {
+                    showJam: false
+                },
+                "CUTI": {
+                    showJam: false
+                },
+            };
+
+            // Inisialisasi modal form
+            const modalForm = new bootstrap.Modal(
+                document.getElementById("modalFormAbsenDetail")
+            );
+
+            const formAbsen = document.getElementById("formAbsenDetail");
+
+
+            // Fungsi Update jam by keterangan 
+            const ketSelectEl = document.getElementById("form_ket_detail");
+            const jamEl = document.getElementById("form_jk_detail");
+
+            function updateFieldsByKeterangan() {
+                const ketSelect = ketSelectEl.value;
+
+                if (["IZIN", "SAKIT", "CUTI"].includes(ketSelect)) {
+                    jamEl.value = "";
+                    jamEl.disabled = true;
+                } else {
+                    jamEl.disabled = false;
+                }
+            }
+
+            ketSelectEl.addEventListener("change", updateFieldsByKeterangan);
+
+
+            document.addEventListener("click", function(e) {
+
+                // TAMBAH
+                const btnTambah = e.target.closest(".btnTambahDetail");
+                if (btnTambah) {
+                    const id_karyawan = btnTambah.dataset.id_karyawan;
+                    const tgl = btnTambah.dataset.tgl;
+
+                    document.getElementById("form_id_absen_detail").value = "";
+                    document.getElementById("form_id_karyawan_detail").value = id_karyawan;
+                    document.getElementById("form_tgl_detail").value = tgl;
+                    document.getElementById("form_ket_detail").value = "";
+                    document.getElementById("form_jk_detail").value = "";
+
+                    modalForm.show();
+                    return;
+                }
+
+                // EDIT
+                const btnEdit = e.target.closest(".btnEditDetail");
+                if (btnEdit) {
+                    document.getElementById("form_id_absen_detail").value = btnEdit.dataset.id_absen;
+                    document.getElementById("form_id_karyawan_detail").value = btnEdit.dataset.id_karyawan;
+                    document.getElementById("form_tgl_detail").value = btnEdit.dataset.tgl;
+                    document.getElementById("form_ket_detail").value = btnEdit.dataset.ket;
+                    document.getElementById("form_jk_detail").value = btnEdit.dataset.jk;
+
+                    modalForm.show();
+                    return;
+                }
+
+                // HAPUS
+                const btnHapus = e.target.closest(".btnHapusDetail");
+                if (btnHapus) {
+                    if (!confirm("Yakin hapus data?")) return;
+
+                    const formData = new FormData();
+                    formData.append("action", "delete");
+                    formData.append("id_absen", btnHapus.dataset.id_absen);
+
+                    fetch("app/controller/act-absen.php", {
+                            method: "POST",
+                            body: formData
+                        })
+                        .then(r => r.json())
+                        .then(res => {
+                            showToast(res.msg, "success");
+                            loadAbsensi();
+                            loadDetailAbsensi();
+                        });
+                }
+
+            });
+
+
+
+            // ================= Submit Form =================
+            document.getElementById("formAbsenDetail").addEventListener("submit", async function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+
+                // decide action add/edit
+                const action = formData.get("id_absen") ? "edit" : "add";
+                formData.append("action", action);
+
+                try {
+                    const res = await fetch("app/controller/act-absen.php", {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await res.json();
+                    showToast(data.msg || (data.message ? data.message : JSON.stringify(data)), "success");
+                    if (data.status === "success") {
+                        modalForm.hide();
+                        loadAbsensi();
+                        loadDetailAbsensi();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast("Gagal menyimpan data!", "error");
+                }
+            });
+
+
+        })();
     });
 </script>
