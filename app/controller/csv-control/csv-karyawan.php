@@ -182,6 +182,33 @@ try {
             // === Cek apakah karyawan sudah ada ===
             $cekKaryawan = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan'");
 
+            // === Cek apakah karyawan sudah pernah tereliminasi ===
+            $cekEliminasi = $koneksi->query("
+                SELECT te.id_tereliminasi, tk.id_karyawan 
+                FROM tb_tereliminasi te
+                JOIN tb_karyawan tk ON te.id_karyawan = tk.id_karyawan
+                WHERE tk.nik_karyawan = '$nik_karyawan'
+            ");
+
+            if ($cekEliminasi->num_rows > 0) {
+
+                // // kebijakan 1: tolak
+                // $response["gagal"]++;
+                // $response["errors"][] = "Baris $rowNum: NIK $nik_karyawan sudah terdaftar sebagai karyawan keluar (tb_tereliminasi).";
+                // continue;
+
+                // kebijakan 2: reaktivasi otomatis
+                $rowElim = $cekEliminasi->fetch_assoc();
+                $id_karyawan = $rowElim['id_karyawan'];
+
+                // hapus eliminasi
+                $koneksi->query("DELETE FROM tb_tereliminasi WHERE id_karyawan='$id_karyawan'");
+
+                // update status aktif
+                $koneksi->query("UPDATE tb_karyawan SET status_karyawan='Aktif' WHERE id_karyawan='$id_karyawan'");
+            }
+
+
             if ($cekKaryawan->num_rows > 0) {
                 // UPDATE - Karyawan sudah ada
                 $id_karyawan = $cekKaryawan->fetch_assoc()['id_karyawan'];

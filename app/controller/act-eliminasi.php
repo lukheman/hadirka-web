@@ -22,10 +22,14 @@ if ($action == "eliminasi") { // Proses eliminasi
         $id_jenis_keluar = input('id_jenis_keluar');
         $alasan_keluar = input('alasan_keluar');
 
-        // Validasi NIK tidak boleh kosong
+        // Validasi NIK dan tgl tidak boleh kosong
         if (empty($nik_karyawan)) {
             throw new Exception("NIK Karyawan tidak boleh kosong.");
         }
+        if (empty($tgl_keluar)) {
+            throw new Exception("Tanggal keluar wajib diisi.");
+        }
+
 
         // Cari id_karyawan berdasarkan NIK
         $sql_check = "SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = '$nik_karyawan'";
@@ -49,13 +53,31 @@ if ($action == "eliminasi") { // Proses eliminasi
         $row_jenis = $result_jenis->fetch_assoc();
         $id_jenis_keluar = $row_jenis['id_jenis_keluar'];
 
-        // 1. Insert data ke tb_tereliminasi
-        $sql_insert = "INSERT INTO tb_tereliminasi 
-                      (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at) 
-                      VALUES 
-                      ('$id_karyawan', '$tgl_keluar', '$id_jenis_keluar', '$alasan_keluar', NOW())";
 
-        if (!$koneksi->query($sql_insert)) {
+        // cek apakah sudah ada eliminasi
+        $cekEliminasi = $koneksi->query("
+            SELECT id_tereliminasi 
+            FROM tb_tereliminasi 
+            WHERE id_karyawan = '$id_karyawan'
+        ");
+
+        if ($cekEliminasi->num_rows > 0) {
+            // UPDATE (koreksi data eliminasi)
+            $sqlEliminasi = "UPDATE tb_tereliminasi SET
+                tgl_keluar = '$tgl_keluar',
+                id_jenis_keluar = '$id_jenis_keluar',
+                alasan_keluar = '$alasan_keluar',
+                updated_at = NOW()
+            WHERE id_karyawan = '$id_karyawan'";
+        } else {
+            // INSERT (eliminasi baru)
+            $sqlEliminasi = "INSERT INTO tb_tereliminasi
+                (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at)
+            VALUES
+                ('$id_karyawan', '$tgl_keluar', '$id_jenis_keluar', '$alasan_keluar', NOW())";
+        }
+
+        if (!$koneksi->query($sqlEliminasi)) {
             throw new Exception("Gagal menyimpan data eliminasi: " . $koneksi->error);
         }
 

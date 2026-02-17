@@ -171,7 +171,8 @@
     /* --- TABLE STYLE --- */
     .table-responsive {
         border-radius: 8px;
-        overflow: hidden;
+        overflow-x: auto;
+    overflow-y: hidden;
     }
 
     table {
@@ -419,8 +420,8 @@
 <div class="modal fade" id="modalEditRekening" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
+            <div class="modal-header text-white">
+                <h5 class="modal-title text-white">
                     🏦 Update Data Rekening
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
