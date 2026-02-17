@@ -157,11 +157,11 @@ if (!function_exists('generateSlipGaji')) {
         $cuti_days = 0;
 
         foreach ($absenRows as $r) {
-            $jamRawUpper = strtoupper(trim((string)$r['jam_kerja']));
+            $ketRawUpper = strtoupper(trim((string)$r['ket_absen']));
 
-            if ($jamRawUpper === 'IZIN')  $izin_days++;
-            if ($jamRawUpper === 'SAKIT') $sakit_days++;
-            if ($jamRawUpper === 'CUTI')  $cuti_days++;
+            if ($ketRawUpper === 'IZIN')  $izin_days++;
+            if ($ketRawUpper === 'SAKIT') $sakit_days++;
+            if ($ketRawUpper === 'CUTI')  $cuti_days++;
         }
 
         // ================= 5) Hitung Absen =================

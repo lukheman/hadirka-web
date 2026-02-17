@@ -32,11 +32,11 @@ $routes = [
     'bukti-sks'       => 'view/kehadiran/bukti-sks.php',
 
     // Penggajian & Finance
-    // 'slipgaji'       => 'view/penggajian/slip-gaji.php',
+    'data-periode'    => 'view/finance-payrol/data-periode.php',
+    'payroll'         => 'view/penggajian/data-payrol.php',
+    // 'slipgajinew'       => 'view/penggajian/slipgajinew.php',
     'data-pinjaman'   => 'view/penggajian/data-pinjaman.php',
     'data-rapel'      => 'view/penggajian/data-rapel.php',
-    'payroll'         => 'view/penggajian/data-payrol.php',
-    'data-periode'    => 'view/finance-payrol/data-periode.php',
 
     // Lainnya
     'data-kandidat'   => 'view/data-kandidat.php',

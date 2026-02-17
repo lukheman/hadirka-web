@@ -146,14 +146,27 @@ while ($k = mysqli_fetch_assoc($qKar)) {
                 $hariNama = strtolower(date('l', strtotime($tgl)));
                 $normal_hours = ($hariNama === 'friday') ? 5 : 7;
 
-                // Hitung hadir (jumlah jam minimal 7/5 per hari - catat sesuai logic awal: hadirs += min(jk,7))
-                $hadir += min($jk, 7);
+                // hitung hadir
+                $hadir += min($jk, $normal_hours);
 
-                // OT1: jika jk >= 8 (artinya lembur level1 hari normal)
-                $ot1 += ($jk >= 8) ? 1 : 0;
+                // hitung WL & OT2 sama persis dengan function-slip.php
+                $wl = 0;
+                $ot = 0;
 
-                // OT2: sum of (jk - 8) when jk >= 9 (per logic sebelumnya)
-                $ot2 += ($jk >= 9) ? ($jk - 8) : 0;
+                if ($hariNama === 'friday') {
+                    // Jumat: normal 5, WL jam ke-6, OT jam ke-7+
+                    $wl = min(1, max(0, $jk - 5));
+                    $ot = max(0, $jk - 5 - $wl);
+                } else {
+                    // Hari biasa: normal 7, WL jam ke-8, OT jam ke-9+
+                    $wl = min(1, max(0, $jk - 7));
+                    $ot = max(0, $jk - 7 - $wl);
+                }
+
+                // akumulasi
+                $ot1 += $wl;
+                $ot2 += $ot;
+
                 continue;
             }
 

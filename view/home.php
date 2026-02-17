@@ -2,9 +2,6 @@
 
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="row">
-
-
-
         <div class="col-12 col-md-12 col-lg-12 order-3 order-md-2">
             <div class="row">
 
