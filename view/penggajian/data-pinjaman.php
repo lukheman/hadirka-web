@@ -63,7 +63,7 @@
                             <div class="col-md-7">
                                 <h5 class="fw-bold text-warning mb-2"><i class="fa fa-file-excel me-2"></i> Cepat Import Data</h5>
                                 <p class="instruction-text mb-3">
-                                    Unggah file Excel/CSV sesuai urutan kolom untuk memperbarui database secara masal.
+                                    Unggah file Excel/CSV sesuai format kolom untuk memperbarui database secara masal. Dengan ketentuan:
                                 </p>
                                 <div class="d-flex flex-wrap gap-2 mb-3">
                                     <span class="format-badge">B: NIK</span>
@@ -83,6 +83,7 @@
                                     </div>
                                 </form>
                             </div>
+                            <a href="assets/template-csv/Format Impor Data Pinjaman.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
                         </div>
                     </div>
                 </div>
@@ -338,21 +339,24 @@
 
         // === EDIT & DELETE BUTTON ===
         document.addEventListener("click", e => {
+            const btnEdit = e.target.closest(".btnEdit");
+            const btnDelete = e.target.closest(".btnDelete");
+
             // EDIT
-            if (e.target.classList.contains("btnEdit")) {
-                const btn = e.target;
-                formEdit.querySelector("input[name=id_pinjaman]").value = btn.dataset.id;
-                $('#selectKaryawanEdit').val(btn.dataset.idkaryawan).trigger('change');
-                formEdit.querySelector("input[name=tgl_pinjaman]").value = btn.dataset.tglpinjaman;
-                formEdit.querySelector("input[name=tgl_bayar_pinjaman]").value = btn.dataset.tglbayar;
-                formEdit.querySelector("input[name=nominal_pinjaman]").value = btn.dataset.pinjaman;
-                formEdit.querySelector("input[name=ket_pinjaman]").value = btn.dataset.ket;
+            if (btnEdit) {
+                formEdit.querySelector("input[name=id_pinjaman]").value = btnEdit.dataset.id;
+                $('#selectKaryawanEdit').val(btnEdit.dataset.idkaryawan).trigger('change');
+                formEdit.querySelector("input[name=tgl_pinjaman]").value = btnEdit.dataset.tglpinjaman;
+                formEdit.querySelector("input[name=tgl_bayar_pinjaman]").value = btnEdit.dataset.tglbayar;
+                formEdit.querySelector("input[name=nominal_pinjaman]").value = btnEdit.dataset.pinjaman;
+                formEdit.querySelector("input[name=ket_pinjaman]").value = btnEdit.dataset.ket;
+
                 new bootstrap.Modal(document.getElementById("modalEditPinjaman")).show();
             }
 
             // DELETE
-            if (e.target.classList.contains("btnDelete")) {
-                const id = e.target.dataset.id;
+            if (btnDelete) {
+                const id = btnDelete.dataset.id;
                 if (confirm("Yakin menghapus pinjaman?")) {
                     fetch("app/controller/act-pinjaman.php", {
                             method: "POST",

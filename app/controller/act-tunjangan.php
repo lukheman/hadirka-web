@@ -39,6 +39,19 @@ try {
         $id_tun = isset($_POST['id_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['id_tunjangan'])) : '';
         $id_kar = isset($_POST['id_karier']) ? mysqli_real_escape_string($koneksi, decrypt(trim($_POST['id_karier']))) : '';
 
+        // Jenis Tunjangan yg dibolehkan
+        $allowed = [
+            "Tunjangan Daerah",
+            "Tunjangan Hidup",
+            "Tunjangan Makan",
+            "Tunjangan Skill",
+            "Performance Bonus"
+        ];
+
+        if (!in_array($nama, $allowed)) {
+            throw new Exception("Nama tunjangan tidak valid");
+        }
+
         if ($action == "add") {
             // Validasi input
             if (empty($nama) || empty($jumlah) || empty($id_kar)) {
@@ -46,33 +59,31 @@ try {
             }
 
             $q = $koneksi->query("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jumlah_tunjangan) VALUES ('$id_kar', '$nama', '$jumlah')");
-            
+
             if ($q) {
                 $response = ["status" => "success", "message" => "Data berhasil ditambahkan"];
             } else {
                 throw new Exception("Query gagal: " . $koneksi->error);
             }
-        } 
-        elseif ($action == "edit") {
+        } elseif ($action == "edit") {
             if (empty($nama) || empty($jumlah) || empty($id_tun)) {
                 throw new Exception("Data tidak lengkap");
             }
 
             $q = $koneksi->query("UPDATE tb_tunjangan SET nama_tunjangan='$nama', jumlah_tunjangan='$jumlah' WHERE id_tunjangan='$id_tun'");
-            
+
             if ($q) {
                 $response = ["status" => "success", "message" => "Data berhasil diupdate"];
             } else {
                 throw new Exception("Query gagal: " . $koneksi->error);
             }
-        } 
-        elseif ($action == "delete") {
+        } elseif ($action == "delete") {
             if (empty($id_tun)) {
                 throw new Exception("ID tidak valid");
             }
 
             $q = $koneksi->query("DELETE FROM tb_tunjangan WHERE id_tunjangan='$id_tun'");
-            
+
             if ($q) {
                 $response = ["status" => "success", "message" => "Data berhasil dihapus"];
             } else {
@@ -80,7 +91,6 @@ try {
             }
         }
     }
-
 } catch (Exception $e) {
     $response = ["status" => "error", "message" => $e->getMessage()];
     error_log("Error di act-tunjangan.php: " . $e->getMessage()); // Log ke file

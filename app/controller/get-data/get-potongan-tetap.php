@@ -15,7 +15,7 @@ if ($q->num_rows > 0) {
         <tr>
             <td class='text-center'>$no</td>
             <td>{$r['jenis_potongan']}</td>
-            <td class='text-end'>".number_format($r['jumlah_potongan'], 0, ',', '.')."</td>
+            <td class='text-end'>" . number_format($r['jumlah_potongan'], 0, ',', '.') . "</td>
             <td class='text-center'>
                 <button class='btn btn-warning btn-sm btnEditPotongan'
                     data-id='{$r['id_potongan']}'
@@ -33,6 +33,12 @@ if ($q->num_rows > 0) {
         $no++;
     }
 } else {
-    echo "<tr><td colspan='4' class='text-center'>Tidak ada data potongan.</td></tr>";
+    echo "
+    <tr>
+        <td class='text-center'>-</td>
+        <td class='text-center'>Tidak ada data</td>
+        <td class='text-center'>-</td>
+        <td class='text-center'>-</td>
+    </tr>
+    ";
 }
-?>

@@ -42,6 +42,7 @@ function escapeString($koneksi, $value)
 /**
  * Format tanggal dari Excel
  */
+
 function formatTanggal($value)
 {
     if (empty($value)) return null;
@@ -61,6 +62,7 @@ $response = [
     "errors" => [],
     "debug" => [],
     "error" => ""
+
 ];
 
 // Validasi file upload
@@ -79,6 +81,22 @@ if (!in_array($file_ext, ['xls', 'xlsx'])) {
     exit;
 }
 
+// Fungsi batasi update untuk sell kosong 
+function addUpdateField(&$fields, $column, $value, $allowNull = false)
+{
+    if ($allowNull) {
+        if ($value === null || $value === '') {
+            $fields[] = "$column = NULL";
+        } else {
+            $fields[] = "$column = '$value'";
+        }
+    } else {
+        if ($value !== '' && $value !== null) {
+            $fields[] = "$column = '$value'";
+        }
+    }
+}
+
 try {
     // Load Excel file
     $spreadsheet = IOFactory::load($file);
@@ -86,7 +104,7 @@ try {
 
     // Mulai transaksi
     $koneksi->begin_transaction();
-
+    
     foreach ($sheet as $rowNum => $row) {
         // Skip header
         if ($rowNum == 1) continue;
@@ -125,9 +143,9 @@ try {
             $atas_nama_rek = escapeString($koneksi, $row['Q'] ?? '');
             $no_rek        = escapeString($koneksi, $row['R'] ?? '');
             $nama_bank     = escapeString($koneksi, $row['S'] ?? '');
-
             $nama_ibu      = escapeString($koneksi, $row['T'] ?? '');
             $nik_ktp       = escapeString($koneksi, $row['U'] ?? '');
+
             // Alamat
             $alamat_ktp    = escapeString($koneksi, $row['V'] ?? '');
             $rt_rw         = escapeString($koneksi, $row['W'] ?? '');
@@ -144,6 +162,7 @@ try {
             $nama_kontak1 = escapeString($koneksi, $row['AD'] ?? '');
             $hubungan1       = escapeString($koneksi, $row['AE'] ?? '');
             $no_telp_darurat1 = escapeString($koneksi, $row['AF'] ?? '');
+
             // Kontak Darurat 2
             $nama_kontak2 = escapeString($koneksi, $row['AG'] ?? '');
             $hubungan2    = escapeString($koneksi, $row['AH'] ?? '');
@@ -155,7 +174,9 @@ try {
             $bpjs_kes          = escapeString($koneksi, $row['AL'] ?? '');
             $status_pernikahan = escapeString($koneksi, $row['AM'] ?? '');
             $kk_number         = escapeString($koneksi, $row['AN'] ?? '');
-            $status_karyawan   = escapeString($koneksi, $row['AO'] ?? 'Aktif');
+            $status_karyawan = trim($row['AO'] ?? '') === ''
+                ? 'Aktif'
+                : escapeString($koneksi, $row['AO']);
             $tgl_keluar = formatTanggal($row['AP'] ?? '');
             $alasan_keluar   = escapeString($koneksi, $row['AQ'] ?? '');
 
@@ -191,7 +212,7 @@ try {
             ");
 
             if ($cekEliminasi->num_rows > 0) {
-
+                
                 // // kebijakan 1: tolak
                 // $response["gagal"]++;
                 // $response["errors"][] = "Baris $rowNum: NIK $nik_karyawan sudah terdaftar sebagai karyawan keluar (tb_tereliminasi).";
@@ -207,58 +228,71 @@ try {
                 // update status aktif
                 $koneksi->query("UPDATE tb_karyawan SET status_karyawan='Aktif' WHERE id_karyawan='$id_karyawan'");
             }
-
+            
 
             if ($cekKaryawan->num_rows > 0) {
                 // UPDATE - Karyawan sudah ada
                 $id_karyawan = $cekKaryawan->fetch_assoc()['id_karyawan'];
 
                 // Update tb_karyawan
-                $sqlKaryawan = "UPDATE tb_karyawan SET
-                    nama_lengkap = '$nama_lengkap',
-                    jenis_kelamin = '$jenis_kelamin',
-                    tgl_lahir = " . ($tgl_lahir ? "'$tgl_lahir'" : "NULL") . ",
-                    tempat_lahir = '$tempat_lahir',
-                    email_pribadi = '$email_pribadi',
-                    no_telp = '$no_telp',
-                    nationality = '$nationality',
-                    agama = '$agama',
-                    status_pernikahan = '$status_pernikahan',
-                    status_karyawan = '$status_karyawan'
-                WHERE id_karyawan = '$id_karyawan'";
+                $updateFields = [];
 
-                if (!$koneksi->query($sqlKaryawan)) {
-                    throw new Exception("Error update tb_karyawan: " . $koneksi->error);
+                addUpdateField($updateFields, 'nama_lengkap', $nama_lengkap);
+                addUpdateField($updateFields, 'jenis_kelamin', $jenis_kelamin);
+                addUpdateField($updateFields, 'tempat_lahir', $tempat_lahir);
+                addUpdateField($updateFields, 'email_pribadi', $email_pribadi);
+                addUpdateField($updateFields, 'no_telp', $no_telp);
+                addUpdateField($updateFields, 'nationality', $nationality);
+                addUpdateField($updateFields, 'agama', $agama);
+                addUpdateField($updateFields, 'status_pernikahan', $status_pernikahan);
+                addUpdateField($updateFields, 'status_karyawan', $status_karyawan);
+
+                // tanggal lahir (boleh null hanya jika diisi)
+                addUpdateField($updateFields, 'tgl_lahir', $tgl_lahir);
+
+                if (!empty($updateFields)) {
+                    $sqlKaryawan = "UPDATE tb_karyawan SET " . implode(", ", $updateFields) . "
+                    WHERE id_karyawan = '$id_karyawan'";
+                    if (!$koneksi->query($sqlKaryawan)) {
+                        throw new Exception("Error update tb_karyawan: " . $koneksi->error);
+                    }
                 }
 
                 // Update tb_identitas - disesuaikan dengan struktur database
-                $sqlIdentitas = "UPDATE tb_identitas SET
-                    nik_ktp = '$nik_ktp',
-                    kk_number = '$kk_number',
-                    npwp = '$npwp',
-                    bpjs_tk = '$bpjs_tk',
-                    bpjs_kes = '$bpjs_kes',
-                    alamat_ktp = '$alamat_ktp',
-                    provinsi = '$provinsi',
-                    kabupaten = '$kabupaten',
-                    kecamatan = '$kecamatan',
-                    desa = '$desa',
-                    rt_rw = '$rt_rw',
-                    nama_ibu = '$nama_ibu',
-                    last_education = '$last_education',
-                    major = '$major',
-                    education_level = '$education_level',
-                    nama_bank = '$nama_bank',
-                    no_rek = '$no_rek',
-                    atas_nama_rek = '$atas_nama_rek'
-                WHERE id_karyawan = '$id_karyawan'";
+                $updateIdentitas = [];
 
-                if (!$koneksi->query($sqlIdentitas)) {
-                    throw new Exception("Error update tb_identitas: " . $koneksi->error);
+                addUpdateField($updateIdentitas, 'nik_ktp', $nik_ktp);
+                addUpdateField($updateIdentitas, 'kk_number', $kk_number);
+                addUpdateField($updateIdentitas, 'npwp', $npwp);
+                addUpdateField($updateIdentitas, 'bpjs_tk', $bpjs_tk);
+                addUpdateField($updateIdentitas, 'bpjs_kes', $bpjs_kes);
+                addUpdateField($updateIdentitas, 'alamat_ktp', $alamat_ktp);
+                addUpdateField($updateIdentitas, 'provinsi', $provinsi);
+                addUpdateField($updateIdentitas, 'kabupaten', $kabupaten);
+                addUpdateField($updateIdentitas, 'kecamatan', $kecamatan);
+                addUpdateField($updateIdentitas, 'desa', $desa);
+                addUpdateField($updateIdentitas, 'rt_rw', $rt_rw);
+                addUpdateField($updateIdentitas, 'nama_ibu', $nama_ibu);
+                addUpdateField($updateIdentitas, 'last_education', $last_education);
+                addUpdateField($updateIdentitas, 'major', $major);
+                addUpdateField($updateIdentitas, 'education_level', $education_level);
+                addUpdateField($updateIdentitas, 'nama_bank', $nama_bank);
+                addUpdateField($updateIdentitas, 'no_rek', $no_rek);
+                addUpdateField($updateIdentitas, 'atas_nama_rek', $atas_nama_rek);
+
+                if (!empty($updateIdentitas)) {
+                    $sqlIdentitas = "UPDATE tb_identitas SET " . implode(", ", $updateIdentitas) . "
+                     WHERE id_karyawan = '$id_karyawan'";
+                    if (!$koneksi->query($sqlIdentitas)) {
+                        throw new Exception("Error update tb_identitas: " . $koneksi->error);
+                    }
                 }
 
                 // Update tb_kontak_darurat dengan menghapus data lama terlebih dahulu
-                $koneksi->query("DELETE FROM tb_kontak_darurat WHERE id_karyawan='$id_karyawan'");
+                if (!empty($nama_kontak1) || !empty($nama_kontak2)) {
+                    $koneksi->query("DELETE FROM tb_kontak_darurat WHERE id_karyawan='$id_karyawan'");
+                }
+
                 // Insert kontak darurat 1
                 if (!empty($nama_kontak1) && !empty($no_telp_darurat1)) {
                     $sqlKontak1 = "INSERT INTO tb_kontak_darurat 
@@ -320,18 +354,34 @@ try {
             // === Update/Insert tb_karier ===
             $cekKarier = $koneksi->query("SELECT id_karier FROM tb_karier 
                 WHERE id_karyawan='$id_karyawan' 
+
                 ORDER BY tgl_mulai DESC LIMIT 1");
+
+            $sqlKarier = null;
 
             if ($cekKarier->num_rows > 0) {
                 // Update karier terakhir
                 $idKarier = $cekKarier->fetch_assoc()['id_karier'];
-                $sqlKarier = "UPDATE tb_karier SET
-                    id_site = '$id_site',
-                    id_departemen = '$id_departemen',
-                    id_jabatan = '$id_jabatan',
-                    tgl_mulai = " . ($tgl_masuk_site ? "'$tgl_masuk_site'" : "NULL") . ",
-                    tgl_selesai = " . ($tgl_selesai_kontrak ? "'$tgl_selesai_kontrak'" : "NULL") . "
-                WHERE id_karier = '$idKarier'";
+
+                $updateKarier = [];
+
+                addUpdateField($updateKarier, 'id_site', $id_site);
+                addUpdateField($updateKarier, 'id_departemen', $id_departemen);
+                addUpdateField($updateKarier, 'id_jabatan', $id_jabatan);
+
+                // boleh null overwrite
+                addUpdateField($updateKarier, 'tgl_mulai', $tgl_masuk_site, true);
+                addUpdateField($updateKarier, 'tgl_selesai', $tgl_selesai_kontrak, true);
+
+                if (!empty($updateKarier)) {
+                    $sqlKarier = "UPDATE tb_karier SET " . implode(", ", $updateKarier) . "
+                  WHERE id_karier = '$idKarier'";
+                    if (isset($sqlKarier)) {
+                        if (!$koneksi->query($sqlKarier)) {
+                            throw new Exception("Error tb_karier: " . $koneksi->error);
+                        }
+                    }
+                }
             } else {
                 // Insert karier baru
                 $sqlKarier = "INSERT INTO tb_karier (
@@ -342,16 +392,17 @@ try {
                     " . ($tgl_selesai_kontrak ? "'$tgl_selesai_kontrak'" : "NULL") . "
                 )";
             }
-
-            if (!$koneksi->query($sqlKarier)) {
-                throw new Exception("Error tb_karier: " . $koneksi->error);
+            if ($sqlKarier !== null) {
+                if (!$koneksi->query($sqlKarier)) {
+                    throw new Exception("Error tb_karier: " . $koneksi->error);
+                }
             }
 
 
             // Update/Insert ke tb_tereliminasi
             $id_jenis_keluar = null;
             // Cek apakah karyawan berstatus aktif atau bukan
-            if (!empty($status_karyawan) && strtolower($status_karyawan) != 'aktif') {
+            if (!empty($status_karyawan) && strtolower(trim($status_karyawan)) != 'aktif') {
                 $id_jenis_keluar = getId(
                     $koneksi,
                     'm_jenis_keluar',

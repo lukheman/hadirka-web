@@ -88,7 +88,7 @@ try {
         // 3. Kelola tb_tunjangan (Upsert Logic)
         $listTunjangan = [
             "Tunjangan Makan" => $t_makan,
-            "Tunjangan Skil" => $t_skill,
+            "Tunjangan Skill" => $t_skill,
             "Tunjangan Hidup" => $t_hidup,
             "Tunjangan Daerah" => $t_daerah,
             "Performance Bonus" => $p_bonus

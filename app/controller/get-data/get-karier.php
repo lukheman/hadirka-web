@@ -57,7 +57,7 @@ while ($r = $q->fetch_assoc()) { ?>
 
         <td class="text-center">
             <a href="data-tunjangan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Tunjangan</a>
-            <a href="data-potongan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Tanggungan</a>
+            <a href="data-potongan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Potongan</a>
 
             <button class="btn btn-primary btn-sm btnEditKarier"
                 data-id="<?= $r['id_karier'] ?>"

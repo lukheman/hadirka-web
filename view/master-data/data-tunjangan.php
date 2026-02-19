@@ -41,7 +41,14 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Nama Tunjangan</label>
-                        <input type="text" name="nama_tunjangan" class="form-control" placeholder="Contoh: Tunjangan Makan" required>
+                        <select name="nama_tunjangan" class="form-select" required>
+                            <option value="">-- Pilih Tunjangan --</option>
+                            <option value="Tunjangan Daerah">Tunjangan Daerah</option>
+                            <option value="Tunjangan Hidup">Tunjangan Hidup</option>
+                            <option value="Tunjangan Makan">Tunjangan Makan</option>
+                            <option value="Tunjangan Skill">Tunjangan Skill</option>
+                            <option value="Performance Bonus">Performance Bonus</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Jumlah (Rp)</label>
@@ -67,7 +74,13 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Nama Tunjangan</label>
-                        <input type="text" name="nama_tunjangan" class="form-control" required>
+                        <select name="nama_tunjangan" class="form-select" required>
+                            <option value="Tunjangan Daerah">Tunjangan Daerah</option>
+                            <option value="Tunjangan Hidup">Tunjangan Hidup</option>
+                            <option value="Tunjangan Makan">Tunjangan Makan</option>
+                            <option value="Tunjangan Skill">Tunjangan Skill</option>
+                            <option value="Performance Bonus">Performance Bonus</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Jumlah (Rp)</label>
@@ -137,7 +150,7 @@
 
             const form = document.getElementById("formEditTunjangan");
             form.querySelector("input[name=id_tunjangan]").value = btn.dataset.id;
-            form.querySelector("input[name=nama_tunjangan]").value = btn.dataset.nama;
+            form.querySelector("select[name=nama_tunjangan]").value = btn.dataset.nama;
             form.querySelector("input[name=jumlah_tunjangan]").value = btn.dataset.jumlah;
 
             let modalEdit = new bootstrap.Modal(document.getElementById("modalEditTunjangan"));
