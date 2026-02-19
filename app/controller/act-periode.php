@@ -35,12 +35,12 @@ if ($action == 'toggle-status') {
     $status = mysqli_real_escape_string($koneksi, $input['status']); 
 
     // Jika meng-Open, tutup yang lain dengan tipe yang sama
-    if ($status === 'Open') {
-        $q_info = mysqli_query($koneksi, "SELECT type_priode FROM tb_priode WHERE id_priode='$id'");
-        $d_info = mysqli_fetch_assoc($q_info);
-        $type   = $d_info['type_priode'];
-        mysqli_query($koneksi, "UPDATE tb_priode SET status_priode = 'Closed' WHERE type_priode = '$type'");
-    }
+    // if ($status === 'Open') {
+    //     $q_info = mysqli_query($koneksi, "SELECT type_priode FROM tb_priode WHERE id_priode='$id'");
+    //     $d_info = mysqli_fetch_assoc($q_info);
+    //     $type   = $d_info['type_priode'];
+    //     mysqli_query($koneksi, "UPDATE tb_priode SET status_priode = 'Closed' WHERE type_priode = '$type'");
+    // }
 
     $sql = "UPDATE tb_priode SET status_priode = '$status' WHERE id_priode = '$id'";
     if (mysqli_query($koneksi, $sql)) $response = ['status' => 'success'];
