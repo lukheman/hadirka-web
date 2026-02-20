@@ -56,7 +56,7 @@ if (!function_exists('generateSlipGaji')) {
         while ($pr = mysqli_fetch_assoc($qp)) {
             $potonganRows[] = ['nama' => $pr['jenis_potongan'], 'jumlah' => floatval($pr['jumlah_potongan'])];
             $total_potongan_db += floatval($pr['jumlah_potongan']);
-            
+
             // Ekstrak BPJS/JHT/PPH21
             $n = strtolower($pr['jenis_potongan']);
             if (strpos($n, 'bpjs') !== false) {
@@ -76,7 +76,7 @@ if (!function_exists('generateSlipGaji')) {
             $total_rapel += floatval($r['nominal_rapel']);
             $rapelRows[] = [
                 'tanggal' => $r['tgl_rapel'],
-                'nama' => $r['ket_rapel'], 
+                'nama' => $r['ket_rapel'],
                 'jumlah' => floatval($r['nominal_rapel'])
             ];
         }
@@ -87,7 +87,7 @@ if (!function_exists('generateSlipGaji')) {
         while ($pj = mysqli_fetch_assoc($qpj)) {
             $total_potongan_pinjaman += floatval($pj['nominal_pinjaman']);
             $pinjamanRows[] = [
-                'nama' => $pj['ket_pinjaman'], 
+                'nama' => $pj['ket_pinjaman'],
                 'jumlah' => floatval($pj['nominal_pinjaman']),
                 'tgl_jatuh_tempo' => $pj['tgl_bayar_pinjaman']
             ];
@@ -143,7 +143,7 @@ if (!function_exists('generateSlipGaji')) {
                     if ($ketAbsen === 'IZIN') $izin_days++;
                     if ($ketAbsen === 'SAKIT') $sakit_days++;
                     if ($ketAbsen === 'CUTI') $cuti_days++;
-                    
+
                     $absenForUI[] = [
                         'no' => $i++,
                         'tanggal' => date('d M', strtotime($tgl)),
@@ -176,17 +176,17 @@ if (!function_exists('generateSlipGaji')) {
                     )
                 ) {
                     // Hari biasa: Normal 7 jam, OT1 jam ke-8, OT2 jam ke-9+
-                        $h1_7 = min(7, $jam);
-                        $h8 = ($jam > 7) ? min(1, $jam - 7) : 0;
-                        $h9up = max(0, $jam - 8);
+                    $h1_7 = min(7, $jam);
+                    $h8 = ($jam > 7) ? min(1, $jam - 7) : 0;
+                    $h9up = max(0, $jam - 8);
 
-                        $total_spl_1_7 += $h1_7 * floatval($karier['spl']);
-                        $total_spl_8 += $h8 * floatval($karier['ot1_spl']);
-                        $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
+                    $total_spl_1_7 += $h1_7 * floatval($karier['spl']);
+                    $total_spl_8 += $h8 * floatval($karier['ot1_spl']);
+                    $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
 
-                        $total_jam_spl_1_7 += $h1_7;
-                        $total_jam_spl_8 += $h8;
-                        $total_jam_spl_9_up += $h9up;
+                    $total_jam_spl_1_7 += $h1_7;
+                    $total_jam_spl_8 += $h8;
+                    $total_jam_spl_9_up += $h9up;
 
                     // if ($hariNama === 'friday') {
                     //     // Jumat: Normal 5 jam, OT1 jam ke-6, OT2 jam ke-7+
@@ -268,7 +268,7 @@ if (!function_exists('generateSlipGaji')) {
             if (!empty($tgl_selesai_karier) && $tgl > $tgl_selesai_karier) {
                 // Jika tanggal absen > tgl_selesai_karier dan tidak ada data absen
                 $resign_count++;
-                
+
                 $absenForUI[] = [
                     'no' => $i++,
                     'tanggal' => date('d M', strtotime($tgl)),
@@ -296,7 +296,7 @@ if (!function_exists('generateSlipGaji')) {
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         // $total_pot_sakit = ($sakit_days * (750000/25));
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
-        
+
         // PKWT potongan untuk hari NEW
         $total_pot_pkwt = 0;
         if ($new_count > 0) {
@@ -356,16 +356,19 @@ if (!function_exists('generateSlipGaji')) {
             'totalPotongan' => $total_potongan,
             'pendapatan' => $listPendapatan,
             'potongan' => $listPotongan,
-            'statistik' => [
-                'hariKerja' => $hari_kerja_count,
-                'mangkir' => $mangkir_count,
-                'izin' => $izin_days,
-                'sakit' => $sakit_days,
-                'cuti' => $cuti_days,
-                'newDays' => $new_count,
-                'resignDays' => $resign_count,
-                'kelebihanHari' => $kelebihan_hari
-            ],
+
+            'hariKerja' => $hari_kerja_count,
+            'mangkir' => $mangkir_count,
+            'izin' => $izin_days,
+            'sakit' => $sakit_days,
+            'cuti' => $cuti_days,
+            'newDays' => $new_count,
+            'resignDays' => $resign_count,
+            'kelebihanHari' => $kelebihan_hari,
+
+            'totalJamKurang' => $total_jam_kurang,
+            'totalJamWL' => $total_jam_wl,
+            'totalJamOT' => $total_jam_ot,
             'absensi' => $absenForUI
         ];
     }
