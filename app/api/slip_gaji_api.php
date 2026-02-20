@@ -175,7 +175,8 @@ if (!function_exists('generateSlipGaji')) {
                         strpos($ketAbsen, 'LEMBUR') !== false
                     )
                 ) {
-                    // Hari biasa: Normal 7 jam, OT1 jam ke-8, OT2 jam ke-9+
+                    // SPL: Normal selalu 7 jam di semua hari (termasuk Jumat)
+                    // OT1 jam ke-8, OT2 jam ke-9+
                     $h1_7 = min(7, $jam);
                     $h8 = ($jam > 7) ? min(1, $jam - 7) : 0;
                     $h9up = max(0, $jam - 8);
@@ -332,12 +333,12 @@ if (!function_exists('generateSlipGaji')) {
             $tunjanganRows,
             $rapelRows
         );
-        if ($total_lembur > 0) $listPendapatan[] = ['nama' => 'Lembur WL', 'jumlah' => $total_lembur];
-        if ($total_overtime > 0) $listPendapatan[] = ['nama' => 'Lembur OT', 'jumlah' => $total_overtime];
-        if ($total_spl_1_7 > 0) $listPendapatan[] = ['nama' => 'SPL 1-7', 'jumlah' => $total_spl_1_7];
-        if ($total_spl_8 > 0) $listPendapatan[] = ['nama' => 'SPL 8', 'jumlah' => $total_spl_8];
-        if ($total_spl_9_up > 0) $listPendapatan[] = ['nama' => 'SPL 9+', 'jumlah' => $total_spl_9_up];
-        if ($pendapatan_kelebihan_hari > 0) $listPendapatan[] = ['nama' => 'Kelebihan Hari Kerja', 'jumlah' => $pendapatan_kelebihan_hari];
+        if ($total_lembur > 0) $listPendapatan[] = ['nama' => 'Lembur WL (' . $total_jam_wl . ' Jam)', 'jumlah' => $total_lembur];
+        if ($total_overtime > 0) $listPendapatan[] = ['nama' => 'Lembur OT (' . $total_jam_ot . ' Jam)', 'jumlah' => $total_overtime];
+        if ($total_spl_1_7 > 0) $listPendapatan[] = ['nama' => 'SPL 1-7 (' . $total_jam_spl_1_7 . ' Jam)', 'jumlah' => $total_spl_1_7];
+        if ($total_spl_8 > 0) $listPendapatan[] = ['nama' => 'SPL 8 (' . $total_jam_spl_8 . ' Jam)', 'jumlah' => $total_spl_8];
+        if ($total_spl_9_up > 0) $listPendapatan[] = ['nama' => 'SPL 9+ (' . $total_jam_spl_9_up . ' Jam)', 'jumlah' => $total_spl_9_up];
+        if ($pendapatan_kelebihan_hari > 0) $listPendapatan[] = ['nama' => 'Kelebihan Hari Kerja (' . $kelebihan_hari . ' Hari)', 'jumlah' => $pendapatan_kelebihan_hari];
 
         $listPotongan = array_merge($potonganRows, $pinjamanRows);
         if ($total_pot_izin > 0) $listPotongan[] = ['nama' => 'Potongan Izin', 'jumlah' => $total_pot_izin];
@@ -369,6 +370,9 @@ if (!function_exists('generateSlipGaji')) {
             'totalJamKurang' => $total_jam_kurang,
             'totalJamWL' => $total_jam_wl,
             'totalJamOT' => $total_jam_ot,
+            'totalJamSPL1_7' => $total_jam_spl_1_7,
+            'totalJamSPL8' => $total_jam_spl_8,
+            'totalJamSPL9Up' => $total_jam_spl_9_up,
             'absensi' => $absenForUI
         ];
     }
