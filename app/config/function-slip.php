@@ -201,22 +201,22 @@ if (!function_exists('generateSlipGaji')) {
             $hariNama = strtolower(date('l', strtotime($tgl)));
             $normal_hours = ($hariNama === 'friday') ? 5 : 7;
 
-            // ================= NEW =================
-            if ($tgl < $tgl_mulai_karier) {
-                $isMinggu = ($hariNama === 'sunday');
-                $absenForUI[] = [
-                    'tanggal' => $tgl,
-                    'jam' => 0,
-                    'wl' => 0,
-                    'ot' => 0,
-                    'ket' => 'NEW'
-                ];
-                // Hanya tambah count jika BUKAN hari minggu
-                if (!$isMinggu) {
-                    $new_count++;
-                }
-                continue;
-            }
+            // =========== NEW DI ABSEN SEBELUM TGL MASUK ===========
+            // if ($tgl < $tgl_mulai_karier) {
+            //     $isMinggu = ($hariNama === 'sunday');
+            //     $absenForUI[] = [
+            //         'tanggal' => $tgl,
+            //         'jam' => 0,
+            //         'wl' => 0,
+            //         'ot' => 0,
+            //         'ket' => 'NEW'
+            //     ];
+            //     // Hanya tambah count jika BUKAN hari minggu
+            //     if (!$isMinggu) {
+            //         $new_count++;
+            //     }
+            //     continue;
+            // }
 
             // ================= ADA DATA ABSEN =================
             if (isset($absenRows[$tgl])) {
@@ -224,6 +224,19 @@ if (!function_exists('generateSlipGaji')) {
                 $ketAbsen = strtoupper(trim((string)$absenRows[$tgl]['ket_absen']));
                 $jamRaw   = trim((string)$absenRows[$tgl]['jam_kerja']);
                 $jam      = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
+
+                // ===== NEW =====
+                if ($ketAbsen === 'NEW') {
+                    $absenForUI[] = [
+                        'tanggal' => $tgl,
+                        'jam' => 0,
+                        'wl' => 0,
+                        'ot' => 0,
+                        'ket' => 'NEW'
+                    ];
+                    $new_count++;
+                    continue;
+                }
 
                 // ===== IZIN / SAKIT / CUTI =====
                 if (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'])) {
