@@ -66,13 +66,16 @@ if ($action == "add") {
 
     try {
         // insert tb_karyawan
+        // Siapkan variabel tanggal lahir
+        $tgl_lahir_val = input('tgl_lahir') === '' ? "NULL" : "'" . input('tgl_lahir') . "'";
+
         $sql1 = "INSERT INTO tb_karyawan 
         (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_karyawan)
         VALUES (
             '" . input('nik_karyawan') . "',
             '" . input('nama_lengkap') . "',
             '" . input('jenis_kelamin') . "',
-            '" . input('tgl_lahir') . "',
+            $tgl_lahir_val,
             '" . input('tempat_lahir') . "',
             '" . input('email_pribadi') . "',
             '" . input('no_telp') . "',
@@ -118,14 +121,18 @@ if ($action == "add") {
         }
 
         // insert tb_karier
+        // Siapkan variabel tanggal (Jika kosong jadikan NULL, jika ada isinya bungkus dengan kutip)
+        $tgl_mulai_val   = input('tgl_mulai') === '' ? "NULL" : "'" . input('tgl_mulai') . "'";
+        $tgl_selesai_val = input('tgl_selesai') === '' ? "NULL" : "'" . input('tgl_selesai') . "'";
+
         $sql3 = "INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, tgl_mulai, tgl_selesai)
         VALUES (
             '$id_karyawan',
             '" . input('id_site') . "',
             '" . input('id_departemen') . "',
             '" . input('id_jabatan') . "',
-            '" . input('tgl_mulai') . "',
-            '" . input('tgl_selesai') . "'
+            $tgl_mulai_val, 
+            $tgl_selesai_val
         )";
 
         if (!$koneksi->query($sql3)) {
@@ -192,7 +199,12 @@ if ($action == "edit") {
 
         $upd_k = [];
         foreach ($k_data as $key => $val) {
-            $upd_k[] = "$key = '$val'";
+            // CEK: Jika tgl_lahir kosong, set NULL. Selain itu bungkus pakai kutip.
+            if ($val === '' && $key === 'tgl_lahir') {
+                $upd_k[] = "$key = NULL";
+            } else {
+                $upd_k[] = "$key = '$val'";
+            }
         }
         $sql_k = "UPDATE tb_karyawan SET " . implode(", ", $upd_k) . " WHERE id_karyawan = '$id'";
 
@@ -243,12 +255,17 @@ if ($action == "edit") {
             'id_departemen' => input('id_departemen'),
             'id_jabatan' => input('id_jabatan'),
             'tgl_mulai' => input('tgl_mulai'),
-            'tgl_selesai' => input('tgl_selesai')
+            'tgl_selesai' => input('tgl_selesai'),
         ];
 
         $upd_kar = [];
         foreach ($karier_data as $k => $v) {
-            $upd_kar[] = "$k='$v'";
+            // CEK: Jika data kosong dan field-nya adalah tanggal, set sebagai NULL (tanpa kutip)
+            if ($v === '' && in_array($k, ['tgl_mulai', 'tgl_selesai'])) {
+                $upd_kar[] = "$k = NULL"; 
+            } else {
+                $upd_kar[] = "$k = '$v'"; // Set normal pakai kutip
+            }
         }
 
         $sql_kar = "UPDATE tb_karier SET " . implode(",", $upd_kar) . " WHERE id_karyawan='$id'";
