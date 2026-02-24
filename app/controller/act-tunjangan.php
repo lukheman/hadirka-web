@@ -34,10 +34,7 @@ try {
         $action = $_POST['action'] ?? '';
 
         // Validasi dan sanitasi input
-        $nama   = isset($_POST['nama_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['nama_tunjangan'])) : '';
-        $jumlah = isset($_POST['jumlah_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['jumlah_tunjangan'])) : '';
-        $id_tun = isset($_POST['id_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['id_tunjangan'])) : '';
-        $id_kar = isset($_POST['id_karier']) ? mysqli_real_escape_string($koneksi, decrypt(trim($_POST['id_karier']))) : '';
+        $nama_raw = trim($_POST['nama_tunjangan'] ?? '');
 
         // Jenis Tunjangan yg dibolehkan
         $allowed = [
@@ -48,9 +45,18 @@ try {
             "Performance Bonus"
         ];
 
-        if (!in_array($nama, $allowed)) {
-            throw new Exception("Nama tunjangan tidak valid");
+        error_log("NAMA TUNJANGAN DITERIMA: [" . $nama_raw . "]");
+
+        if (!in_array($nama_raw, $allowed, true)) {
+            throw new Exception("Nama tunjangan tidak valid: [$nama_raw]");
         }
+
+        // baru escape setelah lolos validasi
+        $nama = mysqli_real_escape_string($koneksi, $nama_raw);
+
+        $jumlah = isset($_POST['jumlah_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['jumlah_tunjangan'])) : '';
+        $id_tun = isset($_POST['id_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['id_tunjangan'])) : '';
+        $id_kar = isset($_POST['id_karier']) ? mysqli_real_escape_string($koneksi, decrypt(trim($_POST['id_karier']))) : '';
 
         if ($action == "add") {
             // Validasi input
