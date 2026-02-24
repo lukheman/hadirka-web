@@ -400,12 +400,12 @@ if (!function_exists('generateSlipGaji')) {
         $total_tunjangan = $total_tunjangan ?? 0;
 
         // ===== Perhitungan kelebihan hari kerja (jika hari kerja > 25) =====
-        $kelebihan_hari = 0;
-        $pendapatan_kelebihan_hari = 0;
-        if ($hari_kerja_count > 25) {
-            $kelebihan_hari = $hari_kerja_count - 25;
-            $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
-        }
+        // $kelebihan_hari = 0;
+        // $pendapatan_kelebihan_hari = 0;
+        // if ($hari_kerja_count > 25) {
+        //     $kelebihan_hari = $hari_kerja_count - 25;
+        //     $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
+        // }
 
         // ================= Hitung total pendapatan =================
         $total_pendapatan =
@@ -416,8 +416,8 @@ if (!function_exists('generateSlipGaji')) {
             $total_spl_1_7 +
             $total_spl_8 +
             $total_spl_9_up +
-            $total_rapel +
-            $pendapatan_kelebihan_hari;
+            $total_rapel;
+            // $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 

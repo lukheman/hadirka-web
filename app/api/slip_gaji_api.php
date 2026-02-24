@@ -323,16 +323,17 @@ if (!function_exists('generateSlipGaji')) {
         }
 
         // Kelebihan hari kerja (jika hari kerja > 25)
-        $kelebihan_hari = 0;
-        $pendapatan_kelebihan_hari = 0;
-        if ($hari_kerja_count > 25) {
-            $kelebihan_hari = $hari_kerja_count - 25;
-            $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
-        }
+        // $kelebihan_hari = 0;
+        // $pendapatan_kelebihan_hari = 0;
+        // if ($hari_kerja_count > 25) {
+        //     $kelebihan_hari = $hari_kerja_count - 25;
+        //     $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
+        // }
 
         $total_pendapatan = $basic + $total_tunjangan_db + $total_lembur + $total_overtime +
             $total_spl_1_7 + $total_spl_8 + $total_spl_9_up +
-            $total_rapel + $pendapatan_kelebihan_hari;
+            $total_rapel;
+            // $pendapatan_kelebihan_hari;
 
         $total_potongan = $total_potongan_db + $total_potongan_pinjaman +
             $total_pot_izin  + $total_pot_mangkir +
@@ -351,7 +352,7 @@ if (!function_exists('generateSlipGaji')) {
         if ($total_spl_1_7 > 0) $listPendapatan[] = ['nama' => 'SPL 1-7 (' . $total_jam_spl_1_7 . ' Jam)', 'jumlah' => $total_spl_1_7];
         if ($total_spl_8 > 0) $listPendapatan[] = ['nama' => 'SPL 8 (' . $total_jam_spl_8 . ' Jam)', 'jumlah' => $total_spl_8];
         if ($total_spl_9_up > 0) $listPendapatan[] = ['nama' => 'SPL 9+ (' . $total_jam_spl_9_up . ' Jam)', 'jumlah' => $total_spl_9_up];
-        if ($pendapatan_kelebihan_hari > 0) $listPendapatan[] = ['nama' => 'Kelebihan Hari Kerja (' . $kelebihan_hari . ' Hari)', 'jumlah' => $pendapatan_kelebihan_hari];
+        // if ($pendapatan_kelebihan_hari > 0) $listPendapatan[] = ['nama' => 'Kelebihan Hari Kerja (' . $kelebihan_hari . ' Hari)', 'jumlah' => $pendapatan_kelebihan_hari];
 
         $listPotongan = array_merge($potonganRows, $pinjamanRows);
         if ($total_pot_izin > 0) $listPotongan[] = ['nama' => 'Potongan Izin', 'jumlah' => $total_pot_izin];
@@ -378,7 +379,7 @@ if (!function_exists('generateSlipGaji')) {
             'cuti' => $cuti_days,
             'newDays' => $new_count,
             'resignDays' => $resign_count,
-            'kelebihanHari' => $kelebihan_hari,
+            // 'kelebihanHari' => $kelebihan_hari,
 
             'totalJamKurang' => $total_jam_kurang,
             'totalJamWL' => $total_jam_wl,
