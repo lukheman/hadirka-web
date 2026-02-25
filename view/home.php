@@ -42,7 +42,7 @@
                                 </div>
                             </div>
                             <span class="d-block mb-1">Total Gaji</span>
-                            <h3 class="card-title text-nowrap mb-2">Rp 20.456</h3>
+                            <h3 id="totalGaji" class="card-title mb-2">Rp 0</h3>
                             <small class="text-danger fw-semibold"><i class="bx bx-down-arrow-alt"></i> -14.82%</small>
                         </div>
                     </div>
@@ -71,7 +71,7 @@
                                 </div>
                             </div>
                             <span class="fw-semibold d-block mb-1">Pinjaman Karyawan</span>
-                            <h3 class="card-title mb-2">Rp 14.857</h3>
+                            <h3 id="totalPinjaman" class="card-title mb-2">Rp 0</h3>
                             <small class="text-success fw-semibold"><i class="bx bx-up-arrow-alt"></i> +28.14%</small>
                         </div>
                     </div>
@@ -394,20 +394,63 @@
         'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
     ];
 
-    function formatTanggalIndo(date) {
-        return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+    function formatTanggalIndo(dateStr) {
+        let date = new Date(dateStr);
+        return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
     }
 
+    // Fungsi loadDashboard sekarang menerima parameter tanggal (opsional)
+    async function loadDashboard(startDate = '', endDate = '') {
+        // Buat URL endpoint. Jika ada tanggal, tambahkan parameter GET
+        let url = 'app/controller/get-data/get-dashboard.php';
+        if (startDate && endDate) {
+            url += `?start=${startDate}&end=${endDate}`;
+        }
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.status === "success") {
+                // Memformat teks periode untuk UI
+                let dates = data.periode.split(' - ');
+                let textPeriode = data.periode;
+                if(dates.length === 2) {
+                    textPeriode = `${formatTanggalIndo(dates[0])} - ${formatTanggalIndo(dates[1])}`;
+                }
+
+                document.getElementById("periodeText").innerText = "PERIODE " + textPeriode;
+                document.getElementById("totalGaji").innerText = "Rp " + Number(data.total_gaji).toLocaleString('id-ID');
+                document.getElementById("totalPinjaman").innerText = "Rp " + Number(data.total_pinjaman).toLocaleString('id-ID');
+            } else {
+                document.getElementById("periodeText").innerText = "Tidak ada periode aktif";
+                document.getElementById("totalGaji").innerText = "Rp 0";
+                document.getElementById("totalPinjaman").innerText = "Rp 0";
+            }
+        } catch (error) {
+            console.error("Gagal mengambil data:", error);
+        }
+    }
+
+    // Jalankan fungsi saat halaman pertama kali di-load
+    document.addEventListener("DOMContentLoaded", () => loadDashboard());
+
+    // Konfigurasi Flatpickr
     flatpickr("#periodePicker", {
         mode: "range",
         dateFormat: "Y-m-d",
         onChange: function(selectedDates) {
+            // Jika user sudah memilih tanggal mulai & tanggal selesai
             if (selectedDates.length === 2) {
-                const start = selectedDates[0];
-                const end = selectedDates[1];
+                const start = flatpickr.formatDate(selectedDates[0], "Y-m-d");
+                const end = flatpickr.formatDate(selectedDates[1], "Y-m-d");
 
-                document.getElementById("periodeText").textContent =
+                // Update text secara instan
+                document.getElementById("periodeText").textContent = 
                     `PERIODE ${formatTanggalIndo(start)} - ${formatTanggalIndo(end)}`;
+                
+                // PANGGIL ULANG DATA BERDASARKAN FILTER TANGGAL
+                loadDashboard(start, end);
             }
         }
     });

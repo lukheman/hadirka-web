@@ -312,8 +312,8 @@ if (!function_exists('generateSlipGaji')) {
                         $ot = max(0, $jam - 7 - $wl);
                     }
 
-                    $total_lembur += $wl * $karier['ot_pertama'];
-                    $total_overtime += $ot * $karier['ot_kedua'];
+                    $total_lembur += $wl * floatval($karier['ot_pertama']);
+                    $total_overtime += $ot * floatval($karier['ot_kedua']);
                     $total_jam_wl += $wl;
                     $total_jam_ot += $ot;
 
@@ -321,7 +321,7 @@ if (!function_exists('generateSlipGaji')) {
                     if ($jam < $normal_hours) {
                         $kurang = $normal_hours - $jam;
                         $total_jam_kurang += $kurang;
-                        $total_potongan_perjam += $kurang * ($karier['pot_izin'] / $normal_hours);
+                        $total_potongan_perjam += $kurang * (floatval($karier['pot_izin']) / $normal_hours);
                     }
 
                     $hari_kerja_count++;
@@ -417,7 +417,7 @@ if (!function_exists('generateSlipGaji')) {
             $total_spl_8 +
             $total_spl_9_up +
             $total_rapel;
-            // $pendapatan_kelebihan_hari;
+        // $pendapatan_kelebihan_hari;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
@@ -432,8 +432,8 @@ if (!function_exists('generateSlipGaji')) {
             'rapel' => $rapelRows,
             'total_rapel' => $total_rapel,
 
-            'kelebihan_hari' => $kelebihan_hari,
-            'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
+            // 'kelebihan_hari' => $kelebihan_hari,
+            // 'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
 
             'basic' => $basic,
             't_hidup' => $t_hidup,
