@@ -4,13 +4,10 @@ ini_set('display_errors', 1); // Biarkan 1 dulu untuk memastikan
 
 header('Content-Type: application/json');
 
-// Ambil lokasi root otomatis dari XAMPP (D:\xampp\htdocs\tjs-outsoorsing)
-$root = $_SERVER['DOCUMENT_ROOT'] . "/tjs-outsoorsing/app";
-
-// Panggil file menggunakan path absolut
-include $root . "/config/koneksi.php";
-include $root . "/config/function.php";
-include $root . "/config/function-slip.php";
+// Gunakan __DIR__ agar otomatis mendeteksi path relatif secara dinamis
+include __DIR__ . "/../../config/koneksi.php";
+include __DIR__ . "/../../config/function.php";
+include __DIR__ . "/../../config/function-slip.php";
 
 $mulai = "";
 $selesai = "";

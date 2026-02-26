@@ -402,7 +402,7 @@
     // Fungsi loadDashboard sekarang menerima parameter tanggal (opsional)
     async function loadDashboard(startDate = '', endDate = '') {
         // Buat URL endpoint. Jika ada tanggal, tambahkan parameter GET
-        let url = 'app/controller/get-data/get-dashboard.php';
+        let url = 'app/controller/get-data/get-home.php';
         if (startDate && endDate) {
             url += `?start=${startDate}&end=${endDate}`;
         }
