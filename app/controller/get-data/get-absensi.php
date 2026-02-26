@@ -107,7 +107,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
             $ket = strtoupper(trim((string)$row['ket_absen']));
 
             // PRIORITAS 0: R / NEW / M (tidak dihitung apa-apa)
-            if (in_array($ket, ['R', 'NEW'])) {
+            if (in_array($ket, ['RESIGN', 'R', 'NEW'])) {
                 continue;
             }
 

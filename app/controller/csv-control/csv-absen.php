@@ -249,10 +249,24 @@ try {
             $isHariOff = isYellowCell($sheet, $cellAddress);
             $colorInfo = getCellColorInfo($sheet, $cellAddress);
 
-            $jamKerja = null;
+            $jamKerja = 0;
             $ket = '';
             $isProcessed = false;
             $reason = ''; // Alasan kenapa diproses/tidak
+
+            // ================================
+            // LOGIKA VALIDASI (DENGAN LOGGING)
+            // ================================
+            $mapKet = [
+                'SD' => 'SAKIT',
+                'IZIN' => 'IZIN',
+                'CM' => 'CUTI',
+                'SAKIT' => 'SAKIT',
+                'CUTI' => 'CUTI',
+                'R' => 'RESIGN',
+                'RESIGN' => 'RESIGN',
+                'NEW' => 'NEW'
+            ];
 
             // ================================
             // HANDLE M
@@ -276,29 +290,6 @@ try {
                 }
                 continue;
             }
-
-            // HANDLE R & NEW
-            if (in_array($nilaiUpper, [ 'NEW', 'R'])) {
-                $jamKerja = 0;
-                $ket = $nilaiUpper; // simpan R / NEW / M
-                $isProcessed = true;
-                $reason = "Status khusus: $nilaiUpper";
-            }
-
-
-            // ================================
-            // LOGIKA VALIDASI (DENGAN LOGGING)
-            // ================================
-            $mapKet = [
-                'SD' => 'SAKIT',
-                'IZIN' => 'IZIN',
-                'CM' => 'CUTI',
-                'SAKIT' => 'SAKIT',
-                'CUTI' => 'CUTI',
-                'R' => 'RESIGN',
-                'RESIGN' => 'RESIGN',
-                'NEW' => 'NEW'
-            ];
 
             // PRIORITAS 1: Kode Khusus
             if (isset($mapKet[$nilaiUpper])) {

@@ -238,6 +238,19 @@ if (!function_exists('generateSlipGaji')) {
                     continue;
                 }
 
+                // ===== RESIGN =====
+                if ($ketAbsen === 'RESIGN' || $ketAbsen === 'R') {
+                    $absenForUI[] = [
+                        'tanggal' => $tgl,
+                        'jam' => 0,
+                        'wl' => 0,
+                        'ot' => 0,
+                        'ket' => 'RESIGN'
+                    ];
+                    $resign_count++; // Ini akan menambah total pemotong PKWT di bawah
+                    continue;
+                }
+
                 // ===== IZIN / SAKIT / CUTI =====
                 if (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'])) {
                     $absenForUI[] = [

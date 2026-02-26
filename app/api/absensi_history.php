@@ -3,12 +3,13 @@
 // Menggunakan 100% Logic Absensi dari fungsi generateSlipGaji asli.
 
 // Panggil file koneksi database Anda (Sesuaikan nama file koneksi Anda)
-include 'koneksi-api.php'; 
+include 'koneksi-api.php';
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *'); 
+header('Access-Control-Allow-Origin: *');
 
-function sendResponse($data, $statusCode = 200) {
+function sendResponse($data, $statusCode = 200)
+{
     http_response_code($statusCode);
     echo json_encode($data, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
     exit;
@@ -27,7 +28,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 // Namun, jika Anda ingin pakai NIK, ganti baris ini:
 // $nik = $input['nik'] ?? null;
 // $id_karyawan = null; // Dicari di langkah 2
-$id_karyawan = $input['id_karyawan'] ?? null; 
+$id_karyawan = $input['id_karyawan'] ?? null;
 $startDate = $input['startDate'] ?? null;
 $endDate = $input['endDate'] ?? null;
 
@@ -52,7 +53,7 @@ if (!$karyawan) {
 $nik = $karyawan['nik_karyawan'];
 
 // Mendapatkan Karier Aktif (Untuk ot_pertama, ot_kedua, dan tgl_mulai)
-$sqlKarier = "SELECT kar.tgl_mulai, kar.ot_pertama, kar.ot_kedua, jab.nama_jabatan 
+$sqlKarier = "SELECT kar.tgl_mulai, kar.tgl_selesai, kar.ot_pertama, kar.ot_kedua, jab.nama_jabatan 
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
             WHERE kar.id_karyawan = '$id_karyawan_safe'
@@ -64,9 +65,10 @@ $karier = mysqli_fetch_assoc($qkarier);
 
 // Jika karier tidak ditemukan
 if (!$karier) {
-     sendResponse(['error' => 'Karier aktif tidak ditemukan.'], 404);
+    sendResponse(['error' => 'Karier aktif tidak ditemukan.'], 404);
 }
 $tgl_mulai_karier = $karier['tgl_mulai'];
+$tgl_selesai_karier = $karier['tgl_selesai'];
 $ot_pertama = floatval($karier['ot_pertama'] ?? 0);
 $ot_kedua = floatval($karier['ot_kedua'] ?? 0);
 
@@ -89,15 +91,15 @@ $qabs = mysqli_query($koneksi, $sqlAbs);
 
 if ($qabs) {
     while ($r = mysqli_fetch_assoc($qabs)) {
-        $absenRows[$r['tgl_absen']] = $r; 
-        
+        $absenRows[$r['tgl_absen']] = $r;
+
         // LOGIC ASLI: Hitung counts berdasarkan jam_kerja (bukan ket_absen)
-        $jamRawUpper = strtoupper(trim((string)($r['jam_kerja'] ?? '')));
-        if ($jamRawUpper === 'IZIN')  $izin_days++;
-        if ($jamRawUpper === 'SAKIT') $sakit_days++;
-        if ($jamRawUpper === 'CUTI')  $cuti_days++;
+        $ketRawUpper = strtoupper(trim((string)($r['ket_absen'] ?? '')));
+        if ($ketRawUpper === 'IZIN')  $izin_days++;
+        if ($ketRawUpper === 'SAKIT') $sakit_days++;
+        if ($ketRawUpper === 'CUTI')  $cuti_days++;
     }
-} 
+}
 
 
 // =========================================================
@@ -107,13 +109,14 @@ $absenForUI = [];
 $hari_kerja_count = 0;
 $mangkir_count = 0;
 $new_count = 0;
+$resign_count = 0;
 $total_jam_wl = 0;
 $total_jam_ot = 0;
 $total_jam_spl = 0; // Gabungan SPL 1-7, 8, 9+
 
 // Konstanta Jam Kerja Normal
-$STANDARD_HOUR = 7; 
-$JUMAT_HOUR = 5; 
+$STANDARD_HOUR = 7;
+$JUMAT_HOUR = 5;
 
 $period = new DatePeriod(
     new DateTime($startDate_safe),
@@ -130,15 +133,15 @@ foreach ($period as $date) {
     $jam = 0.0;
     $wl = 0.0;
     $ot = 0.0;
-    $ket = 'MANGKIR'; 
-    $status_chip = 'MANGKIR'; // Variabel tambahan untuk Flutter
-    
+    $ket = '';
+    $status_chip = '';
+
     // ================= NEW (MASA KERJA) =================
     // if ($tgl < $tgl_mulai_karier) {
     //     $ket = 'NEW';
     //     $status_chip = 'NEW';
     //     $new_count++; 
-        
+
     //     $absenForUI[] = [
     //         'tanggal' => $tgl,
     //         'jam' => 0, 'wl' => 0, 'ot' => 0,
@@ -149,22 +152,36 @@ foreach ($period as $date) {
 
     // ================= ADA DATA ABSEN =================
     if (isset($absenRows[$tgl])) {
-        
+
         $data     = $absenRows[$tgl];
         $ketAbsen = strtoupper(trim((string)$data['ket_absen']));
         $jamRaw   = trim((string)$data['jam_kerja']);
         $jam      = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
-        
+
         // ===== DATA NEW DARI DATABASE =====
         if ($ketAbsen === 'NEW') {
-            $ket = 'NEW';
-            $status_chip = 'NEW';
             $new_count++;
-            
             $absenForUI[] = [
                 'tanggal' => $tgl,
-                'jam' => 0, 'wl' => 0, 'ot' => 0,
-                'ket' => 'NEW', 'status_chip' => 'NEW' 
+                'jam' => 0,
+                'wl' => 0,
+                'ot' => 0,
+                'ket' => 'NEW',
+                'status_chip' => 'NEW'
+            ];
+            continue;
+        }
+
+        // ===== DATA RESIGN =====
+        if ($ketAbsen === 'RESIGN' || $ketAbsen === 'R') {
+            $resign_count++;
+            $absenForUI[] = [
+                'tanggal' => $tgl,
+                'jam' => 0,
+                'wl' => 0,
+                'ot' => 0,
+                'ket' => 'RESIGN',
+                'status_chip' => 'RESIGN'
             ];
             continue;
         }
@@ -175,28 +192,28 @@ foreach ($period as $date) {
             $status_chip = $ketAbsen;
             // jam, wl, ot tetap 0
         }
-        
+
         // ===== OFF MURNI (OFF & Jam = 0) =====
         else if ($ketAbsen === 'OFF' && $jam == 0) {
             $ket = 'OFF';
             $status_chip = 'OFF';
         }
-        
+
         // ===== SPL (ket_absen = OFF & Jam > 0) =====
         // Note: Logika SPL di sini hanya dipicu jika ket_absen adalah OFF (Hari Libur)
         else if ($ketAbsen === 'OFF' && $jam > 0) {
             $ket = 'SPL';
             $status_chip = 'SPL';
             $total_jam_spl += $jam;
-            $hari_kerja_count++; 
+            $hari_kerja_count++;
             // Perhitungan lembur $total_spl_x tidak perlu, tapi total jamnya perlu
         }
-        
+
         // ===== HADIR (Jam > 0 & Bukan SPL/OFF) =====
         else if ($jam > 0) {
             $ket = 'HADIR';
             $status_chip = 'HADIR';
-            
+
             // Hitung WL dan OT (Normal Days)
             $wl = min(1.0, max(0.0, $jam - $normal_hours));
             $ot = max(0.0, $jam - $normal_hours - $wl);
@@ -204,37 +221,40 @@ foreach ($period as $date) {
             $total_jam_wl += $wl;
             $total_jam_ot += $ot;
             $hari_kerja_count++;
-            
+
             // Note: Perhitungan jam kurang ($total_jam_kurang) diabaikan karena fokus ke absensi UI.
         }
-        
+
         // ===== DATA ADA TAPI TIDAK VALID/Terlewat (Dianggap MANGKIR di Logika Asli) =====
         else {
-             $ket = 'MANGKIR';
-             $status_chip = 'MANGKIR';
-             $mangkir_count++;
+            $ket = 'MANGKIR';
+            $status_chip = 'MANGKIR';
+            $mangkir_count++;
         }
     }
 
     // ================= TIDAK ADA DATA ABSEN (MANGKIR) =================
     else {
-        // LOGIC ASLI: Jika tidak ada data di tb_absen, selalu MANGKIR
-        $ket = 'MANGKIR';
-        $status_chip = 'MANGKIR';
-        $mangkir_count++;
+        // Cek dulu apakah sudah Resign berdasarkan tb_karier
+        if (!empty($tgl_selesai_karier) && $tgl > $tgl_selesai_karier) {
+            $ket = 'RESIGN';
+            $status_chip = 'RESIGN';
+            $resign_count++;
+        } else {
+            $ket = 'MANGKIR';
+            $status_chip = 'MANGKIR';
+            $mangkir_count++;
+        }
     }
 
-    // Tambahkan ke array UI (jika belum di-continue di NEW)
-    if ($ket !== 'NEW') {
-        $absenForUI[] = [
-            'tanggal' => $tgl,
-            'jam' => $jam,
-            'wl' => $wl,
-            'ot' => $ot,
-            'ket' => $ket,
-            'status_chip' => $status_chip
-        ];
-    }
+    $absenForUI[] = [
+        'tanggal' => $tgl,
+        'jam' => $jam,
+        'wl' => $wl,
+        'ot' => $ot,
+        'ket' => $ket,
+        'status_chip' => $status_chip
+    ];
 }
 
 // =========================================================
@@ -248,8 +268,9 @@ $response = [
     'sakit' => $sakit_days,
     'cuti' => $cuti_days,
     'mangkir' => $mangkir_count,
-    'new' => $new_count, 
-    
+    'new' => $new_count,
+    'resign' => $resign_count,
+
     // Total Jam Gabungan (untuk summary Flutter)
     // Total Jam Hadir = Jam Hadir Normal (Termasuk WL/OT) + Jam SPL
     // Untuk summary di Flutter, total jam adalah sum dari semua item['jam'] > 0
@@ -259,4 +280,3 @@ $response = [
 ];
 
 sendResponse($response);
-?>
