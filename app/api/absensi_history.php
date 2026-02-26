@@ -134,18 +134,18 @@ foreach ($period as $date) {
     $status_chip = 'MANGKIR'; // Variabel tambahan untuk Flutter
     
     // ================= NEW (MASA KERJA) =================
-    if ($tgl < $tgl_mulai_karier) {
-        $ket = 'NEW';
-        $status_chip = 'NEW';
-        $new_count++; 
+    // if ($tgl < $tgl_mulai_karier) {
+    //     $ket = 'NEW';
+    //     $status_chip = 'NEW';
+    //     $new_count++; 
         
-        $absenForUI[] = [
-            'tanggal' => $tgl,
-            'jam' => 0, 'wl' => 0, 'ot' => 0,
-            'ket' => 'NEW', 'status_chip' => 'NEW' 
-        ];
-        continue;
-    }
+    //     $absenForUI[] = [
+    //         'tanggal' => $tgl,
+    //         'jam' => 0, 'wl' => 0, 'ot' => 0,
+    //         'ket' => 'NEW', 'status_chip' => 'NEW' 
+    //     ];
+    //     continue;
+    // }
 
     // ================= ADA DATA ABSEN =================
     if (isset($absenRows[$tgl])) {
@@ -155,12 +155,26 @@ foreach ($period as $date) {
         $jamRaw   = trim((string)$data['jam_kerja']);
         $jam      = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
         
+        // ===== DATA NEW DARI DATABASE =====
+        if ($ketAbsen === 'NEW') {
+            $ket = 'NEW';
+            $status_chip = 'NEW';
+            $new_count++;
+            
+            $absenForUI[] = [
+                'tanggal' => $tgl,
+                'jam' => 0, 'wl' => 0, 'ot' => 0,
+                'ket' => 'NEW', 'status_chip' => 'NEW' 
+            ];
+            continue;
+        }
+
         // ===== NON-HADIR (IZIN / SAKIT / CUTI) =====
-        if (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'])) {
+        else if (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'])) {
             $ket = $ketAbsen;
             $status_chip = $ketAbsen;
             // jam, wl, ot tetap 0
-        } 
+        }
         
         // ===== OFF MURNI (OFF & Jam = 0) =====
         else if ($ketAbsen === 'OFF' && $jam == 0) {
