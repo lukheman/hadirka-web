@@ -321,18 +321,17 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 6) Final Perhitungan =================
         $basic = floatval($karier['gaji_pokok']);
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
-        // $total_pot_sakit = ($sakit_days * (750000/25));
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
         // PKWT potongan untuk hari NEW
         $total_pot_pkwt = 0;
         if ($new_count > 0) {
-            $total_pot_pkwt = (($total_tunjangan_db + $basic) / 25) * $new_count;
+            $total_pot_pkwt = (($total_tunjangan_db + $basic) / 28) * $new_count;
         }
 
         // PKWT potongan untuk hari RESIGN
         if ($resign_count > 0) {
-            $total_pot_pkwt += (($total_tunjangan_db + $basic) / 25) * $resign_count;
+            $total_pot_pkwt += (($total_tunjangan_db + $basic) / 28) * $resign_count;
         }
 
         // Kelebihan hari kerja (jika hari kerja > 25)
