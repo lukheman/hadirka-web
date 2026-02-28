@@ -82,18 +82,19 @@ try {
         $t_makan    = intval($row['J'] ?? 0);
         $t_skill    = intval($row['K'] ?? 0);
         $p_bonus    = intval($row['L'] ?? 0);
-        $ot_pertama = intval($row['M'] ?? 0);
-        $ot_kedua   = intval($row['N'] ?? 0);
-        $spl        = intval($row['O'] ?? 0);
-        $ot1_spl    = intval($row['P'] ?? 0);
-        $ot2_spl    = intval($row['Q'] ?? 0);
-        $pot_bpjs   = intval($row['R'] ?? 0);
-        $pot_jht    = intval($row['S'] ?? 0);
-        $pph21      = intval($row['T'] ?? 0);
-        $pot_izin   = intval($row['U'] ?? 0);
-        $pot_mangkir = intval($row['V'] ?? 0);
-        $tgl_masuk_site = formatTanggal($row['W'] ?? '');
-        $tgl_selesai_kontrak = formatTanggal($row['X'] ?? '');
+        $t_posisi   = intval($row['M'] ?? 0);
+        $ot_pertama = intval($row['N'] ?? 0);
+        $ot_kedua   = intval($row['O'] ?? 0);
+        $spl        = intval($row['P'] ?? 0);
+        $ot1_spl    = intval($row['Q'] ?? 0);
+        $ot2_spl    = intval($row['R'] ?? 0);
+        $pot_bpjs   = intval($row['S'] ?? 0);
+        $pot_jht    = intval($row['T'] ?? 0);
+        $pph21      = intval($row['U'] ?? 0);
+        $pot_izin   = intval($row['V'] ?? 0);
+        $pot_mangkir = intval($row['W'] ?? 0);
+        $tgl_masuk_site = formatTanggal($row['X'] ?? '');
+        $tgl_selesai_kontrak = formatTanggal($row['Y'] ?? '');
 
 
         // === Ambil ID referensi ===
@@ -165,7 +166,8 @@ try {
             "Tunjangan Skill" => $t_skill,
             "Tunjangan Hidup" => $t_hidup,
             "Tunjangan Daerah" => $t_daerah,
-            "Performance Bonus" => $p_bonus
+            "Performance Bonus" => $p_bonus,
+            "Tunjangan Posisi" => $t_posisi
         ];
 
         $koneksi->query("DELETE FROM tb_tunjangan WHERE id_karier='$id_karier'");

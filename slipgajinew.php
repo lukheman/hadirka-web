@@ -436,36 +436,6 @@ require_once 'app/controller/read.php';
             return dd + '-' + mm + '-' + yyyy;
         }
 
-        // render function (data -> DOM)
-        function hitungSPL(absen) {
-            let spl1_7 = 0;
-            let spl8 = 0;
-            let spl9_up = 0;
-
-            if (!Array.isArray(absen)) return {
-                spl1_7,
-                spl8,
-                spl9_up
-            };
-
-            absen.forEach(r => {
-                // hanya ket OFF/SPL
-                if (String(r.ket).toUpperCase().includes('OFF') || String(r.ket).toUpperCase().includes('SPL')) {
-                    const jam = Number(r.jam) || 0;
-
-                    if (jam <= 7) spl1_7 += jam;
-                    else if (jam === 8) spl8 += jam;
-                    else if (jam >= 9) spl9_up += jam;
-                }
-            });
-
-            return {
-                spl1_7,
-                spl8,
-                spl9_up
-            };
-        }
-
         function render(data) {
             // =============== METADATA ===============
             document.getElementById('period').textContent = data.period || '-';
@@ -489,33 +459,7 @@ require_once 'app/controller/read.php';
         <tr><td>BASIC</td><td class="right">${fmt(data.basic)}</td></tr>
     `;
 
-            // 2) TUNJANGAN TETAP
-            // const tetapList = [{
-            //         key: "t_hidup",
-            //         label: "TUNJANGAN HIDUP"
-            //     },
-            //     {
-            //         key: "t_daerah",
-            //         label: "TUNJANGAN DAERAH"
-            //     },
-            //     {
-            //         key: "t_makan",
-            //         label: "TUNJANGAN MAKAN"
-            //     },
-            //     {
-            //         key: "t_skil",
-            //         label: "TUNJANGAN SKIL"
-            //     }
-            // ];
-
-            // tetapList.forEach(t => {
-            //     let val = data[t.key] || 0;
-            //     pendBody.innerHTML += `
-            //     <tr><td>${t.label}</td><td class="right">${fmt(val)}</td></tr>
-            // `;
-            // });
-
-            // 3) TUNJANGAN DINAMIS
+            // 2) TUNJANGAN DINAMIS
             if (Array.isArray(data.tunjangan_pendapatan)) {
                 data.tunjangan_pendapatan.forEach(t => {
                     pendBody.innerHTML += `
@@ -524,7 +468,7 @@ require_once 'app/controller/read.php';
                 });
             }
 
-            // 4) LEMBUR & SPL
+            // 3) LEMBUR & SPL
             const lemburList = [{
                     key: "total_lembur",
                     label: "OT PERTAMA"
@@ -554,12 +498,12 @@ require_once 'app/controller/read.php';
         `;
             });
 
-            // 5) KELEBIHAN HARI
-            if (data.hari_kerja > 25) {
-                pendBody.innerHTML += `
-                 <tr><td>KELEBIHAN HARI (${data.kelebihan_hari} Hari)</td><td class="right">${fmt(data.pendapatan_kelebihan_hari)}</td></tr>
-             `;
-            }
+            // // 5) KELEBIHAN HARI
+            // if (data.hari_kerja > 25) {
+            //     pendBody.innerHTML += `
+            //      <tr><td>KELEBIHAN HARI (${data.kelebihan_hari} Hari)</td><td class="right">${fmt(data.pendapatan_kelebihan_hari)}</td></tr>
+            //  `;
+            // }
 
             // 6) RAPEL
             if (Array.isArray(data.rapel)) {
@@ -654,7 +598,8 @@ require_once 'app/controller/read.php';
             absBody.innerHTML = "";
 
             if (Array.isArray(data.absen)) {
-                data.absen.forEach(r => {
+                // 1. Tambahkan parameter 'index' di dalam forEach
+                data.absen.forEach((r, index) => { 
                     let cls = "";
                     const ket = String(r.ket).toUpperCase();
 
@@ -667,9 +612,12 @@ require_once 'app/controller/read.php';
                         weekday: "long",
                     }).toUpperCase();
 
+                    // 2. Buat variabel nomor urut (index dimulai dari 0, jadi ditambah 1)
+                    const nomorUrut = index + 1;
+
                     absBody.innerHTML += `
                 <tr>
-                    <td class="center ${cls}">${r.no || ''}</td>
+                    <td class="center ${cls}">${nomorUrut}</td>
                     <td class="${cls}">
                         ${hariNama}<br>
                         <small style="color:var(--muted)">${r.tanggal}</small>

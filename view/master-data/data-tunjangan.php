@@ -48,6 +48,7 @@
                             <option value="Tunjangan Makan">Tunjangan Makan</option>
                             <option value="Tunjangan Skill">Tunjangan Skill</option>
                             <option value="Performance Bonus">Performance Bonus</option>
+                            <option value="Tunjangan Posisi">Tunjangan Posisi</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -80,6 +81,7 @@
                             <option value="Tunjangan Makan">Tunjangan Makan</option>
                             <option value="Tunjangan Skill">Tunjangan Skill</option>
                             <option value="Performance Bonus">Performance Bonus</option>
+                            <option value="Tunjangan Posisi">Tunjangan Posisi</option>
                         </select>
                     </div>
                     <div class="mb-3">

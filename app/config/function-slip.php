@@ -379,15 +379,7 @@ if (!function_exists('generateSlipGaji')) {
 
         // ================= Hitung total pendapatan & potongan =================
         $basic = floatval($karier['gaji_pokok']);
-
-        $t_hidup = 0;
-        $t_daerah = 0;
-        $t_makan = 0;
-        $t_skil = 0;
-
-        $pot_sio = floatval($karier['pot_sio'] ?? 0);
-        $pot_pkwt = floatval($karier['pot_pkwt'] ?? 0);
-
+        
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
@@ -449,10 +441,6 @@ if (!function_exists('generateSlipGaji')) {
             // 'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
 
             'basic' => $basic,
-            't_hidup' => $t_hidup,
-            't_daerah' => $t_daerah,
-            't_makan' => $t_makan,
-            't_skil' => $t_skil,
 
             'total_lembur' => $total_lembur,
             'total_overtime' => $total_overtime,
@@ -462,7 +450,6 @@ if (!function_exists('generateSlipGaji')) {
 
             'total_jam_wl' => $total_jam_wl,
             'total_jam_ot' => $total_jam_ot,
-
             'total_jam_spl_1_7' => $total_jam_spl_1_7,
             'total_jam_spl_8' => $total_jam_spl_8,
             'total_jam_spl_9_up' => $total_jam_spl_9_up,
@@ -470,7 +457,6 @@ if (!function_exists('generateSlipGaji')) {
             'bpjs_kesehatan' => $bpjs_kesehatan,
             'jht' => $jht,
             'pph21' => $pph21,
-            'pot_sio' => $pot_sio,
             'pot_pkwt' => $total_potongan_pkwt,
 
             'pot_izin' => $total_pot_izin,

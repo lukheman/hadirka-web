@@ -42,7 +42,8 @@ try {
             "Tunjangan Hidup",
             "Tunjangan Makan",
             "Tunjangan Skill",
-            "Performance Bonus"
+            "Performance Bonus",
+            "Tunjangan Posisi"
         ];
 
         error_log("NAMA TUNJANGAN DITERIMA: [" . $nama_raw . "]");
