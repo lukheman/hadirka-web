@@ -38,6 +38,38 @@
         font-size: 0.9rem;
         color: #6c757d;
     }
+
+    /* Tambahan CSS untuk Kartu Statistik */
+    .hover-lift {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .avatar {
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .avatar-lg {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
+
+    .avatar-initial {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
 </style>
 
 <div class="content-wrapper">
@@ -53,6 +85,66 @@
             <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPinjaman">
                 <i class="fa fa-plus me-2"></i> Tambah Pinjaman Baru
             </button>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-success text-white shadow-sm hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar avatar-lg">
+                                    <div class="avatar-initial bg-white bg-opacity-25 rounded">
+                                        <i class="fa fa-hand-holding-usd fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0 text-white">Total Pinjaman</h6>
+                                <h4 class="mb-0 fw-bold" id="totalPinjaman">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white shadow-sm hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar avatar-lg">
+                                    <div class="avatar-initial bg-white bg-opacity-25 rounded">
+                                        <i class="fa fa-money-bill fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0 text-white">Total Nominal</h6>
+                                <h4 class="mb-0 fw-bold" id="totalNominal">Rp 0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-warning text-dark shadow-sm hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar avatar-lg">
+                                    <div class="avatar-initial bg-white bg-opacity-50 rounded">
+                                        <i class="fa fa-calendar fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">Bulan Ini</h6>
+                                <h4 class="mb-0 fw-bold" id="bulanIni">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="row">
@@ -234,7 +326,7 @@
         // === LOAD DATA ===
         function loadPinjaman() {
             // Tampilkan skeleton/loading sederhana
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Memuat data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center">Memuat data...</td></tr>';
 
             fetch("app/controller/get-data/get-pinjaman.php")
                 .then(res => res.text())
@@ -253,6 +345,26 @@
                             info: "Menampilkan _PAGE_ dari _PAGES_"
                         }
                     });
+
+                    // Panggil fungsi update stats setelah tabel berhasil diload
+                    updateStats();
+                });
+        }
+
+        // === UPDATE STATS PINJAMAN ===
+        function updateStats() {
+            fetch("app/controller/get-data/get-pinjaman-stats.php")
+                .then(res => {
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    return res.json();
+                })
+                .then(data => {
+                    document.getElementById("totalPinjaman").textContent = data.total || 0;
+                    document.getElementById("totalNominal").textContent = "Rp " + (data.nominal || 0).toLocaleString('id-ID');
+                    document.getElementById("bulanIni").textContent = data.bulan_ini || 0;
+                })
+                .catch(error => {
+                    console.error('Error updating stats:', error);
                 });
         }
 
