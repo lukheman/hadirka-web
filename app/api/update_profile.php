@@ -37,6 +37,50 @@ function safe($v) {
 }
 
 // =======================
+// FIELD VERIFIKASI KEAMANAN
+// =======================
+$nik_verifikasi = safe($data['nik_verifikasi'] ?? '');
+$password_verifikasi = safe($data['password_verifikasi'] ?? '');
+
+if (empty($nik_verifikasi) || empty($password_verifikasi)) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Otorisasi gagal: NIK dan Password verifikasi harus diisi"
+    ]);
+    exit;
+}
+
+// Enkripsi password input dengan MD5 (sesuai standar db kamu)
+$hashed_password_verif = md5($password_verifikasi);
+
+// =======================
+// CEK VERIFIKASI KE DATABASE
+// =======================
+$stmt_auth = $koneksi->prepare("
+    SELECT k.id_karyawan 
+    FROM tb_karyawan k
+    INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
+    WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
+");
+$stmt_auth->bind_param("sss", $id_karyawan, $nik_verifikasi, $hashed_password_verif);
+$stmt_auth->execute();
+$res_auth = $stmt_auth->get_result();
+
+if ($res_auth->num_rows === 0) {
+    // Jika tidak cocok, tolak proses update
+    $stmt_auth->close();
+    http_response_code(401);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Verifikasi Gagal: NIK KTP atau Password yang Anda masukkan salah."
+    ]);
+    exit;
+}
+$stmt_auth->close();
+
+
+// =======================
 // FIELD tb_karyawan
 // =======================
 $nama_lengkap      = safe($data['nama_lengkap']);
