@@ -22,8 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data_identitas = mysqli_fetch_assoc($result_POST_id);
             $id_karyawan = $data_identitas['id_karyawan'];
 
-            // Cek status di tb_karyawan
-            $query_check_status = "SELECT status_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'";
+            // Cek status DAN password di tb_karyawan
+            $query_check_status = "SELECT status_karyawan, password FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'";
             $result_check_status = mysqli_query($koneksi, $query_check_status);
 
             if (!$result_check_status || mysqli_num_rows($result_check_status) == 0) {
@@ -31,12 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data_karyawan = mysqli_fetch_assoc($result_check_status);
                 $status = $data_karyawan['status_karyawan'];
+                $password_tersimpan = $data_karyawan['password'];
 
-                if ($status == 1) {
-                    // Berhasil: Akun aktif, boleh reset password
+                // Cek apakah status = 1 ATAU password tidak kosong
+                if (strtolower($status) === 'aktif' && !empty($password_tersimpan)) {
+                    // Berhasil: Akun aktif (atau sudah punya password), boleh reset
                     $response = ['status' => 'success', 'message' => 'NIK ditemukan. Silakan masukkan kata sandi baru.'];
                 } else {
-                    // Gagal: Akun belum aktif
+                    // Gagal: Akun belum aktif dan belum punya password
                     $response = ['status' => 'error', 'message' => 'Akun belum diaktivasi. Silakan lakukan Aktivasi Akun terlebih dahulu.'];
                 }
             }

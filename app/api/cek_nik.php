@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id_karyawan = $data_identitas['id_karyawan'];
 
             // --- STEP 2: Cek status_karyawan di tb_karyawan menggunakan id_karyawan ---
-            $query_check_status = "SELECT status_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'";
+            $query_check_status = "SELECT status_karyawan, password FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'";
             $result_check_status = mysqli_query($koneksi, $query_check_status);
 
             if (!$result_check_status || mysqli_num_rows($result_check_status) == 0) {
@@ -33,8 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $data_karyawan = mysqli_fetch_assoc($result_check_status);
                 $status = $data_karyawan['status_karyawan'];
+                $password_tersimpan = $data_karyawan['password'];
 
-                if ($status == 1) {
+                if (strtolower($status) === 'aktif' && !empty($password_tersimpan)) {
                     // Status 1: Akun sudah aktif
                     $response = ['status' => 'error', 'message' => 'Akun untuk NIK ini sudah aktif. Silakan login.'];
                 } else {
