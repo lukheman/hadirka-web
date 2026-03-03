@@ -200,9 +200,6 @@ try {
                 continue;
             }
 
-            // === Cek apakah karyawan sudah ada ===
-            $cekKaryawan = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan'");
-
             // === Cek apakah karyawan sudah pernah tereliminasi ===
             $cekEliminasi = $koneksi->query("
                 SELECT te.id_tereliminasi, tk.id_karyawan 
@@ -229,6 +226,8 @@ try {
                 $koneksi->query("UPDATE tb_karyawan SET status_karyawan='Aktif' WHERE id_karyawan='$id_karyawan'");
             }
             
+            // === Cek apakah karyawan sudah ada ===
+            $cekKaryawan = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan'");
 
             if ($cekKaryawan->num_rows > 0) {
                 // UPDATE - Karyawan sudah ada

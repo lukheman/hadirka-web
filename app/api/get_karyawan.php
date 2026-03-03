@@ -50,7 +50,7 @@ if (!function_exists('hitungSisaKontrak')) {
     function hitungSisaKontrak($tgl_selesai)
     {
         if (empty($tgl_selesai) || $tgl_selesai === '0000-00-00') {
-            return 'Kontrak Tetap';
+            return 'PKWT';
         }
 
         try {
