@@ -38,63 +38,6 @@ function safe($v)
 }
 
 // =======================
-// CEK PERUBAHAN REKENING & VERIFIKASI KEAMANAN
-// =======================
-$nik_verifikasi = safe($data['nik_verifikasi'] ?? '');
-$password_verifikasi = safe($data['password_verifikasi'] ?? '');
-
-// 1. Ambil data rekening lama dari database
-$query_old_bank = $koneksi->query("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = '$id_karyawan'");
-$old_bank_data = $query_old_bank->fetch_assoc();
-
-// 2. Cek apakah ada perbedaan antara data lama dan data yang dikirim
-$is_bank_changed = false;
-if ($old_bank_data) {
-    if (
-        $nama_bank !== $old_bank_data['nama_bank'] ||
-        $no_rek !== $old_bank_data['no_rek'] ||
-        $atas_nama_rek !== $old_bank_data['atas_nama_rek']
-    ) {
-        $is_bank_changed = true;
-    }
-}
-
-// 3. Jika rekening berubah, LAKUKAN VERIFIKASI NIK DAN PASSWORD
-if ($is_bank_changed) {
-    if (empty($nik_verifikasi) || empty($password_verifikasi)) {
-        http_response_code(400);
-        echo json_encode([
-            "status" => "error",
-            "message" => "Otorisasi gagal: Mengubah data rekening WAJIB memasukkan NIK dan Password."
-        ]);
-        exit;
-    }
-
-    $hashed_password_verif = md5($password_verifikasi);
-
-    $stmt_auth = $koneksi->prepare("
-        SELECT k.id_karyawan 
-        FROM tb_karyawan k
-        INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
-        WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
-    ");
-    $stmt_auth->bind_param("sss", $id_karyawan, $nik_verifikasi, $hashed_password_verif);
-    $stmt_auth->execute();
-    $res_auth = $stmt_auth->get_result();
-
-    if ($res_auth->num_rows === 0) {
-        $stmt_auth->close();
-        http_response_code(401);
-        echo json_encode([
-            "status" => "error",
-            "message" => "Verifikasi Gagal: NIK KTP atau Password salah."
-        ]);
-        exit;
-    }
-    $stmt_auth->close();
-}
-
-// =======================
 // FIELD tb_karyawan
 // =======================
 $nama_lengkap      = safe($data['nama_lengkap']);
@@ -129,6 +72,60 @@ $education_level  = safe($data['education_level']);
 $nama_bank  = safe($data['nama_bank']);
 $no_rek  = safe($data['no_rek']);
 $atas_nama_rek  = safe($data['atas_nama_rek']);
+
+// =======================================================
+// CEK PERUBAHAN REKENING & VERIFIKASI KEAMANAN
+// =======================================================
+$nik_verifikasi = safe($data['nik_verifikasi'] ?? '');
+$password_verifikasi = safe($data['password_verifikasi'] ?? '');
+
+$query_old_bank = $koneksi->query("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = '$id_karyawan'");
+$old_bank_data = $query_old_bank->fetch_assoc();
+
+$is_bank_changed = false;
+if ($old_bank_data) {
+    // Sekarang $nama_bank, $no_rek, $atas_nama_rek sudah memiliki nilai dari JSON
+    if (
+        $nama_bank !== $old_bank_data['nama_bank'] ||
+        $no_rek !== $old_bank_data['no_rek'] ||
+        $atas_nama_rek !== $old_bank_data['atas_nama_rek']
+    ) {
+        $is_bank_changed = true;
+    }
+}
+
+if ($is_bank_changed) {
+    if (empty($nik_verifikasi) || empty($password_verifikasi)) {
+        http_response_code(400);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Otorisasi gagal: Mengubah data rekening WAJIB memasukkan NIK dan Password."
+        ]);
+        exit;
+    }
+
+    $hashed_password_verif = md5($password_verifikasi);
+    $stmt_auth = $koneksi->prepare("
+        SELECT k.id_karyawan 
+        FROM tb_karyawan k
+        INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
+        WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
+    ");
+    $stmt_auth->bind_param("sss", $id_karyawan, $nik_verifikasi, $hashed_password_verif);
+    $stmt_auth->execute();
+    $res_auth = $stmt_auth->get_result();
+
+    if ($res_auth->num_rows === 0) {
+        $stmt_auth->close();
+        http_response_code(401);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Verifikasi Gagal: NIK KTP atau Password salah."
+        ]);
+        exit;
+    }
+    $stmt_auth->close();
+}
 
 // =======================
 // TRANSAKSI
