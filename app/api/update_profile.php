@@ -1,5 +1,5 @@
 <?php
-// File: update_profile.php 
+// File: update_profile.php (FINAL CODE - PERBAIKAN KRITIS)
 
 include 'koneksi-api.php';
 header('Content-Type: application/json');
@@ -56,8 +56,8 @@ $status_pernikahan = safe($data['status_pernikahan']);
 $nik_ktp          = safe($data['nik_ktp']);
 $kk_number        = safe($data['kk_number']);
 $npwp             = safe($data['npwp']);
-$bpjs_tk          = safe(str_replace(['-', ' '], '', $data['bpjs_tk']));
-$bpjs_kes         = safe(str_replace(['-', ' '], '', $data['bpjs_kes']));
+$bpjs_tk          = safe(str_replace(['-', ' '], '', $data['bpjs_tk'])); // Sanitasi jika user input format
+$bpjs_kes         = safe(str_replace(['-', ' '], '', $data['bpjs_kes'])); // Sanitasi jika user input format
 $alamat_ktp       = safe($data['alamat_ktp']);
 $provinsi         = safe($data['provinsi']);
 $kabupaten        = safe($data['kabupaten']);
@@ -69,7 +69,78 @@ $last_education   = safe($data['last_education']);
 $major            = safe($data['major']);
 $education_level  = safe($data['education_level']);
 
-// NOTE: Field rekening dihapus dari tangkapan dan tidak diupdate lagi.
+$nama_bank  = safe($data['nama_bank']);
+$no_rek  = safe($data['no_rek']);
+$atas_nama_rek  = safe($data['atas_nama_rek']);
+
+// =======================================================
+// CEK PERUBAHAN REKENING & VERIFIKASI KEAMANAN
+// =======================================================
+$nik_verifikasi = safe($data['nik_verifikasi'] ?? '');
+$password_verifikasi = safe($data['password_verifikasi'] ?? '');
+
+$query_old_bank = $koneksi->query("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = '$id_karyawan'");
+$old_bank_data = $query_old_bank->fetch_assoc();
+
+$is_bank_changed = false;
+
+if ($old_bank_data) {
+    $existing_no_rek = trim($old_bank_data['no_rek'] ?? '');
+
+    // JIKA DI DATABASE SUDAH ADA NO REKENING
+    if ($existing_no_rek !== '') {
+        // Paksa gunakan data lama dari database (mengabaikan inputan user/Flutter)
+        $nama_bank     = $old_bank_data['nama_bank'];
+        $no_rek        = $old_bank_data['no_rek'];
+        $atas_nama_rek = $old_bank_data['atas_nama_rek'];
+
+        // Data bank dipastikan tidak berubah karena ditimpa data lama
+        $is_bank_changed = false;
+    } else {
+        // JIKA DI DATABASE MASIH KOSONG / NULL
+        if (
+            $nama_bank !== $old_bank_data['nama_bank'] ||
+            $no_rek !== $old_bank_data['no_rek'] ||
+            $atas_nama_rek !== $old_bank_data['atas_nama_rek']
+        ) {
+            $is_bank_changed = true; // Ada perubahan baru yang dimasukkan user
+        }
+    }
+}
+
+// Proses verifikasi jika ada perubahan data bank yang diizinkan (saat null pertama kali diisi)
+if ($is_bank_changed) {
+    if (empty($nik_verifikasi) || empty($password_verifikasi)) {
+        http_response_code(400);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Otorisasi gagal: Mengubah data rekening WAJIB memasukkan NIK dan Password."
+        ]);
+        exit;
+    }
+
+    $hashed_password_verif = md5($password_verifikasi);
+    $stmt_auth = $koneksi->prepare("
+        SELECT k.id_karyawan 
+        FROM tb_karyawan k
+        INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
+        WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
+    ");
+    $stmt_auth->bind_param("sss", $id_karyawan, $nik_verifikasi, $hashed_password_verif);
+    $stmt_auth->execute();
+    $res_auth = $stmt_auth->get_result();
+
+    if ($res_auth->num_rows === 0) {
+        $stmt_auth->close();
+        http_response_code(401);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Verifikasi Gagal: NIK KTP atau Password salah."
+        ]);
+        exit;
+    }
+    $stmt_auth->close();
+}
 
 // =======================
 // TRANSAKSI
@@ -125,7 +196,11 @@ try {
     }
     $stmt->close();
 
-    // UPDATE tb_identitas (Tanpa field nama_bank, no_rek, dan atas_nama_rek)
+    // Simpan status update untuk tb_karyawan
+    $updatedKaryawan = $koneksi->affected_rows;
+
+
+    // UPDATE tb_identitas
     $stmt = $koneksi->prepare("UPDATE tb_identitas SET
             nik_ktp = ?,
             kk_number = ?,
@@ -141,12 +216,16 @@ try {
             nama_ibu = ?,
             last_education = ?,
             major = ?,
-            education_level = ?
+            education_level = ?,
+            nama_bank = ?,
+            no_rek = ?,
+            atas_nama_rek = ?
         WHERE id_karyawan = ?
     ");
 
+
     $stmt->bind_param(
-        "ssssssssssssssss", // S berjumlah 16
+        "sssssssssssssssssss",
         $nik_ktp,
         $kk_number,
         $npwp,
@@ -162,6 +241,9 @@ try {
         $last_education,
         $major,
         $education_level,
+        $nama_bank,
+        $no_rek,
+        $atas_nama_rek,
         $id_karyawan
     );
 
@@ -169,6 +251,10 @@ try {
         throw new Exception("Gagal update data identitas: " . $stmt->error);
     }
     $stmt->close();
+
+    // PERBAIKAN KRITIS DI SINI:
+    // Tidak perlu memeriksa affected_rows === 0 untuk tb_identitas, 
+    // karena update tb_karyawan mungkin sudah berhasil. Commit tetap dilakukan.
 
     $koneksi->commit();
 
