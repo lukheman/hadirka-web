@@ -32,53 +32,67 @@ if ($id_karyawan === '') {
 }
 
 // Helper sanitasi
-function safe($v) {
+function safe($v)
+{
     return trim($v ?? '');
 }
 
 // =======================
-// FIELD VERIFIKASI KEAMANAN
+// CEK PERUBAHAN REKENING & VERIFIKASI KEAMANAN
 // =======================
 $nik_verifikasi = safe($data['nik_verifikasi'] ?? '');
 $password_verifikasi = safe($data['password_verifikasi'] ?? '');
 
-if (empty($nik_verifikasi) || empty($password_verifikasi)) {
-    http_response_code(400);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Otorisasi gagal: NIK dan Password verifikasi harus diisi"
-    ]);
-    exit;
+// 1. Ambil data rekening lama dari database
+$query_old_bank = $koneksi->query("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = '$id_karyawan'");
+$old_bank_data = $query_old_bank->fetch_assoc();
+
+// 2. Cek apakah ada perbedaan antara data lama dan data yang dikirim
+$is_bank_changed = false;
+if ($old_bank_data) {
+    if (
+        $nama_bank !== $old_bank_data['nama_bank'] ||
+        $no_rek !== $old_bank_data['no_rek'] ||
+        $atas_nama_rek !== $old_bank_data['atas_nama_rek']
+    ) {
+        $is_bank_changed = true;
+    }
 }
 
-// Enkripsi password input dengan MD5 (sesuai standar db kamu)
-$hashed_password_verif = md5($password_verifikasi);
+// 3. Jika rekening berubah, LAKUKAN VERIFIKASI NIK DAN PASSWORD
+if ($is_bank_changed) {
+    if (empty($nik_verifikasi) || empty($password_verifikasi)) {
+        http_response_code(400);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Otorisasi gagal: Mengubah data rekening WAJIB memasukkan NIK dan Password."
+        ]);
+        exit;
+    }
 
-// =======================
-// CEK VERIFIKASI KE DATABASE
-// =======================
-$stmt_auth = $koneksi->prepare("
-    SELECT k.id_karyawan 
-    FROM tb_karyawan k
-    INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
-    WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
-");
-$stmt_auth->bind_param("sss", $id_karyawan, $nik_verifikasi, $hashed_password_verif);
-$stmt_auth->execute();
-$res_auth = $stmt_auth->get_result();
+    $hashed_password_verif = md5($password_verifikasi);
 
-if ($res_auth->num_rows === 0) {
-    // Jika tidak cocok, tolak proses update
+    $stmt_auth = $koneksi->prepare("
+        SELECT k.id_karyawan 
+        FROM tb_karyawan k
+        INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
+        WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
+    ");
+    $stmt_auth->bind_param("sss", $id_karyawan, $nik_verifikasi, $hashed_password_verif);
+    $stmt_auth->execute();
+    $res_auth = $stmt_auth->get_result();
+
+    if ($res_auth->num_rows === 0) {
+        $stmt_auth->close();
+        http_response_code(401);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Verifikasi Gagal: NIK KTP atau Password salah."
+        ]);
+        exit;
+    }
     $stmt_auth->close();
-    http_response_code(401);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Verifikasi Gagal: NIK KTP atau Password yang Anda masukkan salah."
-    ]);
-    exit;
 }
-$stmt_auth->close();
-
 
 // =======================
 // FIELD tb_karyawan
@@ -169,7 +183,7 @@ try {
         throw new Exception("Gagal update data karyawan: " . $stmt->error);
     }
     $stmt->close();
-    
+
     // Simpan status update untuk tb_karyawan
     $updatedKaryawan = $koneksi->affected_rows;
 
@@ -195,7 +209,7 @@ try {
             no_rek = ?,
             atas_nama_rek = ?
         WHERE id_karyawan = ?
-    ");	
+    ");
 
 
     $stmt->bind_param(
@@ -229,14 +243,13 @@ try {
     // PERBAIKAN KRITIS DI SINI:
     // Tidak perlu memeriksa affected_rows === 0 untuk tb_identitas, 
     // karena update tb_karyawan mungkin sudah berhasil. Commit tetap dilakukan.
-    
+
     $koneksi->commit();
 
     echo json_encode([
         "status" => "success",
         "message" => "Profil berhasil diperbarui"
     ]);
-
 } catch (Exception $e) {
 
     $koneksi->rollback();
