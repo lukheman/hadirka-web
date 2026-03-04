@@ -69,7 +69,17 @@ mysqli_query($koneksi,"
 
 // Sensor email untuk ditampilkan di HP (agar aman)
 $parts = explode("@", $email_tujuan);
-$sensor_email = substr($parts[0], 0, 2) . str_repeat("*", strlen($parts[0]) - 2) . "@" . $parts[1];
+$username = $parts[0];
+$domain   = $parts[1];
+$length   = strlen($username);
+
+if ($length > 5) {
+    // Menampilkan 3 awal, sisanya bintang, dan 2 terakhir
+    $sensor_email = substr($username, 0, 3) . str_repeat("*", $length - 5) . substr($username, -2) . "@" . $domain;
+} else {
+    // Jika email terlalu pendek (misal: abc@mail.com), sensor standar agar tidak error
+    $sensor_email = substr($username, 0, 1) . str_repeat("*", $length - 1) . "@" . $domain;
+}
 
 // 3. PROSES KIRIM EMAIL DENGAN PHPMAILER
 $mail = new PHPMailer(true);
