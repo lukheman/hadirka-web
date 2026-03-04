@@ -1,5 +1,19 @@
 <?php
+// Tampilkan error saat tahap development (matikan saat rilis production)
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 include 'koneksi-api.php';
+
+// Import class PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+// Panggil file PHPMailer yang sudah di-upload
+require 'phpmailer/Exception.php';
+require 'phpmailer/PHPMailer.php';
+require 'phpmailer/SMTP.php';
+
 header('Content-Type: application/json');
 
 $nik = $_POST['nik'] ?? '';
@@ -24,7 +38,7 @@ if (mysqli_num_rows($q) == 0) {
 
 $data = mysqli_fetch_assoc($q);
 $id_karyawan = $data['id_karyawan'];
-$email = $data['email_pribadi'];
+$email_tujuan = $data['email_pribadi'];
 $status = strtolower(trim($data['status_karyawan']));
 $password_tersimpan = $data['password'];
 
@@ -35,7 +49,7 @@ if (!in_array($status, $status_diizinkan) || empty($password_tersimpan)) {
     exit;
 }
 
-if (empty($email)) {
+if (empty($email_tujuan)) {
     echo json_encode(['status' => 'error', 'message' => 'Email belum terdaftar. Hubungi HRD.']);
     exit;
 }
@@ -44,36 +58,59 @@ if (empty($email)) {
 $otp = rand(100000, 999999);
 $expired = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
-// Opsional: Hapus OTP lama yang belum terpakai agar tabel tidak penuh
+// Hapus OTP lama yang belum terpakai
 mysqli_query($koneksi, "DELETE FROM tb_reset_otp WHERE id_karyawan='$id_karyawan' AND is_used=0");
 
+// Insert OTP Baru
 mysqli_query($koneksi,"
     INSERT INTO tb_reset_otp(id_karyawan, otp_code, expired_at)
     VALUES('$id_karyawan','$otp','$expired')
 ");
 
-// 3. Kirim Email (Catatan: fungsi mail() butuh konfigurasi SMTP di server agar jalan)
-$subject = "Kode OTP Reset Password HRIS";
-$message = "Kode OTP kamu: $otp\nBerlaku selama 5 menit. Jangan berikan kode ini ke siapapun.";
-$headers = "From: no-reply@hris.com";
+// Sensor email untuk ditampilkan di HP (agar aman)
+$parts = explode("@", $email_tujuan);
+$sensor_email = substr($parts[0], 0, 2) . str_repeat("*", strlen($parts[0]) - 2) . "@" . $parts[1];
 
-mail($email, $subject, $message, $headers);
+// 3. PROSES KIRIM EMAIL DENGAN PHPMAILER
+$mail = new PHPMailer(true);
 
-// Sensor email untuk ditampilkan di HP (3 awal, 2 akhir)
-$parts = explode("@", $email);
-$local_part = $parts[0];
-$domain_part = $parts[1];
-$len = strlen($local_part);
+try {
+    // KONFIGURASI SMTP HOSTING
+    $mail->isSMTP();
+    $mail->Host       = 'mail.triputrajayasultra.com'; // Biasanya mail.namadomain.com atau cek di cPanel (Email Routing)
+    $mail->SMTPAuth   = true;
+    $mail->Username   = 'admin@triputrajayasultra.com'; // Email yang Anda buat
+    $mail->Password   = 'MASUKKAN_PASSWORD_EMAIL_DISINI'; // Password email admin Anda
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Gunakan ENCRYPTION_STARTTLS jika port 587
+    $mail->Port       = 465; // Port SMTP SSL (Gunakan 587 jika TLS)
 
-if ($len > 5) {
-    // Jika karakter sebelum @ lebih dari 5 huruf (misal: budisanto -> bud***to)
-    $sensor_email = substr($local_part, 0, 3) . str_repeat("*", $len - 5) . substr($local_part, -2) . "@" . $domain_part;
-} else {
-    // Fallback jika nama email sangat pendek (misal: andi -> an**)
-    // Pastikan minimal ambil 2 karakter depan saja agar tidak aneh
-    $tampil = min(2, $len - 1); 
-    $tampil = $tampil < 1 ? 1 : $tampil; // Jaga-jaga kalau cuma 1 huruf
-    $sensor_email = substr($local_part, 0, $tampil) . str_repeat("*", $len - $tampil) . "@" . $domain_part;
+    // Pengirim & Penerima
+    $mail->setFrom('admin@triputrajayasultra.com', 'HRIS Triputra Jaya Sultra');
+    $mail->addAddress($email_tujuan); // Email karyawan
+
+    // Konten Email
+    $mail->isHTML(true);
+    $mail->Subject = 'Kode OTP Reset Password - HRIS';
+    $mail->Body    = "
+        <h3>Halo,</h3>
+        <p>Anda telah meminta untuk mereset kata sandi akun HRIS Anda.</p>
+        <p>Berikut adalah kode OTP Anda:</p>
+        <h2 style='background: #f4f4f4; padding: 10px; display: inline-block; letter-spacing: 5px;'>$otp</h2>
+        <p>Kode ini hanya berlaku selama <b>5 menit</b>.</p>
+        <p><i>Jika Anda tidak merasa meminta reset kata sandi, abaikan email ini.</i></p>
+    ";
+    $mail->AltBody = "Kode OTP Reset Password HRIS Anda adalah: $otp. Berlaku 5 menit.";
+
+    $mail->send();
+    
+    // Jika sukses terkirim
+    echo json_encode(['status' => 'success', 'message' => "OTP berhasil dikirim ke email $sensor_email"]);
+
+} catch (Exception $e) {
+    // Jika gagal terkirim, kita hapus OTP dari database agar tidak nyangkut
+    mysqli_query($koneksi, "DELETE FROM tb_reset_otp WHERE id_karyawan='$id_karyawan' AND otp_code='$otp'");
+    
+    // Tampilkan pesan error mailer untuk debugging (Bisa diganti dengan pesan umum nanti)
+    echo json_encode(['status' => 'error', 'message' => "Gagal mengirim email. Error: {$mail->ErrorInfo}"]);
 }
-
-echo json_encode(['status' => 'success', 'message' => "OTP berhasil dikirim ke email $sensor_email"]);
+?>
