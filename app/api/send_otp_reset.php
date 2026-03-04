@@ -77,10 +77,10 @@ $mail = new PHPMailer(true);
 try {
     // KONFIGURASI SMTP HOSTING
     $mail->isSMTP();
-    $mail->Host       = 'mail.triputrajayasultra.com'; // Biasanya mail.namadomain.com atau cek di cPanel (Email Routing)
+    $mail->Host       = 'hris.triputrajayasultra.com'; // Biasanya mail.namadomain.com atau cek di cPanel (Email Routing)
     $mail->SMTPAuth   = true;
     $mail->Username   = 'admin@triputrajayasultra.com'; // Email yang Anda buat
-    $mail->Password   = 'MASUKKAN_PASSWORD_EMAIL_DISINI'; // Password email admin Anda
+    $mail->Password   = '@Triputra1505'; // Password email admin Anda
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Gunakan ENCRYPTION_STARTTLS jika port 587
     $mail->Port       = 465; // Port SMTP SSL (Gunakan 587 jika TLS)
 
