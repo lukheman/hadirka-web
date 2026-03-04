@@ -57,10 +57,23 @@ $subject = "Kode OTP Reset Password HRIS";
 $message = "Kode OTP kamu: $otp\nBerlaku selama 5 menit. Jangan berikan kode ini ke siapapun.";
 $headers = "From: no-reply@hris.com";
 
-// mail($email, $subject, $message, $headers);
+mail($email, $subject, $message, $headers);
 
-// Sensor email untuk ditampilkan di HP
+// Sensor email untuk ditampilkan di HP (3 awal, 2 akhir)
 $parts = explode("@", $email);
-$sensor_email = substr($parts[0], 0, 2) . str_repeat("*", strlen($parts[0]) - 2) . "@" . $parts[1];
+$local_part = $parts[0];
+$domain_part = $parts[1];
+$len = strlen($local_part);
+
+if ($len > 5) {
+    // Jika karakter sebelum @ lebih dari 5 huruf (misal: budisanto -> bud***to)
+    $sensor_email = substr($local_part, 0, 3) . str_repeat("*", $len - 5) . substr($local_part, -2) . "@" . $domain_part;
+} else {
+    // Fallback jika nama email sangat pendek (misal: andi -> an**)
+    // Pastikan minimal ambil 2 karakter depan saja agar tidak aneh
+    $tampil = min(2, $len - 1); 
+    $tampil = $tampil < 1 ? 1 : $tampil; // Jaga-jaga kalau cuma 1 huruf
+    $sensor_email = substr($local_part, 0, $tampil) . str_repeat("*", $len - $tampil) . "@" . $domain_part;
+}
 
 echo json_encode(['status' => 'success', 'message' => "OTP berhasil dikirim ke email $sensor_email"]);
