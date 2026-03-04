@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $status = $data_karyawan['status_karyawan'];
                 $password_tersimpan = $data_karyawan['password'];
 
-                // Cek apakah status = 1 ATAU password tidak kosong
+                // Cek apakah status = aktif DAN password tidak kosong
                 if (strtolower($status) === 'aktif' && !empty($password_tersimpan)) {
                     // Berhasil: Akun aktif (atau sudah punya password), boleh reset
                     $response = ['status' => 'success', 'message' => 'NIK ditemukan. Silakan masukkan kata sandi baru.'];

@@ -79,8 +79,11 @@ $atas_nama_rek  = safe($data['atas_nama_rek']);
 $nik_verifikasi = safe($data['nik_verifikasi'] ?? '');
 $password_verifikasi = safe($data['password_verifikasi'] ?? '');
 
-$query_old_bank = $koneksi->query("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = '$id_karyawan'");
-$old_bank_data = $query_old_bank->fetch_assoc();
+$stmt_old_bank = $koneksi->prepare("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = ?");
+$stmt_old_bank->bind_param("s", $id_karyawan);
+$stmt_old_bank->execute();
+$old_bank_data = $stmt_old_bank->get_result()->fetch_assoc();
+$stmt_old_bank->close();
 
 $is_bank_changed = false;
 
