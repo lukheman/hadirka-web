@@ -241,8 +241,10 @@
                                 <label class="form-label mt-3">Status Pernikahan</label>
                                 <select class="form-control" name="status_pernikahan">
                                     <option value="">-- Pilih --</option>
-                                    <option>Kawin</option>
-                                    <option>Belum Kawin</option>
+                                    <option>Menikah</option>
+                                    <option>Belum Menikah</option>
+                                    <option>Cerai Hidup</option>
+                                    <option>Cerai Mati</option>
                                 </select>
                                 <label class="form-label mt-3">Nama Ibu Kandung</label>
                                 <input type="text" class="form-control" name="nama_ibu">
@@ -413,8 +415,9 @@
                             <label class="mt-3">Status Pernikahan</label>
                             <select id="edit_status_pernikahan" name="status_pernikahan" class="form-control">
                                 <option value="">-- Pilih --</option>
-                                <option value="Kawin">Kawin</option>
-                                <option value="Belum Kawin">Belum Kawin</option>
+                                <option value="Menikah">Menikah</option>
+                                <option value="Cerai Hidup">Cerai Hidup</option>
+                                <option value="Cerai Mati">Cerai Mati</option>
                             </select>
                             <label class="mt-3">Nama Ibu Kandung</label>
                             <input type="text" id="edit_nama_ibu" name="nama_ibu" class="form-control">
