@@ -416,6 +416,7 @@
                             <select id="edit_status_pernikahan" name="status_pernikahan" class="form-control">
                                 <option value="">-- Pilih --</option>
                                 <option value="Menikah">Menikah</option>
+                                <option value="Belum Menikah">Belum Menikah</option>
                                 <option value="Cerai Hidup">Cerai Hidup</option>
                                 <option value="Cerai Mati">Cerai Mati</option>
                             </select>
