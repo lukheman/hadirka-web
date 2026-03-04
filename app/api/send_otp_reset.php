@@ -57,7 +57,7 @@ $subject = "Kode OTP Reset Password HRIS";
 $message = "Kode OTP kamu: $otp\nBerlaku selama 5 menit. Jangan berikan kode ini ke siapapun.";
 $headers = "From: no-reply@hris.com";
 
-mail($email, $subject, $message, $headers);
+// mail($email, $subject, $message, $headers);
 
 // Sensor email untuk ditampilkan di HP
 $parts = explode("@", $email);
