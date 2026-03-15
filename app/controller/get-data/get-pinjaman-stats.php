@@ -2,29 +2,38 @@
 header("Content-Type: application/json");
 require '../../config/koneksi.php';
 
-// 1. Total Transaksi Pinjaman
-$sqlTotal = "SELECT COUNT(*) as total FROM tb_pinjaman";
+// 1. Tangkap parameter bulan (Format: YYYY-MM)
+$bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';
+
+// 2. Setup WHERE clause & Label Teks
+$whereClause = "";
+$teksBulan = "Total Keseluruhan"; // Default jika "Semua Bulan" dipilih
+
+if (!empty($bulan)) {
+    // Escape string untuk keamanan
+    $bulan_safe = $koneksi->real_escape_string($bulan);
+    $whereClause = " WHERE DATE_FORMAT(tgl_pinjaman, '%Y-%m') = '$bulan_safe'";
+    
+    // Ubah "2026-03" jadi "Maret 2026" untuk teks di tampilan
+    $parts = explode('-', $bulan);
+    $namaBulanArr = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+    $teksBulan = "Total Bulan " . $namaBulanArr[$parts[1]] . " " . $parts[0];
+}
+
+// 3. Hitung Total Pinjaman (Sesuai filter)
+$sqlTotal = "SELECT COUNT(*) as total FROM tb_pinjaman" . $whereClause;
 $resultTotal = $koneksi->query($sqlTotal);
 $total = $resultTotal->fetch_assoc()['total'];
 
-// 2. Total Nominal Pinjaman
-$sqlNominal = "SELECT SUM(nominal_pinjaman) as total_nominal FROM tb_pinjaman";
+// 4. Hitung Total Nominal (Sesuai filter)
+$sqlNominal = "SELECT SUM(nominal_pinjaman) as total_nominal FROM tb_pinjaman" . $whereClause;
 $resultNominal = $koneksi->query($sqlNominal);
 $totalNominal = $resultNominal->fetch_assoc()['total_nominal'] ?: 0;
 
-// 3. Total Pinjaman Bulan Ini (Berdasarkan tgl_pinjaman)
-$bulanIni = date('Y-m');
-$sqlBulanIni = "SELECT COUNT(*) as bulan_ini 
-                FROM tb_pinjaman 
-                WHERE DATE_FORMAT(tgl_pinjaman, '%Y-%m') = '$bulanIni'";
-$resultBulanIni = $koneksi->query($sqlBulanIni);
-$bulanIniCount = $resultBulanIni->fetch_assoc()['bulan_ini'];
-
-// Return dalam bentuk JSON
+// 5. Kirim respon JSON
 echo json_encode([
     'total' => $total,
-    // Format nominal ke ribuan langsung bisa dilakukan di frontend atau backend,
-    // di sini kita format sesuai dengan logic yang ada di rapel-stats
     'nominal' => number_format($totalNominal, 0, ',', '.'),
-    'bulan_ini' => $bulanIniCount
+    'teks_bulan' => $teksBulan
 ]);
+?>

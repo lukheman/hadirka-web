@@ -37,7 +37,16 @@ if (!isset($koneksi) || !$koneksi) {
     exit;
 }
 
-// Prepare SQL query
+// Tangkap parameter bulan dari request
+$bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';
+$whereClause = "";
+
+if (!empty($bulan)) {
+    $bulan_safe = $koneksi->real_escape_string($bulan);
+    $whereClause = " WHERE DATE_FORMAT(r.tgl_rapel, '%Y-%m') = '$bulan_safe' ";
+}
+
+// Prepare SQL query (Sisipkan $whereClause)
 $sql = "SELECT 
             r.id_rapel,
             r.id_karyawan,
@@ -48,6 +57,7 @@ $sql = "SELECT
             r.ket_rapel
         FROM tb_rapel r
         INNER JOIN tb_karyawan k ON r.id_karyawan = k.id_karyawan
+        $whereClause
         ORDER BY r.tgl_rapel DESC, r.id_rapel DESC";
 
 // Execute query

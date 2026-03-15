@@ -74,64 +74,45 @@
         </div>
 
         <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card bg-success text-white shadow-sm hover-lift">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar avatar-lg">
-                                    <div class="avatar-initial bg-white bg-opacity-25 rounded">
-                                        <i class="fa fa-file-excel fa-2x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0 text-white">Total Rapel</h6>
-                                <h4 class="mb-0 fw-bold" id="totalRapel">0</h4>
+    <div class="col-md-6">
+        <div class="card bg-success text-white shadow-sm hover-lift">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar avatar-lg">
+                            <div class="avatar-initial bg-white bg-opacity-25 rounded">
+                                <i class="fa fa-file-excel fa-2x"></i>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-info text-white shadow-sm hover-lift">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar avatar-lg">
-                                    <div class="avatar-initial bg-white bg-opacity-25 rounded">
-                                        <i class="fa fa-money-bill fa-2x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0 text-white">Total Nominal</h6>
-                                <h4 class="mb-0 fw-bold" id="totalNominal">Rp 0</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-warning text-dark shadow-sm hover-lift">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar avatar-lg">
-                                    <div class="avatar-initial bg-white bg-opacity-50 rounded">
-                                        <i class="fa fa-calendar fa-2x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0">Bulan Ini</h6>
-                                <h4 class="mb-0 fw-bold" id="bulanIni">0</h4>
-                            </div>
-                        </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 text-white">Total Data Rapel</h6>
+                        <h4 class="mb-0 fw-bold" id="totalRapel">0</h4>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-info text-white shadow-sm hover-lift">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar avatar-lg">
+                            <div class="avatar-initial bg-white bg-opacity-25 rounded">
+                                <i class="fa fa-money-bill-wave fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 text-white" id="labelNominal">Total Keseluruhan</h6>
+                        <h4 class="mb-0 fw-bold" id="totalNominal">Rp 0</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
         <div class="card mb-4 border-0 shadow-sm">
             <div class="card-body p-4">
@@ -176,11 +157,38 @@
                     <i class="fa fa-sync-alt"></i> Refresh
                 </button>
             </div>
-            <div>
-                <button class="btn btn-outline-success btn-sm" onclick="exportToExcel()">
-                    <i class="fa fa-file-excel"></i> Export Excel
-                </button>
-            </div>
+            <div class="d-flex align-items-center gap-2">
+    <select id="filterBulan" class="form-select form-select-sm" style="width: 170px; cursor: pointer;">
+        <option value="">Semua Bulan</option>
+        <?php
+        $bulanArr = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+        
+        // Ambil data bulan yang unik dari database
+        $sqlBulan = "SELECT DISTINCT DATE_FORMAT(tgl_rapel, '%Y-%m') AS val_bulan FROM tb_rapel ORDER BY val_bulan DESC";
+        $resBulan = $koneksi->query($sqlBulan);
+        
+        if ($resBulan && $resBulan->num_rows > 0) {
+            $isFirst = true; // Auto-select bulan terbaru
+            while ($b = $resBulan->fetch_assoc()) {
+                $val = $b['val_bulan']; // Format "YYYY-MM"
+                $parts = explode('-', $val);
+                $label = $bulanArr[$parts[1]] . " " . $parts[0];
+                $selected = $isFirst ? "selected" : "";
+                echo "<option value='$val' $selected>$label</option>";
+                $isFirst = false;
+            }
+        } else {
+            // Fallback jika kosong
+            $valNow = date('Y-m');
+            $labelNow = $bulanArr[date('m')] . " " . date('Y');
+            echo "<option value='$valNow' selected>$labelNow</option>";
+        }
+        ?>
+    </select>
+    <button class="btn btn-outline-success btn-sm text-nowrap" onclick="exportToExcel()">
+        <i class="fa fa-file-excel"></i> Export Excel
+    </button>
+</div>
         </div>
 
         <div class="card border-0 shadow-sm">
@@ -387,6 +395,10 @@
     // DOCUMENT READY
     // ============================================
     $(document).ready(function() {
+        document.getElementById("filterBulan").addEventListener("change", function() {
+            loadRapel();
+        });
+
         const tbody = document.getElementById("tbodyRapel");
         const formTambah = document.getElementById("formTambahRapel");
         const formEdit = document.getElementById("formEditRapel");
@@ -410,7 +422,8 @@
         // FUNCTION: Load Rapel Data
         // ============================================
         window.loadRapel = function() {
-            fetch("app/controller/get-data/get-rapel.php")
+           const bulan = document.getElementById("filterBulan").value;
+            fetch("app/controller/get-data/get-rapel.php?bulan=" + bulan) // <-- Kirim bulan via GET
                 .then(res => {
                     if (!res.ok) throw new Error('Network response was not ok');
                     return res.text();
@@ -450,15 +463,17 @@
         // FUNCTION: Update Statistics
         // ============================================
         function updateStats() {
-            fetch("app/controller/get-data/get-rapel-stats.php")
+            const bulan = document.getElementById("filterBulan").value;
+            fetch("app/controller/get-data/get-rapel-stats.php?bulan=" + bulan)
                 .then(res => {
                     if (!res.ok) throw new Error('Network response was not ok');
                     return res.json();
                 })
                 .then(data => {
                     document.getElementById("totalRapel").textContent = data.total || 0;
-                    document.getElementById("totalNominal").textContent = "Rp " + (data.nominal || 0).toLocaleString('id-ID');
-                    document.getElementById("bulanIni").textContent = data.bulan_ini || 0;
+                    document.getElementById("totalNominal").textContent = "Rp " + (data.nominal || 0);
+                    // Update label otomatis
+                    document.getElementById("labelNominal").textContent = data.teks_bulan; 
                 })
                 .catch(error => {
                     console.error('Error updating stats:', error);
@@ -687,7 +702,8 @@
         // FUNCTION: Export to Excel
         // ============================================
         window.exportToExcel = function() {
-            window.location.href = "app/controller/export/export-rapel.php";
+            const bulan = document.getElementById("filterBulan").value;
+            window.location.href = "app/controller/export/export-rapel.php?bulan=" + bulan;
         };
         
         // ============================================

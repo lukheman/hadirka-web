@@ -37,6 +37,7 @@ $routes = [
     // 'slipgajinew'       => 'view/penggajian/slipgajinew.php',
     'data-pinjaman'   => 'view/penggajian/data-pinjaman.php',
     'data-rapel'      => 'view/penggajian/data-rapel.php',
+    'data-thr'        => 'view/penggajian/data-thr.php',
 
     // Lainnya
     'data-kandidat'   => 'view/data-kandidat.php',

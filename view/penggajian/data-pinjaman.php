@@ -88,7 +88,7 @@
         </div>
 
         <div class="row mb-4">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card bg-success text-white shadow-sm hover-lift">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -100,14 +100,14 @@
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0 text-white">Total Pinjaman</h6>
+                                <h6 class="mb-0 text-white">Total Data Pinjaman</h6>
                                 <h4 class="mb-0 fw-bold" id="totalPinjaman">0</h4>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card bg-info text-white shadow-sm hover-lift">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -119,27 +119,8 @@
                                 </div>
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0 text-white">Total Nominal</h6>
+                                <h6 class="mb-0 text-white" id="labelNominal">Total Keseluruhan</h6>
                                 <h4 class="mb-0 fw-bold" id="totalNominal">Rp 0</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-warning text-dark shadow-sm hover-lift">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar avatar-lg">
-                                    <div class="avatar-initial bg-white bg-opacity-50 rounded">
-                                        <i class="fa fa-calendar fa-2x"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0">Bulan Ini</h6>
-                                <h4 class="mb-0 fw-bold" id="bulanIni">0</h4>
                             </div>
                         </div>
                     </div>
@@ -183,8 +164,34 @@
 
             <div class="col-12">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-white py-3">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold"><i class="fa fa-list me-2 text-primary"></i> Database Pinjaman</h5>
+
+                        <select id="filterBulan" class="form-select form-select-sm" style="width: 170px; cursor: pointer;">
+                            <option value="">Semua Bulan</option>
+                            <?php
+                            $bulanArr = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
+
+                            $sqlBulan = "SELECT DISTINCT DATE_FORMAT(tgl_pinjaman, '%Y-%m') AS val_bulan FROM tb_pinjaman ORDER BY val_bulan DESC";
+                            $resBulan = $koneksi->query($sqlBulan);
+
+                            if ($resBulan && $resBulan->num_rows > 0) {
+                                $isFirst = true; // Auto-select bulan terbaru
+                                while ($b = $resBulan->fetch_assoc()) {
+                                    $val = $b['val_bulan'];
+                                    $parts = explode('-', $val);
+                                    $label = $bulanArr[$parts[1]] . " " . $parts[0];
+                                    $selected = $isFirst ? "selected" : "";
+                                    echo "<option value='$val' $selected>$label</option>";
+                                    $isFirst = false;
+                                }
+                            } else {
+                                $valNow = date('Y-m');
+                                $labelNow = $bulanArr[date('m')] . " " . date('Y');
+                                echo "<option value='$valNow' selected>$labelNow</option>";
+                            }
+                            ?>
+                        </select>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive text-nowrap">
@@ -294,6 +301,10 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("filterBulan").addEventListener("change", function() {
+            loadPinjaman();
+        });
+
         const tbody = document.getElementById("tbodyPinjaman");
         const formTambah = document.getElementById("formTambahPinjaman");
         const formEdit = document.getElementById("formEditPinjaman");
@@ -325,10 +336,10 @@
 
         // === LOAD DATA ===
         function loadPinjaman() {
-            // Tampilkan skeleton/loading sederhana
+            const bulan = document.getElementById("filterBulan").value;
             tbody.innerHTML = '<tr><td colspan="9" class="text-center">Memuat data...</td></tr>';
 
-            fetch("app/controller/get-data/get-pinjaman.php")
+            fetch("app/controller/get-data/get-pinjaman.php?bulan=" + bulan)
                 .then(res => res.text())
                 .then(html => {
                     if ($.fn.DataTable.isDataTable(".MyTable")) {
@@ -346,22 +357,23 @@
                         }
                     });
 
-                    // Panggil fungsi update stats setelah tabel berhasil diload
                     updateStats();
                 });
         }
 
         // === UPDATE STATS PINJAMAN ===
         function updateStats() {
-            fetch("app/controller/get-data/get-pinjaman-stats.php")
+            const bulan = document.getElementById("filterBulan").value;
+            fetch("app/controller/get-data/get-pinjaman-stats.php?bulan=" + bulan)
                 .then(res => {
                     if (!res.ok) throw new Error('Network response was not ok');
                     return res.json();
                 })
                 .then(data => {
                     document.getElementById("totalPinjaman").textContent = data.total || 0;
-                    document.getElementById("totalNominal").textContent = "Rp " + (data.nominal || 0).toLocaleString('id-ID');
-                    document.getElementById("bulanIni").textContent = data.bulan_ini || 0;
+                    document.getElementById("totalNominal").textContent = "Rp " + (data.nominal || 0);
+                    // Update Teks Label Nominal
+                    document.getElementById("labelNominal").textContent = data.teks_bulan;
                 })
                 .catch(error => {
                     console.error('Error updating stats:', error);

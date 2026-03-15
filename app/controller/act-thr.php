@@ -1,0 +1,196 @@
+<?php
+/**
+ * ============================================
+ * THR MANAGEMENT - ACTION CONTROLLER
+ * ============================================
+ * File: act-thr.php
+ * Purpose: Handle CRUD operations for thr data
+ * Actions: add, edit, delete
+ */
+
+// Include database connection
+require_once __DIR__ . '/../config/koneksi.php';
+
+// Set JSON response header
+header('Content-Type: application/json; charset=utf-8');
+
+// Disable HTML error display (prevent JSON corruption)
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Log errors to file instead
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/thr_errors.log');
+
+// ============================================
+// FUNCTION: Send JSON Response
+// ============================================
+function sendResponse($status, $message, $data = null) {
+    $response = [
+        'status' => $status,
+        'msg' => $message,
+        'timestamp' => date('Y-m-d H:i:s')
+    ];
+    
+    if ($data !== null) {
+        $response['data'] = $data;
+    }
+    
+    echo json_encode($response);
+    exit;
+}
+
+// ============================================
+// CHECK DATABASE CONNECTION
+// ============================================
+if (!isset($koneksi) || !$koneksi) {
+    sendResponse('error', 'Koneksi database gagal. Silakan hubungi administrator.');
+}
+
+// Check if connection is active
+if ($koneksi->connect_error) {
+    sendResponse('error', 'Database connection error: ' . $koneksi->connect_error);
+}
+
+// ============================================
+// GET ACTION FROM POST
+// ============================================
+$action = isset($_POST['action']) ? trim($_POST['action']) : '';
+
+if (empty($action)) {
+    sendResponse('error', 'Parameter action tidak ditemukan');
+}
+
+// ============================================
+// PROCESS ACTIONS
+// ============================================
+switch ($action) {
+    
+    // ========================================
+    // ACTION: ADD NEW THR
+    // ========================================
+    case 'add':
+        $id_karyawan = intval($_POST['id_karyawan']);
+        $tgl_mulai = trim($_POST['tgl_mulai']);
+        $tgl_hari_raya = trim($_POST['tgl_hari_raya']);
+        $gaji_pokok = trim($_POST['gaji_pokok']);
+        $tunj_lokasi = trim($_POST['tunjangan_lokasi']);
+        $tunj_kebutuhan = trim($_POST['tunjangan_kebutuhan']);
+        $masa_kerja = trim($_POST['masa_kerja']);
+        $nominal_thr = trim($_POST['nominal_thr']);
+        
+        // Ekstrak periode
+        $periode = date('Y', strtotime($tgl_hari_raya));
+
+        // Cek duplikat (Tahun dan Karyawan)
+        $dupStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ?");
+        $dupStmt->bind_param("is", $id_karyawan, $periode);
+        $dupStmt->execute();
+        if ($dupStmt->get_result()->num_rows > 0) {
+            sendResponse('error', 'Karyawan ini sudah memiliki data THR untuk periode tahun ' . $periode);
+        }
+
+        $stmt = $koneksi->prepare("
+            INSERT INTO tb_thr (id_karyawan, periode, tgl_mulai, tgl_hari_raya, gaji_pokok, tunjangan_lokasi, tunjangan_kebutuhan, masa_kerja, nominal_thr) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        // i = integer, s = string (karena nilai uang Anda bertipe varchar di database)
+        $stmt->bind_param("issssssss", $id_karyawan, $periode, $tgl_mulai, $tgl_hari_raya, $gaji_pokok, $tunj_lokasi, $tunj_kebutuhan, $masa_kerja, $nominal_thr);
+        
+        if ($stmt->execute()) sendResponse('success', 'Data THR berhasil ditambahkan');
+        else sendResponse('error', 'Gagal menyimpan: ' . $stmt->error);
+        break;
+
+    // ========================================
+    // ACTION: EDIT EXISTING thr
+    // ========================================
+    case 'edit':
+        $id_thr = intval($_POST['id_thr']);
+        $id_karyawan = intval($_POST['id_karyawan']);
+        $tgl_mulai = trim($_POST['tgl_mulai']);
+        $tgl_hari_raya = trim($_POST['tgl_hari_raya']);
+        $gaji_pokok = trim($_POST['gaji_pokok']);
+        $tunj_lokasi = trim($_POST['tunjangan_lokasi']);
+        $tunj_kebutuhan = trim($_POST['tunjangan_kebutuhan']);
+        $masa_kerja = trim($_POST['masa_kerja']);
+        $nominal_thr = trim($_POST['nominal_thr']);
+        
+        $periode = date('Y', strtotime($tgl_hari_raya));
+
+        $stmt = $koneksi->prepare("
+            UPDATE tb_thr SET 
+            id_karyawan=?, periode=?, tgl_mulai=?, tgl_hari_raya=?, gaji_pokok=?, tunjangan_lokasi=?, tunjangan_kebutuhan=?, masa_kerja=?, nominal_thr=? 
+            WHERE id_thr=?
+        ");
+        
+        $stmt->bind_param("issssssssi", $id_karyawan, $periode, $tgl_mulai, $tgl_hari_raya, $gaji_pokok, $tunj_lokasi, $tunj_kebutuhan, $masa_kerja, $nominal_thr, $id_thr);
+        
+        if ($stmt->execute()) sendResponse('success', 'Data THR berhasil diupdate');
+        else sendResponse('error', 'Gagal update: ' . $stmt->error);
+        break;
+    
+    // ========================================
+    // ACTION: DELETE thr
+    // ========================================
+    case 'delete':
+        // Sanitize and validate input
+        $id_thr = isset($_POST['id_thr']) ? intval($_POST['id_thr']) : 0;
+        
+        // Validation
+        if ($id_thr <= 0) {
+            sendResponse('error', 'ID thr tidak valid');
+        }
+        
+        // Check if thr exists
+        $checkStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_thr = ?");
+        $checkStmt->bind_param("i", $id_thr);
+        $checkStmt->execute();
+        $checkStmt->store_result();
+        
+        if ($checkStmt->num_rows === 0) {
+            $checkStmt->close();
+            sendResponse('error', 'Data thr tidak ditemukan');
+        }
+        $checkStmt->close();
+        
+        // Prepare DELETE statement
+        $stmt = $koneksi->prepare("DELETE FROM tb_thr WHERE id_thr = ?");
+        
+        if (!$stmt) {
+            sendResponse('error', 'Gagal menyiapkan query: ' . $koneksi->error);
+        }
+        
+        // Bind parameter
+        $stmt->bind_param("i", $id_thr);
+        
+        // Execute query
+        if ($stmt->execute()) {
+            $affected_rows = $stmt->affected_rows;
+            $stmt->close();
+            
+            if ($affected_rows > 0) {
+                sendResponse('success', 'Data thr berhasil dihapus');
+            } else {
+                sendResponse('error', 'Data thr tidak ditemukan atau sudah dihapus');
+            }
+        } else {
+            $error = $stmt->error;
+            $stmt->close();
+            sendResponse('error', 'Gagal menghapus data: ' . $error);
+        }
+        break;
+    
+    // ========================================
+    // ACTION: INVALID
+    // ========================================
+    default:
+        sendResponse('error', 'Aksi tidak valid: ' . htmlspecialchars($action));
+        break;
+}
+
+// Close database connection
+if (isset($koneksi)) {
+    $koneksi->close();
+}
+?>

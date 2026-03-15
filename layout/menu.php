@@ -86,7 +86,7 @@ function isMenuOpen($pages_array, $current_page) {
     </li>
     
     <?php 
-    $payroll_pages = ['data-periode', 'payroll', 'slip-gaji', 'data-pinjaman', 'data-rapel'];
+    $payroll_pages = ['data-periode', 'payroll', 'slip-gaji', 'data-pinjaman', 'data-rapel', 'data-thr'];
     ?>
     <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>">
         <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -108,6 +108,9 @@ function isMenuOpen($pages_array, $current_page) {
             </li>
             <li class="menu-item <?= isActive('data-rapel', $current_page); ?>">
                 <a class="menu-link" href="data-rapel"><div>Kalkulasi Rapel</div></a>
+            </li>
+            <li class="menu-item <?= isActive('data-thr', $current_page); ?>">
+                <a class="menu-link" href="data-thr"><div>Manajemen THR</div></a>
             </li>
         </ul>
     </li>
