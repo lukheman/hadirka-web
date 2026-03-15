@@ -118,6 +118,18 @@ switch ($action) {
         
         $periode = date('Y', strtotime($tgl_hari_raya));
 
+        // --- TAMBAHKAN PENGECEKAN DUPLIKAT DI SINI ---
+        // Cek apakah ada data di tahun yang sama, KECUALI data yang sedang diedit ini
+        $dupStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ? AND id_thr != ?");
+        $dupStmt->bind_param("isi", $id_karyawan, $periode, $id_thr);
+        $dupStmt->execute();
+        if ($dupStmt->get_result()->num_rows > 0) {
+            $dupStmt->close();
+            sendResponse('error', 'Gagal update. Karyawan ini sudah memiliki data THR lain untuk periode tahun ' . $periode);
+        }
+        $dupStmt->close();
+        // ---------------------------------------------
+
         $stmt = $koneksi->prepare("
             UPDATE tb_thr SET 
             id_karyawan=?, periode=?, tgl_mulai=?, tgl_hari_raya=?, gaji_pokok=?, tunjangan_lokasi=?, tunjangan_kebutuhan=?, masa_kerja=?, nominal_thr=? 
