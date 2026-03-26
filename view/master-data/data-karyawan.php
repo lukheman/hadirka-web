@@ -106,6 +106,22 @@
                             <option value="Resign">Resign</option>
                             <option value="Black List">Black List</option>
                         </select>
+
+                        <select id="filterBulan" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter Bulan Habis Kontrak Tahun Sekarang">
+                            <option value="">-- Semua Bulan --</option>
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -709,6 +725,7 @@
                         d.site = $("#filterSite").val();
                         d.jabatan = $("#filterJabatan").val();
                         d.status = $("#filterStatus").val();
+                        d.bulan = $("#filterBulan").val();
                     },
                     dataSrc: "data"
                 },
@@ -780,7 +797,7 @@
             });
 
             // 5. Filter Reload
-            $("#filterSite, #filterJabatan, #filterStatus").on("change", function() {
+            $("#filterSite, #filterJabatan, #filterStatus, #filterBulan").on("change", function() {
                 tableKaryawan.ajax.reload();
             });
 

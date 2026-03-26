@@ -18,6 +18,7 @@ try {
     $filter_site = isset($_POST['site']) ? $koneksi->real_escape_string($_POST['site']) : '';
     $filter_jabatan = isset($_POST['jabatan']) ? $koneksi->real_escape_string($_POST['jabatan']) : '';
     $filter_status = isset($_POST['status']) ? $koneksi->real_escape_string($_POST['status']) : '';
+    $filter_bulan = isset($_POST['bulan']) ? $koneksi->real_escape_string($_POST['bulan']) : '';
 
 
     // Build WHERE clause
@@ -36,6 +37,15 @@ try {
 
     if (!empty($filter_jabatan)) {
         $where[] = "k.id_jabatan = '$filter_jabatan'";
+    }
+
+    if (!empty($filter_bulan)) {
+        // Asumsi tgl_selesai ada di tb_karier yang di-alias sebagai 'k'
+        $where[] = "MONTH(k.tgl_selesai) = '$filter_bulan'";
+        
+        // Opsional: Jika Anda ingin memfilter spesifik hanya di tahun ini juga, 
+        // Anda bisa meng-uncomment baris di bawah ini:
+        $where[] = "YEAR(k.tgl_selesai) = YEAR(CURDATE())"; 
     }
 
     $where_sql = implode(" AND ", $where);
