@@ -386,12 +386,12 @@ if (!function_exists('generateSlipGaji')) {
         // PKWT potongan untuk hari NEW
         $total_potongan_pkwt = 0;
         if ($new_count > 0) {
-            $total_potongan_pkwt = (($total_tunjangan + $basic) / 29) * $new_count;
+            $total_potongan_pkwt = (($total_tunjangan + $basic) / 22) * $new_count;
         }
 
         // PKWT potongan untuk hari RESIGN
         if ($resign_count > 0) {
-            $total_potongan_pkwt += (($total_tunjangan + $basic) / 29) * $resign_count;
+            $total_potongan_pkwt += (($total_tunjangan + $basic) / 22) * $resign_count;
         }
 
         $total_potongan =
