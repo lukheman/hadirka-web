@@ -170,6 +170,11 @@
         'use strict';
         let allBPJSData = [];
 
+        function cekTerdaftar(bpjs) {
+            // Akan return FALSE jika null, kosong, atau isinya hanya "-"
+            return bpjs && bpjs.trim() !== '' && bpjs.trim() !== '-';
+        }
+
         window.showToast = function(message, type = 'success') {
             const Toast = Swal.mixin({
                 toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
@@ -202,7 +207,7 @@
                 let siteMatch = !filterSite || row.nama_site === filterSite;
                 let jabatanMatch = !filterJabatan || row.nama_jabatan === filterJabatan;
                 
-                let isTerdaftar = row.bpjs_tk && row.bpjs_tk.trim() !== '';
+                let isTerdaftar = cekTerdaftar(row.bpjs_tk);
                 let statusMatch = true;
                 if (filterStatus === 'SUDAH') statusMatch = isTerdaftar;
                 if (filterStatus === 'BELUM') statusMatch = !isTerdaftar;
@@ -222,7 +227,7 @@
                 let jabatanBadge = row.nama_jabatan ? `<span class="badge bg-label-info mb-1">${row.nama_jabatan}</span>` : '-';
                 let siteInfo = row.nama_site ? `<br><small class="text-muted"><i class="fa fa-building"></i> ${row.nama_site}</small>` : '';
                 
-                let isTerdaftar = row.bpjs_tk && row.bpjs_tk.trim() !== '';
+                let isTerdaftar = cekTerdaftar(row.bpjs_tk);
                 let bpjsDisplay = isTerdaftar ? 
                     `<strong class="text-success">${row.bpjs_tk}</strong>` : 
                     `<span class="badge bg-label-danger">Belum Terdaftar</span>`;
@@ -271,7 +276,7 @@
                             
                             // Hitung untuk Banner
                             let total = allBPJSData.length;
-                            let terdaftar = allBPJSData.filter(d => d.bpjs_tk && d.bpjs_tk.trim() !== '').length;
+                            let terdaftar = allBPJSData.filter(d => cekTerdaftar(d.bpjs_tk)).length;
                             let belum = total - terdaftar;
 
                             document.getElementById("totalPegawai").innerText = total;
@@ -303,7 +308,7 @@
                 let filteredData = allBPJSData.filter(row => {
                     let siteMatch = !filterSite || row.nama_site === filterSite;
                     let jabatanMatch = !filterJabatan || row.nama_jabatan === filterJabatan;
-                    let isTerdaftar = row.bpjs_tk && row.bpjs_tk.trim() !== '';
+                    let isTerdaftar = cekTerdaftar(row.bpjs_tk);
                     let statusMatch = true;
                     if (filterStatus === 'SUDAH') statusMatch = isTerdaftar;
                     if (filterStatus === 'BELUM') statusMatch = !isTerdaftar;
@@ -321,7 +326,7 @@
                     "Nama Karyawan": row.nama_lengkap,
                     "Site": row.nama_site || "-",
                     "Jabatan": row.nama_jabatan || "-",
-                    "No BPJS Ketenagakerjaan": row.bpjs_tk || "BELUM TERDAFTAR"
+                    "No BPJS Ketenagakerjaan": cekTerdaftar(row.bpjs_tk) ? row.bpjs_tk : "BELUM TERDAFTAR"
                 }));
 
                 let ws = XLSX.utils.json_to_sheet(excelData);
