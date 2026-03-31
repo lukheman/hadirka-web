@@ -101,7 +101,7 @@
                             </div>
                             <div class="flex-grow-1 ms-3">
                                 <h6 class="mb-0 text-white">Total Data Pinjaman</h6>
-                                <h4 class="mb-0 fw-bold" id="totalPinjaman">0</h4>
+                                <h4 class="mb-0 fw-bold text-white" id="totalPinjaman">0</h4>
                             </div>
                         </div>
                     </div>
@@ -120,7 +120,7 @@
                             </div>
                             <div class="flex-grow-1 ms-3">
                                 <h6 class="mb-0 text-white" id="labelNominal">Total Keseluruhan</h6>
-                                <h4 class="mb-0 fw-bold" id="totalNominal">Rp 0</h4>
+                                <h4 class="mb-0 fw-bold text-white" id="totalNominal">Rp 0</h4>
                             </div>
                         </div>
                     </div>
