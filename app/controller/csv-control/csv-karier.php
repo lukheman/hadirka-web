@@ -181,7 +181,8 @@ try {
         // 4. Kelola tb_potongan (Upsert Logic)
         $listPotongan = [
             "BPJS KESEHATAN 1%" => $pot_bpjs,
-            "JHT 2%" => $pot_jht,
+            // BPJS KETENAGAKERJAAN 2% yg awalnya JHT 2%
+            "BPJS KETENAGAKERJAAN 2%" => $pot_jht,
             "PPH21" => $pph21
         ];
 
