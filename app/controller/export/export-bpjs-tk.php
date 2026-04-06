@@ -1,0 +1,74 @@
+<?php
+/**
+ * ============================================
+ * EXPORT EXCEL - DATA BPJS KETENAGAKERJAAN
+ * ============================================
+ */
+
+require '../../config/koneksi.php';
+require '../../../vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+// Ambil parameter filter dari URL
+$siteFilter = isset($_GET['site']) ? $_GET['site'] : '';
+$jabatanFilter = isset($_GET['jabatan']) ? $_GET['jabatan'] : '';
+$statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
+
+$where = ["k.status_karyawan = 'Aktif'"];
+
+if ($siteFilter !== '') $where[] = "s.nama_site = '" . $koneksi->real_escape_string($siteFilter) . "'";
+if ($jabatanFilter !== '') $where[] = "j.nama_jabatan = '" . $koneksi->real_escape_string($jabatanFilter) . "'";
+if ($statusFilter === 'SUDAH') $where[] = "(i.bpjs_tk IS NOT NULL AND TRIM(i.bpjs_tk) != '' AND TRIM(i.bpjs_tk) != '-')";
+if ($statusFilter === 'BELUM') $where[] = "(i.bpjs_tk IS NULL OR TRIM(i.bpjs_tk) = '' OR TRIM(i.bpjs_tk) = '-')";
+
+$whereClause = implode(" AND ", $where);
+
+$sql = "SELECT k.nik_karyawan, k.nama_lengkap, s.nama_site, j.nama_jabatan, i.bpjs_tk 
+        FROM tb_karyawan k
+        LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
+        LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
+        LEFT JOIN tb_site s ON kr.id_site = s.id_site
+        LEFT JOIN tb_jabatan j ON kr.id_jabatan = j.id_jabatan
+        WHERE $whereClause
+        ORDER BY k.nama_lengkap ASC";
+
+$result = $koneksi->query($sql);
+
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+$sheet->setTitle('Data BPJS TK');
+
+// Header
+$sheet->setCellValue('A1', 'No');
+$sheet->setCellValue('B1', 'NIK Karyawan');
+$sheet->setCellValue('C1', 'Nama Lengkap');
+$sheet->setCellValue('D1', 'Site');
+$sheet->setCellValue('E1', 'Jabatan');
+$sheet->setCellValue('F1', 'No BPJS Ketenagakerjaan');
+
+// Data
+$rowNum = 2;
+$no = 1;
+while ($row = $result->fetch_assoc()) {
+    $bpjs = ($row['bpjs_tk'] && trim($row['bpjs_tk']) !== '' && trim($row['bpjs_tk']) !== '-') ? $row['bpjs_tk'] : 'BELUM TERDAFTAR';
+    
+    $sheet->setCellValue('A' . $rowNum, $no++);
+    $sheet->setCellValueExplicit('B' . $rowNum, $row['nik_karyawan'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+    $sheet->setCellValue('C' . $rowNum, $row['nama_lengkap']);
+    $sheet->setCellValue('D' . $rowNum, $row['nama_site'] ?: '-');
+    $sheet->setCellValue('E' . $rowNum, $row['nama_jabatan'] ?: '-');
+    $sheet->setCellValueExplicit('F' . $rowNum, $bpjs, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+    $rowNum++;
+}
+
+// Set header file output ke browser
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment;filename="Data_BPJS_Ketenagakerjaan.xlsx"');
+header('Cache-Control: max-age=0');
+
+$writer = new Xlsx($spreadsheet);
+$writer->save('php://output');
+exit;
+?>

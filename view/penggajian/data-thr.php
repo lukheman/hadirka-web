@@ -151,8 +151,8 @@
                                 </button>
                             </div>
                         </form>
-                        <a href="assets/template-csv/Format Impor Data THR.xlsx" style="font-size: 1.8vh;" class="mt-1 d-block text-end">Download Template .xlsx</a>
                     </div>
+                    <a href="assets/template-csv/Format Impor Data THR.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a> 
                 </div>
             </div>
         </div>

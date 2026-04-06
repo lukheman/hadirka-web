@@ -65,6 +65,37 @@
         </div>
 
         <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center mb-3 mb-md-0">
+                            <div class="flex-shrink-0">
+                                <div class="avatar avatar-lg bg-label-success rounded"><i class="fa fa-file-upload fa-2x"></i></div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="mb-1 fw-bold">Import Data BPJS Ketenagakerjaan</h5>
+                                <p class="text-muted mb-0 small">
+                                    <i class="fa fa-info-circle"></i> Format Excel: <strong>A</strong>=No | <strong>B</strong>=NIK KTP | <strong>C</strong>=Nama Karyawan | <strong>D</strong>=Nomor BPJS
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <form id="formImportBPJS" enctype="multipart/form-data">
+                            <div class="input-group">
+                                <input type="file" name="file_csv_bpjs" id="file_csv_bpjs" class="form-control" required accept=".csv,.xlsx,.xls">
+                                <button type="submit" class="btn btn-success" id="btnImportBPJS">
+                                    <i class="fa fa-upload"></i> <span class="d-none d-sm-inline">Import</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <a href="assets/template-csv/Format Impor Data BPJS Ketenagakerjaan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a> 
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4 border-0 shadow-sm">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="fw-bold mb-0"><i class="fa fa-filter text-primary"></i> Filter & Aksi</h6>
@@ -305,35 +336,55 @@
                 let filterJabatan = document.getElementById("filterJabatan").value;
                 let filterStatus = document.getElementById("filterStatus").value;
 
-                let filteredData = allBPJSData.filter(row => {
-                    let siteMatch = !filterSite || row.nama_site === filterSite;
-                    let jabatanMatch = !filterJabatan || row.nama_jabatan === filterJabatan;
-                    let isTerdaftar = cekTerdaftar(row.bpjs_tk);
-                    let statusMatch = true;
-                    if (filterStatus === 'SUDAH') statusMatch = isTerdaftar;
-                    if (filterStatus === 'BELUM') statusMatch = !isTerdaftar;
-                    return siteMatch && jabatanMatch && statusMatch;
-                });
+                // Gunakan URL parameter untuk mengirim filter ke server
+                let url = `app/controller/export/export-bpjs-tk.php?site=${encodeURIComponent(filterSite)}&jabatan=${encodeURIComponent(filterJabatan)}&status=${encodeURIComponent(filterStatus)}`;
+                window.location.href = url;
+            };
 
-                if (filteredData.length === 0) {
-                    showToast("Tidak ada data untuk di-export!", "error");
+            // 2. Event Listener untuk Form Import BPJS
+            document.getElementById("formImportBPJS").addEventListener("submit", function(e) {
+                e.preventDefault();
+                const fd = new FormData(this);
+                const btn = document.getElementById("btnImportBPJS");
+                const fileInput = document.getElementById("file_csv_bpjs");
+
+                if (!fileInput.files.length) {
+                    showToast('Pilih file terlebih dahulu', 'error');
                     return;
                 }
 
-                let excelData = filteredData.map((row, index) => ({
-                    "No": index + 1,
-                    "NIK": row.nik_karyawan,
-                    "Nama Karyawan": row.nama_lengkap,
-                    "Site": row.nama_site || "-",
-                    "Jabatan": row.nama_jabatan || "-",
-                    "No BPJS Ketenagakerjaan": cekTerdaftar(row.bpjs_tk) ? row.bpjs_tk : "BELUM TERDAFTAR"
-                }));
-
-                let ws = XLSX.utils.json_to_sheet(excelData);
-                let wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Data BPJS TK");
-                XLSX.writeFile(wb, `Data_BPJS_Ketenagakerjaan.xlsx`);
-            };
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Importing...';
+                
+                // Panggil file csv-bpjs-tk.php 
+                fetch("app/controller/csv-control/csv-bpjs-tk.php", {
+                        method: "POST",
+                        body: fd
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        let message = data.message || 'Import selesai';
+                        if (data.status === "success" || data.status === "warning") {
+                            loadBPJS(); // Reload tabel dan banner otomatis
+                            this.reset();
+                        }
+                        
+                        Swal.fire({
+                            icon: data.status === 'success' ? 'success' : data.status === 'warning' ? 'warning' : 'error',
+                            title: data.status === 'success' ? 'Berhasil!' : 'Pemberitahuan',
+                            html: message,
+                            showConfirmButton: true
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Gagal mengimport file', 'error');
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa fa-upload"></i> <span class="d-none d-sm-inline">Import</span>';
+                    });
+            });
 
             // Modal Edit Handler
             document.addEventListener("click", function(e) {
