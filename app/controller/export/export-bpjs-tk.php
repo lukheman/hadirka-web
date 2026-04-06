@@ -25,7 +25,8 @@ if ($statusFilter === 'BELUM') $where[] = "(i.bpjs_tk IS NULL OR TRIM(i.bpjs_tk)
 
 $whereClause = implode(" AND ", $where);
 
-$sql = "SELECT k.nik_karyawan, k.nama_lengkap, s.nama_site, j.nama_jabatan, i.bpjs_tk 
+// UBAHAN 1: Tambahkan i.nik_ktp pada query SELECT
+$sql = "SELECT k.nik_karyawan, k.nama_lengkap, s.nama_site, j.nama_jabatan, i.bpjs_tk, i.nik_ktp 
         FROM tb_karyawan k
         LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
         LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
@@ -40,13 +41,14 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('Data BPJS TK');
 
-// Header
+// UBAHAN 2: Sesuaikan dan geser Header Kolom
 $sheet->setCellValue('A1', 'No');
 $sheet->setCellValue('B1', 'NIK Karyawan');
 $sheet->setCellValue('C1', 'Nama Lengkap');
-$sheet->setCellValue('D1', 'Site');
-$sheet->setCellValue('E1', 'Jabatan');
-$sheet->setCellValue('F1', 'No BPJS Ketenagakerjaan');
+$sheet->setCellValue('D1', 'NIK KTP'); // Kolom Baru
+$sheet->setCellValue('E1', 'Site');    // Bergeser dari D ke E
+$sheet->setCellValue('F1', 'Jabatan'); // Bergeser dari E ke F
+$sheet->setCellValue('G1', 'No BPJS Ketenagakerjaan'); // Bergeser dari F ke G
 
 // Data
 $rowNum = 2;
@@ -57,11 +59,21 @@ while ($row = $result->fetch_assoc()) {
     $sheet->setCellValue('A' . $rowNum, $no++);
     $sheet->setCellValueExplicit('B' . $rowNum, $row['nik_karyawan'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
     $sheet->setCellValue('C' . $rowNum, $row['nama_lengkap']);
-    $sheet->setCellValue('D' . $rowNum, $row['nama_site'] ?: '-');
-    $sheet->setCellValue('E' . $rowNum, $row['nama_jabatan'] ?: '-');
-    $sheet->setCellValueExplicit('F' . $rowNum, $bpjs, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+    
+    // UBAHAN 3: Masukkan data NIK KTP dengan Explicit String
+    $sheet->setCellValueExplicit('D' . $rowNum, $row['nik_ktp'] ?: '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+    
+    // Sesuaikan posisi kolom yang bergeser
+    $sheet->setCellValue('E' . $rowNum, $row['nama_site'] ?: '-');
+    $sheet->setCellValue('F' . $rowNum, $row['nama_jabatan'] ?: '-');
+    $sheet->setCellValueExplicit('G' . $rowNum, $bpjs, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+    
     $rowNum++;
 }
+
+// Auto-size untuk kolom NIK KTP dan BPJS agar lebarnya pas
+$sheet->getColumnDimension('D')->setAutoSize(true);
+$sheet->getColumnDimension('G')->setAutoSize(true);
 
 // Set header file output ke browser
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
