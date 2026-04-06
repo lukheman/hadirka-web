@@ -364,6 +364,20 @@
                     .then(res => res.json())
                     .then(data => {
                         let message = data.message || 'Import selesai';
+
+                        if (data.errors && data.errors.length > 0) {
+                            // Tampilkan di console untuk debugging
+                            console.error("Detail Error Import:", data.errors); 
+                            
+                            // Tambahkan ke pesan SweetAlert dengan format list HTML
+                            message += '<hr><div class="text-start small text-danger" style="max-height: 150px; overflow-y: auto;">';
+                            message += '<strong>Detail Error:</strong><ul class="mb-0 ps-3">';
+                            data.errors.forEach(err => {
+                                message += `<li>${err}</li>`;
+                            });
+                            message += '</ul></div>';
+                        }
+                        
                         if (data.status === "success" || data.status === "warning") {
                             loadBPJS(); // Reload tabel dan banner otomatis
                             this.reset();

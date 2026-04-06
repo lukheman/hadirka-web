@@ -58,8 +58,15 @@ for ($i = 2; $i <= count($data); $i++) {
     if (!isset($data[$i])) continue;
     $row = $data[$i];
 
-    $nik_ktp = isset($row[$colNIK_KTP]) ? trim($row[$colNIK_KTP]) : '';
-    $bpjs_tk = isset($row[$colBPJS]) ? trim($row[$colBPJS]) : '';
+    // CARA AMAN MENGAMBIL ANGKA PANJANG DARI EXCEL
+    // 1. Ambil nilai mentahnya
+    $raw_nik = isset($row[$colNIK_KTP]) ? $row[$colNIK_KTP] : '';
+    $raw_bpjs = isset($row[$colBPJS]) ? $row[$colBPJS] : '';
+
+    // 2. Bersihkan: Hapus spasi, koma, titik, huruf E (jika scientific), dll
+    // Hanya sisakan angka (0-9)
+    $nik_ktp = preg_replace('/[^0-9]/', '', $raw_nik);
+    $bpjs_tk = trim($raw_bpjs); // BPJS dibiarkan trim biasa karena mungkin butuh tanda "-"
 
     if (empty($nik_ktp)) continue; // Lewati baris jika NIK KTP kosong
 
@@ -82,13 +89,14 @@ for ($i = 2; $i <= count($data); $i++) {
             $updateCount++;
         } else {
             $errorCount++; 
-            $errors[] = "Baris $i: Gagal update - " . $stmtUpdate->error;
+            $errors[] = "Baris $i (NIK $nik_ktp): Gagal update - " . $stmtUpdate->error;
         }
         $stmtUpdate->close();
     } else {
         // Jika NIK KTP tidak ditemukan di tb_identitas
         $errorCount++;
-        $errors[] = "Baris $i: NIK KTP '$nik_ktp' tidak ditemukan di sistem.";
+        // Tampilkan NIK asli yang dikirim vs NIK yang sudah dibersihkan untuk mempermudah debbuging
+        $errors[] = "Baris $i: NIK KTP '$nik_ktp' (Asli Excel: '$raw_nik') tidak ditemukan di database.";
     }
 }
 
@@ -99,7 +107,7 @@ ob_clean();
 echo json_encode([
     'status' => $status,
     'message' => "Selesai! $successCount data berhasil diupdate. $errorCount error.",
-    'errors' => array_slice($errors, 0, 5) // Tampilkan maksimal 5 error agar tidak kepanjangan
+    'errors' => $errors
 ]);
 
 $koneksi->close();
