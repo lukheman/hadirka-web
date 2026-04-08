@@ -48,7 +48,12 @@
                 <input type="text" name="username" class="form-control mb-2" required>
 
                 <label>Password</label>
-                <input type="password" name="password" class="form-control mb-2" required>
+                <div class="input-group input-group-merge mb-2">
+                    <input type="password" name="password" id="passwordAdd" class="form-control" required placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;">
+                    <span class="input-group-text cursor-pointer toggle-password" data-target="#passwordAdd">
+                        <i class="bx bx-hide"></i>
+                    </span>
+                </div>
 
                 <label>Nama Lengkap</label>
                 <input type="text" name="nama_user" class="form-control mb-2" required>
@@ -70,9 +75,12 @@
                 </select>
 
                 <label>Level</label>
-                <select name="level" class="form-select mb-2">
-                    <option value="1">Admin</option>
-                    <option value="2">User</option>
+                <select name="level" class="form-select mb-2" required>
+                    <option value="0">Admin</option>
+                    <option value="1">Direktur</option>
+                    <option value="2">HRD</option>
+                    <option value="3">Safety</option>
+                    <option value="4">User Biasa</option>
                 </select>
 
                 <label>Foto Profil</label>
@@ -124,8 +132,11 @@
 
                 <label>Level</label>
                 <select name="level" class="form-select mb-2">
-                    <option value="1">Admin</option>
-                    <option value="2">User</option>
+                    <option value="0">Admin</option>
+                    <option value="1">Direktur</option>
+                    <option value="2">HRD</option>
+                    <option value="3">Safety</option>
+                    <option value="4">User Biasa</option>
                 </select>
 
                 <label>Foto Profil <small>(pilih jika ingin ganti)</small></label>
@@ -280,5 +291,27 @@
             }
         });
 
+    });
+
+    // Fungsi untuk Toggle Show/Hide Password
+    document.querySelectorAll('.toggle-password').forEach(function(icon) {
+        icon.addEventListener('click', function() {
+            // Ambil ID target input dari atribut data-target
+            const targetInputId = this.getAttribute('data-target');
+            const inputField = document.querySelector(targetInputId);
+            const eyeIcon = this.querySelector('i');
+
+            // Jika tipenya password, ubah ke text (terlihat)
+            if (inputField.type === 'password') {
+                inputField.type = 'text';
+                eyeIcon.classList.remove('bx-hide');
+                eyeIcon.classList.add('bx-show');
+            } else {
+                // Jika tipenya text, kembalikan ke password (tersembunyi)
+                inputField.type = 'password';
+                eyeIcon.classList.remove('bx-show');
+                eyeIcon.classList.add('bx-hide');
+            }
+        });
     });
 </script>

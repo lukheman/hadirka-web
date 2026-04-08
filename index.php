@@ -51,6 +51,78 @@ $routes = [
     'logout'          => 'app/controller/logout.php',
     'home'            => 'view/home.php'
 ];
+
+// ======= TAMBAHKAN KODE INI DI BAWAH ARRAY $ROUTES =======
+// Ambil level user dari session saat login. Jika tidak ada, anggap level 99 (tidak punya akses khusus)
+$user_level = $_SESSION['level'] ?? 99;
+
+// ======= ATURAN KETAT KHUSUS SAFETY (LEVEL 3) =======
+if ($user_level == 3) {
+    // Halaman yang diizinkan hanya K3 dan Logout
+    $safety_allowed_pages = ['master-apd', 'transaksi-apd', 'logout'];
+    
+    // Jika Safety mencoba buka halaman selain yang di atas (termasuk 'home')
+    if (!in_array($page, $safety_allowed_pages)) {
+        echo "<script>alert('Akses Ditolak! Anda hanya memiliki akses ke modul K3.'); window.location.href='?page=master-apd';</script>";
+        exit;
+    }
+}
+
+// 1. Modul HRD & Finance (Hanya Admin, Direktur, HRD)
+$hrd_pages = [
+    'data-karyawan',
+    'data-site',
+    'data-tunjangan',
+    'data-potongan',
+    'data-departemen',
+    'karier',
+    'data-devisi',
+    'data-jabatan',
+    'import-karier',
+    'data-bpjs-tk',
+    'rekapan-absensi',
+    'dayli-absen',
+    'pengajuan-izin',
+    'bukti-sks',
+    'data-periode',
+    'payroll',
+    'data-pinjaman',
+    'data-rapel',
+    'data-thr',
+    'pengumuman' // Informasi
+];
+if (!in_array($user_level, [0, 1, 2]) && in_array($page, $hrd_pages)) {
+    echo "<script>alert('Akses Ditolak! Khusus Admin, Direktur, dan HRD.'); window.location.href='?page=home';</script>";
+    exit;
+}
+
+// 2. Modul K3 (Hanya Admin, Direktur, Safety)
+$k3_pages = ['master-apd', 'transaksi-apd'];
+if (!in_array($user_level, [0, 1, 3]) && in_array($page, $k3_pages)) {
+    echo "<script>alert('Akses Ditolak! Khusus tim K3.'); window.location.href='?page=home';</script>";
+    exit;
+}
+
+// 3. Modul Sistem & Setup (Hanya Admin)
+$system_pages = ['data-users-login', 'maintenance', 'error', 'documentation', 'data-kandidat'];
+if (!in_array($user_level, [0]) && in_array($page, $system_pages)) {
+    echo "<script>alert('Akses Ditolak! Khusus Admin.'); window.location.href='?page=home';</script>";
+    exit;
+}
+
+// ======= AMBIL DATA USER YANG SEDANG LOGIN =======
+$id_session = $_SESSION['id_user'] ?? 0;
+$query_active_user = mysqli_query($koneksi, "SELECT nama_user, jabatan, foto FROM tb_user WHERE id_user = '$id_session'");
+$active_user = mysqli_fetch_assoc($query_active_user);
+
+$nama_login = $active_user['nama_user'] ?? 'User';
+$jabatan_login = $active_user['jabatan'] ?? 'Karyawan';
+
+// Cek foto profil (Gunakan default jika tidak ada/file hilang)
+$foto_login = 'assets/img/avatars/1.png'; 
+if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active_user['foto'])) {
+    $foto_login = 'assets/img/user-pic/' . $active_user['foto'];
+}
 ?>
 
 <!DOCTYPE html>
@@ -87,38 +159,85 @@ $routes = [
 
     <style>
         /* Custom UI Enhancement */
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         #tabelAbsensi tbody tr:hover {
             background-color: #f8f9fa;
             transform: translateY(-2px);
             transition: all 0.2s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
             cursor: pointer;
         }
 
-        .btn-loading { pointer-events: none; opacity: 0.6; }
-        .table-info th { background-color: #f0f2f4 !important; color: #566a7f !important; }
-        
-        /* Status Badges */
-        .status-hadir { color: #28a745; font-weight: 600; }
-        .status-izin { color: #ffc107; font-weight: 600; }
-        .status-mangkir { color: #dc3545; font-weight: 600; }
-        .status-sakit { color: #17a2b8; font-weight: 600; }
-        .status-cuti { color: #6f42c1; font-weight: 600; }
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.6;
+        }
 
-        .blur-loading { filter: blur(2px); pointer-events: none; opacity: 0.6; }
-        
+        .table-info th {
+            background-color: #f0f2f4 !important;
+            color: #566a7f !important;
+        }
+
+        /* Status Badges */
+        .status-hadir {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-izin {
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        .status-mangkir {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .status-sakit {
+            color: #17a2b8;
+            font-weight: 600;
+        }
+
+        .status-cuti {
+            color: #6f42c1;
+            font-weight: 600;
+        }
+
+        .blur-loading {
+            filter: blur(2px);
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
         /* Branding Fix */
-        .app-brand-link img { padding-left: 70px; max-width: 180px; object-fit: contain; }
+        .app-brand-link img {
+            padding-left: 70px;
+            max-width: 180px;
+            object-fit: contain;
+        }
     </style>
 </head>
 
 <body>
     <div class="layout-wrapper layout-content-navbar">
         <div class="layout-container">
-            
+
             <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
                 <div class="app-brand demo">
                     <a href="?page=home" class="app-brand-link">
@@ -133,7 +252,7 @@ $routes = [
             </aside>
 
             <div class="layout-page">
-                
+
                 <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
                     <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
                         <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
@@ -153,7 +272,7 @@ $routes = [
                             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                                     <div class="avatar avatar-online">
-                                        <img src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                                        <img src="<?= $foto_login; ?>" alt="Foto Profil" class="w-px-40 h-auto rounded-circle" style="object-fit: cover; aspect-ratio: 1/1;" />
                                     </div>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
@@ -162,20 +281,24 @@ $routes = [
                                             <div class="d-flex">
                                                 <div class="flex-shrink-0 me-3">
                                                     <div class="avatar avatar-online">
-                                                        <img src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                                                        <img src="<?= $foto_login; ?>" alt="Foto Profil" class="w-px-40 h-auto rounded-circle" style="object-fit: cover; aspect-ratio: 1/1;" />
                                                     </div>
                                                 </div>
                                                 <div class="flex-grow-1">
-                                                    <span class="fw-semibold d-block">John Doe</span>
-                                                    <small class="text-muted">Admin System</small>
+                                                    <span class="fw-semibold d-block"><?= htmlspecialchars($nama_login); ?></span>
+                                                    <small class="text-muted"><?= htmlspecialchars($jabatan_login); ?></small>
                                                 </div>
                                             </div>
                                         </a>
                                     </li>
-                                    <li><div class="dropdown-divider"></div></li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
                                     <li><a class="dropdown-item" href="#"><i class="bx bx-user me-2"></i> Profile</a></li>
                                     <li><a class="dropdown-item" href="#"><i class="bx bx-cog me-2"></i> Settings</a></li>
-                                    <li><div class="dropdown-divider"></div></li>
+                                    <li>
+                                        <div class="dropdown-divider"></div>
+                                    </li>
                                     <li><a class="dropdown-item" href="logout"><i class="bx bx-power-off me-2"></i> Log Out</a></li>
                                 </ul>
                             </li>
@@ -184,7 +307,7 @@ $routes = [
                 </nav>
 
                 <div class="content-wrapper">
-                    
+
                     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
                         <div id="toastAlert" class="toast text-bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
                             <div class="d-flex">
@@ -196,12 +319,12 @@ $routes = [
 
                     <div class="container-xxl flex-grow-1 container-p-y">
                         <?php
-                            $file = $routes[$page] ?? $routes['home'];
-                            if (file_exists($file)) {
-                                include $file;
-                            } else {
-                                include 'view/home.php';
-                            }
+                        $file = $routes[$page] ?? $routes['home'];
+                        if (file_exists($file)) {
+                            include $file;
+                        } else {
+                            include 'view/home.php';
+                        }
                         ?>
                     </div>
 
@@ -235,7 +358,7 @@ $routes = [
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
+
     <script src="assets/js/main.js"></script>
 
     <script>
@@ -247,7 +370,7 @@ $routes = [
             });
 
             // Auto-init Flatpickr (jika ada input dengan class date-picker)
-            if(typeof flatpickr !== "undefined") {
+            if (typeof flatpickr !== "undefined") {
                 $(".date-picker").flatpickr();
             }
         });
@@ -256,7 +379,12 @@ $routes = [
          * Enhanced Toast System
          */
         function showToast(message, type = "success", position = "top-right", duration = 5000) {
-            const icons = { success: "✅", error: "❌", warning: "⚠️", info: "ℹ️" };
+            const icons = {
+                success: "✅",
+                error: "❌",
+                warning: "⚠️",
+                info: "ℹ️"
+            };
             const backgrounds = {
                 success: "linear-gradient(135deg, #28a745, #20c997)",
                 error: "linear-gradient(135deg, #dc3545, #f86c6b)",
@@ -265,11 +393,27 @@ $routes = [
             };
 
             const positions = {
-                "top-right": { top: "20px", right: "20px" },
-                "top-left": { top: "20px", left: "20px" },
-                "bottom-right": { bottom: "20px", right: "20px" },
-                "bottom-left": { bottom: "20px", left: "20px" },
-                "top-center": { top: "20px", left: "50%", transform: "translateX(-50%)" }
+                "top-right": {
+                    top: "20px",
+                    right: "20px"
+                },
+                "top-left": {
+                    top: "20px",
+                    left: "20px"
+                },
+                "bottom-right": {
+                    bottom: "20px",
+                    right: "20px"
+                },
+                "bottom-left": {
+                    bottom: "20px",
+                    left: "20px"
+                },
+                "top-center": {
+                    top: "20px",
+                    left: "50%",
+                    transform: "translateX(-50%)"
+                }
             };
 
             let wrapperId = `toastWrapper-${position}`;
@@ -302,7 +446,10 @@ $routes = [
             `;
 
             wrapper.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = "1"; toast.style.transform = "translateY(0)"; }, 10);
+            setTimeout(() => {
+                toast.style.opacity = "1";
+                toast.style.transform = "translateY(0)";
+            }, 10);
 
             const progressBar = toast.querySelector(".progress-bar");
             let progressInterval = setInterval(() => {
@@ -322,4 +469,5 @@ $routes = [
         }
     </script>
 </body>
+
 </html>

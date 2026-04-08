@@ -22,7 +22,12 @@ if (!isset($_SESSION['id_user']) && isset($_COOKIE['remember_me']) && strpos($_C
             $_SESSION['level'] = $user_data['level'];
             $_SESSION['login_time'] = time();
 
-            header("Location: $url");
+            // Jika safety, langsung ke master apd
+            if ($_SESSION['level'] == 3) {
+                header("Location: " . $url . "?page=master-apd");
+            } else {
+                header("Location: $url");
+            }
             exit;
         }
     }
@@ -71,11 +76,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'expires' => time() + (6*30*24*60*60),
                     'path' => '/',
                     'httponly' => true,
-                    'secure' => false // ganti true jika pakai HTTPS
+                    'secure' => true // ganti true jika pakai HTTPS
                 ]);
             }
 
-            header("Location: $url");
+            // Jika safety, langsung ke master apd
+            if ($_SESSION['level'] == 3) {
+                header("Location: " . $url . "?page=master-apd");
+            } else {
+                header("Location: $url");
+            }
             exit;
         } else {
             header("Location: login?error=wrongpass");
