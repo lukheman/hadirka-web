@@ -4,7 +4,7 @@ include "../config/koneksi.php"; // Pastikan path koneksi benar
 
 $action = $_GET['action'] ?? '';
 
-// 1. Ambil opsi APD untuk dropdown
+// 1a. Ambil opsi APD untuk dropdown
 if ($action == 'get-options-apd') {
     $query = mysqli_query($koneksi, "SELECT id_apd, nama_apd FROM master_apd WHERE status_aktif = 'aktif' ORDER BY nama_apd ASC");
     $data = [];
@@ -12,6 +12,46 @@ if ($action == 'get-options-apd') {
         $data[] = $row;
     }
     echo json_encode($data);
+    exit;
+}
+
+// 1b. Ambil semua karyawan untuk dropdown Select2
+if ($action == 'get-all-karyawan') {
+    $query = mysqli_query($koneksi, "SELECT id_karyawan, nik_karyawan, nama_lengkap FROM tb_karyawan ORDER BY nama_lengkap ASC");
+    $data = [];
+    while ($row = mysqli_fetch_assoc($query)) {
+        $data[] = $row;
+    }
+    echo json_encode($data);
+    exit;
+}
+
+// 1c. Ambil detail Site, Departemen, dan Jabatan Karyawan
+if ($action == 'get-karyawan-detail') {
+    $id = (int)($_GET['id'] ?? 0);
+    if ($id > 0) {
+        // Gabungkan tabel karier dengan master site, departemen, dan jabatan
+        $sql = "SELECT s.nama_site, d.nama_departemen, j.nama_jabatan
+                FROM tb_karier c
+                LEFT JOIN tb_site s ON c.id_site = s.id_site
+                LEFT JOIN tb_departemen d ON c.id_departemen = d.id_departemen
+                LEFT JOIN tb_jabatan j ON c.id_jabatan = j.id_jabatan
+                WHERE c.id_karyawan = '$id' AND (c.tgl_selesai IS NULL OR c.tgl_selesai >= CURDATE())
+                ORDER BY c.id_karier DESC LIMIT 1";
+                
+        $query = mysqli_query($koneksi, $sql);
+        if ($row = mysqli_fetch_assoc($query)) {
+            echo json_encode([
+                'status' => 'success',
+                'site' => $row['nama_site'] ?? '-',
+                'departemen' => $row['nama_departemen'] ?? '-',
+                'jabatan' => $row['nama_jabatan'] ?? '-'
+            ]);
+            exit;
+        }
+    }
+    // Jika tidak ditemukan/error
+    echo json_encode(['status' => 'error', 'site' => '-', 'departemen' => '-', 'jabatan' => '-']);
     exit;
 }
 

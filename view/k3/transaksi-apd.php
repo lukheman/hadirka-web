@@ -49,29 +49,27 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Pilih Site / Lokasi</label>
-                    <select id="select_site" class="form-select" onchange="loadJabatan(this.value)" required>
-                        <option value="">-- Pilih Site --</option>
-                        <?php
-                        $s = mysqli_query($koneksi, "SELECT * FROM tb_site");
-                        while ($rs = mysqli_fetch_assoc($s)) echo "<option value='$rs[id_site]'>$rs[nama_site]</option>";
-                        ?>
+                    <label class="form-label fw-bold">Cari Karyawan</label>
+                    <select name="id_karyawan" id="id_karyawan" class="form-select select2" required>
+                        <option value="">-- Ketik NIK / Nama Karyawan --</option>
                     </select>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Pilih Jabatan</label>
-                    <select id="select_jabatan" class="form-select" onchange="loadKaryawan()" disabled required>
-                        <option value="">-- Pilih Jabatan --</option>
-                    </select>
+                <div class="row mb-3">
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <label class="form-label fw-bold text-muted" style="font-size: 0.8rem;">SITE</label>
+                        <input type="text" id="detail_site" class="form-control bg-light" placeholder="-" readonly>
+                    </div>
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <label class="form-label fw-bold text-muted" style="font-size: 0.8rem;">DEPARTEMEN</label>
+                        <input type="text" id="detail_departemen" class="form-control bg-light" placeholder="-" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-muted" style="font-size: 0.8rem;">JABATAN</label>
+                        <input type="text" id="detail_jabatan" class="form-control bg-light" placeholder="-" readonly>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Pilih Karyawan</label>
-                    <select name="id_karyawan" id="id_karyawan" class="form-select" disabled required>
-                        <option value="">-- Pilih Karyawan --</option>
-                    </select>
-                </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Pilih APD</label>
                     <select name="id_apd" id="id_apd" class="form-select select2" required>
@@ -105,7 +103,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         myModal = new bootstrap.Modal(document.getElementById('modalTransaksi'));
         loadTable();
-        loadAPDOptions(); // Hanya memuat daftar APD saat awal
+        loadAllKaryawan(); 
+        loadAPDOptions(); 
     });
 
     async function loadTable() {
@@ -114,74 +113,74 @@
         document.getElementById('tbody-transaksi').innerHTML = html;
     }
 
-    // 1. Load Jabatan berdasarkan Site
-    async function loadJabatan(siteId) {
-        const selectJabatan = document.getElementById('select_jabatan');
-        const selectKaryawan = document.getElementById('id_karyawan');
-
-        if (!siteId) {
-            selectJabatan.disabled = true;
-            selectKaryawan.disabled = true;
-            selectJabatan.innerHTML = '<option value="">-- Pilih Jabatan --</option>';
-            return;
-        }
-
+    // Load semua data karyawan ke dropdown (Sekali saja saat halaman dimuat)
+    async function loadAllKaryawan() {
         try {
-            const formData = new FormData();
-            formData.append('site', siteId);
-
-            const res = await fetch('app/controller/get-data/get-jabatan-by-site.php', {
-                method: 'POST',
-                body: formData
-            });
+            const res = await fetch(`${api_trx}?action=get-all-karyawan`);
             const data = await res.json();
-
-            let html = '<option value="">-- Pilih Jabatan --</option>';
-            data.forEach(j => {
-                html += `<option value="${j.id_jabatan}">${j.nama_jabatan}</option>`;
-            });
-
-            selectJabatan.innerHTML = html;
-            selectJabatan.disabled = false;
-            selectKaryawan.disabled = true;
-            selectKaryawan.innerHTML = '<option value="">-- Pilih Karyawan --</option>';
-        } catch (e) {
-            showToast("Gagal memuat data jabatan", "error");
-        }
-    }
-
-    // 2. Load Karyawan berdasarkan Site & Jabatan
-    async function loadKaryawan() {
-        const siteId = document.getElementById('select_site').value;
-        const jabatanId = document.getElementById('select_jabatan').value;
-        const selectKaryawan = document.getElementById('id_karyawan');
-
-        if (!siteId || !jabatanId) return;
-
-        try {
-            const formData = new FormData();
-            formData.append('site', siteId);
-            formData.append('jabatan', jabatanId);
-
-            const res = await fetch('app/controller/get-data/get-karyawan-by-site-jabatan.php', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-
-            let html = '<option value="">-- Pilih Karyawan --</option>';
+            
+            let html = '<option value="">-- Ketik NIK / Nama Karyawan --</option>';
             data.forEach(k => {
-                html += `<option value="${k.id_karyawan}">${k.nama_lengkap}</option>`;
+                let id_tampil = k.nik_karyawan ? k.nik_karyawan : k.id_karyawan; 
+                html += `<option value="${k.id_karyawan}">[${id_tampil}] - ${k.nama_lengkap}</option>`;
             });
+            
+            document.getElementById('id_karyawan').innerHTML = html;
 
-            selectKaryawan.innerHTML = html;
-            selectKaryawan.disabled = false;
+            // Inisialisasi Select2
+            if (typeof $ !== 'undefined') {
+                $('#id_karyawan').select2({
+                    dropdownParent: $('#modalTransaksi'), 
+                    placeholder: "-- Ketik NIK / Nama Karyawan --",
+                    allowClear: true,
+                    width: '100%' // <-- TAMBAHKAN INI
+                });
+
+                $('#id_apd').select2({
+                    dropdownParent: $('#modalTransaksi'),
+                    placeholder: "-- Pilih APD --",
+                    width: '100%' // <-- TAMBAHKAN INI
+                });
+
+                // Deteksi ketika Karyawan dipilih, langsung fetch detailnya
+                $('#id_karyawan').on('select2:select', function (e) {
+                    getDetailKaryawan(e.params.data.id);
+                });
+
+                // Deteksi ketika Karyawan di-clear (dikosongkan)
+                $('#id_karyawan').on('select2:clear', function (e) {
+                    getDetailKaryawan('');
+                });
+            }
         } catch (e) {
             showToast("Gagal memuat data karyawan", "error");
         }
     }
 
-    // 3. Memuat daftar APD saja ke dropdown
+    // Fungsi menarik Site, Departemen, dan Jabatan secara otomatis
+    async function getDetailKaryawan(id_karyawan) {
+        // Kosongkan field terlebih dahulu
+        document.getElementById('detail_site').value = '';
+        document.getElementById('detail_departemen').value = '';
+        document.getElementById('detail_jabatan').value = '';
+
+        if (!id_karyawan) return; // Berhenti jika tidak ada ID
+
+        try {
+            const res = await fetch(`${api_trx}?action=get-karyawan-detail&id=${id_karyawan}`);
+            const data = await res.json();
+            
+            if (data.status === 'success') {
+                document.getElementById('detail_site').value = data.site;
+                document.getElementById('detail_departemen').value = data.departemen;
+                document.getElementById('detail_jabatan').value = data.jabatan;
+            }
+        } catch (e) {
+            console.error("Gagal menarik detail karyawan", e);
+        }
+    }
+
+    // Memuat daftar APD
     async function loadAPDOptions() {
         try {
             const res = await fetch(`${api_trx}?action=get-options-apd`);
@@ -196,8 +195,11 @@
 
     function tambahTransaksi() {
         document.getElementById('formTransaksi').reset();
-        document.getElementById('select_jabatan').disabled = true;
-        document.getElementById('id_karyawan').disabled = true;
+        // Reset juga tampilan text Select2
+        if (typeof $ !== 'undefined') {
+            $('#id_karyawan').val(null).trigger('change');
+            $('#id_apd').val(null).trigger('change');
+        }
         myModal.show();
     }
 
@@ -213,6 +215,8 @@
                 myModal.hide();
                 loadTable();
                 showToast("Transaksi berhasil dicatat", "success");
+            } else {
+                showToast(result.message || "Gagal menyimpan", "error");
             }
         } catch (e) {
             showToast("Gagal menyimpan transaksi", "error");
@@ -225,16 +229,22 @@
                 .then(res => res.json())
                 .then(result => {
                     if (result.status === 'success') {
-                        loadTable(); // Memuat ulang isi tabel
+                        loadTable();
                         showToast("Catatan berhasil dihapus", "success");
                     } else {
                         showToast("Gagal menghapus data", "error");
                     }
-                })
-                .catch(err => {
-                    console.error("Error:", err);
-                    showToast("Terjadi kesalahan jaringan", "error");
                 });
         }
     }
+
+    // Fitur Live Search untuk Tabel Riwayat
+    document.getElementById('searchLog').addEventListener('keyup', function() {
+        let keyword = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#tbody-transaksi tr');
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(keyword) ? '' : 'none';
+        });
+    });
 </script>
