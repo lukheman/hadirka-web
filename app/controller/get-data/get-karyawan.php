@@ -119,6 +119,20 @@ try {
         $tgl_selesai_format = !empty($row['tgl_selesai']) ? date('d-m-Y', strtotime($row['tgl_selesai'])) : '-';
 
 
+        // --- LOGIKA FOTO ---
+        $foto_karyawan = $row['foto'] ?? '';
+        if (!empty($foto_karyawan)) {
+            $url_foto = 'assets/img/karyawan-pic/' . htmlspecialchars($foto_karyawan);
+        } else {
+            $url_foto = 'assets/img/karyawan-pic/person.png'; // Avatar default
+        }
+        
+        $nama_esc = htmlspecialchars($row['nama_lengkap']);
+        
+        // Tambahkan class 'zoom-foto', atribut 'data-src', dan 'data-nama' agar bisa ditangkap JavaScript
+        $foto_html = "<img src='{$url_foto}' onerror=\"this.onerror=null;this.src='assets/img/karyawan-pic/person.png';\" class='rounded-circle shadow-sm zoom-foto' width='45' height='45' style='object-fit: cover; cursor: pointer;' data-src='{$url_foto}' data-nama='{$nama_esc}'>";
+
+
         // Cek status apakah karyawan aktif atau bukan, klo bukan tampilkan alasan keluar dan tanggal keluar
         $isNonAktif = ($row['status_karyawan'] !== 'Aktif');
 
@@ -256,6 +270,7 @@ try {
 
         $data[] = [
             'no' => $no++,
+            'foto' => $foto_html,
             'nama' => htmlspecialchars($row['nama_lengkap']),
             'nik' => htmlspecialchars($row['nik_karyawan'] ?? '-'),
             'jabatan' => htmlspecialchars($row['nama_jabatan'] ?? '-'),

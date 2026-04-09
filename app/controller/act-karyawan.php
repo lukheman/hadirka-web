@@ -65,12 +65,17 @@ if ($action == "add") {
     $koneksi->begin_transaction();
 
     try {
-        // insert tb_karyawan
+        // insert tb_karyawan (TANPA FOTO DULU)
         // Siapkan variabel tanggal lahir
         $tgl_lahir_val = input('tgl_lahir') === '' ? "NULL" : "'" . input('tgl_lahir') . "'";
 
+        // Ambil NIK dari inputan form
+        $nik_input = input('nik_karyawan');
+        // Bersihkan nama untuk nama file (hilangkan spasi dan karakter aneh)
+        $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
+
         $sql1 = "INSERT INTO tb_karyawan 
-        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_karyawan)
+        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_karyawan, foto)
         VALUES (
             '" . input('nik_karyawan') . "',
             '" . input('nama_lengkap') . "',
@@ -90,6 +95,18 @@ if ($action == "add") {
         }
 
         $id_karyawan = $koneksi->insert_id;
+
+        // PROSES UPLOAD FOTO (Gunakan NIK)
+        if (isset($_FILES['foto']['name']) && $_FILES['foto']['name'] != '') {
+            $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
+            // Format: NIK-NamaKaryawan.ext
+            $foto_name = $nik_input . '-' . strtolower($nama_bersih) . '.' . strtolower($ext);
+            
+            if (move_uploaded_file($_FILES['foto']['tmp_name'], '../../assets/img/karyawan-pic/' . $foto_name)) {
+                // Update nama foto ke database
+                $koneksi->query("UPDATE tb_karyawan SET foto = '$foto_name' WHERE id_karyawan = '$id_karyawan'");
+            }
+        }
 
         // insert tb_identitas
         $sql2 = "INSERT INTO tb_identitas 
@@ -197,6 +214,31 @@ if ($action == "edit") {
             'status_pernikahan' => input('status_pernikahan')
         ];
 
+        // --- PROSES UPLOAD FOTO (EDIT) ---
+        if (isset($_FILES['foto']['name']) && $_FILES['foto']['name'] != '') {
+            // Ambil NIK dari inputan form
+            $nik_input = input('nik_karyawan');
+            // Bersihkan nama
+            $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
+            
+            // Cari foto lama untuk dihapus
+            $q_old = $koneksi->query("SELECT foto FROM tb_karyawan WHERE id_karyawan = '$id'");
+            if ($r_old = $q_old->fetch_assoc()) {
+                if (!empty($r_old['foto']) && file_exists('../../assets/img/karyawan-pic/' . $r_old['foto'])) {
+                    @unlink('../../assets/img/karyawan-pic/' . $r_old['foto']);
+                }
+            }
+            
+            // Upload foto baru dengan format: NIK-NamaKaryawan.ext
+            $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
+            $foto_name = $nik_input . '-' . strtolower($nama_bersih) . '.' . strtolower($ext);
+            
+            if (move_uploaded_file($_FILES['foto']['tmp_name'], '../../assets/img/karyawan-pic/' . $foto_name)) {
+                // Masukkan nama foto ke dalam array untuk diupdate
+                $k_data['foto'] = $foto_name;
+            }
+        }
+
         $upd_k = [];
         foreach ($k_data as $key => $val) {
             // CEK: Jika tgl_lahir kosong, set NULL. Selain itu bungkus pakai kutip.
@@ -262,7 +304,7 @@ if ($action == "edit") {
         foreach ($karier_data as $k => $v) {
             // CEK: Jika data kosong dan field-nya adalah tanggal, set sebagai NULL (tanpa kutip)
             if ($v === '' && in_array($k, ['tgl_mulai', 'tgl_selesai'])) {
-                $upd_kar[] = "$k = NULL"; 
+                $upd_kar[] = "$k = NULL";
             } else {
                 $upd_kar[] = "$k = '$v'"; // Set normal pakai kutip
             }
@@ -312,6 +354,14 @@ if ($action == "delete") {
     $id = intval($_POST['id_karyawan']);
     $koneksi->begin_transaction();
     try {
+        // Hapus file fisik foto
+        $q_foto = $koneksi->query("SELECT foto FROM tb_karyawan WHERE id_karyawan = '$id'");
+        if ($r_foto = $q_foto->fetch_assoc()) {
+            if (!empty($r_foto['foto']) && file_exists('../../assets/img/karyawan-pic/' . $r_foto['foto'])) {
+                @unlink('../../assets/img/karyawan-pic/' . $r_foto['foto']);
+            }
+        }
+
         $koneksi->query("DELETE FROM tb_identitas WHERE id_karyawan = '$id'");
         $koneksi->query("DELETE FROM tb_karier WHERE id_karyawan = '$id'");
         $koneksi->query("DELETE FROM tb_karyawan WHERE id_karyawan = '$id'");

@@ -145,6 +145,7 @@
                                 <tr>
                                     <th class="text-center"></th>
                                     <th class="text-center"><i class="fa fa-hashtag"></i> No</th>
+                                    <th class="text-center"><i class="fa fa-image"></i> Foto</th>
                                     <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
                                     <th class="text-center"><i class="fa fa-id-card"></i> NIK</th>
                                     <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
@@ -210,6 +211,13 @@
                 </div>
                 <form id="formTambahKaryawan" enctype="multipart/form-data">
                     <div class="modal-body">
+                        <h6>DATA PRIBADI</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label ">Foto Karyawan</label>
+                                <input type="file" class="form-control" name="foto" accept="image/*">
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="form-label">Nama Lengkap</label>
@@ -410,7 +418,14 @@
                 <div class="modal-body">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="id_karyawan" id="edit_id_karyawan">
-                    <h6 class="mt-1">Data Pribadi</h6>
+                    <h6>DATA PRIBADI</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label>Foto Karyawan <small>(Kosongkan jika tidak diganti)</small></label>
+                            <input type="file" class="form-control" name="foto" accept="image/*">
+                            <div id="preview_foto_karyawan" class="mt-2"></div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-6">
                             <label>Nama Lengkap</label>
@@ -461,7 +476,7 @@
                     </div>
                     <hr>
 
-                    <h6>Alamat KTP</h6>
+                    <h6>ALAMAT KTP</h6>
                     <div class="row">
                         <div class="col-md-6">
                             <label>Alamat</label>
@@ -483,7 +498,7 @@
                     </div>
 
                     <hr>
-                    <h6>Pendidikan</h6>
+                    <h6>PENDIDIKAN</h6>
                     <div class="row">
                         <div class="col-md-6">
                             <label class="mt-3">Pendidikan Terakhir</label>
@@ -642,6 +657,21 @@
         </div>
     </div>
 
+    <!-- Modal Lihat Foto -->
+     <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-transparent border-0 shadow-none">
+                <div class="modal-header border-0 p-0 justify-content-end">
+                    <button type="button" class="btn-close btn-close-white fs-4" data-bs-dismiss="modal" aria-label="Close" style="margin-right: -20px; margin-top: -20px;"></button>
+                </div>
+                <div class="modal-body p-0 text-center">
+                    <img id="imgPreviewBesar" src="" alt="Foto Karyawan" class="img-fluid rounded shadow" style="max-height: 80vh; object-fit: contain;">
+                    <h5 id="namaFotoKaryawan" class="text-white mt-3 text-shadow"></h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JS: jQuery, Bootstrap, DataTables, Toastr -->
     <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -738,6 +768,11 @@
                     {
                         data: "no",
                         className: "text-center"
+                    },
+                    {
+                        data: "foto",
+                        className: "text-center",
+                        orderable: false
                     },
                     {
                         data: "nama"
@@ -851,6 +886,11 @@
                                 $("#edit_tgl_lahir").val(d.tgl_lahir);
                                 $("#edit_status_pernikahan").val(d.status_pernikahan);
                                 $("#edit_nama_ibu").val(d.nama_ibu);
+                                if (d.foto && d.foto !== "") {
+                                    $("#preview_foto_karyawan").html(`<img src="assets/img/karyawan-pic/${d.foto}" width="80" height="80" class="rounded-circle shadow-sm" style="object-fit: cover;">`);
+                                } else {
+                                    $("#preview_foto_karyawan").html('');
+                                }
                                 $("#edit_nationality").val(d.nationality);
                                 $("#edit_nik_ktp").val(d.nik_ktp);
                                 $("#edit_kk_number").val(d.kk_number);
@@ -892,11 +932,18 @@
             // 8. ACTION: SIMPAN PERUBAHAN (EDIT)
             $("#formEdit").on("submit", function(e) {
                 e.preventDefault();
+                
+                // Gunakan FormData agar file gambar ikut terkirim
+                let formDataEdit = new FormData(this);
+                formDataEdit.append("action", "edit");
+
                 $.ajax({
                     url: "app/controller/act-karyawan.php",
                     type: "POST",
-                    data: $(this).serialize() + "&action=edit",
+                    data: formDataEdit,
                     dataType: "json",
+                    processData: false, // Wajib false untuk file
+                    contentType: false, // Wajib false untuk file
                     success: function(res) {
                         if (res.status === "ok") {
                             $("#ModalEdit").modal("hide");
@@ -906,10 +953,10 @@
                             console.log(res);
                             showToast("Gagal: " + res.msg, "danger");
                         }
-
                     },
                     error: function(xhr) {
                         console.log(xhr.responseText);
+                        showToast("Terjadi kesalahan server saat edit data.", "danger");
                     }
                 });
             });
@@ -1146,6 +1193,26 @@
                         btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
                     }
                 });
+            });
+
+            // 13. ACTION: KLIK FOTO UNTUK ZOOM
+            // Kita pakai event delegation (on click) karena gambar di-generate secara dinamis oleh DataTables
+            $('#tableKaryawan tbody').on('click', 'img.zoom-foto', function() {
+                // Ambil URL gambar dan nama dari atribut data yang diklik
+                let imgSrc = $(this).data('src');
+                let namaKaryawan = $(this).data('nama');
+                
+                // Jika fotonya rusak dan kembali ke default (person.png), pastikan modal juga memuat default
+                if ($(this).attr('src').includes('person.png')) {
+                    imgSrc = 'assets/img/karyawan-pic/person.png';
+                }
+
+                // Masukkan src dan teks ke dalam modal
+                $('#imgPreviewBesar').attr('src', imgSrc);
+                $('#namaFotoKaryawan').text(namaKaryawan);
+
+                // Tampilkan modal
+                $('#modalLihatFoto').modal('show');
             });
         });
     </script>
