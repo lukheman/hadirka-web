@@ -122,15 +122,15 @@ try {
         // --- LOGIKA FOTO ---
         $foto_karyawan = $row['foto'] ?? '';
         if (!empty($foto_karyawan)) {
-            $url_foto = 'assets/img/karyawan-pic/' . htmlspecialchars($foto_karyawan);
+            $url_foto = 'app/uploads/profil/' . htmlspecialchars($foto_karyawan); // <-- TAMBAHKAN app/
         } else {
-            $url_foto = 'assets/img/karyawan-pic/person.png'; // Avatar default
+            $url_foto = 'assets/img/avatars/person.png';
         }
         
         $nama_esc = htmlspecialchars($row['nama_lengkap']);
         
         // Tambahkan class 'zoom-foto', atribut 'data-src', dan 'data-nama' agar bisa ditangkap JavaScript
-        $foto_html = "<img src='{$url_foto}' onerror=\"this.onerror=null;this.src='assets/img/karyawan-pic/person.png';\" class='rounded-circle shadow-sm zoom-foto' width='45' height='45' style='object-fit: cover; cursor: pointer;' data-src='{$url_foto}' data-nama='{$nama_esc}'>";
+        $foto_html = "<img src='{$url_foto}' onerror=\"this.onerror=null;this.src='assets/img/avatars/person.png';\" class='rounded-circle shadow-sm zoom-foto' width='45' height='45' style='object-fit: cover; cursor: pointer;' data-src='{$url_foto}' data-nama='{$nama_esc}'>";
 
 
         // Cek status apakah karyawan aktif atau bukan, klo bukan tampilkan alasan keluar dan tanggal keluar

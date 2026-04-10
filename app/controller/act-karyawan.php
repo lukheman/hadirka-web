@@ -102,7 +102,10 @@ if ($action == "add") {
             // Format: NIK-NamaKaryawan.ext
             $foto_name = $nik_input . '-' . strtolower($nama_bersih) . '.' . strtolower($ext);
             
-            if (move_uploaded_file($_FILES['foto']['tmp_name'], '../../assets/img/karyawan-pic/' . $foto_name)) {
+            $target_dir = '../uploads/profil/';
+            if (!file_exists($target_dir)) { mkdir($target_dir, 0755, true); }
+
+            if (move_uploaded_file($_FILES['foto']['tmp_name'], $target_dir . $foto_name)) {
                 // Update nama foto ke database
                 $koneksi->query("UPDATE tb_karyawan SET foto = '$foto_name' WHERE id_karyawan = '$id_karyawan'");
             }
@@ -221,19 +224,22 @@ if ($action == "edit") {
             // Bersihkan nama
             $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
             
+            $target_dir = '../uploads/profil/';
+            if (!file_exists($target_dir)) { mkdir($target_dir, 0755, true); }
+
             // Cari foto lama untuk dihapus
             $q_old = $koneksi->query("SELECT foto FROM tb_karyawan WHERE id_karyawan = '$id'");
             if ($r_old = $q_old->fetch_assoc()) {
-                if (!empty($r_old['foto']) && file_exists('../../assets/img/karyawan-pic/' . $r_old['foto'])) {
-                    @unlink('../../assets/img/karyawan-pic/' . $r_old['foto']);
+                if (!empty($r_old['foto']) && file_exists($target_dir . $r_old['foto'])) {
+                    @unlink($target_dir . $r_old['foto']);
                 }
             }
             
-            // Upload foto baru dengan format: NIK-NamaKaryawan.ext
+            // Upload foto baru...
             $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
             $foto_name = $nik_input . '-' . strtolower($nama_bersih) . '.' . strtolower($ext);
             
-            if (move_uploaded_file($_FILES['foto']['tmp_name'], '../../assets/img/karyawan-pic/' . $foto_name)) {
+            if (move_uploaded_file($_FILES['foto']['tmp_name'], $target_dir . $foto_name)) {
                 // Masukkan nama foto ke dalam array untuk diupdate
                 $k_data['foto'] = $foto_name;
             }
@@ -357,8 +363,8 @@ if ($action == "delete") {
         // Hapus file fisik foto
         $q_foto = $koneksi->query("SELECT foto FROM tb_karyawan WHERE id_karyawan = '$id'");
         if ($r_foto = $q_foto->fetch_assoc()) {
-            if (!empty($r_foto['foto']) && file_exists('../../assets/img/karyawan-pic/' . $r_foto['foto'])) {
-                @unlink('../../assets/img/karyawan-pic/' . $r_foto['foto']);
+            if (!empty($r_foto['foto']) && file_exists('../uploads/profil/' . $r_foto['foto'])) {
+                @unlink('../uploads/profil/' . $r_foto['foto']);
             }
         }
 

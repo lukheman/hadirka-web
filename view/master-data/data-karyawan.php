@@ -887,7 +887,7 @@
                                 $("#edit_status_pernikahan").val(d.status_pernikahan);
                                 $("#edit_nama_ibu").val(d.nama_ibu);
                                 if (d.foto && d.foto !== "") {
-                                    $("#preview_foto_karyawan").html(`<img src="assets/img/karyawan-pic/${d.foto}" width="80" height="80" class="rounded-circle shadow-sm" style="object-fit: cover;">`);
+                                    $("#preview_foto_karyawan").html(`<img src="app/uploads/profil/${d.foto}" width="80" height="80" class="rounded-circle shadow-sm" style="object-fit: cover;">`);
                                 } else {
                                     $("#preview_foto_karyawan").html('');
                                 }
