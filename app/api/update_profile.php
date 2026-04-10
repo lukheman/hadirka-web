@@ -146,6 +146,35 @@ if ($is_bank_changed) {
 }
 
 // =======================
+// PROSES UPLOAD FOTO PROFIL (BASE64)
+// =======================
+$foto_base64 = $data['foto_base64'] ?? '';
+$nama_file_foto = "";
+
+if (!empty($foto_base64)) {
+    // Sesuaikan dengan letak folder sks, buat folder profil
+    $target_dir = dirname(__DIR__) . '/uploads/profil/'; 
+    if (!file_exists($target_dir)) { 
+        mkdir($target_dir, 0755, true); 
+    }
+
+    // Bersihkan header base64 jika ada
+    if (strpos($foto_base64, ',') !== false) {
+        @list($type, $foto_base64) = explode(',', $foto_base64);
+    }
+    
+    // Decode base64
+    $foto_data = base64_decode($foto_base64);
+    
+    // Generate nama file unik
+    $nama_file_foto = "profil_" . $id_karyawan . "_" . time() . ".jpg";
+    $file_path = $target_dir . $nama_file_foto;
+
+    // Simpan file
+    file_put_contents($file_path, $foto_data);
+}
+
+// =======================
 // TRANSAKSI
 // =======================
 $koneksi->begin_transaction();
@@ -202,6 +231,13 @@ try {
     // Simpan status update untuk tb_karyawan
     $updatedKaryawan = $koneksi->affected_rows;
 
+    // ==== QUERY UPDATE FOTO ====
+    if ($nama_file_foto !== "") {
+        $stmt_foto = $koneksi->prepare("UPDATE tb_karyawan SET foto = ? WHERE id_karyawan = ?");
+        $stmt_foto->bind_param("ss", $nama_file_foto, $id_karyawan);
+        $stmt_foto->execute();
+        $stmt_foto->close();
+    }
 
     // UPDATE tb_identitas
     $stmt = $koneksi->prepare("UPDATE tb_identitas SET

@@ -87,7 +87,6 @@ if (!function_exists('hitungSisaKontrak')) {
             }
 
             return $teks_sisa;
-
         } catch (Exception $e) {
             return 'Format Tanggal Salah';
         }
@@ -159,6 +158,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $final_data = $data_karyawan_base;
 
+        // ==== TAMBAHKAN KODE FOTO ====
+        $foto = $final_data['foto'] ?? null;
+        if (!empty($foto)) {
+            // Asumsi domain utama diarahkan ke root tempat folder /uploads berada
+            $final_data['foto_url'] = "http://" . $_SERVER['HTTP_HOST'] . "/uploads/profil/" . $foto;
+        } else {
+            $final_data['foto_url'] = null;
+        }
+
         // --- 3a. Inisialisasi/Default Karier ---
         $final_data['jabatan'] = 'Non-Aktif/Belum Ada Karier';
         $final_data['divisi'] = 'Non-Aktif/Belum Ada Karier';
@@ -180,7 +188,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 2. Hitung dan tambahkan masa kerja
             $tgl_selesai_kontrak = $data_karier_aktif['tgl_selesai'] ?? null;
             $final_data['sisa_kontrak'] = hitungSisaKontrak($tgl_selesai_kontrak);
-
 
             // 3. Bersihkan detail karier aktif untuk menghindari duplikasi key di JSON
             unset($data_karier_aktif['id_karyawan']);
