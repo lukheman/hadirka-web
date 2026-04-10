@@ -152,12 +152,27 @@ $foto_base64 = $data['foto_base64'] ?? '';
 $nama_file_foto = "";
 
 if (!empty($foto_base64)) {
-    // Sesuaikan dengan letak folder sks, buat folder profil
     $target_dir = dirname(__DIR__) . '/uploads/profil/'; 
     if (!file_exists($target_dir)) { 
         mkdir($target_dir, 0755, true); 
     }
 
+    // --- 1. CARI DAN HAPUS FOTO LAMA ---
+    $stmt_old_foto = $koneksi->prepare("SELECT foto FROM tb_karyawan WHERE id_karyawan = ?");
+    $stmt_old_foto->bind_param("s", $id_karyawan);
+    $stmt_old_foto->execute();
+    $res_old_foto = $stmt_old_foto->get_result()->fetch_assoc();
+    $stmt_old_foto->close();
+
+    if ($res_old_foto && !empty($res_old_foto['foto'])) {
+        $path_foto_lama = $target_dir . $res_old_foto['foto'];
+        // Cek apakah file fisik benar-benar ada di folder, lalu hapus
+        if (file_exists($path_foto_lama) && is_file($path_foto_lama)) {
+            unlink($path_foto_lama); 
+        }
+    }
+
+    // --- 2. PROSES FOTO BARU ---
     // Bersihkan header base64 jika ada
     if (strpos($foto_base64, ',') !== false) {
         @list($type, $foto_base64) = explode(',', $foto_base64);
@@ -166,11 +181,19 @@ if (!empty($foto_base64)) {
     // Decode base64
     $foto_data = base64_decode($foto_base64);
     
-    // Generate nama file unik
-    $nama_file_foto = "profil_" . $id_karyawan . "_" . time() . ".jpg";
+    // Ambil NIK (dikirim dari Flutter)
+    $nik_karyawan = safe($data['nik_karyawan'] ?? 'NONIK');
+    
+    // Bersihkan Nama Lengkap
+    $nama_bersih = preg_replace('/[^a-zA-Z0-9]/', '_', strtolower($nama_lengkap));
+    $nama_bersih = preg_replace('/_+/', '_', $nama_bersih); 
+    $nama_bersih = trim($nama_bersih, '_');
+    
+    // Generate nama file baru
+    $nama_file_foto = $nik_karyawan . "_" . $nama_bersih . ".jpg";
     $file_path = $target_dir . $nama_file_foto;
 
-    // Simpan file
+    // Simpan file baru ke server
     file_put_contents($file_path, $foto_data);
 }
 
