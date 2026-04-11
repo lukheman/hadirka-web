@@ -117,7 +117,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $payroll_pages = ['data-periode', 'payroll', 'slip-gaji', 'data-pinjaman', 'data-rapel', 'data-thr'];
+        $payroll_pages = ['data-periode', 'payroll', 'slip-gaji', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-rapel', 'data-thr'];
         ?>
         <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -138,6 +138,11 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('slip-gaji', $current_page); ?>">
                     <a class="menu-link" href="slipgajinew" target="_blank">
                         <div>Slip Gaji Karyawan</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('data-pengajuan-pinjaman', $current_page); ?>">
+                    <a class="menu-link" href="data-pengajuan-pinjaman">
+                        <div>Pengajuan Pinjaman Dana</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-pinjaman', $current_page); ?>">
