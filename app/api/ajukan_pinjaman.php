@@ -52,7 +52,7 @@ try {
 }
 
 // ============================================
-// AMBIL INPUT TEXT
+// AMBIL INPUT TEXT & ESCAPE STRING
 // ============================================
 $id_karyawan      = isset($_POST['id_karyawan']) ? trim($_POST['id_karyawan']) : '';
 $tgl_pengajuan    = isset($_POST['tgl_pengajuan']) ? trim($_POST['tgl_pengajuan']) : '';
@@ -67,23 +67,23 @@ if ($nominal_pinjaman > 1000000) {
     sendResponse('error', 'Nominal pinjaman melebihi batas maksimal Rp 1.000.000', null, 400);
 }
 
-// ============================================
-// VALIDASI WAJIB UPLOAD 2 FOTO
-// ============================================
-if (!isset($_FILES['foto_wajah']) || $_FILES['foto_wajah']['error'] === UPLOAD_ERR_NO_FILE) {
-    sendResponse('error', 'Foto Wajah (Selfie) wajib diupload.', null, 400);
-}
-if (!isset($_FILES['foto_id_card']) || $_FILES['foto_id_card']['error'] === UPLOAD_ERR_NO_FILE) {
-    sendResponse('error', 'Foto ID Card / KTP wajib diupload.', null, 400);
-}
-
 // ESCAPE STRING
 $id_karyawan_safe      = mysqli_real_escape_string($koneksi, $id_karyawan);
 $tgl_pengajuan_safe    = mysqli_real_escape_string($koneksi, $tgl_pengajuan);
 $nominal_pinjaman_safe = mysqli_real_escape_string($koneksi, $nominal_pinjaman);
 $alasan_pinjaman_safe  = mysqli_real_escape_string($koneksi, $alasan_pinjaman);
 
-// Cek Duplikat (Mencegah spam submit di hari yang sama)
+// AMBIL NIK KARYAWAN UNTUK NAMA FILE
+$nik_karyawan = 'UNKNOWN';
+$query_nik = mysqli_query($koneksi, "SELECT nik_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan_safe'");
+if ($row_nik = mysqli_fetch_assoc($query_nik)) {
+    $nik_karyawan = $row_nik['nik_karyawan'];
+}
+
+// Format Tanggal untuk nama file (Contoh: 20260411)
+$tgl_format_file = date('Ymd', strtotime($tgl_pengajuan_safe));
+
+// Cek Duplikat
 $check_sql = "SELECT id_pengajuan_pinjaman FROM tb_pengajuan_pinjaman 
               WHERE id_karyawan = '$id_karyawan_safe' AND DATE(tgl_pengajuan) = '$tgl_pengajuan_safe'";
 $check_result = mysqli_query($koneksi, $check_sql);
@@ -92,9 +92,16 @@ if (mysqli_num_rows($check_result) > 0) {
 }
 
 // ============================================
-// FUNGSI UPLOAD FILE
+// VALIDASI & FUNGSI UPLOAD FILE
 // ============================================
-function uploadFile($file_input_name, $prefix, $id_kar) {
+if (!isset($_FILES['foto_wajah']) || $_FILES['foto_wajah']['error'] === UPLOAD_ERR_NO_FILE) {
+    sendResponse('error', 'Foto Wajah (Selfie) wajib diupload.', null, 400);
+}
+if (!isset($_FILES['foto_id_card']) || $_FILES['foto_id_card']['error'] === UPLOAD_ERR_NO_FILE) {
+    sendResponse('error', 'Foto ID Card / KTP wajib diupload.', null, 400);
+}
+
+function uploadFile($file_input_name, $prefix, $nik, $tgl_format) {
     global $log_file;
     $file_tmp = $_FILES[$file_input_name]['tmp_name'];
     $file_name_original = $_FILES[$file_input_name]['name'];
@@ -113,7 +120,9 @@ function uploadFile($file_input_name, $prefix, $id_kar) {
     $upload_dir = dirname(__DIR__) . '/uploads/pinjaman/';
     if (!file_exists($upload_dir)) mkdir($upload_dir, 0755, true);
     
-    $file_name = $prefix . '_' . $id_kar . '_' . time() . '.' . $file_ext;
+    // FORMAT NAMA FILE BARU: wajah_123456789_20260411_1623456789.jpg
+    // time() ditambahkan di akhir untuk mencegah bentrok nama file jika mengupload 2x di hari yg sama
+    $file_name = $prefix . '_' . $nik . '_' . $tgl_format . '_' . time() . '.' . $file_ext;
     $target_path = $upload_dir . $file_name;
     
     if (move_uploaded_file($file_tmp, $target_path)) {
@@ -123,9 +132,9 @@ function uploadFile($file_input_name, $prefix, $id_kar) {
     }
 }
 
-// Proses Upload Kedua File
-$path_wajah = uploadFile('foto_wajah', 'wajah', $id_karyawan);
-$path_id_card = uploadFile('foto_id_card', 'idcard', $id_karyawan);
+// Proses Upload Kedua File (Kirim NIK dan Tanggal)
+$path_wajah = uploadFile('foto_wajah', 'wajah', $nik_karyawan, $tgl_format_file);
+$path_id_card = uploadFile('foto_id_card', 'idcard', $nik_karyawan, $tgl_format_file);
 
 // ============================================
 // INSERT KE DATABASE
