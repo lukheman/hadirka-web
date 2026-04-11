@@ -38,7 +38,7 @@ if ($action == 'get-karyawan-detail') {
                 LEFT JOIN tb_jabatan j ON c.id_jabatan = j.id_jabatan
                 WHERE c.id_karyawan = '$id' AND (c.tgl_selesai IS NULL OR c.tgl_selesai >= CURDATE())
                 ORDER BY c.id_karier DESC LIMIT 1";
-                
+
         $query = mysqli_query($koneksi, $sql);
         if ($row = mysqli_fetch_assoc($query)) {
             echo json_encode([
@@ -55,21 +55,83 @@ if ($action == 'get-karyawan-detail') {
     exit;
 }
 
-// 2. Simpan Transaksi (Hanya simpan id_karyawan, id_apd, tgl, dan jumlah)
+// 2. Simpan Transaksi (Multiple APD)
 if ($action == 'save') {
+    $id_k   = mysqli_real_escape_string($koneksi, $_POST['id_karyawan']);
+    $tgl    = mysqli_real_escape_string($koneksi, $_POST['tanggal_pengambilan']);
+
+    // Tangkap array dari form
+    $id_apd_array = $_POST['id_apd'];
+    $jumlah_array = $_POST['jumlah'];
+
+    if (empty($id_k) || empty($id_apd_array)) {
+        echo json_encode(['status' => 'error', 'message' => 'Karyawan dan APD harus dipilih']);
+        exit;
+    }
+
+    $all_success = true;
+    $errors = [];
+
+    // Loop sebanyak item APD yang diinputkan
+    for ($i = 0; $i < count($id_apd_array); $i++) {
+        $id_a = mysqli_real_escape_string($koneksi, $id_apd_array[$i]);
+        $qty  = mysqli_real_escape_string($koneksi, $jumlah_array[$i]);
+
+        // Pastikan APD tidak kosong di baris tersebut
+        if (!empty($id_a) && $qty > 0) {
+            $sql = "INSERT INTO pengambilan_apd (id_karyawan, id_apd, tanggal_pengambilan, jumlah) 
+                    VALUES ('$id_k', '$id_a', '$tgl', '$qty')";
+
+            if (!mysqli_query($koneksi, $sql)) {
+                $all_success = false;
+                $errors[] = mysqli_error($koneksi);
+            }
+        }
+    }
+
+    if ($all_success) {
+        echo json_encode(['status' => 'success']);
+    } else {
+        // Menggabungkan pesan error jika ada yang gagal insert
+        echo json_encode(['status' => 'error', 'message' => implode(" | ", $errors)]);
+    }
+    exit;
+}
+
+// 3. Ambil data spesifik untuk form Edit
+if ($action == 'get-single') {
+    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
+    $sql = "SELECT * FROM pengambilan_apd WHERE id_pengambilan = '$id'";
+    $query = mysqli_query($koneksi, $sql);
+    
+    if ($row = mysqli_fetch_assoc($query)) {
+        echo json_encode(['status' => 'success', 'data' => $row]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Data tidak ditemukan']);
+    }
+    exit;
+}
+
+// 4. Update Transaksi (Satu data)
+if ($action == 'update') {
+    $id_p   = mysqli_real_escape_string($koneksi, $_POST['id_pengambilan']);
     $id_k   = mysqli_real_escape_string($koneksi, $_POST['id_karyawan']);
     $id_a   = mysqli_real_escape_string($koneksi, $_POST['id_apd']);
     $tgl    = mysqli_real_escape_string($koneksi, $_POST['tanggal_pengambilan']);
     $qty    = mysqli_real_escape_string($koneksi, $_POST['jumlah']);
 
-    if (empty($id_k) || empty($id_a)) {
-        echo json_encode(['status' => 'error', 'message' => 'Karyawan dan APD harus dipilih']);
+    if (empty($id_p) || empty($id_k) || empty($id_a)) {
+        echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap']);
         exit;
     }
 
-    $sql = "INSERT INTO pengambilan_apd (id_karyawan, id_apd, tanggal_pengambilan, jumlah) 
-            VALUES ('$id_k', '$id_a', '$tgl', '$qty')";
-    
+    $sql = "UPDATE pengambilan_apd SET 
+            id_karyawan = '$id_k', 
+            id_apd = '$id_a', 
+            tanggal_pengambilan = '$tgl', 
+            jumlah = '$qty' 
+            WHERE id_pengambilan = '$id_p'";
+
     if (mysqli_query($koneksi, $sql)) {
         echo json_encode(['status' => 'success']);
     } else {
@@ -82,7 +144,7 @@ if ($action == 'save') {
 if ($action == 'delete') {
     $id = mysqli_real_escape_string($koneksi, $_GET['id']);
     $sql = "DELETE FROM pengambilan_apd WHERE id_pengambilan = '$id'";
-    
+
     if (mysqli_query($koneksi, $sql)) {
         echo json_encode(['status' => 'success']);
     } else {
@@ -90,4 +152,3 @@ if ($action == 'delete') {
     }
     exit;
 }
-?>

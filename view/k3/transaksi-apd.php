@@ -1,3 +1,29 @@
+<style>
+    /* Menyesuaikan tinggi Select2 agar sama dengan input teks Bootstrap */
+    .select2-container .select2-selection--single {
+        height: 38px !important;
+        /* Tinggi standar input form-control */
+        border: 1px solid #d9dee3 !important;
+        /* Menyesuaikan warna border bawaan template */
+        border-radius: 0.375rem !important;
+        /* Lengkungan sudut standar Bootstrap */
+    }
+
+    /* Memposisikan teks pilihan agar berada tepat di tengah (vertically centered) */
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px !important;
+        padding-left: 14px !important;
+        color: #697a8d !important;
+        /* Warna teks */
+    }
+
+    /* Menyesuaikan tinggi panah dropdown (arrow) di sebelah kanan */
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px !important;
+        right: 5px !important;
+    }
+</style>
+
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="row g-4 mb-4">
         <div class="col-12">
@@ -7,6 +33,9 @@
                         <h4 class="mb-1 text-primary">Log Pengambilan APD</h4>
                         <p class="mb-0">Pantau distribusi Alat Pelindung Diri kepada karyawan secara real-time.</p>
                     </div>
+                    <button class="btn btn-warning shadow me-2" data-bs-toggle="modal" data-bs-target="#ModalImport">
+                        <i class="bx bx-upload me-1"></i> Import Excel
+                    </button>
                     <button class="btn btn-primary shadow" onclick="tambahTransaksi()">
                         <i class="bx bx-plus-circle me-1"></i> Catat Pengambilan
                     </button>
@@ -28,7 +57,7 @@
                     <tr>
                         <th>Tanggal</th>
                         <th>Karyawan</th>
-                        <th>Barang APD</th>
+                        <th>Nama APD</th>
                         <th>Jumlah</th>
                         <th class="text-center">Aksi</th>
                     </tr>
@@ -71,19 +100,32 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Pilih APD</label>
-                    <select name="id_apd" id="id_apd" class="form-select select2" required>
-                        <option value="">-- Pilih APD --</option>
-                    </select>
+                    <label class="form-label fw-bold">Tanggal</label>
+                    <input type="date" name="tanggal_pengambilan" id="tanggal_pengambilan" class="form-control" value="<?= date('Y-m-d') ?>" required>
                 </div>
-                <div class="row">
-                    <div class="col-6 mb-3">
-                        <label class="form-label fw-bold">Tanggal</label>
-                        <input type="date" name="tanggal_pengambilan" id="tanggal_pengambilan" class="form-control" value="<?= date('Y-m-d') ?>" required>
-                    </div>
-                    <div class="col-6 mb-3">
-                        <label class="form-label fw-bold">Jumlah</label>
-                        <input type="number" name="jumlah" id="jumlah" class="form-control" min="1" value="1" required>
+
+                <div class="mb-2 d-flex justify-content-between align-items-center">
+                    <label class="form-label fw-bold mb-0">Daftar APD & Jumlah</label>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addApdRow()">
+                        <i class="bx bx-plus"></i> Tambah APD
+                    </button>
+                </div>
+
+                <div id="apd-container">
+                    <div class="row apd-row mb-2">
+                        <div class="col-7">
+                            <select name="id_apd[]" class="form-select select2-apd" required>
+                                <option value="">-- Pilih APD --</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <input type="number" name="jumlah[]" class="form-control" min="1" value="1" required>
+                        </div>
+                        <div class="col-2 d-flex align-items-center">
+                            <button type="button" class="btn btn-sm btn-label-danger btn-remove-apd" style="visibility: hidden;">
+                                <i class="bx bx-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -95,16 +137,92 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalEditTransaksi" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="formEditTransaksi" class="modal-content">
+            <input type="hidden" name="id_pengambilan" id="edit_id_pengambilan">
+
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title text-white">Edit Transaksi APD</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Karyawan</label>
+                    <select name="id_karyawan" id="edit_id_karyawan" class="form-select select2" required>
+                        <option value="">-- Ketik NIK / Nama Karyawan --</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tanggal</label>
+                    <input type="date" name="tanggal_pengambilan" id="edit_tanggal_pengambilan" class="form-control" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-8 mb-3">
+                        <label class="form-label fw-bold">Pilih APD</label>
+                        <select name="id_apd" id="edit_id_apd" class="form-select select2" required>
+                            <option value="">-- Pilih APD --</option>
+                        </select>
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label class="form-label fw-bold">Jumlah</label>
+                        <input type="number" name="jumlah" id="edit_jumlah" class="form-control" min="1" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-warning">Update Transaksi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="ModalImport" tabindex="-1" aria-labelledby="ModalImportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="formImport" class="modal-content" enctype="multipart/form-data">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title text-white" id="ModalImportLabel"><i class="bx bx-upload"></i> Upload Transaksi APD</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="instruction-text mb-3">
+                    Unggah file Excel (.xls / .xlsx) sesuai format kolom untuk mencatat distribusi APD secara masal.
+                </p>
+                <label for="file_excel" class="form-label fw-bold">File Excel</label>
+                <input type="file" name="file_excel" id="file_excel" class="form-control" accept=".xls,.xlsx" required>
+                <a href="assets/template-csv/Format Impor Data Peminjaman APD.xlsx" class="text-primary small mt-1 d-inline-block">Download Template Format .xlsx</a>
+
+                <div id="progressWrapper" class="progress mt-3" style="display:none; height:20px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                <button class="btn btn-warning" type="submit" id="btnUpload">
+                    <i class="bx bx-upload"></i> Upload Data
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+
 <script>
     let myModal;
+    let myModalEdit;
     const api_trx = 'app/controller/act-transaksi-apd.php';
     const api_get_trx = 'app/controller/get-data/get-transaksi-apd.php';
 
     document.addEventListener('DOMContentLoaded', function() {
         myModal = new bootstrap.Modal(document.getElementById('modalTransaksi'));
+        myModalEdit = new bootstrap.Modal(document.getElementById('modalEditTransaksi')); // Inisialisasi
         loadTable();
-        loadAllKaryawan(); 
-        loadAPDOptions(); 
+        loadAllKaryawan();
+        loadAPDOptions();
     });
 
     async function loadTable() {
@@ -118,22 +236,31 @@
         try {
             const res = await fetch(`${api_trx}?action=get-all-karyawan`);
             const data = await res.json();
-            
+
             let html = '<option value="">-- Ketik NIK / Nama Karyawan --</option>';
             data.forEach(k => {
-                let id_tampil = k.nik_karyawan ? k.nik_karyawan : k.id_karyawan; 
+                let id_tampil = k.nik_karyawan ? k.nik_karyawan : k.id_karyawan;
                 html += `<option value="${k.id_karyawan}">[${id_tampil}] - ${k.nama_lengkap}</option>`;
             });
-            
+
             document.getElementById('id_karyawan').innerHTML = html;
+            document.getElementById('edit_id_karyawan').innerHTML = html;
 
             // Inisialisasi Select2
             if (typeof $ !== 'undefined') {
                 $('#id_karyawan').select2({
-                    dropdownParent: $('#modalTransaksi'), 
+                    dropdownParent: $('#modalTransaksi'),
                     placeholder: "-- Ketik NIK / Nama Karyawan --",
                     allowClear: true,
                     width: '100%' // <-- TAMBAHKAN INI
+                });
+
+                // Inisialisasi Select2 untuk Modal Edit
+                $('#edit_id_karyawan').select2({
+                    dropdownParent: $('#modalEditTransaksi'),
+                    placeholder: "-- Ketik NIK / Nama Karyawan --",
+                    allowClear: true,
+                    width: '100%'
                 });
 
                 $('#id_apd').select2({
@@ -143,12 +270,12 @@
                 });
 
                 // Deteksi ketika Karyawan dipilih, langsung fetch detailnya
-                $('#id_karyawan').on('select2:select', function (e) {
+                $('#id_karyawan').on('select2:select', function(e) {
                     getDetailKaryawan(e.params.data.id);
                 });
 
                 // Deteksi ketika Karyawan di-clear (dikosongkan)
-                $('#id_karyawan').on('select2:clear', function (e) {
+                $('#id_karyawan').on('select2:clear', function(e) {
                     getDetailKaryawan('');
                 });
             }
@@ -169,7 +296,7 @@
         try {
             const res = await fetch(`${api_trx}?action=get-karyawan-detail&id=${id_karyawan}`);
             const data = await res.json();
-            
+
             if (data.status === 'success') {
                 document.getElementById('detail_site').value = data.site;
                 document.getElementById('detail_departemen').value = data.departemen;
@@ -180,25 +307,100 @@
         }
     }
 
+    // Tambahkan variabel global ini di awal script
+    let apdOptionsHtml = '<option value="">-- Pilih APD --</option>';
+
     // Memuat daftar APD
     async function loadAPDOptions() {
         try {
             const res = await fetch(`${api_trx}?action=get-options-apd`);
             const data = await res.json();
-            let apdHtml = '<option value="">-- Pilih APD --</option>';
-            data.forEach(a => apdHtml += `<option value="${a.id_apd}">${a.nama_apd}</option>`);
-            document.getElementById('id_apd').innerHTML = apdHtml;
+
+            apdOptionsHtml = '<option value="">-- Pilih APD --</option>';
+            data.forEach(a => {
+                apdOptionsHtml += `<option value="${a.id_apd}">${a.nama_apd}</option>`;
+            });
+
+            // Masukkan ke select pertama
+            document.querySelector('.select2-apd').innerHTML = apdOptionsHtml;
+            initSelect2Apd();
+
+            document.getElementById('edit_id_apd').innerHTML = apdOptionsHtml;
+            if (typeof $ !== 'undefined') {
+                $('#edit_id_apd').select2({
+                    dropdownParent: $('#modalEditTransaksi'),
+                    placeholder: "-- Pilih APD --",
+                    width: '100%'
+                });
+            }
+
         } catch (e) {
-            console.error("Gagal load APD");
+            console.error("Gagal load APD", e);
         }
     }
 
+    // Buat fungsi untuk inisialisasi Select2 khusus APD
+    function initSelect2Apd(element = $('.select2-apd')) {
+        if (typeof $ !== 'undefined') {
+            element.select2({
+                dropdownParent: $('#modalTransaksi'),
+                placeholder: "-- Pilih APD --",
+                width: '100%'
+            });
+        }
+    }
+
+    // Fungsi menambah baris input APD
+    function addApdRow() {
+        const container = document.getElementById('apd-container');
+        const newRow = document.createElement('div');
+        newRow.className = 'row apd-row mb-2';
+        newRow.innerHTML = `
+        <div class="col-7">
+            <select name="id_apd[]" class="form-select select2-apd-dynamic" required>
+                ${apdOptionsHtml}
+            </select>
+        </div>
+        <div class="col-3">
+            <input type="number" name="jumlah[]" class="form-control" min="1" value="1" required>
+        </div>
+        <div class="col-2 d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-danger btn-remove-apd">
+                <i class="bx bx-trash"></i>
+            </button>
+        </div>
+    `;
+        container.appendChild(newRow);
+
+        // Inisialisasi Select2 pada elemen yang baru dibuat
+        initSelect2Apd($(newRow).find('.select2-apd-dynamic'));
+    }
+
+    // Event Delegate untuk tombol hapus baris APD
+    document.getElementById('apd-container').addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-remove-apd');
+        if (btn) {
+            btn.closest('.apd-row').remove();
+        }
+    });
+
     function tambahTransaksi() {
         document.getElementById('formTransaksi').reset();
-        // Reset juga tampilan text Select2
+        // Kembalikan ke 1 baris saja
+        const container = document.getElementById('apd-container');
+        const rows = container.querySelectorAll('.apd-row');
+        rows.forEach((row, index) => {
+            if (index > 0) row.remove(); // Hapus baris tambahan
+        });
+
         if (typeof $ !== 'undefined') {
             $('#id_karyawan').val(null).trigger('change');
-            $('#id_apd').val(null).trigger('change');
+            $('.select2-apd').val(null).trigger('change');
+
+            // Reset detail karyawan
+            document.getElementById('detail_site').value = '';
+            document.getElementById('detail_departemen').value = '';
+            document.getElementById('detail_jabatan').value = '';
         }
         myModal.show();
     }
@@ -220,6 +422,56 @@
             }
         } catch (e) {
             showToast("Gagal menyimpan transaksi", "error");
+        }
+    };
+
+    async function editTransaksi(id) {
+        try {
+            // Ambil data spesifik dari backend
+            const res = await fetch(`${api_trx}?action=get-single&id=${id}`);
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                const data = result.data;
+
+                // Set value ke dalam inputan Modal Edit
+                document.getElementById('edit_id_pengambilan').value = data.id_pengambilan;
+                document.getElementById('edit_tanggal_pengambilan').value = data.tanggal_pengambilan;
+                document.getElementById('edit_jumlah').value = data.jumlah;
+
+                // Trigger perubahan untuk Select2
+                if (typeof $ !== 'undefined') {
+                    $('#edit_id_karyawan').val(data.id_karyawan).trigger('change');
+                    $('#edit_id_apd').val(data.id_apd).trigger('change');
+                }
+
+                // Tampilkan Modal
+                myModalEdit.show();
+            } else {
+                showToast(result.message || "Data tidak ditemukan", "error");
+            }
+        } catch (e) {
+            showToast("Gagal mengambil data transaksi", "error");
+        }
+    }
+
+    document.getElementById('formEditTransaksi').onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch(`${api_trx}?action=update`, {
+                method: 'POST',
+                body: new FormData(e.target)
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                myModalEdit.hide();
+                loadTable();
+                showToast("Transaksi berhasil diupdate", "success");
+            } else {
+                showToast(result.message || "Gagal update", "error");
+            }
+        } catch (e) {
+            showToast("Gagal update transaksi", "error");
         }
     };
 
@@ -245,6 +497,70 @@
         rows.forEach(row => {
             let text = row.innerText.toLowerCase();
             row.style.display = text.includes(keyword) ? '' : 'none';
+        });
+    });
+
+    // ==========================================
+    // BLOK FUNGSI IMPORT EXCEL
+    // ==========================================
+    $("#formImport").on("submit", function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const btn = $("#btnUpload");
+
+        // Tampilkan progress bar
+        $("#progressWrapper").show();
+        btn.prop("disabled", true).html('<i class="bx bx-loader bx-spin"></i> Processing...');
+
+        $.ajax({
+            // Arahkan ke file prosesor baru
+            url: "app/controller/csv-control/csv-transaksi-apd.php",
+            type: "POST",
+            dataType: "json",
+            data: formData,
+            contentType: false,
+            processData: false,
+            xhr: function() {
+                var xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener("progress", function(evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                        $("#progressBar").css("width", percentComplete + "%").text(percentComplete + "%");
+                    }
+                }, false);
+                return xhr;
+            },
+            success: function(res) {
+                if (res.success) {
+                    let msg = `📊 IMPORT SELESAI!\n\n✅ Berhasil: ${res.berhasil} data\n❌ Gagal: ${res.gagal} data`;
+
+                    if (res.errors && res.errors.length > 0) {
+                        msg += `\n\n📋 ERROR DETAIL:\n` + res.errors.slice(0, 5).join('\n');
+                        if (res.errors.length > 5) {
+                            msg += `\n... dan ${res.errors.length - 5} error lainnya`;
+                        }
+                    }
+
+                    alert(msg);
+                    loadTable(); // Refresh tabel setelah import
+                    $("#ModalImport").modal("hide");
+                    $("#formImport")[0].reset();
+                    showToast(`Import Selesai. Berhasil: ${res.berhasil}`, "success");
+                } else {
+                    alert("❌ IMPORT GAGAL!\n\n" + (res.error || "Terjadi kesalahan pada file Excel."));
+                    showToast("Import Gagal", "error");
+                }
+            },
+            error: function(xhr, status, error) {
+                alert("⚠️ TERJADI KESALAHAN SERVER!\nCek console browser untuk detail lengkap.");
+                console.error("Response:", xhr.responseText);
+            },
+            complete: function() {
+                // Reset UI form
+                $("#progressWrapper").hide();
+                $("#progressBar").css("width", "0%").text("0%");
+                btn.prop("disabled", false).html('<i class="bx bx-upload"></i> Upload Data');
+            }
         });
     });
 </script>

@@ -27,10 +27,13 @@ if (mysqli_num_rows($query) == 0) {
             </td>
             <td><span class="fw-bold">' . $row['jumlah'] . '</span> Pcs</td>
             <td class="text-center">
-                <button class="btn btn-sm btn-icon btn-label-danger" onclick="deleteTransaksi(' . $row['id_pengambilan'] . ')">
-                    <i class="bx bx-trash"></i>
-                </button>
-            </td>
+    <button class="btn btn-sm btn-icon btn-label-warning me-1" onclick="editTransaksi(' . $row['id_pengambilan'] . ')">
+        <i class="bx bx-edit"></i>
+    </button>
+    <button class="btn btn-sm btn-icon btn-label-danger" onclick="deleteTransaksi(' . $row['id_pengambilan'] . ')">
+        <i class="bx bx-trash"></i>
+    </button>
+</td>
         </tr>';
     }
 }
