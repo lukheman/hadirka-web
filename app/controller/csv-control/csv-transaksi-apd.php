@@ -66,9 +66,9 @@ try {
         // G: QTY
 
         $nik_karyawan = escapeString($koneksi, $row['B'] ?? '');
-        $nama_apd     = escapeString($koneksi, $row['E'] ?? '');
-        $tanggal      = formatTanggal($row['F'] ?? '');
-        $jumlah       = (int)($row['G'] ?? 0);
+        $nama_apd     = escapeString($koneksi, $row['F'] ?? '');
+        $tanggal      = formatTanggal($row['G'] ?? '');
+        $jumlah       = (int)($row['H'] ?? 0);
 
         // Abaikan jika baris benar-benar kosong
         if (empty($nik_karyawan) && empty($nama_apd)) {
