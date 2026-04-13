@@ -43,7 +43,7 @@ if ($action == 'proses') {
             // Ambil tanggal pengajuan sebagai tanggal pinjaman
             $tgl_pinjaman = date('Y-m-d', strtotime($data['tgl_pengajuan'])); 
             $nominal = $data['nominal_pinjaman'];
-            $alasan = $data['alasan_pinjaman'];
+            $alasan = "Peminjaman Dana";
 
             $stmtInsert = $koneksi->prepare("INSERT INTO tb_pinjaman (id_karyawan, tgl_pinjaman, tgl_bayar_pinjaman, nominal_pinjaman, ket_pinjaman) VALUES (?, ?, ?, ?, ?)");
             $stmtInsert->bind_param("issds", $id_karyawan, $tgl_pinjaman, $tgl_bayar, $nominal, $alasan);
