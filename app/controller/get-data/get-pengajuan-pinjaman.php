@@ -1,10 +1,12 @@
 <?php
 require '../../config/koneksi.php';
 
-// Ambil data pengajuan yang statusnya masih pending
-$query = "SELECT p.*, k.nama_lengkap, k.nik_karyawan 
+// Ambil data pengajuan yang statusnya masih pending + Join ke tb_identitas
+$query = "SELECT p.*, k.nama_lengkap, k.nik_karyawan,
+                 i.nama_bank, i.no_rek, i.atas_nama_rek
           FROM tb_pengajuan_pinjaman p
           JOIN tb_karyawan k ON p.id_karyawan = k.id_karyawan
+          LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
           ORDER BY p.tgl_pengajuan DESC";
 
 $result = mysqli_query($koneksi, $query);
@@ -27,6 +29,14 @@ if (mysqli_num_rows($result) == 0) {
         $foto_wajah = !empty($row['foto_wajah']) ? "<a href='{$base_url_uploads}{$row['foto_wajah']}' target='_blank' class='btn btn-xs btn-outline-info mb-1'>Cek Wajah</a><br>" : "";
         $foto_id = !empty($row['foto_id_card']) ? "<a href='{$base_url_uploads}{$row['foto_id_card']}' target='_blank' class='btn btn-xs btn-outline-primary'>Cek ID</a>" : "";
 
+        // Format Info Rekening
+        $info_rekening = "<span class='text-muted italic'><small>Belum disetting</small></span>";
+        if (!empty($row['nama_bank']) && !empty($row['no_rek'])) {
+            $info_rekening = "<b>{$row['nama_bank']}</b><br>
+                              {$row['no_rek']}<br>
+                              <small class='text-muted'>a.n {$row['atas_nama_rek']}</small>";
+        }
+
         // Tombol Aksi (Hanya muncul jika status pending)
         $btn_aksi = "-";
         if($row['status_pinjaman'] == 'pending'){
@@ -46,6 +56,7 @@ if (mysqli_num_rows($result) == 0) {
         echo "<td>Rp ".number_format($row['nominal_pinjaman'],0,",",".")."</td>";
         echo "<td>{$row['alasan_pinjaman']}</td>";
         echo "<td>{$foto_wajah}{$foto_id}</td>";
+        echo "<td>{$info_rekening}</td>";
         echo "<td class='text-center'>{$status_badge}</td>";
         echo "<td class='text-center'>{$btn_aksi}</td>";
         echo "</tr>";

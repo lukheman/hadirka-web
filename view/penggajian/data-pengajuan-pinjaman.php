@@ -24,6 +24,7 @@
                                 <th>Nominal</th>
                                 <th>Alasan</th>
                                 <th>Bukti (Wajah & ID)</th>
+                                <th>Info Rekening</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-center">Aksi</th>
                             </tr>
