@@ -7,6 +7,7 @@ $q = mysqli_query($koneksi, $sql);
 
 if (mysqli_num_rows($q) == 0) {
     echo '<tr><td colspan="6" class="text-center py-5 text-muted">Belum ada data pengajuan izin.</td></tr>';
+    exit;
 }
 
 while ($row = mysqli_fetch_assoc($q)) {
@@ -20,9 +21,9 @@ while ($row = mysqli_fetch_assoc($q)) {
         'ditolak'   => ['color' => 'danger',  'icon' => 'bx-x-circle']
     ];
     
-    $conf = $status_config[$status];
+    $conf = $status_config[$status] ?? ['color' => 'secondary', 'icon' => 'bx-info-circle'];
     $inisial = strtoupper(substr($row['nama_lengkap'], 0, 1));
-
+    
     echo '<tr>
         <td>
             <div class="d-flex align-items-center">

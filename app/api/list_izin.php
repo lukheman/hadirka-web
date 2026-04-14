@@ -45,7 +45,7 @@ if ($result) {
 } else {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Gagal mengambil data dari database. Pastikan semua field (termasuk keterangan_admin) ada di tabel: ' . mysqli_error($koneksi)
+        'message' => 'Gagal mengambil data:' . mysqli_error($koneksi)
     ]);
 }
 

@@ -40,11 +40,12 @@
                         <th>Tanggal</th>
                         <th>Alasan</th>
                         <th class="text-center">Bukti</th>
-                        <th>Status Saat Ini</th>
-                        <th class="text-center">Ubah Status / Aksi</th>
+                        <th>Status</th>
+                        <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="tbody-izin" class="table-border-bottom-0">
+                    <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -93,15 +94,23 @@
             }
         } catch (e) { 
             console.error("Update Error:", e);
-            alert("Terjadi kesalahan sistem. Pastikan file controller tersedia.");
+            alert("Terjadi kesalahan sistem.");
         }
     }
 
     async function deleteIzin(id) {
         if (confirm("Hapus permanen data pengajuan ini?")) {
-            const res = await fetch(`${api_act}?action=delete&id=${id}`);
-            const result = await res.json();
-            if (result.status === 'success') loadTableIzin();
+            try {
+                const res = await fetch(`${api_act}?action=delete&id=${id}`);
+                const result = await res.json();
+                if (result.status === 'success') {
+                    loadTableIzin();
+                } else {
+                    alert("Gagal menghapus: " + result.message);
+                }
+            } catch(e) {
+                alert("Terjadi kesalahan saat menghapus data.");
+            }
         }
     }
 </script>

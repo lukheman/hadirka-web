@@ -110,16 +110,16 @@ switch ($action) {
         // 👆 ========================================== 👆
 
         // Cek Duplikat
-        $check_sql = "SELECT id_pengajuan_izin FROM tb_pengajuan_izin WHERE id_karyawan = '$id_karyawan_safe' AND DATE(tgl_izin) = '$tgl_izin_safe'";
+        $check_sql = "SELECT id_pengajuan_izin FROM tb_pengajuan_izin WHERE id_karyawan = '$id_karyawan_safe' AND DATE(tgl_izin) = DATE('$tgl_izin_safe')";
         if (mysqli_num_rows(mysqli_query($koneksi, $check_sql)) > 0) {
-            sendResponse('error', 'Anda sudah mengajukan izin pada tanggal ' . $tgl_izin_safe, null, 400);
+            sendResponse('error', 'Anda sudah mengajukan izin pada tanggal ini.', null, 400);
         }
 
         // 👇 UBAH PEMANGGILAN FUNGSI UPLOAD 👇
         $bukti_izin = uploadBuktiIzin('bukti_izin', $nik_karyawan, $nama_karyawan, $tgl_format_file);
         // 👆 =============================== 👆
 
-        // Insert
+        // Penggabungan Waktu (Agar history jam pengajuan tercatat)
         $waktu_saat_ini = date('H:i:s');
         $tgl_izin_timestamp = $tgl_izin_safe . ' ' . $waktu_saat_ini;
         
@@ -129,7 +129,7 @@ switch ($action) {
         if (mysqli_query($koneksi, $sql)) {
             sendResponse('success', 'Pengajuan izin berhasil disubmit!');
         } else {
-            sendResponse('error', 'Gagal insert database: ' . mysqli_error($koneksi), null, 500);
+            sendResponse('error', 'Gagal menyimpan ke database: ' . mysqli_error($koneksi), null, 500);
         }
         break;
 
@@ -158,7 +158,7 @@ switch ($action) {
             if (mysqli_query($koneksi, "DELETE FROM tb_pengajuan_izin WHERE id_pengajuan_izin = '$id_pengajuan'")) {
                 sendResponse('success', 'Pengajuan izin berhasil dibatalkan dan dihapus.');
             } else {
-                sendResponse('error', 'Gagal menghapus data dari database.', null, 500);
+                sendResponse('error', 'Gagal menghapus data.', null, 500);
             }
         } else {
             sendResponse('error', 'Data pengajuan tidak ditemukan.', null, 404);

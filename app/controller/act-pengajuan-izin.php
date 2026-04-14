@@ -4,15 +4,18 @@ include "../config/koneksi.php";
 $action = $_GET['action'] ?? '';
 
 if ($action == 'update-status') {
-    $id = $_GET['id'];
-    $status = $_GET['status']; // pending, disetujui, ditolak
+    // SECURITY: Cegah SQL Injection
+    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
+    $status = mysqli_real_escape_string($koneksi, $_GET['status']); 
+    
     $sql = "UPDATE tb_pengajuan_izin SET status_izin = '$status' WHERE id_pengajuan_izin = '$id'";
     
     if (mysqli_query($koneksi, $sql)) {
         echo json_encode(['status' => 'success']);
     } else {
-        echo json_encode(['status' => 'error']);
+        echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
     }
+    exit;
 }
 
 if ($action == 'delete') {
