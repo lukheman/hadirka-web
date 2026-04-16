@@ -678,15 +678,20 @@ require_once 'app/controller/read.php';
             }
         }
 
-        // download PDF with filename "nama karyawan - jabatan dd-mm-yyyy.pdf"
+        // download PDF with filename "nama karyawan - jabatan periode.pdf"
         function downloadPDF() {
             const slipElem = document.getElementById('slip');
             const nama = document.getElementById('nama').textContent.trim().replace(/\s+/g, ' ') || 'karyawan';
             const jab = document.getElementById('jabatan').textContent.trim().replace(/\s+/g, ' ') || 'jabatan';
-            const today = new Date();
-            const dateStr = fmtDateForFilename(today);
+            
+            // --- MENGAMBIL PERIODE DARI INPUT ---
+            const startPeriod = document.getElementById('startDate').value;
+            const endPeriod = document.getElementById('endDate').value;
+            const periodeStr = `Periode ${startPeriod} sd ${endPeriod}`; 
+            // ------------------------------------
+
             const safe = (s) => s.replace(/[\/\\:?<>|"]/g, '-'); // filter illegal filename chars
-            const filename = `${safe(nama)} - ${safe(jab)} ${dateStr}.pdf`;
+            const filename = `${safe(nama)} - ${safe(jab)} ${periodeStr}.pdf`;
 
             const opt = {
                 margin: 0.4,
@@ -788,10 +793,11 @@ require_once 'app/controller/read.php';
                 slipElem.style.visibility = "visible";
 
                 // Nama file PDF
-                const today = new Date();
-                const dateStr = fmtDateForFilename(today);
+                // --- MENGGUNAKAN PERIODE YANG SUDAH DIDEKLARASIKAN DI AWAL FUNGSI ---
+                const periodeStr = `Periode ${start} sd ${end}`;
                 const safe = (s) => s.replace(/[\/\\:?<>|"]/g, "-");
-                const filename = `${safe(nama)}-${safe(jab)}-${dateStr}.pdf`;
+                const filename = `${safe(nama)}-${safe(jab)}-${periodeStr}.pdf`;
+                // --------------------------------------------------------------------
 
                 // Generate PDF BLOB
                 const pdfBlob = await html2pdf()
