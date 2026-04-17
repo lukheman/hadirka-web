@@ -860,3 +860,79 @@ require_once 'app/controller/read.php';
 </body>
 
 </html>
+
+<!-- Fungsi Download Slip langsung 3 periode, pke di console dengan memilih karyawan terlebih dahulu-->
+<!-- async function downloadTigaBulan() {
+    // Ambil NIK dari dropdown
+    const nikSel = document.getElementById('nikSelect').value;
+    const [nik] = nikSel.split('|');
+
+    // Definisikan 3 periode yang diminta
+    const periods = [
+        { start: '2025-12-21', end: '2026-01-20' },
+        { start: '2026-01-21', end: '2026-02-20' },
+        { start: '2026-02-21', end: '2026-03-20' }
+    ];
+
+    const slipElem = document.getElementById("slip");
+
+    console.log("Memulai proses download...");
+
+    for (let i = 0; i < periods.length; i++) {
+        const p = periods[i];
+        console.log(`Memproses periode: ${p.start} s/d ${p.end}`);
+
+        try {
+            // 1. Fetch data dari backend
+            const resp = await fetch('app/controller/get-slip/get-slip-gaji.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nik, startDate: p.start, endDate: p.end })
+            });
+
+            if (!resp.ok) {
+                console.error(`Gagal fetch data untuk periode ${p.start}`);
+                continue;
+            }
+
+            const data = await resp.json();
+
+            // 2. Render ke tampilan
+            render(data);
+
+            // Jeda 800ms agar DOM selesai menggambar ulang tabel
+            await new Promise(r => setTimeout(r, 800));
+
+            // --- PERBAIKAN DI SINI ---
+            // Mengambil nama dan jabatan langsung dari data real bulan tersebut
+            const namaKaryawan = data.nama || 'Karyawan';
+            const jabatanKaryawan = data.jabatan || 'Jabatan';
+            // -------------------------
+
+            // 3. Eksekusi html2pdf
+            const periodeStr = `Periode ${p.start} sd ${p.end}`;
+            const safe = (s) => s.replace(/[\/\\:?<>|"]/g, "-");
+            const filename = `${safe(namaKaryawan)} - ${safe(jabatanKaryawan)} ${periodeStr}.pdf`;
+
+            await html2pdf().set({
+                margin: 0.4,
+                filename: filename,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+            }).from(slipElem).save();
+
+            // Jeda 1.5 detik sebelum memproses bulan berikutnya
+            await new Promise(r => setTimeout(r, 1500));
+
+        } catch (error) {
+            console.error(`Error pada periode ${p.start}:`, error);
+        }
+    }
+    
+    console.log("Selesai! 3 file PDF seharusnya sudah ter-download.");
+    alert("Proses download 3 bulan selesai!");
+}
+
+// Jalankan fungsinya
+downloadTigaBulan(); -->

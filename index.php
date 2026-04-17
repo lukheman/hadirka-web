@@ -30,6 +30,7 @@ $routes = [
     'rekapan-absensi' => 'view/kehadiran/rekapan-absensi.php',
     'dayli-absen'     => 'view/kehadiran/dayli-absen.php',
     'pengajuan-izin'  => 'view/kehadiran/pengajuan-izin.php',
+    'pengajuan-cuti'  => 'view/kehadiran/pengajuan-cuti.php',
     'bukti-sks'       => 'view/kehadiran/bukti-sks.php',
 
     // Penggajian & Finance
@@ -40,6 +41,7 @@ $routes = [
     'data-pinjaman'   => 'view/penggajian/data-pinjaman.php',
     'data-rapel'      => 'view/penggajian/data-rapel.php',
     'data-thr'        => 'view/penggajian/data-thr.php',
+    // 'laporan-keuangan'=> 'view/finance-payrol/laporan-keuangan.php',
 
     // Lainnya
     'data-kandidat'   => 'view/data-kandidat.php',
@@ -84,6 +86,7 @@ $hrd_pages = [
     'rekapan-absensi',
     'dayli-absen',
     'pengajuan-izin',
+    'pengajuan-cuti',
     'bukti-sks',
     'data-periode',
     'payroll',

@@ -81,7 +81,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $absensi_pages = ['dayli-absen', 'rekapan-absensi', 'pengajuan-izin', 'bukti-sks'];
+        $absensi_pages = ['dayli-absen', 'rekapan-absensi', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks'];
         ?>
         <li class="menu-item <?= isMenuOpen($absensi_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -102,6 +102,11 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('pengajuan-izin', $current_page); ?>">
                     <a class="menu-link" href="pengajuan-izin">
                         <div>Pengajuan Izin</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('pengajuan-cuti', $current_page); ?>">
+                    <a class="menu-link" href="pengajuan-cuti">
+                        <div>Pengajuan Cuti</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('bukti-sks', $current_page); ?>">
@@ -162,6 +167,23 @@ function isMenuOpen($pages_array, $current_page)
                 </li>
             </ul>
         </li>
+<!-- 
+        <?php
+        $finance_pages = ['laporan-keuangan'];
+        ?>
+        <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-money"></i>
+                <div data-i18n="Payroll System">Manajemen Keuangan</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?= isActive('laporan-keuangan', $current_page); ?>">
+                    <a class="menu-link" href="laporan-keuangan">
+                        <div>Laporan Keuangan</div>
+                    </a>
+                </li>
+            </ul>
+        </li> -->
 
     <?php endif; ?>
 
