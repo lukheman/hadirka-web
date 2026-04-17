@@ -37,8 +37,9 @@ if (mysqli_connect_errno()) {
 // FUNGSI UPLOAD BUKTI IZIN
 // ============================================
 function uploadBuktiIzin($file_input_name, $nik, $nama, $tgl_format) {
+    // Jika tidak ada file yang diupload, kembalikan NULL
     if (!isset($_FILES[$file_input_name]) || $_FILES[$file_input_name]['error'] === UPLOAD_ERR_NO_FILE) {
-        sendResponse('error', 'Bukti izin wajib diupload. Harap lampirkan foto/dokumen pendukung.', null, 400);
+        return NULL; 
     }
 
     $file_tmp = $_FILES[$file_input_name]['tmp_name'];
@@ -115,16 +116,18 @@ switch ($action) {
             sendResponse('error', 'Anda sudah mengajukan izin pada tanggal ini.', null, 400);
         }
 
-        // 👇 UBAH PEMANGGILAN FUNGSI UPLOAD 👇
+        // Proses Upload File
         $bukti_izin = uploadBuktiIzin('bukti_izin', $nik_karyawan, $nama_karyawan, $tgl_format_file);
-        // 👆 =============================== 👆
+        
+        // Memformat query agar mendukung NULL
+        $bukti_val = $bukti_izin ? "'$bukti_izin'" : "NULL";
 
         // Penggabungan Waktu (Agar history jam pengajuan tercatat)
         $waktu_saat_ini = date('H:i:s');
         $tgl_izin_timestamp = $tgl_izin_safe . ' ' . $waktu_saat_ini;
         
         $sql = "INSERT INTO tb_pengajuan_izin (id_karyawan, tgl_izin, alasan_izin, bukti_izin, status_izin)
-                VALUES ('$id_karyawan_safe', '$tgl_izin_timestamp', '$alasan_izin_safe', '$bukti_izin', 'pending')";
+                VALUES ('$id_karyawan_safe', '$tgl_izin_timestamp', '$alasan_izin_safe', $bukti_val, 'pending')";
 
         if (mysqli_query($koneksi, $sql)) {
             sendResponse('success', 'Pengajuan izin berhasil disubmit!');
