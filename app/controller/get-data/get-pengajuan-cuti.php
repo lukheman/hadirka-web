@@ -51,7 +51,7 @@ while ($row = mysqli_fetch_assoc($q)) {
         <td class="text-center">';
     
     if (!empty($row['bukti_cuti'])) {
-        $path = '../../' . $row['bukti_cuti']; 
+        $path = 'app/' . $row['bukti_cuti']; 
         echo '<div class="preview-thumbnail shadow-sm border rounded p-1 d-inline-block" onclick="previewBukti(\''.$path.'\')">
                 <img src="'.$path.'" class="rounded" style="width:35px; height:35px; object-fit:cover; cursor:zoom-in;">
               </div>';
