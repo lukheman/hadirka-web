@@ -69,6 +69,11 @@ switch ($action) {
             sendResponse('error', 'Semua form wajib diisi dengan benar', null, 400);
         }
 
+        // [BARU] Validasi backend: Tolak jika tidak ada file yang diunggah
+        if (!isset($_FILES['bukti_cuti']) || $_FILES['bukti_cuti']['error'] === UPLOAD_ERR_NO_FILE) {
+            sendResponse('error', 'Bukti lampiran cuti wajib diupload.', null, 400);
+        }
+
         $id_karyawan_safe = mysqli_real_escape_string($koneksi, $id_karyawan);
         $tahun_cuti = date('Y', strtotime($tgl_awal));
 

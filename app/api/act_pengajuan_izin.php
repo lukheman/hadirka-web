@@ -92,6 +92,11 @@ switch ($action) {
             sendResponse('error', 'Semua form wajib diisi', null, 400);
         }
 
+        // [BARU] Validasi backend: Tolak jika tidak ada file yang diunggah
+        if (!isset($_FILES['bukti_izin']) || $_FILES['bukti_izin']['error'] === UPLOAD_ERR_NO_FILE) {
+            sendResponse('error', 'Bukti izin wajib diupload.', null, 400);
+        }
+
         $id_karyawan_safe = mysqli_real_escape_string($koneksi, $id_karyawan);
         $tgl_izin_safe    = mysqli_real_escape_string($koneksi, $tgl_izin);
         $alasan_izin_safe = mysqli_real_escape_string($koneksi, $alasan_izin);
