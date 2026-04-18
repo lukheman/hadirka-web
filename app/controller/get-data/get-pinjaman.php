@@ -27,7 +27,8 @@ $no = 1;
 
 // 4. Jika data kosong setelah difilter, tampilkan pesan tabel kosong
 if (mysqli_num_rows($result) == 0) {
-    echo "<tr><td colspan='9' class='text-center text-muted'>Tidak ada data pinjaman pada bulan ini.</td></tr>";
+    // Biarkan kosong, DataTables yang akan memunculkan pesan "Data tidak ditemukan"
+    echo "";
 } else {
     while($row = mysqli_fetch_assoc($result)){
         echo "<tr>";

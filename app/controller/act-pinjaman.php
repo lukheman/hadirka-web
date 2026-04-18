@@ -44,6 +44,28 @@ switch($action){
     case 'delete':
         $id = $_POST['id_pinjaman'] ?? '';
         if(!$id){ echo json_encode(['status'=>'error','msg'=>'ID tidak ditemukan']); exit;}
+
+        // 1. Cek apakah pinjaman ini punya relasi ke tabel pengajuan mobile
+        $cekStmt = $koneksi->prepare("SELECT id_pengajuan_pinjaman FROM tb_pinjaman WHERE id_pinjaman = ?");
+        $cekStmt->bind_param("i", $id);
+        $cekStmt->execute();
+        $resCek = $cekStmt->get_result();
+        $dataCek = $resCek->fetch_assoc();
+        $cekStmt->close();
+
+        // 2. Jika data pengajuan ada (tidak NULL), ubah status pengajuannya jadi 'ditolak'
+        if ($dataCek && !empty($dataCek['id_pengajuan_pinjaman'])) {
+            $id_pengajuan = $dataCek['id_pengajuan_pinjaman'];
+            $keterangan = "Dibatalkan oleh Admin langsung dari Master Data Pinjaman.";
+            $status_batal = "ditolak"; // Bisa kamu ganti jadi 'pending' jika ingin dikembalikan ke antrean
+
+            $updateStmt = $koneksi->prepare("UPDATE tb_pengajuan_pinjaman SET status_pinjaman = ?, keterangan_admin = ? WHERE id_pengajuan_pinjaman = ?");
+            $updateStmt->bind_param("ssi", $status_batal, $keterangan, $id_pengajuan);
+            $updateStmt->execute();
+            $updateStmt->close();
+        }
+
+        // 3. Eksekusi hapus data dari master data pinjaman
         $stmt = $koneksi->prepare("DELETE FROM tb_pinjaman WHERE id_pinjaman=?");
         $stmt->bind_param("i",$id);
         echo $stmt->execute() ? json_encode(['status'=>'success']) : json_encode(['status'=>'error','msg'=>$stmt->error]);

@@ -113,6 +113,46 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
+    // --- TAMBAHAN: Fungsi Update Status Cepat ---
+    window.updateStatusPengajuan = async function(id, newStatus) {
+        if(confirm("Yakin ingin mengubah status pengajuan ini menjadi " + newStatus + "?")) {
+            try {
+                const response = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=update-status&id=${id}&status=${newStatus}`);
+                
+                if (!response.ok) throw new Error(`Server merespon ${response.status}`);
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    loadPengajuan(); // Refresh tabel
+                } else {
+                    alert("Gagal: " + result.msg);
+                }
+            } catch (e) { 
+                console.error("Update Error:", e);
+                alert("Terjadi kesalahan sistem.");
+            }
+        }
+    }
+
+    // --- TAMBAHAN: Fungsi Hapus Pengajuan ---
+    window.deletePengajuan = async function(id) {
+        if (confirm("Hapus permanen data pengajuan pinjaman ini beserta buktinya?")) {
+            try {
+                const res = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=delete&id=${id}`);
+                const result = await res.json();
+                
+                if (result.status === 'success') {
+                    loadPengajuan(); // Refresh tabel
+                } else {
+                    alert("Gagal menghapus: " + result.msg);
+                }
+            } catch(e) {
+                console.error("Delete Error:", e);
+                alert("Terjadi kesalahan saat menghapus data.");
+            }
+        }
+    }
+
     // Klik tombol proses di tabel
     document.addEventListener("click", e => {
         const btnProses = e.target.closest(".btnProses");

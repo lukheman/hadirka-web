@@ -37,17 +37,40 @@ if (mysqli_num_rows($result) == 0) {
                               <small class='text-muted'>a.n {$row['atas_nama_rek']}</small>";
         }
 
-        // Tombol Aksi (Hanya muncul jika status pending)
-        $btn_aksi = "-";
-        if($row['status_pinjaman'] == 'pending'){
-            $btn_aksi = "
-                <button class='btn btn-success btn-sm btnProses'
-                    data-id='{$row['id_pengajuan_pinjaman']}'
-                    data-nama='{$row['nama_lengkap']}'
-                    data-nominal='{$row['nominal_pinjaman']}'>
-                    <i class='fa fa-check-square'></i> Proses
-                </button>";
-        }
+        // // Tombol Aksi (Hanya muncul jika status pending)
+        // $btn_aksi = "-";
+        // if($row['status_pinjaman'] == 'pending'){
+        //     $btn_aksi = "
+        //         <button class='btn btn-success btn-sm btnProses'
+        //             data-id='{$row['id_pengajuan_pinjaman']}'
+        //             data-nama='{$row['nama_lengkap']}'
+        //             data-nominal='{$row['nominal_pinjaman']}'>
+        //             <i class='fa fa-check-square'></i> Proses
+        //         </button>";
+        // }
+
+        // Tombol Aksi berupa Dropdown Menu
+        $btn_aksi = "
+        <div class='dropdown'>
+            <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' data-bs-toggle='dropdown'>
+                <i class='fa fa-ellipsis-v'></i>
+            </button>
+            <div class='dropdown-menu dropdown-menu-end shadow border-0'>
+                <div class='dropdown-header text-uppercase small fw-bold'>Aksi Pengajuan</div>
+                <li>
+                    <a class='dropdown-item d-flex align-items-center btnProses' href='javascript:void(0)'
+                        data-id='{$row['id_pengajuan_pinjaman']}'
+                        data-nama='{$row['nama_lengkap']}'
+                        data-nominal='{$row['nominal_pinjaman']}'>
+                        <i class='fa fa-check-square me-2 text-primary'></i> Proses (ACC/Tolak + Ket)
+                    </a>
+                </li>
+                <li><a class='dropdown-item d-flex align-items-center' href='javascript:void(0)' onclick='updateStatusPengajuan({$row['id_pengajuan_pinjaman']}, \"pending\")'><i class='fa fa-clock me-2 text-warning'></i> Set Pending</a></li>
+                <li><a class='dropdown-item d-flex align-items-center' href='javascript:void(0)' onclick='updateStatusPengajuan({$row['id_pengajuan_pinjaman']}, \"ditolak\")'><i class='fa fa-times-circle me-2 text-danger'></i> Set Ditolak Cepat</a></li>
+                <div class='dropdown-divider'></div>
+                <li><a class='dropdown-item d-flex align-items-center text-danger' href='javascript:void(0)' onclick='deletePengajuan({$row['id_pengajuan_pinjaman']})'><i class='fa fa-trash me-2'></i> Hapus Permanen</a></li>
+            </div>
+        </div>";
 
         echo "<tr>";
         echo "<td class='text-center'>{$no}</td>";
