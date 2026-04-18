@@ -21,8 +21,9 @@ if ($id) {
     $stmt->execute();
     $q = $stmt->get_result();
 } else {
-    $q = $koneksi->query("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site 
+    $q = $koneksi->query("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap 
         FROM tb_karier k
+        INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
         INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
         INNER JOIN tb_departemen d ON k.id_departemen = d.id_departemen
         INNER JOIN tb_site s ON k.id_site = s.id_site

@@ -79,7 +79,7 @@ try {
 
             $stmt = $koneksi->prepare($sql);
             $stmt->bind_param(
-                "iiiiiiiiiiiiss",
+                "iiiiddddddddss",
                 $id_karyawan,
                 $id_site,
                 $id_departemen,

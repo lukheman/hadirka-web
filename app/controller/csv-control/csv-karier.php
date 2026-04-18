@@ -146,15 +146,16 @@ try {
             WHERE id_karier='$id_karier'");
         } else {
             // Insert Baru jika belum ada data karier sama sekali
-            // Catatan: Pastikan kolom id_site, id_departemen, dll di database mengizinkan NULL atau beri nilai default 0
             $tglMulai = $tgl_masuk_site ?: date('Y-m-d');
             $tglSelesai = $tgl_selesai_kontrak ?: null;
 
             $koneksi->query("INSERT INTO tb_karier (
-                id_karyawan, gaji_pokok, ot_pertama, ot_kedua, spl, ot1_spl, ot2_spl, 
+                id_karyawan, id_site, id_departemen, id_jabatan,
+                gaji_pokok, ot_pertama, ot_kedua, spl, ot1_spl, ot2_spl, 
                 pot_izin, pot_mangkir, tgl_mulai, tgl_selesai
             ) VALUES (
-                '$id_karyawan', $basic, $ot_pertama, $ot_kedua, $spl, $ot1_spl, $ot2_spl, 
+                '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan',
+                $basic, $ot_pertama, $ot_kedua, $spl, $ot1_spl, $ot2_spl, 
                 $pot_izin, $pot_mangkir, '$tglMulai', " . ($tglSelesai ? "'$tglSelesai'" : "NULL") . "
             )");
             $id_karier = $koneksi->insert_id;
