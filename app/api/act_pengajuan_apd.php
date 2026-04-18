@@ -7,6 +7,17 @@ require_once __DIR__ . '/koneksi-api.php';
 
 $action = isset($_POST['action']) ? trim($_POST['action']) : '';
 
+// 👇 TAMBAHKAN BLOK INI UNTUK MENGAMBIL OPSI APD 👇
+if ($action == 'get-options') {
+    $query = mysqli_query($koneksi, "SELECT id_apd, nama_apd FROM master_apd WHERE status_aktif = 'aktif' ORDER BY nama_apd ASC");
+    $data = [];
+    while ($row = mysqli_fetch_assoc($query)) {
+        $data[] = $row;
+    }
+    echo json_encode($data);
+    exit;
+}
+
 if ($action == 'ajukan') {
     $id_karyawan   = mysqli_real_escape_string($koneksi, $_POST['id_karyawan']);
     $id_apd        = mysqli_real_escape_string($koneksi, $_POST['id_apd']);
