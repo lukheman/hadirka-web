@@ -68,6 +68,11 @@ try {
             $gaji_bersih = 0;
         }
 
+        // Jika gaji bersih minus, lewati baris ini agar tidak ditambahkan ke tabel
+        if ($gaji_bersih < 0) {
+            continue;
+        }
+
         $data[] = [
             "no" => $no++,
             "id_karyawan" => $r['id_karyawan'], // Tambahkan ID untuk edit

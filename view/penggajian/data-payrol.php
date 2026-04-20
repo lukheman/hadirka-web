@@ -935,9 +935,11 @@
         setDefaultDateRange();
         loadPayrol();
 
-        document.getElementById("startDate").addEventListener("change", loadPayrol);
-        document.getElementById("endDate").addEventListener("change", loadPayrol);
+        // Ganti 'change' menjadi 'blur'
+        document.getElementById("startDate").addEventListener("blur", loadPayrol);
+        document.getElementById("endDate").addEventListener("blur", loadPayrol);
 
+        // Untuk filter Select (Dropdown), biarkan tetap 'change' karena ini hanya filter JS instan tanpa AJAX loading
         document.getElementById("filterSite").addEventListener("change", () => renderTable(allPayrollData));
         document.getElementById("filterJabatan").addEventListener("change", () => renderTable(allPayrollData));
         document.getElementById("filterBank").addEventListener("change", () => renderTable(allPayrollData));
