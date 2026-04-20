@@ -194,7 +194,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $apd_pages = ['master-apd', 'transaksi-apd'];
+        $apd_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
         ?>
         <li class="menu-item <?= isMenuOpen($apd_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -205,6 +205,11 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('master-apd', $current_page); ?>">
                     <a class="menu-link" href="master-apd">
                         <div>Stok & Jenis APD</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('pengajuan-apd', $current_page); ?>">
+                    <a class="menu-link" href="pengajuan-apd">
+                        <div>Pengajuan APD</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('transaksi-apd', $current_page); ?>">

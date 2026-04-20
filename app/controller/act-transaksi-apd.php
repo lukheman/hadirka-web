@@ -6,7 +6,8 @@ $action = $_GET['action'] ?? '';
 
 // 1a. Ambil opsi APD untuk dropdown
 if ($action == 'get-options-apd') {
-    $query = mysqli_query($koneksi, "SELECT id_apd, nama_apd FROM master_apd WHERE status_aktif = 'aktif' ORDER BY nama_apd ASC");
+    // Hanya tampilkan yang stoknya > 0 dan tambahkan info sisa stok di namanya
+    $query = mysqli_query($koneksi, "SELECT id_apd, CONCAT(nama_apd, ' (Stok: ', stok, ')') AS nama_apd FROM master_apd WHERE status_aktif = 'aktif' AND stok > 0 ORDER BY nama_apd ASC");
     $data = [];
     while ($row = mysqli_fetch_assoc($query)) {
         $data[] = $row;
@@ -69,20 +70,37 @@ if ($action == 'save') {
         exit;
     }
 
+    // 1. CEK SEMUA STOK DULU (Mencegah partial save jika ada 1 barang yg stoknya kurang)
+    for ($i = 0; $i < count($id_apd_array); $i++) {
+        $id_a = mysqli_real_escape_string($koneksi, $id_apd_array[$i]);
+        $qty  = (int)$jumlah_array[$i];
+        if (!empty($id_a) && $qty > 0) {
+            $cek = mysqli_query($koneksi, "SELECT nama_apd, stok FROM master_apd WHERE id_apd = '$id_a'");
+            $data_stok = mysqli_fetch_assoc($cek);
+            if ($data_stok['stok'] < $qty) {
+                echo json_encode(['status' => 'error', 'message' => 'Stok ' . $data_stok['nama_apd'] . ' tidak cukup! Sisa: ' . $data_stok['stok']]);
+                exit;
+            }
+        }
+    }
+
+    // 2. JIKA AMAN, BARU EKSEKUSI INSERT DAN POTONG STOK
     $all_success = true;
     $errors = [];
 
     // Loop sebanyak item APD yang diinputkan
     for ($i = 0; $i < count($id_apd_array); $i++) {
         $id_a = mysqli_real_escape_string($koneksi, $id_apd_array[$i]);
-        $qty  = mysqli_real_escape_string($koneksi, $jumlah_array[$i]);
+        $qty  = (int)$jumlah_array[$i];
 
         // Pastikan APD tidak kosong di baris tersebut
         if (!empty($id_a) && $qty > 0) {
             $sql = "INSERT INTO pengambilan_apd (id_karyawan, id_apd, tanggal_pengambilan, jumlah) 
                     VALUES ('$id_k', '$id_a', '$tgl', '$qty')";
-
-            if (!mysqli_query($koneksi, $sql)) {
+            if (mysqli_query($koneksi, $sql)) {
+                // Potong Stok
+                mysqli_query($koneksi, "UPDATE master_apd SET stok = stok - $qty WHERE id_apd = '$id_a'");
+            } else {
                 $all_success = false;
                 $errors[] = mysqli_error($koneksi);
             }

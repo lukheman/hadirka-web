@@ -59,6 +59,7 @@
                         <th>APD & Kategori</th>
                         <th>Deskripsi</th>
                         <th>Masa Pakai</th>
+                        <th>Stok</th>
                         <th>Status</th>
                         <th class="text-center">Aksi</th>
                     </tr>
@@ -89,6 +90,8 @@
                         <option value="Proteksi Kepala">Proteksi Kepala</option>
                         <option value="Pernapasan">Pernapasan</option>
                         <option value="Proteksi Tangan">Proteksi Tangan</option>
+                        <option value="Proteksi Telinga">Proteksi Telinga</option>
+                        <option value="Harness">Harness</option>
                         <option value="Pakaian Kerja">Pakaian Kerja</option>
                         <option value="Lain-lain">Lain-lain</option>
                     </select>
@@ -101,6 +104,10 @@
                     <div class="col-6 mb-3">
                         <label class="form-label">Masa Pakai (Hari)</label>
                         <input type="number" name="masa_pakai_hari" id="masa_pakai_hari" class="form-control" value="365">
+                    </div>
+                    <div class="col-4 mb-3">
+                        <label class="form-label">Stok Awal</label>
+                        <input type="number" name="stok" id="stok" class="form-control" value="0" required>
                     </div>
                     <div class="col-6 mb-3">
                         <label class="form-label">Status Aktif</label>
@@ -157,6 +164,7 @@
             document.getElementById('kategori_apd').value = data.kategori_apd;
             document.getElementById('deskripsi').value = data.deskripsi;
             document.getElementById('masa_pakai_hari').value = data.masa_pakai_hari;
+            document.getElementById('stok').value = data.stok;
             document.getElementById('status_aktif').value = data.status_aktif;
             document.getElementById('modalTitle').innerText = 'Edit Item APD';
             myModal.show();

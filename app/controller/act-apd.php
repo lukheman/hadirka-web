@@ -17,14 +17,15 @@ if ($action == 'save') {
     $kat     = mysqli_real_escape_string($koneksi, $_POST['kategori_apd']);
     $desc    = mysqli_real_escape_string($koneksi, $_POST['deskripsi']);
     $masa    = $_POST['masa_pakai_hari'];
+    $stok    = (int)$_POST['stok'];
     $status  = $_POST['status_aktif'];
 
     if (empty($id)) {
-        $sql = "INSERT INTO master_apd (nama_apd, kategori_apd, deskripsi, masa_pakai_hari, status_aktif) 
-                VALUES ('$nama', '$kat', '$desc', '$masa', '$status')";
+        $sql = "INSERT INTO master_apd (nama_apd, kategori_apd, deskripsi, masa_pakai_hari, stok, status_aktif) 
+                VALUES ('$nama', '$kat', '$desc', '$masa', '$stok', '$status')";
     } else {
         $sql = "UPDATE master_apd SET nama_apd='$nama', kategori_apd='$kat', deskripsi='$desc', 
-                masa_pakai_hari='$masa', status_aktif='$status' WHERE id_apd='$id'";
+                masa_pakai_hari='$masa', stok='$stok', status_aktif='$status' WHERE id_apd='$id'";
     }
 
     if (mysqli_query($koneksi, $sql)) echo json_encode(['status' => 'success']);

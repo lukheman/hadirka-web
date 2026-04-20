@@ -43,10 +43,13 @@ $routes = [
     'data-thr'        => 'view/penggajian/data-thr.php',
     // 'laporan-keuangan'=> 'view/finance-payrol/laporan-keuangan.php',
 
-    // Lainnya
-    'data-kandidat'   => 'view/data-kandidat.php',
+    // APD
     'master-apd'      => 'view/k3/master-apd.php',
     'transaksi-apd'   => 'view/k3/transaksi-apd.php',
+    'pengajuan-apd'   => 'view/k3/pengajuan-apd.php',
+
+    // Lainnya
+    'data-kandidat'   => 'view/data-kandidat.php',
     'pengumuman'      => 'view/broadcast/broadcast.php',
     'data-users-login' => 'view/users.php',
 
@@ -62,8 +65,8 @@ $user_level = $_SESSION['level'] ?? 99;
 // ======= ATURAN KETAT KHUSUS SAFETY (LEVEL 3) =======
 if ($user_level == 3) {
     // Halaman yang diizinkan hanya K3 dan Logout
-    $safety_allowed_pages = ['master-apd', 'transaksi-apd', 'logout'];
-    
+    $safety_allowed_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd', 'logout'];
+
     // Jika Safety mencoba buka halaman selain yang di atas (termasuk 'home')
     if (!in_array($page, $safety_allowed_pages)) {
         echo "<script>alert('Akses Ditolak! Anda hanya memiliki akses ke modul K3.'); window.location.href='?page=master-apd';</script>";
@@ -102,7 +105,7 @@ if (!in_array($user_level, [0, 1, 2]) && in_array($page, $hrd_pages)) {
 }
 
 // 2. Modul K3 (Hanya Admin, Direktur, Safety)
-$k3_pages = ['master-apd', 'transaksi-apd'];
+$k3_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
 if (!in_array($user_level, [0, 1, 3]) && in_array($page, $k3_pages)) {
     echo "<script>alert('Akses Ditolak! Khusus tim K3.'); window.location.href='?page=home';</script>";
     exit;
@@ -124,7 +127,7 @@ $nama_login = $active_user['nama_user'] ?? 'User';
 $jabatan_login = $active_user['jabatan'] ?? 'Karyawan';
 
 // Cek foto profil (Gunakan default jika tidak ada/file hilang)
-$foto_login = 'assets/img/avatars/1.png'; 
+$foto_login = 'assets/img/avatars/1.png';
 if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active_user['foto'])) {
     $foto_login = 'assets/img/user-pic/' . $active_user['foto'];
 }

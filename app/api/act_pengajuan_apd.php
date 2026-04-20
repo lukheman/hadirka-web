@@ -9,7 +9,11 @@ $action = isset($_POST['action']) ? trim($_POST['action']) : '';
 
 // 👇 TAMBAHKAN BLOK INI UNTUK MENGAMBIL OPSI APD 👇
 if ($action == 'get-options') {
-    $query = mysqli_query($koneksi, "SELECT id_apd, nama_apd FROM master_apd WHERE status_aktif = 'aktif' ORDER BY nama_apd ASC");
+    // Hanya tampilkan APD yang aktif DAN stoknya lebih dari 0
+    $query = mysqli_query($koneksi, "SELECT id_apd, CONCAT(nama_apd, ' (Tersedia: ', stok, ')') AS nama_apd 
+                                     FROM master_apd 
+                                     WHERE status_aktif = 'aktif' AND stok > 0 
+                                     ORDER BY nama_apd ASC");
     $data = [];
     while ($row = mysqli_fetch_assoc($query)) {
         $data[] = $row;
