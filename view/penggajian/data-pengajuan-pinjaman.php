@@ -115,7 +115,14 @@
 
         // --- TAMBAHAN: Fungsi Update Status Cepat ---
         window.updateStatusPengajuan = async function(id, newStatus) {
-            if (confirm("Yakin ingin mengubah status pengajuan ini menjadi " + newStatus + "?")) {
+            let confirmText = "";
+            if (newStatus === 'pending') {
+                confirmText = "Kembalikan pengajuan ini ke status Pending? (Data akan ditarik dari Master Pinjaman jika sebelumnya sudah di-ACC)";
+            } else if (newStatus === 'ditolak') {
+                confirmText = "Tolak pengajuan pinjaman ini secara langsung?";
+            }
+
+            if (confirm(confirmText)) {
                 try {
                     const response = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=update-status&id=${id}&status=${newStatus}`);
 

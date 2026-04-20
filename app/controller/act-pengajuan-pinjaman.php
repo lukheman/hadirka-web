@@ -58,8 +58,8 @@ if ($action == 'proses') {
             $stmtInsert->bind_param("iissds", $id_pengajuan, $id_karyawan, $tgl_pinjaman, $tgl_bayar, $nominal, $alasan);
             $stmtInsert->execute();
             $stmtInsert->close();
-        } else if ($status == 'ditolak') {
-            // PERBAIKAN: Jika ditolak melalui form proses, hapus dari Master Data
+        } else if ($status == 'ditolak' || $status == 'pending') {
+            // Hapus dari Master Data jika status ditolak atau dikembalikan ke pending
             $stmtDel = $koneksi->prepare("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = ?");
             $stmtDel->bind_param("i", $id_pengajuan);
             $stmtDel->execute();

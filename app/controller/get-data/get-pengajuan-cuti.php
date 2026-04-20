@@ -67,15 +67,24 @@ while ($row = mysqli_fetch_assoc($q)) {
         </td>
         <td class="text-center">
             <div class="dropdown">
-                <button type="button" class="btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                <button type="button" class="btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="window">
                     <i class="bx bx-dots-vertical-rounded"></i>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <div class="dropdown-header text-uppercase small fw-bold">Ubah Status</div>
-                    <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'pending\')"><i class="bx bx-time me-2 text-warning"></i> Set Pending</a></li>
-                    <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'disetujui\')"><i class="bx bx-check-circle me-2 text-success"></i> Setujui</a></li>
-                    <li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'ditolak\')"><i class="bx bx-x-circle me-2 text-danger"></i> Tolak</a></li>
-                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-header text-uppercase small fw-bold">Ubah Status</div>';
+
+                    // Kondisi: Hanya tampilkan opsi yang statusnya BUKAN status saat ini
+                    if ($status != 'pending') {
+                        echo '<li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'pending\')"><i class="bx bx-time me-2 text-warning"></i> Set Pending</a></li>';
+                    }
+                    if ($status != 'disetujui') {
+                        echo '<li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'disetujui\')"><i class="bx bx-check-circle me-2 text-success"></i> Setujui</a></li>';
+                    }
+                    if ($status != 'ditolak') {
+                        echo '<li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'ditolak\')"><i class="bx bx-x-circle me-2 text-danger"></i> Tolak</a></li>';
+                    }
+
+                    echo '<div class="dropdown-divider"></div>
                     <li><a class="dropdown-item d-flex align-items-center text-danger" href="javascript:void(0)" onclick="deleteCuti('.$id.')"><i class="bx bx-trash me-2"></i> Hapus</a></li>
                 </div>
             </div>
