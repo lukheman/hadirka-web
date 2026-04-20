@@ -34,15 +34,36 @@ if ($action == 'ajukan') {
         exit;
     }
 
+    // 👇 1. QUERY UNTUK AMBIL NIK & NAMA KARYAWAN 👇
+    $nik_karyawan = 'UNKNOWN';
+    $nama_karyawan = 'UNKNOWN';
+
+    // Pastikan pencarian/pengambilan data menggunakan NIK jika sistem Anda mengaturnya demikian, 
+    // namun karena dari mobile yang dikirim adalah id_karyawan, kita gunakan id_karyawan sebagai acuan.
+    $query_kar = mysqli_query($koneksi, "SELECT nik_karyawan, nama_lengkap FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'");
+    if ($row_kar = mysqli_fetch_assoc($query_kar)) {
+        $nik_karyawan = $row_kar['nik_karyawan'];
+        // Hapus spasi pada nama agar link gambar tidak terputus di browser
+        $nama_karyawan = str_replace(' ', '', $row_kar['nama_lengkap']); 
+    }
+    
+    // Format tanggal menjadi string yang aman untuk file (Contoh: 20260420_133845)
+    $tgl_format_file = date('Ymd_His', strtotime($tgl_pengajuan));
+    // 👆 ======================================== 👆
+
     $bukti_val = "NULL";
     if (isset($_FILES['bukti_rusak']) && $_FILES['bukti_rusak']['error'] === UPLOAD_ERR_OK) {
         $file_tmp = $_FILES['bukti_rusak']['tmp_name'];
         $file_ext = strtolower(pathinfo($_FILES['bukti_rusak']['name'], PATHINFO_EXTENSION));
-        $file_name = 'apd_rusak_' . $id_karyawan . '_' . time() . '.' . $file_ext;
+        
+        // 👇 2. FORMAT PENAMAAN FILE BARU 👇
+        // Format: apd_nik_nama_tanggal.ext
+        $file_name = 'apd_' . $nik_karyawan . '_' . $nama_karyawan . '_' . $tgl_format_file . '.' . $file_ext;
+        // 👆 ============================= 👆
 
         $upload_dir = dirname(__DIR__) . '/uploads/apd/';
         if (!file_exists($upload_dir)) mkdir($upload_dir, 0755, true);
-
+        
         if (move_uploaded_file($file_tmp, $upload_dir . $file_name)) {
             $bukti_val = "'uploads/apd/" . $file_name . "'";
         }
