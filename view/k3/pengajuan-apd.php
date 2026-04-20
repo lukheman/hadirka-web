@@ -87,9 +87,14 @@
     }
 
     async function updateStatusApd(id, newStatus) {
-        let confirmText = newStatus === 'disetujui' ?
-            "Setujui pengajuan ini? Data akan otomatis tercatat di log pengambilan APD." :
-            "Tolak pengajuan APD ini?";
+        let confirmText = "";
+        if (newStatus === 'disetujui') {
+            confirmText = "Setujui pengajuan ini? Data akan otomatis tercatat di log pengambilan APD & stok dipotong.";
+        } else if (newStatus === 'ditolak') {
+            confirmText = "Tolak pengajuan APD ini?";
+        } else {
+            confirmText = "Kembalikan status pengajuan ini menjadi Pending?";
+        }
 
         if (confirm(confirmText)) {
             try {
@@ -97,14 +102,11 @@
                 const result = await res.json();
                 if (result.status === 'success') {
                     loadTablePengajuanApd();
-                    // Gunakan fungsi toast Anda (misal: showToast("Berhasil", "success")) jika ada
-                    alert("Status berhasil diperbarui!");
+                    alert("Status berhasil diperbarui!"); 
                 } else {
                     alert("Gagal: " + result.message);
                 }
-            } catch (e) {
-                alert("Terjadi kesalahan sistem.");
-            }
+            } catch (e) { alert("Terjadi kesalahan sistem."); }
         }
     }
 

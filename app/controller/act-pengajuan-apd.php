@@ -5,23 +5,24 @@ $action = $_GET['action'] ?? '';
 
 if ($action == 'update-status') {
     $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $status = mysqli_real_escape_string($koneksi, $_GET['status']);
+    $new_status = mysqli_real_escape_string($koneksi, $_GET['status']); 
     
     // 1. Ambil data pengajuan saat ini
     $cek_query = mysqli_query($koneksi, "SELECT * FROM tb_pengajuan_apd WHERE id_pengajuan_apd = '$id'");
     $data_pengajuan = mysqli_fetch_assoc($cek_query);
+    $old_status = $data_pengajuan['status_pengajuan'];
 
-    // 2. Cegah Double Approve
-    if ($data_pengajuan['status_pengajuan'] == 'disetujui' && $status == 'disetujui') {
-        echo json_encode(['status' => 'error', 'message' => 'Pengajuan ini sudah disetujui sebelumnya.']);
+    // 2. Cegah proses jika statusnya sama
+    if ($old_status == $new_status) {
+        echo json_encode(['status' => 'error', 'message' => 'Status pengajuan sudah ' . $new_status]);
         exit;
     }
 
-    // CEK STOK SEBELUM APPROVE
-    if ($status == 'disetujui') {
-        $id_apd_req = $data_pengajuan['id_apd'];
-        $jumlah_req = (int)$data_pengajuan['jumlah'];
-        
+    $id_apd_req = $data_pengajuan['id_apd'];
+    $jumlah_req = (int)$data_pengajuan['jumlah'];
+
+    // 3. CEK STOK SEBELUM APPROVE (Hanya jika mengubah JADI disetujui)
+    if ($new_status == 'disetujui') {
         $cek_stok = mysqli_query($koneksi, "SELECT stok FROM master_apd WHERE id_apd = '$id_apd_req'");
         $row_stok = mysqli_fetch_assoc($cek_stok);
         
@@ -31,28 +32,32 @@ if ($action == 'update-status') {
         }
     }
     
-    // 3. Update Status
-    $sql = "UPDATE tb_pengajuan_apd SET status_pengajuan = '$status' WHERE id_pengajuan_apd = '$id'";
+    // 4. Update Status di Database
+    $sql = "UPDATE tb_pengajuan_apd SET status_pengajuan = '$new_status' WHERE id_pengajuan_apd = '$id'";
     
     if (mysqli_query($koneksi, $sql)) {
         
-        // 4. LOGIKA AUTO-INSERT JIKA DISETUJUI
-        if ($status == 'disetujui') {
+        // --- SKENARIO A: BERUBAH JADI "DISETUJUI" ---
+        if ($new_status == 'disetujui') {
             $id_kar = $data_pengajuan['id_karyawan'];
-            $id_apd = $data_pengajuan['id_apd'];
-            $jumlah = $data_pengajuan['jumlah'];
             $tgl_sekarang = date('Y-m-d H:i:s');
             
-            // 👇 PERUBAHAN: Memasukkan id_pengajuan_apd ke tabel transaksi 👇
-            $insert_log = "INSERT INTO pengambilan_apd 
-                           (id_karyawan, id_pengajuan_apd, id_apd, jumlah, tanggal_pengambilan) 
-                           VALUES 
-                           ('$id_kar', '$id', '$id_apd', '$jumlah', '$tgl_sekarang')";
-            
+            // Insert Log Transaksi
+            $insert_log = "INSERT INTO pengambilan_apd (id_karyawan, id_pengajuan_apd, id_apd, jumlah, tanggal_pengambilan) 
+                           VALUES ('$id_kar', '$id', '$id_apd_req', '$jumlah_req', '$tgl_sekarang')";
             mysqli_query($koneksi, $insert_log);
             
-            // 👇 POTONG STOK OTOMATIS 👇
-            mysqli_query($koneksi, "UPDATE master_apd SET stok = stok - $jumlah WHERE id_apd = '$id_apd'");
+            // Potong Stok
+            mysqli_query($koneksi, "UPDATE master_apd SET stok = stok - $jumlah_req WHERE id_apd = '$id_apd_req'");
+        }
+        
+        // --- SKENARIO B: PEMBATALAN (Dari Disetujui -> Ditolak/Pending) ---
+        if ($old_status == 'disetujui' && ($new_status == 'ditolak' || $new_status == 'pending')) {
+            // Kembalikan Stok
+            mysqli_query($koneksi, "UPDATE master_apd SET stok = stok + $jumlah_req WHERE id_apd = '$id_apd_req'");
+            
+            // Hapus Log Transaksi (Karena statusnya ditarik ulang)
+            mysqli_query($koneksi, "DELETE FROM pengambilan_apd WHERE id_pengajuan_apd = '$id'");
         }
 
         echo json_encode(['status' => 'success']);

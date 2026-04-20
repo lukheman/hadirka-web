@@ -56,8 +56,8 @@ switch($action){
         // 2. Jika data pengajuan ada (tidak NULL), ubah status pengajuannya jadi 'ditolak'
         if ($dataCek && !empty($dataCek['id_pengajuan_pinjaman'])) {
             $id_pengajuan = $dataCek['id_pengajuan_pinjaman'];
-            $keterangan = "Dibatalkan oleh Admin langsung dari Master Data Pinjaman.";
-            $status_batal = "ditolak"; // Bisa kamu ganti jadi 'pending' jika ingin dikembalikan ke antrean
+            $keterangan = "Ditunda oleh Admin langsung dari Sistem.";
+            $status_batal = "pending"; // Bisa kamu ganti jadi 'pending' jika ingin dikembalikan ke antrean
 
             $updateStmt = $koneksi->prepare("UPDATE tb_pengajuan_pinjaman SET status_pinjaman = ?, keterangan_admin = ? WHERE id_pengajuan_pinjaman = ?");
             $updateStmt->bind_param("ssi", $status_batal, $keterangan, $id_pengajuan);
