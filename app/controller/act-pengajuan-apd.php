@@ -5,7 +5,7 @@ $action = $_GET['action'] ?? '';
 
 if ($action == 'update-status') {
     $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $status = mysqli_real_escape_string($koneksi, $_GET['status']); 
+    $status = mysqli_real_escape_string($koneksi, $_GET['status']);
     
     // 1. Ambil data pengajuan saat ini
     $cek_query = mysqli_query($koneksi, "SELECT * FROM tb_pengajuan_apd WHERE id_pengajuan_apd = '$id'");
@@ -17,7 +17,7 @@ if ($action == 'update-status') {
         exit;
     }
 
-    // 👇 LOGIKA CEK STOK SEBELUM APPROVE 👇
+    // CEK STOK SEBELUM APPROVE
     if ($status == 'disetujui') {
         $id_apd_req = $data_pengajuan['id_apd'];
         $jumlah_req = (int)$data_pengajuan['jumlah'];
@@ -27,7 +27,7 @@ if ($action == 'update-status') {
         
         if ($row_stok['stok'] < $jumlah_req) {
             echo json_encode(['status' => 'error', 'message' => 'Gagal! Stok APD tidak mencukupi. Sisa stok: ' . $row_stok['stok']]);
-            exit; // Berhenti di sini, jangan update status
+            exit; 
         }
     }
     
@@ -43,10 +43,11 @@ if ($action == 'update-status') {
             $jumlah = $data_pengajuan['jumlah'];
             $tgl_sekarang = date('Y-m-d H:i:s');
             
+            // 👇 PERUBAHAN: Memasukkan id_pengajuan_apd ke tabel transaksi 👇
             $insert_log = "INSERT INTO pengambilan_apd 
-                           (id_karyawan, id_apd, jumlah, tanggal_pengambilan) 
+                           (id_karyawan, id_pengajuan_apd, id_apd, jumlah, tanggal_pengambilan) 
                            VALUES 
-                           ('$id_kar', '$id_apd', '$jumlah', '$tgl_sekarang')";
+                           ('$id_kar', '$id', '$id_apd', '$jumlah', '$tgl_sekarang')";
             
             mysqli_query($koneksi, $insert_log);
             
@@ -64,16 +65,26 @@ if ($action == 'update-status') {
 if ($action == 'delete') {
     $id = mysqli_real_escape_string($koneksi, $_GET['id']);
     
-    $query_cari = mysqli_query($koneksi, "SELECT bukti_rusak FROM tb_pengajuan_apd WHERE id_pengajuan_apd = '$id'");
+    $query_cari = mysqli_query($koneksi, "SELECT id_apd, jumlah, status_pengajuan, bukti_rusak FROM tb_pengajuan_apd WHERE id_pengajuan_apd = '$id'");
     $data_apd = mysqli_fetch_assoc($query_cari);
 
-    if ($data_apd && !empty($data_apd['bukti_rusak'])) {
-        $path_file = "app/" . $data_apd['bukti_rusak'];
-        if (file_exists($path_file)) {
-            unlink($path_file);
+    if ($data_apd) {
+        // 👇 PERUBAHAN: Kembalikan stok jika yang dihapus adalah pengajuan yang sudah disetujui 👇
+        if ($data_apd['status_pengajuan'] == 'disetujui') {
+            $id_apd_return = $data_apd['id_apd'];
+            $qty_return = $data_apd['jumlah'];
+            mysqli_query($koneksi, "UPDATE master_apd SET stok = stok + $qty_return WHERE id_apd = '$id_apd_return'");
+        }
+
+        // Hapus file foto bukti fisik jika ada
+        if (!empty($data_apd['bukti_rusak']) && $data_apd['bukti_rusak'] !== 'NULL') {
+            $path_bersih = trim($data_apd['bukti_rusak'], "'");
+            $path_file = "../../" . $path_bersih;
+            if (file_exists($path_file)) unlink($path_file);
         }
     }
 
+    // Hapus pengajuan (Data di tabel pengambilan_apd akan otomatis hilang karena efek CASCADE dari database)
     $sql = "DELETE FROM tb_pengajuan_apd WHERE id_pengajuan_apd = '$id'";
     
     if (mysqli_query($koneksi, $sql)) {

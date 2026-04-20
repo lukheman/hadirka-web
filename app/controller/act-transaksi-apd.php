@@ -158,9 +158,28 @@ if ($action == 'update') {
     exit;
 }
 
-// Tambahkan blok ini di act-transaksi-apd.php
 if ($action == 'delete') {
     $id = mysqli_real_escape_string($koneksi, $_GET['id']);
+    
+    // 1. Ambil data transaksi sebelum dihapus
+    $q_cek = mysqli_query($koneksi, "SELECT id_apd, jumlah, id_pengajuan_apd FROM pengambilan_apd WHERE id_pengambilan = '$id'");
+    $data_trx = mysqli_fetch_assoc($q_cek);
+
+    if ($data_trx) {
+        $id_apd_return = $data_trx['id_apd'];
+        $qty_return = $data_trx['jumlah'];
+        $id_pengajuan = $data_trx['id_pengajuan_apd'];
+
+        // 2. Kembalikan stok ke master_apd
+        mysqli_query($koneksi, "UPDATE master_apd SET stok = stok + $qty_return WHERE id_apd = '$id_apd_return'");
+
+        // 3. Jika transaksi ini berasal dari pengajuan Mobile, ubah status pengajuan jadi 'pending'
+        if (!empty($id_pengajuan)) {
+            mysqli_query($koneksi, "UPDATE tb_pengajuan_apd SET status_pengajuan = 'pending' WHERE id_pengajuan_apd = '$id_pengajuan'");
+        }
+    }
+
+    // 4. Hapus data transaksi
     $sql = "DELETE FROM pengambilan_apd WHERE id_pengambilan = '$id'";
 
     if (mysqli_query($koneksi, $sql)) {
