@@ -9,8 +9,8 @@ $action = isset($_POST['action']) ? trim($_POST['action']) : '';
 
 // 👇 TAMBAHKAN BLOK INI UNTUK MENGAMBIL OPSI APD 👇
 if ($action == 'get-options') {
-    // Hanya tampilkan APD yang aktif DAN stoknya lebih dari 0
-    $query = mysqli_query($koneksi, "SELECT id_apd, CONCAT(nama_apd, ' (Tersedia: ', stok, ')') AS nama_apd 
+    // Tetap gunakan stok > 0 sebagai filter, tapi kembalikan nama_apd nya saja agar UI rapi
+    $query = mysqli_query($koneksi, "SELECT id_apd, nama_apd 
                                      FROM master_apd 
                                      WHERE status_aktif = 'aktif' AND stok > 0 
                                      ORDER BY nama_apd ASC");
@@ -39,10 +39,10 @@ if ($action == 'ajukan') {
         $file_tmp = $_FILES['bukti_rusak']['tmp_name'];
         $file_ext = strtolower(pathinfo($_FILES['bukti_rusak']['name'], PATHINFO_EXTENSION));
         $file_name = 'apd_rusak_' . $id_karyawan . '_' . time() . '.' . $file_ext;
-        
+
         $upload_dir = dirname(__DIR__) . '/uploads/apd/';
         if (!file_exists($upload_dir)) mkdir($upload_dir, 0755, true);
-        
+
         if (move_uploaded_file($file_tmp, $upload_dir . $file_name)) {
             $bukti_val = "'uploads/apd/" . $file_name . "'";
         }
@@ -57,10 +57,10 @@ if ($action == 'ajukan') {
         echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan data: ' . mysqli_error($koneksi)]);
     }
 
-// 👇 TAMBAHAN BLOK UNTUK MEMBATALKAN PENGAJUAN 👇
+    // 👇 TAMBAHAN BLOK UNTUK MEMBATALKAN PENGAJUAN 👇
 } elseif ($action == 'batalkan') {
     $id_pengajuan = mysqli_real_escape_string($koneksi, $_POST['id_pengajuan'] ?? '');
-    
+
     if (empty($id_pengajuan)) {
         echo json_encode(['status' => 'error', 'message' => 'ID Pengajuan tidak ditemukan']);
         exit;
@@ -90,9 +90,8 @@ if ($action == 'ajukan') {
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Data pengajuan tidak ditemukan.']);
     }
-// 👆 BATAS TAMBAHAN 👆
+    // 👆 BATAS TAMBAHAN 👆
 
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Action tidak valid.']);
 }
-?>
