@@ -851,7 +851,19 @@
         let startDate = document.getElementById("startDate").value;
         let endDate = document.getElementById("endDate").value;
 
-        showLoading();
+        // Tampilkan indikator loading elegan langsung di dalam tabel
+        const tbody = document.getElementById("dataPayrol");
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                    <span class="text-muted fw-bold ms-2 align-middle">Memperbarui data tabel...</span>
+                </td>
+            </tr>
+        `;
+
+        // NONAKTIFKAN pemanggilan overlay layar penuh
+        // showLoading();
 
         $.ajax({
             url: "app/controller/get-data/get-payrol.php",
@@ -860,11 +872,13 @@
             dataType: "json",
 
             success: function(res) {
-                hideLoading();
+                // NONAKTIFKAN penutupan overlay layar penuh
+                // hideLoading();
 
                 if (res.status !== "success") {
                     console.error("Error:", res);
                     alert("Error: " + (res.message || "Terjadi kesalahan"));
+                    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger fw-bold">Gagal memuat data.</td></tr>`;
                     return;
                 }
 
@@ -874,7 +888,9 @@
             },
 
             error: function(xhr, status, error) {
-                hideLoading();
+                // NONAKTIFKAN penutupan overlay layar penuh
+                // hideLoading();
+                
                 console.error("AJAX Error:", xhr.responseText);
                 
                 try {
@@ -883,6 +899,8 @@
                 } catch(e) {
                     alert("Gagal mengambil data!");
                 }
+                
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger fw-bold">Koneksi ke server terputus.</td></tr>`;
             }
         });
     }
@@ -935,11 +953,11 @@
         setDefaultDateRange();
         loadPayrol();
 
-        // Ganti 'change' menjadi 'blur'
-        document.getElementById("startDate").addEventListener("blur", loadPayrol);
-        document.getElementById("endDate").addEventListener("blur", loadPayrol);
+        // Ganti 'blur' menjadi 'change' agar tabel langsung ter-refresh otomatis saat klik kalender
+        document.getElementById("startDate").addEventListener("change", loadPayrol);
+        document.getElementById("endDate").addEventListener("change", loadPayrol);
 
-        // Untuk filter Select (Dropdown), biarkan tetap 'change' karena ini hanya filter JS instan tanpa AJAX loading
+        // Untuk filter Select (Dropdown), biarkan tetap 'change'
         document.getElementById("filterSite").addEventListener("change", () => renderTable(allPayrollData));
         document.getElementById("filterJabatan").addEventListener("change", () => renderTable(allPayrollData));
         document.getElementById("filterBank").addEventListener("change", () => renderTable(allPayrollData));
