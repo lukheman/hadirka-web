@@ -24,6 +24,7 @@ $routes = [
     'data-devisi'     => 'view/master-data/data-devisi.php',
     'data-jabatan'    => 'view/master-data/data-jabatan.php',
     'import-karier'   => 'view/master-akses/import-karier.php',
+    'data-kontrak'   => 'view/master-data/data-kontrak.php',
     'data-bpjs-tk'   => 'view/master-data/data-bpjs-tk.php',
 
     // Kehadiran
@@ -85,6 +86,7 @@ $hrd_pages = [
     'data-devisi',
     'data-jabatan',
     'import-karier',
+    'data-kontrak',
     'data-bpjs-tk',
     'rekapan-absensi',
     'dayli-absen',

@@ -68,6 +68,11 @@ function isMenuOpen($pages_array, $current_page)
                         <div>Data Jabatan</div>
                     </a>
                 </li>
+                <li class="menu-item <?= isActive('data-kontrak', $current_page); ?>">
+                    <a class="menu-link" href="data-kontrak">
+                        <div>Data File Kontrak</div>
+                    </a>
+                </li>
                 <li class="menu-item <?= isActive('data-bpjs-tk', $current_page); ?>">
                     <a class="menu-link" href="data-bpjs-tk">
                         <div>Data BPJS Ketenagakerjaan</div>

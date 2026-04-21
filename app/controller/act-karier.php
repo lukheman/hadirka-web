@@ -70,6 +70,17 @@ try {
         // ADD
         if ($action === 'add') {
 
+            // --- TAMBAHKAN VALIDASI STATUS DISINI ---
+            $cekStatus = $koneksi->query("SELECT status_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'");
+            if ($cekStatus->num_rows > 0) {
+                $status = $cekStatus->fetch_assoc()['status_karyawan'];
+                // Sesuaikan kata 'Resign' dengan value yang ada di databasemu
+                if (strtolower($status) === 'resign' || strtolower($status) === 'tidak aktif') {
+                    throw new Exception("Ditolak: Karyawan ini sudah berstatus Resign. Sesuai aturan, tidak bisa masuk kembali.");
+                }
+            }
+            // ----------------------------------------
+
             $sql = "INSERT INTO tb_karier 
                 (id_karyawan,id_site,id_departemen,id_jabatan,
                 gaji_pokok,ot_pertama,ot_kedua,spl,ot1_spl,ot2_spl,

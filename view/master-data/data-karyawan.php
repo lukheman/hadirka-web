@@ -634,7 +634,7 @@
                         <input type="date" name="tgl_keluar" id="elim_tgl_keluar" class="form-control" value="<?= date('Y-m-d')  ?>" required>
                     </div>
                     <div class="form-group mb-3">
-                        <label class="form-label">Jenis Kelamin</label>
+                        <label class="form-label">JENIS KELUAR</label>
                         <select class="form-control" name="id_jenis_keluar" id="elim_jenis_keluar" required>
                             <option value="">-- Pilih Jenis Keluar --</option>
                             <option value="1">Habis Kontrak</option>

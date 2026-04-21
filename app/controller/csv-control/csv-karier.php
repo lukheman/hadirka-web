@@ -70,6 +70,24 @@ try {
             continue;
         }
         $dataKaryawan = $cekKaryawan->fetch_assoc();
+
+        // --- TAMBAHKAN VALIDASI STATUS DISINI ---
+        // Pastikan variabel aman jika status ternyata kosong/null dari database
+        $status_karyawan = strtolower(trim($dataKaryawan['status_karyawan'] ?? ''));
+
+        if ($status_karyawan === 'resign' || 
+            $status_karyawan === 'phk' || 
+            $status_karyawan === 'habis kontrak' || 
+            $status_karyawan === 'pensiun' ||
+            $status_karyawan === 'black list') {
+            
+            $response["gagal"]++;
+            // Perbaikan penulisan array dalam string menggunakan kurung kurawal {}
+            $response["errors"][] = "Row $i : NIK '$nik' ditolak karena sudah $status_karyawan";
+            continue; // Skip baris ini dan lanjut ke karyawan berikutnya di Excel
+        }
+        // ----------------------------------------
+
         $id_karyawan = $dataKaryawan['id_karyawan'];
 
         // Ambil Nilai dari Excel
