@@ -36,10 +36,28 @@ if (!function_exists('generateSlipGaji')) {
         }
 
         // ================= 1) Get Karyawan =================
-        $sql = "SELECT * FROM tb_karyawan WHERE nik_karyawan='$nik' LIMIT 1";
+        // JOIN dengan tb_tereliminasi untuk mengambil tgl_keluar
+        $sql = "SELECT k.*, t.tgl_keluar 
+                FROM tb_karyawan k 
+                LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan 
+                WHERE k.nik_karyawan='$nik' LIMIT 1";
         $q = mysqli_query($koneksi, $sql);
         $k = mysqli_fetch_assoc($q);
+        
         if (!$k) return ['error' => 'Karyawan tidak ditemukan'];
+
+        // --- TAMBAHAN LOGIKA FILTER KARYAWAN KELUAR ---
+        // Jika status BUKAN Aktif, dan tgl_keluar ada, dan tgl_keluar SEBELUM startDate
+        if ($k['status_karyawan'] !== 'Aktif' && !empty($k['tgl_keluar'])) {
+            if (strtotime($k['tgl_keluar']) < strtotime($startDate)) {
+                // Berikan flag 'skip' agar diabaikan oleh frontend
+                return [
+                    'skip' => true, 
+                    'error' => 'Karyawan telah keluar sebelum rentang periode ini.'
+                ];
+            }
+        }
+
         $id_karyawan = $k['id_karyawan'];
 
         // ================= 2) Get Karier aktif =================

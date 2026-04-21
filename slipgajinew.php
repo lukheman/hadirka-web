@@ -684,6 +684,19 @@ require_once 'app/controller/read.php';
 
                 const data = await resp.json();
 
+                // --- TAMBAHAN CEK SKIP ---
+                if (data.skip || data.error) {
+                    alert(data.error || "Data tidak dapat diproses.");
+                    document.getElementById('period').textContent = '-';
+                    document.getElementById('nama').textContent = '-';
+                    document.getElementById('jabatan').textContent = '-';
+                    document.getElementById('gajiBersih').textContent = 'Rp -';
+                    document.getElementById("pendapatanBody").innerHTML = "";
+                    document.getElementById("potonganBody").innerHTML = "";
+                    document.getElementById("absenBody").innerHTML = "";
+                    return; // Hentikan proses render
+                }
+
                 // render data
                 render(data);
 
@@ -800,6 +813,13 @@ require_once 'app/controller/read.php';
                 });
 
                 const data = await resp.json();
+
+                // --- TAMBAHAN CEK SKIP UNTUK ZIP ---
+                if (data.skip || data.error) {
+                    console.log(`Melewati NIK ${nik}: ${data.error}`);
+                    // Lanjut ke iterasi (karyawan) berikutnya, abaikan render & PDF
+                    continue; 
+                }
 
                 // Render slip
                 render(data);
@@ -943,6 +963,13 @@ require_once 'app/controller/read.php';
             }
 
             const data = await resp.json();
+
+                // --- TAMBAHAN CEK SKIP UNTUK ZIP ---
+                if (data.skip || data.error) {
+                    console.log(`Melewati NIK ${nik}: ${data.error}`);
+                    // Lanjut ke iterasi (karyawan) berikutnya, abaikan render & PDF
+                    continue; 
+                }
 
             // 2. Render ke tampilan
             render(data);
