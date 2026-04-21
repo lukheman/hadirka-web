@@ -263,18 +263,44 @@ require_once 'app/controller/read.php';
 
 <body>
     <div class="controls">
+        <select id="siteFilter" class="search" style="min-width: 150px;">
+            <option value="">-- Semua Site --</option>
+            <?php
+            // Ambil daftar site unik langsung dari database
+            $qSite = mysqli_query($koneksi, "SELECT DISTINCT nama_site FROM tb_site WHERE nama_site IS NOT NULL ORDER BY nama_site ASC");
+            if($qSite) {
+                while($s = mysqli_fetch_assoc($qSite)){
+                    echo '<option value="'.htmlspecialchars($s['nama_site']).'">'.htmlspecialchars($s['nama_site']).'</option>';
+                }
+            }
+            ?>
+        </select>
+
         <select id="nikSelect" class="search">
             <?php
-            // populate options using existing helper data_karyawan (same as yang Anda miliki)
             $dataKaryawan = data_karyawan('nama_lengkap');
+            
+            // Mapping Site untuk memastikan info site tersedia pada dropdown karyawan
+            $siteMapping = [];
+            $qMapping = mysqli_query($koneksi, "SELECT k.nik_karyawan, s.nama_site FROM tb_karyawan k LEFT JOIN tb_karier kr ON k.id_karyawan = kr.id_karyawan LEFT JOIN tb_site s ON kr.id_site = s.id_site");
+            if($qMapping) {
+                while($rowM = mysqli_fetch_assoc($qMapping)) {
+                    $siteMapping[$rowM['nik_karyawan']] = $rowM['nama_site'];
+                }
+            }
+
             foreach ($dataKaryawan as $karyawan) {
-                // store value sebagai nik|nama|jabatan supaya frontend bisa mendapatkan nama & jabatan default jika diperlukan
                 $val = implode('|', [
                     $karyawan['nik_karyawan'],
                     $karyawan['nama_lengkap'] ?? '',
                     $karyawan['nama_jabatan'] ?? ''
                 ]);
-                echo '<option value="' . htmlspecialchars($val) . '">' . htmlspecialchars($karyawan['nik_karyawan'] . ' - ' . $karyawan['nama_lengkap']) . '</option>';
+                
+                // Dapatkan nama site karyawan
+                $site = $karyawan['nama_site'] ?? ($siteMapping[$karyawan['nik_karyawan']] ?? 'Tanpa Site');
+                
+                // Sisipkan atribut data-site
+                echo '<option value="' . htmlspecialchars($val) . '" data-site="'.htmlspecialchars($site).'">' . htmlspecialchars($karyawan['nik_karyawan'] . ' - ' . $karyawan['nama_lengkap']) . '</option>';
             }
             ?>
         </select>
@@ -284,23 +310,12 @@ require_once 'app/controller/read.php';
         <button onclick="generateSlip()">Generate Slip</button>
         <button onclick="downloadPDF()" id="downloadBtn" class="secondary">Download PDF</button>
         <button onclick="downloadSlipZip()" class="secondary">Download ZIP Semua Slip</button>
+        
         <div id="progressContainer" style="display:none; margin-top:15px;">
-            <div style="
-        width:100%; 
-        background:#ddd; 
-        height:22px; 
-        border-radius:5px;">
-                <div id="progressBar" style="
-            height:22px;
-            width:0%;
-            background:#4CAF50;
-            border-radius:5px;
-            transition:width 0.3s;
-        "></div>
+            <div style="width:100%; background:#ddd; height:22px; border-radius:5px;">
+                <div id="progressBar" style="height:22px; width:0%; background:#4CAF50; border-radius:5px; transition:width 0.3s;"></div>
             </div>
-            <p id="progressText" style="margin-top:5px; font-weight:bold;">
-                Mulai memproses...
-            </p>
+            <p id="progressText" style="margin-top:5px; font-weight:bold;">Mulai memproses...</p>
         </div>
     </div>
 
@@ -854,7 +869,39 @@ require_once 'app/controller/read.php';
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Inisialisasi Select2
             $('.search').select2({});
+
+            // 1. Simpan semua opsi asli karyawan ke dalam array memori
+            let allKaryawanOptions = [];
+            $('#nikSelect option').each(function() {
+                allKaryawanOptions.push({
+                    val: $(this).val(),
+                    text: $(this).text(),
+                    site: $(this).attr('data-site')
+                });
+            });
+
+            // 2. Memicu event saat filter Site diubah
+            $('#siteFilter').on('change', function() {
+                let selectedSite = $(this).val();
+                let $nikSelect = $('#nikSelect');
+                
+                // Kosongkan opsi dropdown karyawan saat ini
+                $nikSelect.empty();
+                
+                // Kembalikan hanya karyawan yang sitenya sesuai filter
+                allKaryawanOptions.forEach(function(opt) {
+                    if (!selectedSite || opt.site === selectedSite) {
+                        let newOption = new Option(opt.text, opt.val, false, false);
+                        $(newOption).attr('data-site', opt.site);
+                        $nikSelect.append(newOption);
+                    }
+                });
+                
+                // Perbarui tampilan antarmuka Select2
+                $nikSelect.trigger('change');
+            });
         });
     </script>
 </body>
