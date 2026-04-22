@@ -20,7 +20,7 @@ $q = $koneksi->query("SELECT k.id_karier, k.id_karyawan, kr.nik_karyawan, kr.nam
                       INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
                       INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
                       $where_clause
-                      ORDER BY k.tgl_mulai DESC");
+                      ORDER BY k.nik_karyawan DESC");
 
 while ($r = $q->fetch_assoc()) { 
     // Logika Status Dokumen

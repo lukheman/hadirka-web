@@ -23,19 +23,19 @@
             <div class="card-body">
                 <div class="table-responsive text-nowrap">
                     <table class="table table-bordered MyTableKontrak">
-                        <thead class="table-info text-center">
+                        <thead class="table-info">
                             <tr>
-                                <th>No</th>
-                                <th>NIK</th>
-                                <th>Nama</th>
-                                <th>Jabatan</th>
-                                <th>Periode Kontrak</th>
-                                <th>Status Dokumen</th>
-                                <th>Aksi</th>
+                                <th class="text-center"><i class="fa fa-hashtag"></i> No</th>
+                                <th class="text-center"><i class="fa fa-id-card"></i> NIK</th>
+                                <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
+                                <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
+                                <th class="text-center"><i class="fa fa-calendar" aria-hidden="true"></i>Periode Kontrak</th>
+                                <th class="text-center"><i class="fa fa-file" aria-hidden="true"></i></i> Status Dokumen</th>
+                                <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyKontrak">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -77,80 +77,82 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    // Fungsi untuk meload data tabel kontrak (bisa kamu pisah ke file get-kontrak.php)
-    // Fungsi untuk meload data tabel kontrak dengan filter
-    function loadKontrak() {
-        // Ambil value dari dropdown filter
-        let status = document.getElementById("filterStatusKontrak").value;
+    document.addEventListener("DOMContentLoaded", () => {
+        // Fungsi untuk meload data tabel kontrak (bisa kamu pisah ke file get-kontrak.php)
+        // Fungsi untuk meload data tabel kontrak dengan filter
+        function loadKontrak() {
+            // Ambil value dari dropdown filter
+            let status = document.getElementById("filterStatusKontrak").value;
 
-        // Kirim parameter status via GET
-        fetch("app/controller/get-data/get-kontrak.php?status=" + encodeURIComponent(status))
-            .then(res => res.text())
-            .then(html => {
-                if ($.fn.DataTable.isDataTable(".MyTableKontrak")) {
-                    $(".MyTableKontrak").DataTable().destroy();
-                }
-                document.getElementById("tbodyKontrak").innerHTML = html;
-                $(".MyTableKontrak").DataTable({ responsive: true });
-            });
-    }
+            // Kirim parameter status via GET
+            fetch("app/controller/get-data/get-kontrak.php?status=" + encodeURIComponent(status))
+                .then(res => res.text())
+                .then(html => {
+                    if ($.fn.DataTable.isDataTable(".MyTableKontrak")) {
+                        $(".MyTableKontrak").DataTable().destroy();
+                    }
+                    document.getElementById("tbodyKontrak").innerHTML = html;
+                    $(".MyTableKontrak").DataTable({
+                        responsive: true
+                    });
+                });
+        }
 
-    // Tambahkan Event Listener agar saat dropdown diganti, tabel langsung mereload
-    document.getElementById("filterStatusKontrak").addEventListener("change", function() {
+        // Tambahkan Event Listener agar saat dropdown diganti, tabel langsung mereload
+        document.getElementById("filterStatusKontrak").addEventListener("change", function() {
+            loadKontrak();
+        });
+
+        // Trigger Modal Upload
+        document.addEventListener("click", e => {
+            let btn = e.target.closest(".btnUploadKontrak");
+            if (!btn) return;
+
+            // Isi form modal dengan data dari tombol
+            document.getElementById("upload_id_karier").value = btn.dataset.id_karier;
+            document.getElementById("upload_id_karyawan").value = btn.dataset.id_karyawan;
+            document.getElementById("upload_nama_karyawan").value = btn.dataset.nama;
+
+            // Kosongkan input file sebelumnya
+            document.querySelector("input[name=file_pdf]").value = "";
+
+            new bootstrap.Modal(document.getElementById("modalUploadKontrak")).show();
+        });
+
+        // Proses Submit form Upload
+        document.getElementById("formUploadKontrak").addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            let fd = new FormData(this);
+            let btnSave = document.getElementById("btnSaveUpload");
+
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengupload...';
+
+            fetch("app/controller/act-kontrak.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan File';
+
+                    if (res.status === "success") {
+                        showToast("File kontrak berhasil diupload!", "success");
+                        bootstrap.Modal.getInstance(document.getElementById("modalUploadKontrak")).hide();
+                        loadKontrak(); // Reload tabel agar tombol "Lihat PDF" muncul
+                    } else {
+                        showToast(res.msg, "error");
+                    }
+                })
+                .catch(err => {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan File';
+                    showToast("Terjadi kesalahan sistem", "error");
+                });
+        });
+
         loadKontrak();
     });
-
-    // Trigger Modal Upload
-    document.addEventListener("click", e => {
-        let btn = e.target.closest(".btnUploadKontrak");
-        if (!btn) return;
-
-        // Isi form modal dengan data dari tombol
-        document.getElementById("upload_id_karier").value = btn.dataset.id_karier;
-        document.getElementById("upload_id_karyawan").value = btn.dataset.id_karyawan;
-        document.getElementById("upload_nama_karyawan").value = btn.dataset.nama;
-        
-        // Kosongkan input file sebelumnya
-        document.querySelector("input[name=file_pdf]").value = "";
-
-        new bootstrap.Modal(document.getElementById("modalUploadKontrak")).show();
-    });
-
-    // Proses Submit form Upload
-    document.getElementById("formUploadKontrak").addEventListener("submit", function(e) {
-        e.preventDefault();
-        
-        let fd = new FormData(this);
-        let btnSave = document.getElementById("btnSaveUpload");
-        
-        btnSave.disabled = true;
-        btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengupload...';
-
-        fetch("app/controller/act-kontrak.php", {
-            method: "POST",
-            body: fd
-        })
-        .then(res => res.json())
-        .then(res => {
-            btnSave.disabled = false;
-            btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan File';
-
-            if (res.status === "success") {
-                showToast("File kontrak berhasil diupload!", "success");
-                bootstrap.Modal.getInstance(document.getElementById("modalUploadKontrak")).hide();
-                loadKontrak(); // Reload tabel agar tombol "Lihat PDF" muncul
-            } else {
-                showToast(res.msg, "error");
-            }
-        })
-        .catch(err => {
-            btnSave.disabled = false;
-            btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan File';
-            showToast("Terjadi kesalahan sistem", "error");
-        });
-    });
-
-    loadKontrak();
-});
 </script>
