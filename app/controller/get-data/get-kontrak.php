@@ -20,7 +20,7 @@ $q = $koneksi->query("SELECT k.id_karier, k.id_karyawan, kr.nik_karyawan, kr.nam
                       INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
                       INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
                       $where_clause
-                      ORDER BY kr.nik_karyawan DESC");
+                      ORDER BY kr.nik_karyawan ASC");
 
 while ($r = $q->fetch_assoc()) { 
     // Logika Status Dokumen
@@ -38,14 +38,14 @@ while ($r = $q->fetch_assoc()) {
         $nama_tampil .= ' <br><small class="text-danger">('.$r['status_karyawan'].')</small>';
     }
 ?>
-    <tr class="text-center">
+    <tr class="">
         <td><?= $no++ ?></td>
         <td><?= $r['nik_karyawan'] ?></td>
         <td class="text-start"><?= $nama_tampil ?></td>
         <td><?= $r['nama_jabatan'] ?></td>
         <td><?= $r['tgl_mulai'] ?> s/d <?= $r['tgl_selesai'] ?? 'Sekarang' ?></td>
-        <td><?= $status_dokumen ?></td>
-        <td>
+        <td class="text-center"><?= $status_dokumen ?></td>
+        <td class="text-center">
             <?= $btn_lihat ?>
             <button class="btn btn-sm btn-primary btnUploadKontrak" 
                 data-id_karier="<?= $r['id_karier'] ?>" 
