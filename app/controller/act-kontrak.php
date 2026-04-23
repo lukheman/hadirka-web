@@ -21,14 +21,45 @@ try {
             throw new Exception("Tanggal mulai wajib diisi.");
         }
 
-        $stmt_tgl = $koneksi->prepare("UPDATE tb_karier SET tgl_mulai = ?, tgl_selesai = ? WHERE id_karier = ?");
-        $stmt_tgl->bind_param("ssi", $tgl_mulai, $tgl_selesai, $id_karier);
+        // Perbaikan Bug NULL: Pisahkan query agar SQL benar-benar menerima nilai NULL
+        if ($tgl_selesai === null) {
+            $stmt_tgl = $koneksi->prepare("UPDATE tb_karier SET tgl_mulai = ?, tgl_selesai = NULL WHERE id_karier = ?");
+            $stmt_tgl->bind_param("si", $tgl_mulai, $id_karier);
+        } else {
+            $stmt_tgl = $koneksi->prepare("UPDATE tb_karier SET tgl_mulai = ?, tgl_selesai = ? WHERE id_karier = ?");
+            $stmt_tgl->bind_param("ssi", $tgl_mulai, $tgl_selesai, $id_karier);
+        }
+
         if (!$stmt_tgl->execute()) {
             throw new Exception("Gagal mengupdate tanggal kontrak.");
         }
     }
 
-    // --- 2. CEK FILE UPLOAD ---
+    // --- FITUR BARU: HAPUS FILE ---
+    if ($action === 'delete_file') {
+        $upload_dir = '../uploads/kontrak/';
+        
+        // Cari nama file di DB
+        $cekData = $koneksi->query("SELECT file_kontrak FROM tb_karier WHERE id_karier='$id_karier'");
+        if ($cekData->num_rows > 0) {
+            $file_lama = $cekData->fetch_assoc()['file_kontrak'];
+            
+            // Hapus file fisik jika ada
+            if (!empty($file_lama) && file_exists($upload_dir . $file_lama)) {
+                unlink($upload_dir . $file_lama);
+            }
+
+            // Update database menjadi NULL
+            $koneksi->query("UPDATE tb_karier SET file_kontrak = NULL WHERE id_karier='$id_karier'");
+            
+            echo json_encode(["status" => "success", "msg" => "File berhasil dihapus"]);
+            exit; // Hentikan script di sini agar tidak menjalankan upload
+        } else {
+            throw new Exception("Data kontrak tidak ditemukan.");
+        }
+    }
+
+    // --- 3. CEK FILE UPLOAD ---
     $has_file = isset($_FILES['file_pdf']) && $_FILES['file_pdf']['error'] === UPLOAD_ERR_OK;
 
     // Jika lewat form Upload, file wajib ada. Jika form Edit, file opsional.
@@ -36,7 +67,7 @@ try {
         throw new Exception("Pilih file PDF terlebih dahulu.");
     }
 
-    // --- 3. JIKA ADA FILE, PROSES UPLOAD ---
+    // --- 4. JIKA ADA FILE, PROSES UPLOAD ---
     if ($has_file) {
         $file_tmp  = $_FILES['file_pdf']['tmp_name'];
         $file_name = $_FILES['file_pdf']['name'];

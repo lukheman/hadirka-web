@@ -42,7 +42,7 @@
                                 <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
                                 <th class="text-center"><i class="fa fa-calendar" aria-hidden="true"></i> Periode Kontrak</th>
-                                <th class="text-center"><i class="fa fa-file" aria-hidden="true"></i></i> Status Dokumen</th>
+                                <th class="text-center"><i class="fa fa-file" aria-hidden="true"></i> Status Dokumen</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
                             </tr>
                         </thead>
@@ -101,8 +101,9 @@
     <div class="modal fade" id="modalUploadKontrak" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <form id="formUploadKontrak" class="modal-content" enctype="multipart/form-data">
-                <input type="hidden" name="id_karier" id="upload_id_karier">
+                <input type="hidden" name="action" value="upload">
                 <input type="hidden" name="id_karyawan" id="upload_id_karyawan">
+                <input type="hidden" name="id_karier" id="upload_id_karier">
 
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title text-white"><i class="fas fa-upload"></i> Upload Kontrak Kerja</h5>
@@ -193,7 +194,7 @@
             document.getElementById("edit_id_karyawan").value = btn.dataset.id_karyawan;
             document.getElementById("edit_nama_karyawan").value = btn.dataset.nama;
             document.getElementById("edit_tgl_mulai").value = btn.dataset.tgl_mulai;
-            
+
             // Format handle null atau 0000-00-00 dari database
             let tglSelesai = btn.dataset.tgl_selesai;
             document.getElementById("edit_tgl_selesai").value = (tglSelesai !== "null" && tglSelesai !== "0000-00-00" && tglSelesai) ? tglSelesai : "";
@@ -269,6 +270,47 @@
                     btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan File';
                     showToast("Terjadi kesalahan sistem", "error");
                 });
+        });
+
+        // Trigger Hapus File PDF
+        document.addEventListener("click", e => {
+            let btn = e.target.closest(".btnHapusFile");
+            if (!btn) return;
+
+            let idKarier = btn.dataset.id_karier;
+            let nama = btn.dataset.nama;
+
+            if (confirm(`Apakah Anda yakin ingin menghapus file kontrak milik ${nama}?`)) {
+                let fd = new FormData();
+                fd.append("action", "delete_file");
+                fd.append("id_karier", idKarier);
+
+                // Ubah icon jadi loading
+                let iconAsli = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btn.disabled = true;
+
+                fetch("app/controller/act-kontrak.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        showToast("File kontrak berhasil dihapus!", "success");
+                        loadKontrak(); // Reload tabel
+                    } else {
+                        showToast(res.msg, "error");
+                        btn.innerHTML = iconAsli;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    showToast("Terjadi kesalahan server.", "error");
+                    btn.innerHTML = iconAsli;
+                    btn.disabled = false;
+                });
+            }
         });
 
         loadFilters();

@@ -47,10 +47,16 @@ while ($r = $q->fetch_assoc()) {
     // Logika Status Dokumen
     if (!empty($r['file_kontrak'])) {
         $status_dokumen = '<span class="badge bg-success">Sudah Upload</span>';
-        $btn_lihat = '<a href="app/uploads/kontrak/'.$r['file_kontrak'].'" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-eye"></i> Lihat PDF</a>';
+
+        // Tombol Lihat
+        $btn_lihat = '<a href="app/uploads/kontrak/'.$r['file_kontrak'].'" target="_blank" class="btn btn-sm btn-info mb-1"><i class="fas fa-eye"></i> Lihat PDF</a>';
+        
+        // Tambahan Tombol Hapus
+        $btn_hapus = '<button class="btn btn-sm btn-danger btnHapusFile mb-1" data-id_karier="'.$r['id_karier'].'" data-nama="'.htmlspecialchars($r['nama_lengkap']).'"><i class="fas fa-trash"></i> Hapus File</button>';
     } else {
         $status_dokumen = '<span class="badge bg-danger">Belum Ada</span>';
         $btn_lihat = '';
+        $btn_hapus = '';
     }
     
     // Beri warna merah pada nama jika statusnya bukan Aktif
@@ -68,6 +74,7 @@ while ($r = $q->fetch_assoc()) {
         <td class="text-center"><?= $status_dokumen ?></td>
         <td class="text-center">
             <?= $btn_lihat ?>
+            <?= $btn_hapus ?>
             
             <button class="btn btn-sm btn-warning btnEditKontrak" 
                 data-id_karier="<?= $r['id_karier'] ?>" 
