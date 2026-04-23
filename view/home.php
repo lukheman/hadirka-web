@@ -99,6 +99,18 @@
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between pb-2">
                     <h5 class="card-title m-0 me-2">Statistik Karyawan Aktif</h5>
+                    
+                    <select id="siteDropdown" class="form-select form-select-sm w-auto cursor-pointer" onchange="loadStatistikKaryawan()">
+                        <option value="">Semua Site</option>
+                        <?php
+                        $qSite = mysqli_query($koneksi, "SELECT id_site, nama_site FROM tb_site ORDER BY nama_site ASC");
+                        if ($qSite && mysqli_num_rows($qSite) > 0) {
+                            while($rowS = mysqli_fetch_assoc($qSite)){
+                                echo "<option value='{$rowS['id_site']}'>{$rowS['nama_site']}</option>";
+                            }
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div class="card-body" id="listKaryawanJabatan">
                     <div class="d-flex justify-content-center align-items-center py-4">
@@ -125,7 +137,6 @@
         return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
     }
 
-    // Fungsi untuk merender UI Persentase Naik/Turun
     function updatePercUI(elementId, value) {
         const el = document.getElementById(elementId);
         if (value > 0) {
@@ -140,23 +151,98 @@
         }
     }
 
-    // Fungsi utama mengambil data berdasarkan id_priode
+    // Fungsi modular khusus untuk merender HTML Progress Bar Karyawan
+    function renderListKaryawan(karyawanData) {
+        const listContainer = document.getElementById("listKaryawanJabatan");
+        listContainer.innerHTML = ""; 
+
+        if (karyawanData && karyawanData.length > 0) {
+            let totalKaryawan = karyawanData.reduce((sum, item) => sum + item.jumlah, 0);
+            
+            let htmlList = `
+                <div class="mb-4 d-flex justify-content-between align-items-center bg-lighter p-3 rounded">
+                    <span class="text-muted fw-semibold">Total Karyawan Aktif</span>
+                    <h4 class="mb-0 text-primary fw-bold">${totalKaryawan} <span class="fs-6 text-muted fw-normal">Orang</span></h4>
+                </div>
+            `;
+            
+            const colors = ['primary', 'success', 'info', 'warning', 'danger', 'dark'];
+            
+            karyawanData.forEach((item, index) => {
+                let percentage = ((item.jumlah / totalKaryawan) * 100).toFixed(1);
+                let color = colors[index % colors.length]; 
+                
+                htmlList += `
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class='bx bx-briefcase text-${color}'></i>
+                                <span class="fw-semibold text-heading">${item.jabatan}</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="fw-bold">${item.jumlah}</span>
+                                <span class="text-muted small">(${percentage}%)</span>
+                            </div>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-${color}" role="progressbar" style="width: ${percentage}%" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = htmlList;
+        } else {
+            listContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <i class='bx bx-user-x text-muted mb-2' style='font-size: 3rem;'></i>
+                    <p class="text-muted mb-0">Tidak ada data karyawan di site ini.</p>
+                </div>
+            `;
+        }
+    }
+
+    // Fungsi fetch ringan yang HANYA dieksekusi saat Filter Site diubah
+    async function loadStatistikKaryawan() {
+        const listContainer = document.getElementById("listKaryawanJabatan");
+        const idSite = document.getElementById("siteDropdown").value;
+        
+        listContainer.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center py-4">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+                <span class="ms-2 text-muted">Memfilter data site...</span>
+            </div>
+        `;
+
+        try {
+            // Tambahkan param only_karyawan=1 untuk bypass perhitungan gaji di backend
+            const url = `app/controller/get-data/get-home.php?only_karyawan=1&id_site=${idSite}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            if (data.status === "success") {
+                renderListKaryawan(data.karyawan_per_jabatan);
+            }
+        } catch (error) {
+            console.error("Gagal mengambil data site:", error);
+            listContainer.innerHTML = `<p class="text-center text-danger mt-3">Gagal mengambil data.</p>`;
+        }
+    }
+
+    // Fungsi utama mengambil semua data (Gaji + Karyawan) saat ubah Periode atau pertama kali load
     async function loadDashboard(idPriode = '') {
         document.getElementById("totalGaji").innerText = "Menghitung...";
         document.getElementById("totalPinjaman").innerText = "Menghitung...";
         document.getElementById("totalGajiPinjaman").innerText = "Menghitung...";
 
-        let url = 'app/controller/get-data/get-home.php';
-        if (idPriode) {
-            url += `?id_priode=${idPriode}`;
-        }
+        const idSite = document.getElementById("siteDropdown").value;
+        let url = `app/controller/get-data/get-home.php?id_site=${idSite}`;
+        if (idPriode) url += `&id_priode=${idPriode}`;
 
         try {
             const res = await fetch(url);
             const data = await res.json();
 
             if (data.status === "success") {
-                // Memformat teks periode
                 let dates = data.periode.split(' - ');
                 let textPeriode = data.periode;
                 if (dates.length === 2) {
@@ -172,66 +258,12 @@
                 document.getElementById("totalPinjaman").innerText = "Rp " + totalPinjaman.toLocaleString('id-ID');
                 document.getElementById("totalGajiPinjaman").innerText = "Rp " + totalKeseluruhan.toLocaleString('id-ID');
 
-                // Update Persentase UI
                 updatePercUI("percGaji", data.perc_gaji);
                 updatePercUI("percPinjaman", data.perc_pinjaman);
                 updatePercUI("percTotal", data.perc_total);
 
-                // ==========================================================
-                // RENDER STATISTIK JABATAN DENGAN PROGRESS BAR
-                // ==========================================================
-                const listContainer = document.getElementById("listKaryawanJabatan");
-                listContainer.innerHTML = ""; 
-
-                if (data.karyawan_per_jabatan && data.karyawan_per_jabatan.length > 0) {
-                    // 1. Hitung total seluruh karyawan aktif
-                    let totalKaryawan = data.karyawan_per_jabatan.reduce((sum, item) => sum + item.jumlah, 0);
-                    
-                    // 2. Buat header total
-                    let htmlList = `
-                        <div class="mb-4 d-flex justify-content-between align-items-center bg-lighter p-3 rounded">
-                            <span class="text-muted fw-semibold">Total Karyawan Aktif</span>
-                            <h4 class="mb-0 text-primary fw-bold">${totalKaryawan} <span class="fs-6 text-muted fw-normal">Orang</span></h4>
-                        </div>
-                    `;
-                    
-                    // Array warna Bootstrap agar bar lebih hidup
-                    const colors = ['primary', 'success', 'info', 'warning', 'danger', 'dark'];
-                    
-                    // 3. Looping data untuk membuat Progress Bar
-                    data.karyawan_per_jabatan.forEach((item, index) => {
-                        let percentage = ((item.jumlah / totalKaryawan) * 100).toFixed(1);
-                        let color = colors[index % colors.length]; // Rotasi warna otomatis
-                        
-                        htmlList += `
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class='bx bx-briefcase text-${color}'></i>
-                                        <span class="fw-semibold text-heading">${item.jabatan}</span>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="fw-bold">${item.jumlah}</span>
-                                        <span class="text-muted small">(${percentage}%)</span>
-                                    </div>
-                                </div>
-                                <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-${color}" role="progressbar" style="width: ${percentage}%" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    listContainer.innerHTML = htmlList;
-                } else {
-                    listContainer.innerHTML = `
-                        <div class="text-center py-4">
-                            <i class='bx bx-user-x text-muted mb-2' style='font-size: 3rem;'></i>
-                            <p class="text-muted mb-0">Tidak ada data karyawan aktif.</p>
-                        </div>
-                    `;
-                }
-
+                // Panggil render list karyawan menggunakan data yang ter-load bersamaan
+                renderListKaryawan(data.karyawan_per_jabatan);
             } else {
                 document.getElementById("periodeText").innerText = "TIDAK ADA PERIODE AKTIF";
                 document.getElementById("totalGaji").innerText = "Rp 0";
