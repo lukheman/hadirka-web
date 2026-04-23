@@ -49,10 +49,10 @@ while ($r = $q->fetch_assoc()) {
         $status_dokumen = '<span class="badge bg-success">Sudah Upload</span>';
 
         // Tombol Lihat
-        $btn_lihat = '<a href="app/uploads/kontrak/'.$r['file_kontrak'].'" target="_blank" class="btn btn-sm btn-info mb-1"><i class="fas fa-eye"></i></a>';
+        $btn_lihat = '<a href="app/uploads/kontrak/'.$r['file_kontrak'].'" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>';
         
         // Tambahan Tombol Hapus
-        $btn_hapus = '<button class="btn btn-sm btn-danger btnHapusFile mb-1" data-id_karier="'.$r['id_karier'].'" data-nama="'.htmlspecialchars($r['nama_lengkap']).'"><i class="fas fa-trash"></i></button>';
+        $btn_hapus = '<button class="btn btn-sm btn-danger btnHapusFile" data-id_karier="'.$r['id_karier'].'" data-nama="'.htmlspecialchars($r['nama_lengkap']).'"><i class="fas fa-trash"></i></button>';
     } else {
         $status_dokumen = '<span class="badge bg-danger">Belum Ada</span>';
         $btn_lihat = '';
@@ -66,31 +66,35 @@ while ($r = $q->fetch_assoc()) {
     }
 ?>
     <tr class="">
-        <td class="text-center"><?= $no++ ?></td>
-        <td><?= htmlspecialchars($r['nik_karyawan']) ?></td>
-        <td class="text-start"><?= $nama_tampil ?></td>
-        <td><?= htmlspecialchars($r['nama_jabatan']) ?></td>
-        <td><?= $r['tgl_mulai'] ?> s/d <?= (!empty($r['tgl_selesai']) && $r['tgl_selesai'] !== '0000-00-00') ? $r['tgl_selesai'] : 'Sekarang' ?></td>
-        <td class="text-center"><?= $status_dokumen ?></td>
-        <td class="text-center">
-            <?= $btn_lihat ?>
-            <?= $btn_hapus ?>
-            
-            <button class="btn btn-sm btn-warning btnEditKontrak" 
-                data-id_karier="<?= $r['id_karier'] ?>" 
-                data-id_karyawan="<?= $r['id_karyawan'] ?>" 
-                data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>"
-                data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
-                data-tgl_selesai="<?= $r['tgl_selesai'] ?>">
-                <i class="fas fa-edit"></i>
-            </button>
+        <td class="text-center align-middle"><?= $no++ ?></td>
+        <td class="align-middle"><?= htmlspecialchars($r['nik_karyawan']) ?></td>
+        <td class="text-start align-middle"><?= $nama_tampil ?></td>
+        <td class="align-middle"><?= htmlspecialchars($r['nama_jabatan']) ?></td>
+        <td class="align-middle"><?= $r['tgl_mulai'] ?> s/d <?= (!empty($r['tgl_selesai']) && $r['tgl_selesai'] !== '0000-00-00') ? $r['tgl_selesai'] : 'Sekarang' ?></td>
+        <td class="text-center align-middle"><?= $status_dokumen ?></td>
+        <td class="text-center align-middle">
+            <div class="d-flex justify-content-center align-items-center gap-1">
+                <?= $btn_lihat ?>
+                <?= $btn_hapus ?>
+                
+                <button class="btn btn-sm btn-warning btnEditKontrak" 
+                    data-id_karier="<?= $r['id_karier'] ?>" 
+                    data-id_karyawan="<?= $r['id_karyawan'] ?>" 
+                    data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>"
+                    data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
+                    data-tgl_selesai="<?= $r['tgl_selesai'] ?>"
+                    title="Edit Kontrak">
+                    <i class="fas fa-edit"></i>
+                </button>
 
-            <button class="btn btn-sm btn-primary btnUploadKontrak" 
-                data-id_karier="<?= $r['id_karier'] ?>" 
-                data-id_karyawan="<?= $r['id_karyawan'] ?>" 
-                data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>">
-                <i class="fas fa-upload"></i> Upload
-            </button>
+                <button class="btn btn-sm btn-primary btnUploadKontrak" 
+                    data-id_karier="<?= $r['id_karier'] ?>" 
+                    data-id_karyawan="<?= $r['id_karyawan'] ?>" 
+                    data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>"
+                    title="Upload Kontrak">
+                    <i class="fas fa-upload"></i> Upload
+                </button>
+            </div>
         </td>
     </tr>
 <?php } ?>
