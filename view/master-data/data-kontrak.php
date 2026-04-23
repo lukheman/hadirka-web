@@ -238,6 +238,23 @@
                 });
         });
 
+        // Trigger Modal Upload (Kode ini yang terhapus sebelumnya)
+        document.addEventListener("click", e => {
+            let btn = e.target.closest(".btnUploadKontrak");
+            if (!btn) return;
+
+            // Isi form modal dengan data dari tombol
+            document.getElementById("upload_id_karier").value = btn.dataset.id_karier;
+            document.getElementById("upload_id_karyawan").value = btn.dataset.id_karyawan;
+            document.getElementById("upload_nama_karyawan").value = btn.dataset.nama;
+
+            // Kosongkan input file sebelumnya
+            document.querySelector("#formUploadKontrak input[name=file_pdf]").value = "";
+
+            // Tampilkan modal
+            new bootstrap.Modal(document.getElementById("modalUploadKontrak")).show();
+        });
+
         // Proses Submit form Upload
         document.getElementById("formUploadKontrak").addEventListener("submit", function(e) {
             e.preventDefault();

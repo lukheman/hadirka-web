@@ -49,10 +49,10 @@ while ($r = $q->fetch_assoc()) {
         $status_dokumen = '<span class="badge bg-success">Sudah Upload</span>';
 
         // Tombol Lihat
-        $btn_lihat = '<a href="app/uploads/kontrak/'.$r['file_kontrak'].'" target="_blank" class="btn btn-sm btn-info mb-1"><i class="fas fa-eye"></i> Lihat PDF</a>';
+        $btn_lihat = '<a href="app/uploads/kontrak/'.$r['file_kontrak'].'" target="_blank" class="btn btn-sm btn-info mb-1"><i class="fas fa-eye"></i></a>';
         
         // Tambahan Tombol Hapus
-        $btn_hapus = '<button class="btn btn-sm btn-danger btnHapusFile mb-1" data-id_karier="'.$r['id_karier'].'" data-nama="'.htmlspecialchars($r['nama_lengkap']).'"><i class="fas fa-trash"></i> Hapus File</button>';
+        $btn_hapus = '<button class="btn btn-sm btn-danger btnHapusFile mb-1" data-id_karier="'.$r['id_karier'].'" data-nama="'.htmlspecialchars($r['nama_lengkap']).'"><i class="fas fa-trash"></i></button>';
     } else {
         $status_dokumen = '<span class="badge bg-danger">Belum Ada</span>';
         $btn_lihat = '';
@@ -82,7 +82,7 @@ while ($r = $q->fetch_assoc()) {
                 data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>"
                 data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
                 data-tgl_selesai="<?= $r['tgl_selesai'] ?>">
-                <i class="fas fa-edit"></i> Edit
+                <i class="fas fa-edit"></i>
             </button>
 
             <button class="btn btn-sm btn-primary btnUploadKontrak" 
