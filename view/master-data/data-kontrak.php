@@ -4,8 +4,20 @@
             <span class="text-muted fw-light">Data Karyawan /</span> Manajemen Dokumen Kontrak
         </h4>
 
-        <div class="pb-3 d-flex justify-content-end">
-            <div style="width: 250px;">
+        <div class="pb-3 d-flex justify-content-end gap-2">
+            <div style="width: 200px;">
+                <select id="filterSiteKontrak" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan Site">
+                    <option value="">-- Semua Site --</option>
+                </select>
+            </div>
+
+            <div style="width: 200px;">
+                <select id="filterJabatanKontrak" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan Jabatan">
+                    <option value="">-- Semua Jabatan --</option>
+                </select>
+            </div>
+
+            <div style="width: 200px;">
                 <select id="filterStatusKontrak" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan status karyawan">
                     <option value="Aktif" selected>Karyawan Aktif</option>
                     <option value="Semua">-- Semua Status --</option>
@@ -29,7 +41,7 @@
                                 <th class="text-center"><i class="fa fa-id-card"></i> NIK</th>
                                 <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
-                                <th class="text-center"><i class="fa fa-calendar" aria-hidden="true"></i>Periode Kontrak</th>
+                                <th class="text-center"><i class="fa fa-calendar" aria-hidden="true"></i> Periode Kontrak</th>
                                 <th class="text-center"><i class="fa fa-file" aria-hidden="true"></i></i> Status Dokumen</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
                             </tr>
@@ -80,12 +92,37 @@
     document.addEventListener("DOMContentLoaded", () => {
         // Fungsi untuk meload data tabel kontrak (bisa kamu pisah ke file get-kontrak.php)
         // Fungsi untuk meload data tabel kontrak dengan filter
-        function loadKontrak() {
-            // Ambil value dari dropdown filter
-            let status = document.getElementById("filterStatusKontrak").value;
+        // 1. Fungsi Load Dropdown Site & Jabatan
+        function loadFilters() {
+            fetch("app/controller/get-data/get-site-departemen-jabatan.php")
+                .then(res => res.json())
+                .then(data => {
+                    let siteOpt = '<option value="">-- Semua Site --</option>';
+                    data.site.forEach(s => {
+                        siteOpt += `<option value="${s.id_site}">${s.nama_site}</option>`;
+                    });
+                    document.getElementById("filterSiteKontrak").innerHTML = siteOpt;
 
-            // Kirim parameter status via GET
-            fetch("app/controller/get-data/get-kontrak.php?status=" + encodeURIComponent(status))
+                    let jabatanOpt = '<option value="">-- Semua Jabatan --</option>';
+                    data.jabatan.forEach(j => {
+                        jabatanOpt += `<option value="${j.id_jabatan}">${j.nama_jabatan}</option>`;
+                    });
+                    document.getElementById("filterJabatanKontrak").innerHTML = jabatanOpt;
+                })
+                .catch(err => console.error("Gagal meload filter:", err));
+        }
+
+        // 2. Fungsi Load Tabel Kontrak dengan Filter
+        function loadKontrak() {
+            // Ambil value dari ketiga dropdown filter
+            let status = document.getElementById("filterStatusKontrak").value;
+            let site = document.getElementById("filterSiteKontrak").value;
+            let jabatan = document.getElementById("filterJabatanKontrak").value;
+
+            // Gabungkan parameter via GET
+            let url = `app/controller/get-data/get-kontrak.php?status=${encodeURIComponent(status)}&site=${encodeURIComponent(site)}&jabatan=${encodeURIComponent(jabatan)}`;
+
+            fetch(url)
                 .then(res => res.text())
                 .then(html => {
                     if ($.fn.DataTable.isDataTable(".MyTableKontrak")) {
@@ -98,10 +135,10 @@
                 });
         }
 
-        // Tambahkan Event Listener agar saat dropdown diganti, tabel langsung mereload
-        document.getElementById("filterStatusKontrak").addEventListener("change", function() {
-            loadKontrak();
-        });
+        // 3. Event Listener untuk Dropdown Filter (Otomatis reload tabel saat diganti)
+        document.getElementById("filterStatusKontrak").addEventListener("change", loadKontrak);
+        document.getElementById("filterSiteKontrak").addEventListener("change", loadKontrak);
+        document.getElementById("filterJabatanKontrak").addEventListener("change", loadKontrak);
 
         // Trigger Modal Upload
         document.addEventListener("click", e => {
@@ -153,6 +190,7 @@
                 });
         });
 
+        loadFilters();
         loadKontrak();
     });
 </script>
