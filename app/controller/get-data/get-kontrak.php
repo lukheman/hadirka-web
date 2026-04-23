@@ -60,7 +60,7 @@ while ($r = $q->fetch_assoc()) {
     }
 ?>
     <tr class="">
-        <td><?= $no++ ?></td>
+        <td class="text-center"><?= $no++ ?></td>
         <td><?= htmlspecialchars($r['nik_karyawan']) ?></td>
         <td class="text-start"><?= $nama_tampil ?></td>
         <td><?= htmlspecialchars($r['nama_jabatan']) ?></td>
@@ -68,6 +68,16 @@ while ($r = $q->fetch_assoc()) {
         <td class="text-center"><?= $status_dokumen ?></td>
         <td class="text-center">
             <?= $btn_lihat ?>
+            
+            <button class="btn btn-sm btn-warning btnEditKontrak" 
+                data-id_karier="<?= $r['id_karier'] ?>" 
+                data-id_karyawan="<?= $r['id_karyawan'] ?>" 
+                data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>"
+                data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
+                data-tgl_selesai="<?= $r['tgl_selesai'] ?>">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+
             <button class="btn btn-sm btn-primary btnUploadKontrak" 
                 data-id_karier="<?= $r['id_karier'] ?>" 
                 data-id_karyawan="<?= $r['id_karyawan'] ?>" 

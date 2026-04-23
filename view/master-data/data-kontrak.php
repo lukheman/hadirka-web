@@ -54,6 +54,50 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalEditKontrak" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="formEditKontrak" class="modal-content" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="id_karier" id="edit_id_karier">
+                <input type="hidden" name="id_karyawan" id="edit_id_karyawan">
+
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Data Kontrak</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Karyawan</label>
+                        <input type="text" id="edit_nama_karyawan" class="form-control bg-light" readonly>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tanggal Mulai</label>
+                            <input type="date" name="tgl_mulai" id="edit_tgl_mulai" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tanggal Selesai</label>
+                            <input type="date" name="tgl_selesai" id="edit_tgl_selesai" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Upload File PDF (Opsional)</label>
+                        <input type="file" name="file_pdf" class="form-control" accept="application/pdf">
+                        <small class="text-danger">* Biarkan kosong jika tidak ingin mengubah file PDF.</small>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning" id="btnSaveEdit">
+                        <i class="fas fa-save"></i> Update Kontrak
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalUploadKontrak" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <form id="formUploadKontrak" class="modal-content" enctype="multipart/form-data">
@@ -140,20 +184,57 @@
         document.getElementById("filterSiteKontrak").addEventListener("change", loadKontrak);
         document.getElementById("filterJabatanKontrak").addEventListener("change", loadKontrak);
 
-        // Trigger Modal Upload
+        // Trigger Modal Edit
         document.addEventListener("click", e => {
-            let btn = e.target.closest(".btnUploadKontrak");
+            let btn = e.target.closest(".btnEditKontrak");
             if (!btn) return;
 
-            // Isi form modal dengan data dari tombol
-            document.getElementById("upload_id_karier").value = btn.dataset.id_karier;
-            document.getElementById("upload_id_karyawan").value = btn.dataset.id_karyawan;
-            document.getElementById("upload_nama_karyawan").value = btn.dataset.nama;
+            document.getElementById("edit_id_karier").value = btn.dataset.id_karier;
+            document.getElementById("edit_id_karyawan").value = btn.dataset.id_karyawan;
+            document.getElementById("edit_nama_karyawan").value = btn.dataset.nama;
+            document.getElementById("edit_tgl_mulai").value = btn.dataset.tgl_mulai;
+            
+            // Format handle null atau 0000-00-00 dari database
+            let tglSelesai = btn.dataset.tgl_selesai;
+            document.getElementById("edit_tgl_selesai").value = (tglSelesai !== "null" && tglSelesai !== "0000-00-00" && tglSelesai) ? tglSelesai : "";
 
-            // Kosongkan input file sebelumnya
-            document.querySelector("input[name=file_pdf]").value = "";
+            // Kosongkan file uploader
+            document.querySelector("#formEditKontrak input[name=file_pdf]").value = "";
 
-            new bootstrap.Modal(document.getElementById("modalUploadKontrak")).show();
+            new bootstrap.Modal(document.getElementById("modalEditKontrak")).show();
+        });
+
+        // Proses Submit form Edit
+        document.getElementById("formEditKontrak").addEventListener("submit", function(e) {
+            e.preventDefault();
+            let fd = new FormData(this);
+            let btnSave = document.getElementById("btnSaveEdit");
+
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+            fetch("app/controller/act-kontrak.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="fas fa-save"></i> Update Kontrak';
+
+                    if (res.status === "success") {
+                        showToast("Data kontrak berhasil diperbarui!", "success");
+                        bootstrap.Modal.getInstance(document.getElementById("modalEditKontrak")).hide();
+                        loadKontrak(); // Reload tabel
+                    } else {
+                        showToast(res.msg, "error");
+                    }
+                })
+                .catch(err => {
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="fas fa-save"></i> Update Kontrak';
+                    showToast("Terjadi kesalahan sistem", "error");
+                });
         });
 
         // Proses Submit form Upload

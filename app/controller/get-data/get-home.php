@@ -97,7 +97,30 @@ $total_keseluruhan_cur = $data_cur['gaji'] + $data_cur['pinjaman'];
 $total_keseluruhan_prev = $data_prev['gaji'] + $data_prev['pinjaman'];
 $perc_total = hitungPersentase($total_keseluruhan_cur, $total_keseluruhan_prev);
 
-// 5. OUTPUT KE JSON
+// ==============================================================
+// 5. MENGAMBIL JUMLAH KARYAWAN AKTIF PER JABATAN
+// ==============================================================
+$karyawan_per_jabatan = [];
+// Pastikan menghitung spesifik menggunakan nik_karyawan untuk akurasi data
+$sqlJabatan = "SELECT j.nama_jabatan, COUNT(kar.nik_karyawan) as jumlah
+               FROM tb_karyawan kar
+               JOIN tb_karier k ON kar.id_karyawan = k.id_karyawan
+               JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
+               WHERE kar.status_karyawan = 'Aktif'
+               GROUP BY j.id_jabatan, j.nama_jabatan
+               ORDER BY jumlah DESC";
+
+$qJabatan = mysqli_query($koneksi, $sqlJabatan);
+if ($qJabatan) {
+    while ($rowJ = mysqli_fetch_assoc($qJabatan)) {
+        $karyawan_per_jabatan[] = [
+            'jabatan' => $rowJ['nama_jabatan'] ? $rowJ['nama_jabatan'] : 'Belum Ditugaskan',
+            'jumlah' => (int)$rowJ['jumlah']
+        ];
+    }
+}
+
+// 6. OUTPUT KE JSON (Tambahkan elemen "karyawan_per_jabatan")
 echo json_encode([
     "status" => "success",
     "periode" => $periode_text,
@@ -105,6 +128,7 @@ echo json_encode([
     "total_pinjaman" => $data_cur['pinjaman'],
     "perc_gaji" => $perc_gaji,
     "perc_pinjaman" => $perc_pinjaman,
-    "perc_total" => $perc_total
+    "perc_total" => $perc_total,
+    "karyawan_per_jabatan" => $karyawan_per_jabatan
 ]);
 exit;

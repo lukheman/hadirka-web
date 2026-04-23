@@ -1,6 +1,27 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="row">
-        <div class="col-12 col-md-12 col-lg-12 order-3 order-md-2">
+        <div class="col-lg-12 mb-4">
+            <div class="card">
+                <div class="d-flex align-items-end row">
+                    <div class="col-sm-7">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">Selamat Datang, Admin! 🚀</h5>
+                            <p class="mb-4">
+                                Terus tingkatkan <span class="fw-bold">produktivitas hari ini.</span> Lihat perkembangan data dan aktivitas terbaru di dashboard.
+                            </p>
+                            <a href="javascript:;" class="btn btn-sm btn-outline-primary">View Badges</a>
+                        </div>
+                    </div>
+                    <div class="col-sm-5 text-center text-sm-left">
+                        <div class="card-body pb-0 px-0 px-md-4">
+                            <img src="assets/img/illustrations/man-with-laptop-light.png" height="140" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 mb-4">
             <div class="row">
                 <div class="col-6">
                     <span id="periodeText" class="small" style="font-weight:bold; text-transform: uppercase;">
@@ -56,10 +77,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="row">
-                <div class="col-12 mb-4">
+                <div class="col-12 mb-0">
                     <div class="card">
                         <div class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between">
@@ -76,26 +95,22 @@
             </div>
         </div>
 
-        <div class="col-lg-12 mb-4 order-0">
-            <div class="card">
-                <div class="d-flex align-items-end row">
-                    <div class="col-sm-7">
-                        <div class="card-body">
-                            <h5 class="card-title text-primary">Selamat Datang, Admin! 🚀</h5>
-                            <p class="mb-4">
-                                Terus tingkatkan <span class="fw-bold">produktivitas hari ini.</span> Lihat perkembangan data dan aktivitas terbaru di dashboard.
-                            </p>
-                            <a href="javascript:;" class="btn btn-sm btn-outline-primary">View Badges</a>
+        <div class="col-lg-12 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between pb-2">
+                    <h5 class="card-title m-0 me-2">Statistik Karyawan Aktif</h5>
+                </div>
+                <div class="card-body" id="listKaryawanJabatan">
+                    <div class="d-flex justify-content-center align-items-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                    </div>
-                    <div class="col-sm-5 text-center text-sm-left">
-                        <div class="card-body pb-0 px-0 px-md-4">
-                            <img src="assets/img/illustrations/man-with-laptop-light.png" height="140" />
-                        </div>
+                        <span class="ms-2 text-muted">Memuat data statistik...</span>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
@@ -127,7 +142,6 @@
 
     // Fungsi utama mengambil data berdasarkan id_priode
     async function loadDashboard(idPriode = '') {
-        // Tampilkan efek loading sederhana
         document.getElementById("totalGaji").innerText = "Menghitung...";
         document.getElementById("totalPinjaman").innerText = "Menghitung...";
         document.getElementById("totalGajiPinjaman").innerText = "Menghitung...";
@@ -145,7 +159,7 @@
                 // Memformat teks periode
                 let dates = data.periode.split(' - ');
                 let textPeriode = data.periode;
-                if(dates.length === 2) {
+                if (dates.length === 2) {
                     textPeriode = `${formatTanggalIndo(dates[0])} - ${formatTanggalIndo(dates[1])}`;
                 }
 
@@ -157,17 +171,73 @@
                 document.getElementById("totalGaji").innerText = "Rp " + totalGaji.toLocaleString('id-ID');
                 document.getElementById("totalPinjaman").innerText = "Rp " + totalPinjaman.toLocaleString('id-ID');
                 document.getElementById("totalGajiPinjaman").innerText = "Rp " + totalKeseluruhan.toLocaleString('id-ID');
-                
+
                 // Update Persentase UI
                 updatePercUI("percGaji", data.perc_gaji);
                 updatePercUI("percPinjaman", data.perc_pinjaman);
                 updatePercUI("percTotal", data.perc_total);
+
+                // ==========================================================
+                // RENDER STATISTIK JABATAN DENGAN PROGRESS BAR
+                // ==========================================================
+                const listContainer = document.getElementById("listKaryawanJabatan");
+                listContainer.innerHTML = ""; 
+
+                if (data.karyawan_per_jabatan && data.karyawan_per_jabatan.length > 0) {
+                    // 1. Hitung total seluruh karyawan aktif
+                    let totalKaryawan = data.karyawan_per_jabatan.reduce((sum, item) => sum + item.jumlah, 0);
+                    
+                    // 2. Buat header total
+                    let htmlList = `
+                        <div class="mb-4 d-flex justify-content-between align-items-center bg-lighter p-3 rounded">
+                            <span class="text-muted fw-semibold">Total Karyawan Aktif</span>
+                            <h4 class="mb-0 text-primary fw-bold">${totalKaryawan} <span class="fs-6 text-muted fw-normal">Orang</span></h4>
+                        </div>
+                    `;
+                    
+                    // Array warna Bootstrap agar bar lebih hidup
+                    const colors = ['primary', 'success', 'info', 'warning', 'danger', 'dark'];
+                    
+                    // 3. Looping data untuk membuat Progress Bar
+                    data.karyawan_per_jabatan.forEach((item, index) => {
+                        let percentage = ((item.jumlah / totalKaryawan) * 100).toFixed(1);
+                        let color = colors[index % colors.length]; // Rotasi warna otomatis
+                        
+                        htmlList += `
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class='bx bx-briefcase text-${color}'></i>
+                                        <span class="fw-semibold text-heading">${item.jabatan}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="fw-bold">${item.jumlah}</span>
+                                        <span class="text-muted small">(${percentage}%)</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-${color}" role="progressbar" style="width: ${percentage}%" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    listContainer.innerHTML = htmlList;
+                } else {
+                    listContainer.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class='bx bx-user-x text-muted mb-2' style='font-size: 3rem;'></i>
+                            <p class="text-muted mb-0">Tidak ada data karyawan aktif.</p>
+                        </div>
+                    `;
+                }
 
             } else {
                 document.getElementById("periodeText").innerText = "TIDAK ADA PERIODE AKTIF";
                 document.getElementById("totalGaji").innerText = "Rp 0";
                 document.getElementById("totalPinjaman").innerText = "Rp 0";
                 document.getElementById("totalGajiPinjaman").innerText = "Rp 0";
+                document.getElementById("listKaryawanJabatan").innerHTML = `<p class="text-center text-muted">Data tidak tersedia.</p>`;
             }
         } catch (error) {
             console.error("Gagal mengambil data:", error);
@@ -175,11 +245,9 @@
         }
     }
 
-    // Jalankan fungsi saat halaman pertama kali di-load
-    // Mengambil value dari opsi pertama di dropdown secara otomatis
     document.addEventListener("DOMContentLoaded", () => {
         const dropdown = document.getElementById("periodeDropdown");
-        if(dropdown.options.length > 0) {
+        if (dropdown.options.length > 0) {
             loadDashboard(dropdown.value);
         } else {
             loadDashboard('');
