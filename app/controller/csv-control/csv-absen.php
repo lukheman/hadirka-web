@@ -261,6 +261,7 @@ try {
                 'SD' => 'SAKIT',
                 'IZIN' => 'IZIN',
                 'CM' => 'CUTI',
+                'CT' => 'CUTI',
                 'SAKIT' => 'SAKIT',
                 'CUTI' => 'CUTI',
                 'R' => 'RESIGN',
