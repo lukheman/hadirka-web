@@ -1,3 +1,4 @@
+<?php $user_level = $_SESSION['level'] ?? 99; ?>
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="row">
         <div class="col-lg-12 mb-4">
@@ -21,6 +22,8 @@
             </div>
         </div>
 
+        
+        <?php if (in_array($user_level, [0, 1, 2])): ?>
         <div class="col-lg-12 mb-4">
             <div class="row">
                 <div class="col-6">
@@ -94,6 +97,7 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
         <div class="col-lg-12 mb-4">
             <div class="card h-100">
@@ -230,45 +234,58 @@
 
     // Fungsi utama mengambil semua data (Gaji + Karyawan) saat ubah Periode atau pertama kali load
     async function loadDashboard(idPriode = '') {
-        document.getElementById("totalGaji").innerText = "Menghitung...";
-        document.getElementById("totalPinjaman").innerText = "Menghitung...";
-        document.getElementById("totalGajiPinjaman").innerText = "Menghitung...";
+        // Cek dulu apakah elemennya ada sebelum mengubah teksnya
+        if(document.getElementById("totalGaji")) document.getElementById("totalGaji").innerText = "Menghitung...";
+        if(document.getElementById("totalPinjaman")) document.getElementById("totalPinjaman").innerText = "Menghitung...";
+        if(document.getElementById("totalGajiPinjaman")) document.getElementById("totalGajiPinjaman").innerText = "Menghitung...";
 
         const idSite = document.getElementById("siteDropdown").value;
         let url = `app/controller/get-data/get-home.php?id_site=${idSite}`;
+
+        // Optimasi: Jika user adalah Supervisor, langsung minta 'only_karyawan' 
+        // agar backend tidak membebani server dengan menghitung slip gaji.
+        <?php if ($user_level == 3): ?>
+        url += `&only_karyawan=1`;
+        <?php else: ?>
         if (idPriode) url += `&id_priode=${idPriode}`;
+        <?php endif; ?>
 
         try {
             const res = await fetch(url);
             const data = await res.json();
 
             if (data.status === "success") {
-                let dates = data.periode.split(' - ');
-                let textPeriode = data.periode;
-                if (dates.length === 2) {
-                    textPeriode = `${formatTanggalIndo(dates[0])} - ${formatTanggalIndo(dates[1])}`;
-                }
-
-                let totalGaji = Number(data.total_gaji) || 0;
-                let totalPinjaman = Number(data.total_pinjaman) || 0;
-                let totalKeseluruhan = totalGaji + totalPinjaman;
-
-                document.getElementById("periodeText").innerText = "PERIODE " + textPeriode;
-                document.getElementById("totalGaji").innerText = "Rp " + totalGaji.toLocaleString('id-ID');
-                document.getElementById("totalPinjaman").innerText = "Rp " + totalPinjaman.toLocaleString('id-ID');
-                document.getElementById("totalGajiPinjaman").innerText = "Rp " + totalKeseluruhan.toLocaleString('id-ID');
-
-                updatePercUI("percGaji", data.perc_gaji);
-                updatePercUI("percPinjaman", data.perc_pinjaman);
-                updatePercUI("percTotal", data.perc_total);
-
-                // Panggil render list karyawan menggunakan data yang ter-load bersamaan
+                // Render list karyawan
                 renderListKaryawan(data.karyawan_per_jabatan);
+
+                // Update UI Keuangan HANYA jika elemennya di-render di HTML
+                if (document.getElementById("periodeText")) {
+                    let dates = data.periode.split(' - ');
+                    let textPeriode = data.periode;
+                    if (dates.length === 2) {
+                        textPeriode = `${formatTanggalIndo(dates[0])} - ${formatTanggalIndo(dates[1])}`;
+                    }
+
+                    let totalGaji = Number(data.total_gaji) || 0;
+                    let totalPinjaman = Number(data.total_pinjaman) || 0;
+                    let totalKeseluruhan = totalGaji + totalPinjaman;
+
+                    document.getElementById("periodeText").innerText = "PERIODE " + textPeriode;
+                    document.getElementById("totalGaji").innerText = "Rp " + totalGaji.toLocaleString('id-ID');
+                    document.getElementById("totalPinjaman").innerText = "Rp " + totalPinjaman.toLocaleString('id-ID');
+                    document.getElementById("totalGajiPinjaman").innerText = "Rp " + totalKeseluruhan.toLocaleString('id-ID');
+
+                    updatePercUI("percGaji", data.perc_gaji);
+                    updatePercUI("percPinjaman", data.perc_pinjaman);
+                    updatePercUI("percTotal", data.perc_total);
+                }
             } else {
-                document.getElementById("periodeText").innerText = "TIDAK ADA PERIODE AKTIF";
-                document.getElementById("totalGaji").innerText = "Rp 0";
-                document.getElementById("totalPinjaman").innerText = "Rp 0";
-                document.getElementById("totalGajiPinjaman").innerText = "Rp 0";
+                if(document.getElementById("periodeText")) {
+                    document.getElementById("periodeText").innerText = "TIDAK ADA PERIODE AKTIF";
+                    document.getElementById("totalGaji").innerText = "Rp 0";
+                    document.getElementById("totalPinjaman").innerText = "Rp 0";
+                    document.getElementById("totalGajiPinjaman").innerText = "Rp 0";
+                }
                 document.getElementById("listKaryawanJabatan").innerHTML = `<p class="text-center text-muted">Data tidak tersedia.</p>`;
             }
         } catch (error) {
@@ -279,7 +296,8 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         const dropdown = document.getElementById("periodeDropdown");
-        if (dropdown.options.length > 0) {
+        // Jika dropdown ada (bukan supervisor), muat dengan value. Jika tidak ada, muat tanpa parameter (akan diselamatkan oleh 'only_karyawan=1')
+        if (dropdown && dropdown.options.length > 0) {
             loadDashboard(dropdown.value);
         } else {
             loadDashboard('');

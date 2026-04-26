@@ -26,7 +26,7 @@ if ($action === 'add') {
     $nama = trim($_POST['nama_user'] ?? '');
     $jabatan = trim($_POST['jabatan'] ?? '');
     $site = $_POST['site'] ?? '';
-    $level = isset($_POST['level']) ? (int)$_POST['level'] : 4;
+    $level = isset($_POST['level']) ? (int)$_POST['level'] : 5;
 
     if (empty($username) || empty($password) || empty($nama)) {
         json_resp(false, 'Lengkapi field wajib');
@@ -59,7 +59,7 @@ if ($action === 'edit') {
     $nama = trim($_POST['nama_user'] ?? '');
     $jabatan = trim($_POST['jabatan'] ?? '');
     $site = $_POST['site'] ?? '';
-    $level = isset($_POST['level']) ? (int)$_POST['level'] : 4;
+    $level = isset($_POST['level']) ? (int)$_POST['level'] : 5;
 
     if (empty($username) || empty($nama)) {
         json_resp(false, 'Lengkapi field wajib');

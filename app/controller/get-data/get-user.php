@@ -21,7 +21,8 @@ while ($row = $q->fetch_assoc()) {
     if ($lvl_angka === 0) { $level = 'Admin'; }
     elseif ($lvl_angka === 1) { $level = 'Direktur'; }
     elseif ($lvl_angka === 2) { $level = 'HRD'; }
-    elseif ($lvl_angka === 3) { $level = 'Safety'; }
+    elseif ($lvl_angka === 3) { $level = 'Supervisor'; }
+    elseif ($lvl_angka === 4) { $level = 'Safety'; }
     else { $level = 'User Biasa'; }
 
     $foto = $row['foto'];

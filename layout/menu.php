@@ -18,8 +18,8 @@ function isMenuOpen($pages_array, $current_page)
 ?>
 
 <ul class="menu-inner py-1">
-    <!-- Hanya Tampil jika Admin, Direktur, HRD -->
-    <?php if (in_array($user_level, [0, 1, 2])): ?>
+    <!-- Hanya Tampil jika Admin, Direktur, HRD, Supervisor -->
+    <?php if (in_array($user_level, [0, 1, 2, 3])): ?>
         <li class="menu-item <?= isActive('home', $current_page); ?>">
             <a href="home" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
@@ -28,8 +28,8 @@ function isMenuOpen($pages_array, $current_page)
         </li>
     <?php endif; ?>
 
-    <!-- Hanya Tampil jika Admin, Direktur, HRD -->
-    <?php if (in_array($user_level, [0, 1, 2])): ?>
+    <!-- Hanya Tampil jika Admin, Direktur, HRD , Supervisor -->
+    <?php if (in_array($user_level, [0, 1, 2, 3])): ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Data Utama</span>
         </li>
@@ -122,6 +122,10 @@ function isMenuOpen($pages_array, $current_page)
             </ul>
         </li>
 
+    <?php endif; ?>
+
+    <!-- Hanya Tampil jika Admin, Direktur, HRD -->
+    <?php if (in_array($user_level, [0, 1, 2])): ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Finance & Payroll</span>
         </li>
@@ -172,15 +176,22 @@ function isMenuOpen($pages_array, $current_page)
                 </li>
             </ul>
         </li>
-<!-- 
-        <?php
-        $finance_pages = ['laporan-keuangan'];
+
+        <!-- <?php
+        $finance_pages = ['laporan-keuangan','kelola-transaksi'];
         ?>
         <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-money"></i>
                 <div data-i18n="Payroll System">Manajemen Keuangan</div>
             </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?= isActive('kelola-transaksi', $current_page); ?>">
+                    <a class="menu-link" href="kelola-transaksi">
+                        <div>Kelola Transaksi</div>
+                    </a>
+                </li>
+            </ul>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('laporan-keuangan', $current_page); ?>">
                     <a class="menu-link" href="laporan-keuangan">
@@ -192,8 +203,8 @@ function isMenuOpen($pages_array, $current_page)
 
     <?php endif; ?>
 
-    <!-- Hanya Tampil jika Admin, Direktur, Safety -->
-    <?php if (in_array($user_level, [0, 1, 3])): ?>
+    <!-- Hanya Tampil jika Admin, Direktur, Safety, Supervisor  -->
+    <?php if (in_array($user_level, [0, 1, 3, 4])): ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Inventaris K3</span>
         </li>
@@ -226,7 +237,9 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
     <?php endif; ?>
-    <?php if (in_array($user_level, [0, 1, 2])): ?>
+
+    <!-- Hanya Tampil jika Admin, Direktur, HRD, Supervisor  -->
+    <?php if (in_array($user_level, [0, 1, 2, 3])): ?>
 
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Informasi</span>

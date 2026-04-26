@@ -79,8 +79,9 @@
                     <option value="0">Admin</option>
                     <option value="1">Direktur</option>
                     <option value="2">HRD</option>
-                    <option value="3">Safety</option>
-                    <option value="4">User Biasa</option>
+                    <option value="3">Supervisor</option>
+                    <option value="4">Safety</option>
+                    <option value="5">User Biasa</option>
                 </select>
 
                 <label>Foto Profil</label>
@@ -135,8 +136,9 @@
                     <option value="0">Admin</option>
                     <option value="1">Direktur</option>
                     <option value="2">HRD</option>
-                    <option value="3">Safety</option>
-                    <option value="4">User Biasa</option>
+                    <option value="3">Supervisor</option>
+                    <option value="4">Safety</option>
+                    <option value="5">User Biasa</option>
                 </select>
 
                 <label>Foto Profil <small>(pilih jika ingin ganti)</small></label>
