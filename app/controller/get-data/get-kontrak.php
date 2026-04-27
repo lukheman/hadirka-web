@@ -3,96 +3,58 @@ require '../../config/koneksi.php';
 
 $no = 1;
 
-// Tangkap parameter filter
-$filter_status = isset($_GET['status']) ? $_GET['status'] : 'Aktif';
-$filter_site = isset($_GET['site']) ? $_GET['site'] : '';
-$filter_jabatan = isset($_GET['jabatan']) ? $_GET['jabatan'] : '';
-
-// Gunakan array untuk menampung kondisi WHERE secara dinamis
-$conditions = [];
-
-// 1. Kondisi Status
-if ($filter_status !== 'Semua') {
-    $status_aman = $koneksi->real_escape_string($filter_status);
-    $conditions[] = "kr.status_karyawan = '$status_aman'";
-}
-
-// 2. Kondisi Site
-if (!empty($filter_site)) {
-    $site_aman = $koneksi->real_escape_string($filter_site);
-    $conditions[] = "k.id_site = '$site_aman'";
-}
-
-// 3. Kondisi Jabatan
-if (!empty($filter_jabatan)) {
-    $jabatan_aman = $koneksi->real_escape_string($filter_jabatan);
-    $conditions[] = "k.id_jabatan = '$jabatan_aman'";
-}
-
-// Rangkai WHERE clause jika ada kondisi yang aktif
-$where_clause = "";
-if (count($conditions) > 0) {
-    $where_clause = "WHERE " . implode(" AND ", $conditions);
-}
-
-// Tambahkan WHERE clause ke dalam query
-$q = $koneksi->query("SELECT k.id_karier, k.id_karyawan, kr.nik_karyawan, kr.nama_lengkap, kr.status_karyawan, j.nama_jabatan, k.tgl_mulai, k.tgl_selesai, k.file_kontrak 
-                      FROM tb_karier k
-                      INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
-                      INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
-                      $where_clause
-                      ORDER BY kr.nik_karyawan ASC");
+// Query mengambil daftar Jabatan, menghitung total karyawan aktif, dan mengambil sampel nama file
+$q = $koneksi->query("
+    SELECT 
+        j.id_jabatan, 
+        j.nama_jabatan,
+        COUNT(k.id_karier) as total_karyawan,
+        MAX(k.file_kontrak) as sample_file
+    FROM tb_jabatan j
+    LEFT JOIN tb_karier k ON j.id_jabatan = k.id_jabatan 
+        AND (k.tgl_selesai IS NULL OR k.tgl_selesai >= CURDATE())
+    LEFT JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan 
+        AND kr.status_karyawan = 'Aktif'
+    GROUP BY j.id_jabatan
+    ORDER BY j.nama_jabatan ASC
+");
 
 while ($r = $q->fetch_assoc()) { 
-    // Logika Status Dokumen
-    if (!empty($r['file_kontrak'])) {
-        $status_dokumen = '<span class="badge bg-success">Sudah Upload</span>';
+    $total = $r['total_karyawan'];
+    $file_sample = $r['sample_file'];
 
-        // Tombol Lihat
-        $btn_lihat = '<a href="app/uploads/kontrak/'.$r['file_kontrak'].'" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>';
-        
-        // Tambahan Tombol Hapus
-        $btn_hapus = '<button class="btn btn-sm btn-danger btnHapusFile" data-id_karier="'.$r['id_karier'].'" data-nama="'.htmlspecialchars($r['nama_lengkap']).'"><i class="fas fa-trash"></i></button>';
+    // Logika Status Dokumen
+    if (!empty($file_sample)) {
+        $status_dokumen = '<span class="badge bg-success">Tersedia</span>';
+        $btn_lihat = '<a href="app/uploads/kontrak/'.$file_sample.'" target="_blank" class="btn btn-sm btn-info" title="Lihat Template"><i class="fas fa-eye"></i></a>';
+        $btn_hapus = '<button class="btn btn-sm btn-danger btnHapusFile" data-id_jabatan="'.$r['id_jabatan'].'" data-nama_jabatan="'.htmlspecialchars($r['nama_jabatan']).'" title="Hapus File Massal"><i class="fas fa-trash"></i></button>';
     } else {
         $status_dokumen = '<span class="badge bg-danger">Belum Ada</span>';
         $btn_lihat = '';
         $btn_hapus = '';
     }
-    
-    // Beri warna merah pada nama jika statusnya bukan Aktif
-    $nama_tampil = htmlspecialchars($r['nama_lengkap']);
-    if (strtolower($r['status_karyawan']) !== 'aktif') {
-        $nama_tampil .= ' <br><small class="text-danger">('.htmlspecialchars($r['status_karyawan']).')</small>';
-    }
+
+    $badge_karyawan = $total > 0 ? 'bg-primary' : 'bg-secondary';
+    $btn_disabled = $total > 0 ? '' : 'disabled';
 ?>
-    <tr class="">
+    <tr>
         <td class="text-center align-middle"><?= $no++ ?></td>
-        <td class="align-middle"><?= htmlspecialchars($r['nik_karyawan']) ?></td>
-        <td class="text-start align-middle"><?= $nama_tampil ?></td>
-        <td class="align-middle"><?= htmlspecialchars($r['nama_jabatan']) ?></td>
-        <td class="align-middle"><?= $r['tgl_mulai'] ?> s/d <?= (!empty($r['tgl_selesai']) && $r['tgl_selesai'] !== '0000-00-00') ? $r['tgl_selesai'] : 'Sekarang' ?></td>
+        <td class="text-start align-middle fw-bold"><?= htmlspecialchars($r['nama_jabatan']) ?></td>
+        <td class="text-center align-middle">
+            <span class="badge <?= $badge_karyawan ?>"><?= $total ?> Orang</span>
+        </td>
         <td class="text-center align-middle"><?= $status_dokumen ?></td>
         <td class="text-center align-middle">
             <div class="d-flex justify-content-center align-items-center gap-1">
                 <?= $btn_lihat ?>
                 <?= $btn_hapus ?>
-                
-                <button class="btn btn-sm btn-warning btnEditKontrak" 
-                    data-id_karier="<?= $r['id_karier'] ?>" 
-                    data-id_karyawan="<?= $r['id_karyawan'] ?>" 
-                    data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>"
-                    data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
-                    data-tgl_selesai="<?= $r['tgl_selesai'] ?>"
-                    title="Edit Kontrak">
-                    <i class="fas fa-edit"></i>
-                </button>
 
                 <button class="btn btn-sm btn-primary btnUploadKontrak" 
-                    data-id_karier="<?= $r['id_karier'] ?>" 
-                    data-id_karyawan="<?= $r['id_karyawan'] ?>" 
-                    data-nama="<?= htmlspecialchars($r['nama_lengkap']) ?>"
-                    title="Upload Kontrak">
-                    <i class="fas fa-upload"></i> Upload
+                    data-id_jabatan="<?= $r['id_jabatan'] ?>" 
+                    data-nama_jabatan="<?= htmlspecialchars($r['nama_jabatan']) ?>"
+                    data-total="<?= $total ?>"
+                    title="Upload Kontrak Massal" <?= $btn_disabled ?>>
+                    <i class="fas fa-upload"></i> Upload Massal
                 </button>
             </div>
         </td>

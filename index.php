@@ -92,6 +92,7 @@ if (!in_array($user_level, [0, 1, 2, 3]) && in_array($page, $hrd_pages)) {
 // 1.b Modul Finance & Payroll (Hanya Admin, Direktur, HRD) - SUPERVISOR DILARANG
 $finance_pages = [
     'data-periode', 'payroll', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-rapel', 'data-thr', 'slip-gaji'
+    // , 'laporan-keuangan', 'kelola-transaksi'
 ];
 
 if (!in_array($user_level, [0, 1, 2]) && in_array($page, $finance_pages)) {
