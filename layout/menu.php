@@ -50,7 +50,7 @@ function isMenuOpen($pages_array, $current_page)
                 </li>
                 <li class="menu-item <?= isActive('import-karier', $current_page); ?>">
                     <a class="menu-link" href="import-karier">
-                        <div>Riwayat Karier</div>
+                        <div>Data Karier</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-site', $current_page); ?>">

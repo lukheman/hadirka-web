@@ -5,10 +5,11 @@ error_reporting(E_ALL);
 require '../../config/koneksi.php';
 require '../../config/function.php';
 
-$id = isset($_GET['id']) ? decrypt($_GET['id']) : null;
+$id = !empty($_GET['id']) ? decrypt($_GET['id']) : null;
 $no = 1;
 
 if ($id) {
+    // Tampilan detail dari profil spesifik (data-karier.php)
     $stmt = $koneksi->prepare("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap
         FROM tb_karyawan kr
         INNER JOIN tb_karier k ON k.id_karyawan = kr.id_karyawan
@@ -21,13 +22,42 @@ if ($id) {
     $stmt->execute();
     $q = $stmt->get_result();
 } else {
+    // Tampilan global dengan filter (import-karier.php)
+    $site    = $_GET['site'] ?? '';
+    $jabatan = $_GET['jabatan'] ?? '';
+    $status  = $_GET['status'] ?? 'Aktif'; // Default tampilkan yang Aktif
+    $bulan   = $_GET['bulan'] ?? '';
+
+    $where = ["1=1"];
+
+    if (!empty($site)) {
+        $where[] = "k.id_site = '" . $koneksi->real_escape_string($site) . "'";
+    }
+    
+    if (!empty($jabatan)) {
+        $where[] = "k.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+    }
+    
+    if (!empty($status)) {
+        $where[] = "kr.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+    }
+
+    if (!empty($bulan)) {
+        $where[] = "MONTH(k.tgl_selesai) = '" . $koneksi->real_escape_string($bulan) . "'";
+        // Jika ingin spesifik mencari habis kontrak HANYA di TAHUN INI, hilangkan komentar baris di bawah:
+        $where[] = "YEAR(k.tgl_selesai) = YEAR(CURDATE())"; 
+    }
+
+    $where_sql = implode(" AND ", $where);
+
     $q = $koneksi->query("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap 
         FROM tb_karier k
         INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
         INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
         INNER JOIN tb_departemen d ON k.id_departemen = d.id_departemen
         INNER JOIN tb_site s ON k.id_site = s.id_site
-        ORDER BY k.tgl_mulai DESC");
+        WHERE $where_sql
+        ORDER BY kr.nik_karyawan ASC");
 }
 
 while ($r = $q->fetch_assoc()) { ?>

@@ -47,7 +47,17 @@ try {
     else {
 
         $id_karier     = intval($_POST['id_karier'] ?? 0);
-        $id_karyawan   = intval(decrypt($_POST['id_karyawan'] ?? 0));
+        // --- SMART DECRYPT ---
+        $raw_id_karyawan = $_POST['id_karyawan'] ?? '';
+        if (is_numeric($raw_id_karyawan)) {
+            // Jika berupa angka, berarti dikirim dari import-karier.php (master)
+            $id_karyawan = intval($raw_id_karyawan);
+        } else {
+            // Jika berupa string acak, berarti dikirim dari data-karier.php (encrypted)
+            $id_karyawan = !empty($raw_id_karyawan) ? intval(decrypt($raw_id_karyawan)) : 0;
+        }
+        // ---------------------
+
         $id_site       = intval($_POST['id_site']);
         $id_departemen = intval($_POST['id_departemen']);
         $id_jabatan    = intval($_POST['id_jabatan']);
