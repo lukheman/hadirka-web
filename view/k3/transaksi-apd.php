@@ -193,7 +193,7 @@
                 </p>
                 <label for="file_excel" class="form-label fw-bold">File Excel</label>
                 <input type="file" name="file_excel" id="file_excel" class="form-control" accept=".xls,.xlsx" required>
-                <a href="assets/template-csv/Format Impor Data Peminjaman APD.xlsx" class="text-primary small mt-1 d-inline-block">Download Template Format .xlsx</a>
+                <a href="assets/template-csv/Format_Impor_Data_Peminjaman_APD.xlsx" class="text-primary small mt-1 d-inline-block">Download Template Format .xlsx</a>
 
                 <div id="progressWrapper" class="progress mt-3" style="display:none; height:20px;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>

@@ -156,7 +156,7 @@
                                     </div>
                                 </form>
                             </div>
-                            <a href="assets/template-csv/Format Impor Data Pinjaman.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
+                            <a href="assets/template-csv/Format_Impor_Data_Pinjaman.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
                         </div>
                     </div>
                 </div>

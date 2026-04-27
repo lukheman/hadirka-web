@@ -90,7 +90,7 @@
                             </div>
                         </form>
                     </div>
-                    <a href="assets/template-csv/Format Impor Data BPJS Ketenagakerjaan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a> 
+                    <a href="assets/template-csv/Format Impor_Data_BPJS_Ketenagakerjaan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a> 
                 </div>
             </div>
         </div>
