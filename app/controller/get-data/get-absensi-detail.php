@@ -35,19 +35,58 @@ while ($a = $absenQ->fetch_assoc()) {
     $absenAll[$a['tgl_absen']] = $a;
 }
 
-// Ambil izin dan sakit
-function loadRange($table, $id_karyawan, $tgl_a, $tgl_b, $koneksi)
-{
-    $arr = [];
-    $q = $koneksi->query("SELECT tgl_awal_$table AS awal, tgl_akhir_$table AS akhir 
-        FROM tb_$table WHERE id_karyawan='$id_karyawan' 
-        AND tgl_awal_$table <= '$tgl_b' 
-        AND tgl_akhir_$table >= '$tgl_a'");
-    while ($r = $q->fetch_assoc()) $arr[] = $r;
-    return $arr;
+// // Ambil izin dan sakit
+// function loadRange($table, $id_karyawan, $tgl_a, $tgl_b, $koneksi)
+// {
+//     $arr = [];
+//     $q = $koneksi->query("SELECT tgl_awal_$table AS awal, tgl_akhir_$table AS akhir 
+//         FROM tb_$table WHERE id_karyawan='$id_karyawan' 
+//         AND tgl_awal_$table <= '$tgl_b' 
+//         AND tgl_akhir_$table >= '$tgl_a'");
+//     while ($r = $q->fetch_assoc()) $arr[] = $r;
+//     return $arr;
+// }
+// $izinAll  = loadRange('izin',  $id_karyawan, $tgl_a, $tgl_b, $koneksi);
+// $sakitAll = loadRange('sakit', $id_karyawan, $tgl_a, $tgl_b, $koneksi);
+
+$izinAll = [];
+$sakitAll = [];
+
+// ================= AMBIL DATA IZIN =================
+// Asumsi tabel pengajuan izin bernama 'tb_pengajuan_izin' seperti gambar sebelumnya
+$qIzin = $koneksi->query("
+    SELECT DATE(tgl_izin) as tanggal 
+    FROM tb_pengajuan_izin 
+    WHERE id_karyawan='$id_karyawan' 
+    AND DATE(tgl_izin) <= '$tgl_b' 
+    AND DATE(tgl_izin) >= '$tgl_a'
+    AND status_izin = 'disetujui'
+");
+
+if ($qIzin) {
+    while ($r = $qIzin->fetch_assoc()) {
+        $tgl = $r['tanggal'];
+        // Jadikan tgl awal dan akhir sama karena strukturnya hanya 1 tanggal
+        $izinAll[] = ['awal' => $tgl, 'akhir' => $tgl];
+    }
 }
-$izinAll  = loadRange('izin',  $id_karyawan, $tgl_a, $tgl_b, $koneksi);
-$sakitAll = loadRange('sakit', $id_karyawan, $tgl_a, $tgl_b, $koneksi);
+
+// ================= AMBIL DATA SAKIT =================
+// Menyesuaikan dengan struktur tb_sakit di gambar terbaru
+$qSakit = $koneksi->query("
+    SELECT tgl_awal_sakit, tgl_akhir_sakit 
+    FROM tb_sakit 
+    WHERE id_karyawan='$id_karyawan' 
+    AND tgl_awal_sakit <= '$tgl_b' 
+    AND tgl_akhir_sakit >= '$tgl_a'
+    AND status_sakit = 'disetujui'
+");
+
+if ($qSakit) {
+    while ($r = $qSakit->fetch_assoc()) {
+        $sakitAll[] = ['awal' => $r['tgl_awal_sakit'], 'akhir' => $r['tgl_akhir_sakit']];
+    }
+}
 
 // Ambil data karyawan
 $karyawanQ = $koneksi->query("SELECT * FROM tb_karyawan
@@ -166,6 +205,20 @@ $karyawan = $karyawanQ->fetch_assoc();
                             $keterangan = "Mangkir";
                             $rowClass = "bg-danger text-white";
                         }
+                    }
+                } else {
+                    // JIKA DATA CSV KOSONG (Karyawan tidak absen di mesin)
+                    // Sistem akan mengecek apakah ada pengajuan izin/sakit yang di-ACC
+                    
+                    if ($isIzin) {
+                        $keterangan = 'Izin (Sistem)';
+                        $rowClass = 'bg-primary text-white';
+                    } elseif ($isSakit) {
+                        $keterangan = 'Sakit (Sistem)';
+                        $rowClass = 'bg-info text-dark';
+                    } else {
+                        $keterangan = 'Mangkir';
+                        $rowClass = 'bg-danger text-white';
                     }
                 }
 
