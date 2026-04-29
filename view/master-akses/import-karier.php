@@ -38,6 +38,10 @@
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahKarier">
                     <i class="fa fa-plus"></i> Tambah Karier Manual
                 </button>
+                <!-- Tombol Export Baru -->
+                <button class="btn btn-info btn-sm" onclick="exportKarierCSV()">
+                    <i class="fa fa-file-export"></i> Export CSV
+                </button>
             </div>
 
             <div class="d-flex align-items-center gap-2">
@@ -553,6 +557,19 @@
 
         // --- 7. LOAD DATA TABEL SAAT PERTAMA KALI DIBUKA ---
         loadKarier();
+
+        // --- 8. EXPORT CSV KARIER ---
+        window.exportKarierCSV = function() {
+            // Ambil value dari filter saat ini
+            let site = document.getElementById("filterSite").value;
+            let jabatan = document.getElementById("filterJabatan").value;
+            let status = document.getElementById("filterStatus").value;
+            let bulan = document.getElementById("filterBulan").value;
+
+            // Buka tab/jendela baru ke URL export dengan membawa parameter filter
+            let url = `app/controller/export/export-karier.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
+            window.location.href = url;
+        };
 
     });
 </script>

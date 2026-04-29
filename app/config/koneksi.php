@@ -10,3 +10,5 @@ function url() {
     return 'https://hris.triputrajayasultra.com/';
 }
 ?>
+
+<!-- saya meng-uncentang intelephense undefined variables di vs code biar variabel $koneksi di file lain tidak merah -->
