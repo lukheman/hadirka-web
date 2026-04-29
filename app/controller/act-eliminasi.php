@@ -67,7 +67,7 @@ if ($action == "eliminasi") { // Proses eliminasi
                 tgl_keluar = '$tgl_keluar',
                 id_jenis_keluar = '$id_jenis_keluar',
                 alasan_keluar = '$alasan_keluar',
-                updated_at = NOW()
+                created_at = NOW()
             WHERE id_karyawan = '$id_karyawan'";
         } else {
             // INSERT (eliminasi baru)
