@@ -25,7 +25,10 @@ try {
     $where = ["1=1"];
 
     if (!empty($filter_status)) {
-        $where[] = "kar.status_karyawan = '$filter_status'";
+        if ($filter_status !== 'Semua') {
+            // Jika memilih status spesifik (Aktif, Resign, dll)
+            $where[] = "kar.status_karyawan = '$filter_status'";
+        }
     } else {
         // Jika filter status kosong, tampilkan semua karyawan aktif
         $where[] = "kar.status_karyawan = 'Aktif'";

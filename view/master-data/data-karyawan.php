@@ -103,6 +103,7 @@
                         </select>
 
                         <select id="filterStatus" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan status">
+                            <option value="Semua">-- Semua Status --</option>
                             <option value="Aktif" selected>Karyawan Aktif</option>
                             <option value="Habis Kontrak">Habis Kontrak</option>
                             <option value="Pensiun">Pensiun</option>
@@ -811,7 +812,7 @@
             $('#filterStatus').on('change', function() {
                 let status = $(this).val();
 
-                if (status !== 'Aktif') {
+                if (status === 'Aktif' || status === 'Semua') {
                     tableKaryawan.column(6).visible(false);
                 } else {
                     tableKaryawan.column(6).visible(true);

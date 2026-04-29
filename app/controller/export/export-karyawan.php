@@ -26,7 +26,9 @@ $bulan   = $_GET['bulan'] ?? '';
 $where = ["1=1"];
 
 if (!empty($status)) {
-    $where[] = "kar.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+    if ($status !== 'Semua') {
+        $where[] = "kar.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+    }
 } else {
     $where[] = "kar.status_karyawan = 'Aktif'";
 }
