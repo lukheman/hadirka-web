@@ -163,8 +163,20 @@ foreach (range('A', 'Y') as $col) {
     $sheet->getColumnDimension($col)->setAutoSize(true);
 }
 
+// ==== LOGIKA NAMA SITE UNTUK NAMA FILE ====
+$nama_site_file = "SEMUA_SITE"; // Default jika tidak ada site yang difilter
+
+if (!empty($site)) {
+    $q_site = $koneksi->query("SELECT nama_site FROM tb_site WHERE id_site = '" . $koneksi->real_escape_string($site) . "'");
+    if ($q_site && $q_site->num_rows > 0) {
+        $site_data = $q_site->fetch_assoc();
+        // Bersihkan nama site dari spasi (ganti dengan underscore) agar rapi jadi nama file
+        $nama_site_file = str_replace(' ', '_', strtoupper(trim($site_data['nama_site'])));
+    }
+}
+
 // Set Header untuk force download sebagai file XLSX
-$filename = "Export_Data_Karier_" . date('Ymd_His') . ".xlsx";
+$filename = "Data_Karier_" . $nama_site_file . "_" . date('Ymd_His') . ".xlsx";
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment;filename="' . $filename . '"');
 header('Cache-Control: max-age=0');
