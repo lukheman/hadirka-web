@@ -1,12 +1,19 @@
 <?php
-// Matikan error reporting agar file excel tidak corrupt (rusak) karena output text error
-error_reporting(0);
-ini_set('display_errors', 0);
-ob_clean(); // Bersihkan output buffer sebelum cetak Excel
+// 1. NYALAKAN ERROR UNTUK DEBUGGING
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// 2. TAMBAHKAN MEMORY LIMIT (Sangat penting untuk PhpSpreadsheet)
+ini_set('memory_limit', '512M'); 
+ini_set('max_execution_time', 300);
+
+// 3. BERSIHKAN BUFFER DENGAN AMAN
+if (ob_get_length()) {
+    ob_end_clean();
+}
 
 require '../../config/koneksi.php';
-// Load autoload dari composer (disesuaikan dengan path file ini ke folder vendor)
-require '../../../vendor/autoload.php';
+require '../../../vendor/autoload.php'; // Pastikan jumlah ../ sudah pas menuju folder root vendor
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
