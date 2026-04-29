@@ -73,6 +73,10 @@
                         <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#ModalImport" title="Klik untuk mengimpor data karyawan dari file Excel">
                             <i class="fa fa-upload"></i> Import Data
                         </button>
+                        <!-- TOMBOL EXPORT BARU -->
+                        <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel">
+                            <i class="fa fa-file-export"></i> Export Data
+                        </button>
                     </div>
 
                     <!-- FILTER AJAX -->
@@ -1214,5 +1218,17 @@
                 // Tampilkan modal
                 $('#modalLihatFoto').modal('show');
             });
+
+            // --- ACTION: EXPORT EXCEL KARYAWAN ---
+            window.exportKaryawanCSV = function() {
+                let site = document.getElementById("filterSite").value;
+                let jabatan = document.getElementById("filterJabatan").value;
+                let status = document.getElementById("filterStatus").value;
+                let bulan = document.getElementById("filterBulan").value;
+
+                // Arahkan ke file export-karyawan.php
+                let url = `app/controller/export/export-karyawan.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
+                window.location.href = url;
+            };
         });
     </script>

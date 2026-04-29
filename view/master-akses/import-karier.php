@@ -388,7 +388,7 @@
             let bulan = document.getElementById("filterBulan").value;
 
             // Buat URL dengan parameter GET
-            let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan}&status=${status}`;
+let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
 
             fetch(url)
                 .then(res => res.text())
