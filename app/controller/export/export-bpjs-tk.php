@@ -14,10 +14,19 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 // Ambil parameter filter dari URL
 $siteFilter = isset($_GET['site']) ? $_GET['site'] : '';
 $jabatanFilter = isset($_GET['jabatan']) ? $_GET['jabatan'] : '';
-$statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
+$statusFilter = isset($_GET['status']) ? $_GET['status'] : ''; // Ini Status BPJS
+$statusKarFilter = isset($_GET['status_kar']) ? $_GET['status_kar'] : 'AKTIF'; // Ini Status Karyawan
 
-$where = ["k.status_karyawan = 'Aktif'"];
+$where = [];
 
+// Logika Status Karyawan
+if ($statusKarFilter === 'AKTIF') {
+    $where[] = "k.status_karyawan = 'Aktif'";
+} else {
+    $where[] = "k.status_karyawan != 'Aktif'";
+}
+
+// Logika Filter Lainnya
 if ($siteFilter !== '') $where[] = "s.nama_site = '" . $koneksi->real_escape_string($siteFilter) . "'";
 if ($jabatanFilter !== '') $where[] = "j.nama_jabatan = '" . $koneksi->real_escape_string($jabatanFilter) . "'";
 if ($statusFilter === 'SUDAH') $where[] = "(i.bpjs_tk IS NOT NULL AND TRIM(i.bpjs_tk) != '' AND TRIM(i.bpjs_tk) != '-')";

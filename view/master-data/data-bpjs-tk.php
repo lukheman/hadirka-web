@@ -107,15 +107,22 @@
                 </div>
 
                 <div class="row g-2">
+                    <div class="col-lg-2 col-md-4">
+                        <label class="form-label small mb-1">Status Karyawan</label>
+                        <select id="filterStatusKar" class="form-select form-select-sm">
+                            <option value="AKTIF">Aktif</option>
+                            <option value="NONAKTIF">Selain Aktif</option>
+                        </select>
+                    </div>
                     <div class="col-lg-3 col-md-4">
-                        <label class="form-label small mb-1">Status Pendaftaran</label>
-                        <select id="filterStatus" class="form-select form-select-sm">
+                        <label class="form-label small mb-1">Status BPJS</label>
+                        <select id="filterStatusBPJS" class="form-select form-select-sm">
                             <option value="">Semua Status</option>
                             <option value="SUDAH">Sudah Terdaftar</option>
                             <option value="BELUM">Belum Terdaftar</option>
                         </select>
                     </div>
-                    <div class="col-lg-3 col-md-4">
+                    <div class="col-lg-2 col-md-4">
                         <label class="form-label small mb-1">Site</label>
                         <select id="filterSite" class="form-select form-select-sm">
                             <option value="">Semua Site</option>
@@ -127,7 +134,7 @@
                             <option value="">Semua Jabatan</option>
                         </select>
                     </div>
-                    <div class="col-lg-3 col-md-12 d-flex align-items-end">
+                    <div class="col-lg-2 col-md-8 d-flex align-items-end">
                         <button class="btn btn-success btn-sm w-100" onclick="exportToExcel()">
                             <i class="fa fa-file-excel"></i> Export Excel
                         </button>
@@ -232,7 +239,9 @@
         function renderTable() {
             let filterSite = document.getElementById("filterSite").value;
             let filterJabatan = document.getElementById("filterJabatan").value;
-            let filterStatus = document.getElementById("filterStatus").value;
+            let filterStatusBPJS = document.getElementById("filterStatusBPJS").value;
+            // Filter status karyawan (Aktif/Nonaktif) dikerjakan dari backend (get-bpjs-tk.php),
+            // jadi untuk filter array lokal di browser, kita hanya memproses 3 variabel di atas.
 
             let filteredData = allBPJSData.filter(row => {
                 let siteMatch = !filterSite || row.nama_site === filterSite;
@@ -240,8 +249,8 @@
                 
                 let isTerdaftar = cekTerdaftar(row.bpjs_tk);
                 let statusMatch = true;
-                if (filterStatus === 'SUDAH') statusMatch = isTerdaftar;
-                if (filterStatus === 'BELUM') statusMatch = !isTerdaftar;
+                if (filterStatusBPJS === 'SUDAH') statusMatch = isTerdaftar;
+                if (filterStatusBPJS === 'BELUM') statusMatch = !isTerdaftar;
 
                 return siteMatch && jabatanMatch && statusMatch;
             });
@@ -298,8 +307,9 @@
 
         $(document).ready(function() {
             window.loadBPJS = function() {
-                // Sesuaikan path get-data ini dengan struktur folder Anda
-                fetch("app/controller/get-data/get-bpjs-tk.php")
+                let statusKaryawan = document.getElementById("filterStatusKar").value;
+
+                fetch("app/controller/get-data/get-bpjs-tk.php?status_kar=" + statusKaryawan)
                     .then(res => res.json())
                     .then(res => {
                         if (res.status === 'success') {
@@ -326,7 +336,11 @@
             };
 
             // Event Listeners Filters
-            document.getElementById("filterStatus").addEventListener("change", renderTable);
+            // Khusus Status Karyawan, panggil loadBPJS (mengambil ulang dari DB)
+            document.getElementById("filterStatusKar").addEventListener("change", loadBPJS);
+            
+            // Sisanya cukup merender ulang array lokal
+            document.getElementById("filterStatusBPJS").addEventListener("change", renderTable);
             document.getElementById("filterSite").addEventListener("change", renderTable);
             document.getElementById("filterJabatan").addEventListener("change", renderTable);
 
@@ -334,10 +348,10 @@
             window.exportToExcel = function() {
                 let filterSite = document.getElementById("filterSite").value;
                 let filterJabatan = document.getElementById("filterJabatan").value;
-                let filterStatus = document.getElementById("filterStatus").value;
+                let filterStatusBPJS = document.getElementById("filterStatusBPJS").value;
+                let filterStatusKar = document.getElementById("filterStatusKar").value; // Tambahan
 
-                // Gunakan URL parameter untuk mengirim filter ke server
-                let url = `app/controller/export/export-bpjs-tk.php?site=${encodeURIComponent(filterSite)}&jabatan=${encodeURIComponent(filterJabatan)}&status=${encodeURIComponent(filterStatus)}`;
+                let url = `app/controller/export/export-bpjs-tk.php?site=${encodeURIComponent(filterSite)}&jabatan=${encodeURIComponent(filterJabatan)}&status=${encodeURIComponent(filterStatusBPJS)}&status_kar=${encodeURIComponent(filterStatusKar)}`;
                 window.location.href = url;
             };
 
