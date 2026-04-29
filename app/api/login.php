@@ -25,23 +25,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data_identitas = mysqli_fetch_assoc($result_get_id);
             $id_karyawan = $data_identitas['id_karyawan'];
 
-            // --- STEP 2: Verifikasi Password dan Status di tb_karyawan ---
+            // --- STEP 2: Verifikasi Password (Tanpa Status Dulu) ---
             $query_login = "SELECT * FROM tb_karyawan 
                             WHERE id_karyawan = '$id_karyawan' 
-                            AND password = '$hashed_password' 
-                            AND status_karyawan = 1"; 
+                            AND password = '$hashed_password'"; 
 
             $result_login = mysqli_query($koneksi, $query_login);
 
             if (mysqli_num_rows($result_login) > 0) {
-                // Login Berhasil
-                $response = [
-                    'status' => 'success', 
-                    'message' => 'Login berhasil!',
-                    'id_karyawan' => $id_karyawan, // <-- DATA KUNCI DIKEMBALIKAN
-                ];
+                // Password benar, sekarang cek status karyawannya
+                $data_karyawan = mysqli_fetch_assoc($result_login);
+                $status = $data_karyawan['status_karyawan'];
+                
+                // Cek apakah statusnya 'Aktif' (atau 1 sesuai database Anda)
+                if ($status == 'Aktif' || $status == 'aktif') {
+                    // Login Berhasil
+                    $response = [
+                        'status' => 'success', 
+                        'message' => 'Login berhasil!',
+                        'id_karyawan' => $id_karyawan,
+                    ];
+                } else {
+                    // Karyawan tidak aktif
+                    $response = ['status' => 'error', 'message' => 'Karyawan sudah tidak aktif'];
+                }
             } else {
-                $response = ['status' => 'error', 'message' => 'Kata sandi salah atau akun belum diaktifkan.'];
+                // Jika data tidak ditemukan di sini, berarti password salah
+                $response = ['status' => 'error', 'message' => 'Kata sandi salah.'];
             }
         }
     }
