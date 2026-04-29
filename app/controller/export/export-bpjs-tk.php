@@ -52,7 +52,7 @@ $sheet->setTitle('Data BPJS TK');
 
 // UBAHAN 2: Sesuaikan dan geser Header Kolom
 $sheet->setCellValue('A1', 'No');
-$sheet->setCellValue('B1', 'NIK Karyawan');
+$sheet->setCellValue('B1', 'ID Karyawan');
 $sheet->setCellValue('C1', 'Nama Lengkap');
 $sheet->setCellValue('D1', 'NIK KTP'); // Kolom Baru
 $sheet->setCellValue('E1', 'Site');    // Bergeser dari D ke E
