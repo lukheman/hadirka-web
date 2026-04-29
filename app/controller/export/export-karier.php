@@ -1,9 +1,16 @@
 <?php
-// Matikan error reporting agar tidak merusak format CSV jika ada warning
+// Matikan error reporting agar file excel tidak corrupt (rusak) karena output text error
 error_reporting(0);
 ini_set('display_errors', 0);
+ob_clean(); // Bersihkan output buffer sebelum cetak Excel
 
 require '../../config/koneksi.php';
+// Load autoload dari composer (disesuaikan dengan path file ini ke folder vendor)
+require '../../../vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 // Tangkap parameter filter dari GET
 $site    = $_GET['site'] ?? '';
@@ -11,7 +18,7 @@ $jabatan = $_GET['jabatan'] ?? '';
 $status  = $_GET['status'] ?? 'Aktif'; 
 $bulan   = $_GET['bulan'] ?? '';
 
-// Build WHERE Clause (Sama seperti get-karier.php)
+// Build WHERE Clause
 $where = ["1=1"];
 
 if (!empty($site)) {
@@ -41,24 +48,48 @@ $query = "SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_kar
 
 $result = $koneksi->query($query);
 
-// Set header untuk memicu download file CSV
-$filename = "Export_Data_Karier_" . date('Ymd_His') . ".csv";
-header('Content-Type: text/csv; charset=utf-8');
-header('Content-Disposition: attachment; filename="' . $filename . '"');
+// Inisialisasi PhpSpreadsheet
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
 
-// Buka output stream
-$output = fopen('php://output', 'w');
+// Tulis Header Kolom
+$headers = [
+    'A1' => 'NO',
+    'B1' => 'NIK KARYAWAN',
+    'C1' => 'NAMA LENGKAP (Info)', 
+    'D1' => 'SITE',
+    'E1' => 'DEPARTEMEN', 
+    'F1' => 'JABATAN', 
+    'G1' => 'GAJI BASIC', 
+    'H1' => 'TUNJANGAN DAERAH', 
+    'I1' => 'TUNJANGAN HIDUP', 
+    'J1' => 'TUNJANGAN MAKAN', 
+    'K1' => 'TUNJANGAN SKILL', '
+    L1' => 'PERFORMANCE BONUS', 
+    'M1' => 'TUNJANGAN POSISI', 
+    'N1' => 'OT PERTAMA', 
+    'O1' => 'OT KEDUA', 
+    'P1' => 'SPL', 
+    'Q1' => 'OT1 SPL', 
+    'R1' => 'OT2 SPL', 
+    'S1' => 'POTONGAN BPJS KES', 
+    'T1' => 'POTONGAN JHT', 
+    'U1' => 'PPH21', 
+    'V1' => 'POTONGAN IZIN', 
+    'W1' => 'POTONGAN MANGKIR', 
+    'X1' => 'TGL MASUK SITE', 
+    'Y1' => 'TGL SELESAI KONTRAK'
+];
 
-// Tulis Header Kolom (Sesuai dengan abjad Excel A - Y)
-fputcsv($output, [
-    'NO', 'NIK KARYAWAN', 'NAMA LENGKAP (Info)', 'SITE', 'DEPARTEMEN', 'JABATAN', 'GAJI BASIC', 
-    'TUNJANGAN DAERAH', 'TUNJANGAN HIDUP', 'TUNJANGAN MAKAN', 'TUNJANGAN SKILL', 
-    'PERFORMANCE BONUS', 'TUNJANGAN POSISI', 'OT PERTAMA', 'OT KEDUA', 'SPL', 
-    'OT1 SPL', 'OT2 SPL', 'POTONGAN BPJS KES', 'POTONGAN JHT', 'PPH21', 
-    'POTONGAN IZIN', 'POTONGAN MANGKIR', 'TGL MASUK SITE', 'TGL SELESAI KONTRAK'
-]);
+// Set nilai header dan buat tulisan jadi bold
+foreach ($headers as $cell => $val) {
+    $sheet->setCellValue($cell, $val);
+    $sheet->getStyle($cell)->getFont()->setBold(true);
+}
 
+$rowNum = 2; // Mulai isi data dari baris ke-2
 $no = 1;
+
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $id_karier = $row['id_karier'];
@@ -66,7 +97,6 @@ if ($result && $result->num_rows > 0) {
         // Siapkan variabel default untuk Tunjangan
         $t_daerah = 0; $t_hidup = 0; $t_makan = 0; $t_skill = 0; $p_bonus = 0; $t_posisi = 0;
         
-        // Ambil Data Tunjangan
         $q_tunjangan = $koneksi->query("SELECT nama_tunjangan, jumlah_tunjangan FROM tb_tunjangan WHERE id_karier='$id_karier'");
         while ($t = $q_tunjangan->fetch_assoc()) {
             $nama_t = strtoupper(trim($t['nama_tunjangan']));
@@ -81,7 +111,6 @@ if ($result && $result->num_rows > 0) {
         // Siapkan variabel default untuk Potongan
         $pot_bpjs = 0; $pot_jht = 0; $pph21 = 0;
 
-        // Ambil Data Potongan
         $q_potongan = $koneksi->query("SELECT jenis_potongan, jumlah_potongan FROM tb_potongan WHERE id_karier='$id_karier'");
         while ($p = $q_potongan->fetch_assoc()) {
             $jenis_p = strtoupper(trim($p['jenis_potongan']));
@@ -90,40 +119,51 @@ if ($result && $result->num_rows > 0) {
             if ($jenis_p === 'PPH21') $pph21 = $p['jumlah_potongan'];
         }
 
-        // Mapping Data ke dalam baris Array sesuai format Excel Import
-        $baris = [
-            $no++,                               // A: No
-            $row['nik_karyawan'],                // B: NIK
-            $row['nama_lengkap'],                // C: Nama Lengkap (hanya untuk bacaan HR, diabaikan saat import)
-            $row['nama_site'],                   // D: Site
-            $row['nama_departemen'],             // E: Departemen
-            $row['nama_jabatan'],                // F: Jabatan
-            $row['gaji_pokok'],                  // G: Basic
-            $t_daerah,                           // H: Tunjangan Daerah
-            $t_hidup,                            // I: Tunjangan Hidup
-            $t_makan,                            // J: Tunjangan Makan
-            $t_skill,                            // K: Tunjangan Skill
-            $p_bonus,                            // L: Performance Bonus
-            $t_posisi,                           // M: Tunjangan Posisi
-            $row['ot_pertama'],                  // N: OT Pertama
-            $row['ot_kedua'],                    // O: OT Kedua
-            $row['spl'],                         // P: SPL
-            $row['ot1_spl'],                     // Q: OT1 SPL
-            $row['ot2_spl'],                     // R: OT2 SPL
-            $pot_bpjs,                           // S: Potongan BPJS
-            $pot_jht,                            // T: Potongan JHT
-            $pph21,                              // U: PPH21
-            $row['pot_izin'],                    // V: Potongan Izin
-            $row['pot_mangkir'],                 // W: Potongan Mangkir
-            $row['tgl_mulai'],                   // X: Tgl Mulai
-            $row['tgl_selesai']                  // Y: Tgl Selesai
-        ];
+        // Tulis data ke masing-masing cell
+        $sheet->setCellValue('A' . $rowNum, $no++);
+        // Khusus NIK kita set eksplisit sebagai String agar awalan '0' tidak hilang di Excel
+        $sheet->setCellValueExplicit('B' . $rowNum, $row['nik_karyawan'], DataType::TYPE_STRING); 
+        $sheet->setCellValue('C' . $rowNum, $row['nama_lengkap']);
+        $sheet->setCellValue('D' . $rowNum, $row['nama_site']);
+        $sheet->setCellValue('E' . $rowNum, $row['nama_departemen']);
+        $sheet->setCellValue('F' . $rowNum, $row['nama_jabatan']);
+        $sheet->setCellValue('G' . $rowNum, $row['gaji_pokok']);
+        $sheet->setCellValue('H' . $rowNum, $t_daerah);
+        $sheet->setCellValue('I' . $rowNum, $t_hidup);
+        $sheet->setCellValue('J' . $rowNum, $t_makan);
+        $sheet->setCellValue('K' . $rowNum, $t_skill);
+        $sheet->setCellValue('L' . $rowNum, $p_bonus);
+        $sheet->setCellValue('M' . $rowNum, $t_posisi);
+        $sheet->setCellValue('N' . $rowNum, $row['ot_pertama']);
+        $sheet->setCellValue('O' . $rowNum, $row['ot_kedua']);
+        $sheet->setCellValue('P' . $rowNum, $row['spl']);
+        $sheet->setCellValue('Q' . $rowNum, $row['ot1_spl']);
+        $sheet->setCellValue('R' . $rowNum, $row['ot2_spl']);
+        $sheet->setCellValue('S' . $rowNum, $pot_bpjs);
+        $sheet->setCellValue('T' . $rowNum, $pot_jht);
+        $sheet->setCellValue('U' . $rowNum, $pph21);
+        $sheet->setCellValue('V' . $rowNum, $row['pot_izin']);
+        $sheet->setCellValue('W' . $rowNum, $row['pot_mangkir']);
+        $sheet->setCellValue('X' . $rowNum, $row['tgl_mulai']);
+        $sheet->setCellValue('Y' . $rowNum, $row['tgl_selesai']);
 
-        // Tulis baris ke file CSV
-        fputcsv($output, $baris);
+        $rowNum++;
     }
 }
 
-fclose($output);
+// Auto-size kolom agar rapi (Opsional tapi bikin Excelnya lebih cantik)
+foreach (range('A', 'Y') as $col) {
+    $sheet->getColumnDimension($col)->setAutoSize(true);
+}
+
+// Set Header untuk force download sebagai file XLSX
+$filename = "Export_Data_Karier_" . date('Ymd_His') . ".xlsx";
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment;filename="' . $filename . '"');
+header('Cache-Control: max-age=0');
+
+// Tulis ke output
+$writer = new Xlsx($spreadsheet);
+$writer->save('php://output');
 exit;
 ?>
