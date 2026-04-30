@@ -364,7 +364,7 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     // ================================
     // CHECK IF DATA EXISTS
     // ================================
-    $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ?");
+    $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?");
     
     if (!$stmtCheck) {
         $errorCount++;
@@ -372,13 +372,14 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         continue;
     }
     
-    $stmtCheck->bind_param("is", $id_karyawan, $tgl_rapel);
+    // Tambahkan variabel $keterangan ke dalam pengecekan (iss = integer, string, string)
+    $stmtCheck->bind_param("iss", $id_karyawan, $tgl_rapel, $keterangan);
     $stmtCheck->execute();
     $stmtCheck->store_result();
 
     if ($stmtCheck->num_rows == 0) {
         // ================================
-        // INSERT NEW DATA
+        // INSERT NEW DATA (Jika Keterangan beda, buat baru)
         // ================================
         $stmtCheck->close();
         
@@ -414,14 +415,15 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         
     } else {
         // ================================
-        // UPDATE EXISTING DATA
+        // UPDATE EXISTING DATA (Jika ID, Tgl, dan Keterangan sama persis)
         // ================================
         $stmtCheck->close();
         
+        // Kita hanya perlu update nominalnya saja, karena keterangannya sudah pasti sama
         $stmtUpdate = $koneksi->prepare("
             UPDATE tb_rapel 
-            SET nominal_rapel = ?, ket_rapel = ? 
-            WHERE id_karyawan = ? AND tgl_rapel = ?
+            SET nominal_rapel = ? 
+            WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?
         ");
         
         if (!$stmtUpdate) {
@@ -430,7 +432,8 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
             continue;
         }
         
-        $stmtUpdate->bind_param("dsis", $nominal_rapel, $keterangan, $id_karyawan, $tgl_rapel);
+        // diss = double (nominal), integer (id), string (tgl), string (ket)
+        $stmtUpdate->bind_param("diss", $nominal_rapel, $id_karyawan, $tgl_rapel, $keterangan);
         
         if ($stmtUpdate->execute()) {
             $successCount++;
