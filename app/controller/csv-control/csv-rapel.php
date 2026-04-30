@@ -197,7 +197,7 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     
     if (!$stmtK) {
         $errorCount++;
-        $errors[] = "Baris $i (NIK $nik_karyawan): Terjadi kesalahan sistem database (" . $koneksi->error . ")";
+        $errors[] = "Baris $i: Error prepare statement - " . $koneksi->error;
         continue;
     }
     
@@ -220,48 +220,24 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     try {
         if (empty($tglRapel)) {
             $errorCount++;
-            $errors[] = "Baris $i: Kolom Tanggal kosong untuk NIK $nik_karyawan. Wajib diisi.";
+            $errors[] = "Baris $i: Tanggal rapel kosong untuk NIK $nik_karyawan";
             continue;
         }
 
         // Handle Excel serial number
         if (is_numeric($tglRapel)) {
-            // Jika format sel Excel berupa Number/Date bawaan Excel
             $tgl_rapel = Date::excelToDateTimeObject($tglRapel)->format('Y-m-d');
         } else {
-            // // Handle string date formats
-            // // Try multiple date formats
-            // $dateFormats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'Y/m/d'];
-            // $tgl_rapel = null;
+            // FIX: Normalisasi garis miring (/) menjadi strip (-)
+            // PHP strtotime() membaca '/' sebagai mm/dd/yyyy dan '-' sebagai dd-mm-yyyy
+            $tglRapelNormal = str_replace('/', '-', $tglRapel);
             
-            // foreach ($dateFormats as $format) {
-            //     $dateObj = DateTime::createFromFormat($format, $tglRapel);
-            //     if ($dateObj && $dateObj->format($format) === $tglRapel) {
-            //         $tgl_rapel = $dateObj->format('Y-m-d');
-            //         break;
-            //     }
-            // }
-            
-            // // If no format matched, try strtotime
-            // if (!$tgl_rapel) {
-            //     $timestamp = strtotime($tglRapel);
-            //     if ($timestamp === false) {
-            //         $errorCount++;
-            //         $errors[] = "Baris $i: Format tanggal tidak valid '$tglRapel' untuk NIK $nik_karyawan";
-            //         continue;
-            //     }
-            //     $tgl_rapel = date('Y-m-d', $timestamp);
-            // }
-
-            // Ubah garis miring (/) menjadi strip (-) agar PHP tidak mengiranya format Amerika (m/d/Y)
-            $tglRapelClean = str_replace('/', '-', $tglRapel);
-            
-            $timestamp = strtotime($tglRapelClean);
+            $timestamp = strtotime($tglRapelNormal);
             if ($timestamp !== false) {
                 $tgl_rapel = date('Y-m-d', $timestamp);
             } else {
                 $errorCount++;
-                $errors[] = "Baris $i: Format tanggal '$tglRapel' salah untuk NIK $nik_karyawan. Gunakan format DD/MM/YYYY atau YYYY-MM-DD.";
+                $errors[] = "Baris $i: Format tanggal tidak valid '$tglRapel' untuk NIK $nik_karyawan";
                 continue;
             }
         }
@@ -273,13 +249,13 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         
         if ($dateObj < $minDate || $dateObj > $maxDate) {
             $errorCount++;
-            $errors[] = "Baris $i: Tanggal rapel di luar jangkauan yang valid untuk NIK $nik_karyawan";
+            $errors[] = "Baris $i: Tanggal rapel di luar jangkauan untuk NIK $nik_karyawan";
             continue;
         }
         
     } catch (Exception $e) {
         $errorCount++;
-        $errors[] = "Baris $i: Tanggal gagal diproses untuk NIK $nik_karyawan. Pastikan cell berformat Text/Date.";
+        $errors[] = "Baris $i: Error konversi tanggal untuk NIK $nik_karyawan - " . $e->getMessage();
         continue;
     }
 
@@ -288,51 +264,51 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     // ================================
     if (empty($nominal) && $nominal !== '0') {
         $errorCount++;
-        $errors[] = "Baris $i: Kolom Nominal kosong untuk NIK $nik_karyawan.";
+        $errors[] = "Baris $i: Nominal rapel kosong untuk NIK $nik_karyawan";
         continue;
     }
 
-    // Bersihkan semua karakter SELAIN Angka, Koma, dan Titik (Otomatis membuang 'Rp', spasi, dll)
-    $nominal_clean = preg_replace('/[^0-9,\.]/', '', $nominal);
-
-    $posKoma = strrpos($nominal_clean, ',');
-    $posTitik = strrpos($nominal_clean, '.');
+    // FIX: Bersihkan huruf (seperti Rp, spasi) dan sisakan hanya angka, titik, koma
+    $nominal_clean = preg_replace('/[^0-9,.]/', '', $nominal);
     
-    // Handle different decimal separators
-    // Indonesian format: 1.000.000,50 or 1000000,50
-    // International format: 1,000,000.50 or 1000000.50
-    
-    if ($posKoma !== false && $posTitik !== false) {
-        if ($posKoma > $posTitik) { 
-            // Format Indo: 1.000.000,50
+    // Logika cerdas untuk mendeteksi format ribuan/desimal
+    if (strpos($nominal_clean, ',') !== false && strpos($nominal_clean, '.') !== false) {
+        // Jika ada titik DAN koma (misal: 1.000.000,00 atau 1,000,000.00)
+        $lastComma = strrpos($nominal_clean, ',');
+        $lastDot = strrpos($nominal_clean, '.');
+        
+        if ($lastDot > $lastComma) { // Contoh: 1,000,000.00
+            $nominal_clean = str_replace(',', '', $nominal_clean);
+        } else { // Contoh: 1.000.000,00
             $nominal_clean = str_replace('.', '', $nominal_clean);
             $nominal_clean = str_replace(',', '.', $nominal_clean);
-        } else { 
-            // Format Internasional: 1,000,000.50
-            $nominal_clean = str_replace(',', '', $nominal_clean);
         }
-    } elseif ($posKoma !== false) {
-        // Cuma ada koma (1000000,50) jadikan desimal
-        $nominal_clean = str_replace(',', '.', $nominal_clean);
-    } elseif ($posTitik !== false) {
-        // Cuma ada titik
-        if (substr_count($nominal_clean, '.') > 1) { 
-            // Pasti ribuan karena lebih dari 1 (1.000.000)
-            $nominal_clean = str_replace('.', '', $nominal_clean);
-        } else {
-            // Jika ada 1 titik (1.000). Jika di belakang titik ada persis 3 digit, anggap ribuan.
+    } else {
+        // Jika HANYA ADA TITIK (misal 1.000.000)
+        if (strpos($nominal_clean, '.') !== false) {
             $parts = explode('.', $nominal_clean);
-            if (isset($parts[1]) && strlen($parts[1]) === 3) {
+            // Cek digit di belakang titik. Jika BUKAN 2 digit, asumsikan itu ribuan (bukan sen)
+            if (strlen(end($parts)) !== 2) {
                 $nominal_clean = str_replace('.', '', $nominal_clean);
+            }
+        }
+        // Jika HANYA ADA KOMA (misal 1,000,000)
+        else if (strpos($nominal_clean, ',') !== false) {
+            $parts = explode(',', $nominal_clean);
+            if (strlen(end($parts)) === 2) { // Contoh 1000000,50
+                $nominal_clean = str_replace(',', '.', $nominal_clean);
+            } else { // Contoh 1,000,000
+                $nominal_clean = str_replace(',', '', $nominal_clean);
             }
         }
     }
     
+    // Casting ke Float dengan aman setelah string bersih dari format ribuan
     $nominal_rapel = (float) $nominal_clean;
 
     if ($nominal_rapel <= 0) {
         $errorCount++;
-        $errors[] = "Baris $i: Nominal rapel '{$nominal}' tidak valid untuk NIK $nik_karyawan. Harus angka > 0.";
+        $errors[] = "Baris $i: Nominal rapel tidak valid '$nominal' untuk NIK $nik_karyawan";
         continue;
     }
     
@@ -350,9 +326,10 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     // CHECK IF DATA EXISTS
     // ================================
     $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ?");
+    
     if (!$stmtCheck) {
         $errorCount++;
-        $errors[] = "Baris $i: Error sistem saat pengecekan database (" . $koneksi->error . ")";
+        $errors[] = "Baris $i: Error prepare check statement - " . $koneksi->error;
         continue;
     }
     
@@ -373,7 +350,8 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         
         if (!$stmtInsert) {
             $errorCount++;
-            $errors[] = "Baris $i: Sistem gagal menyiapkan perintah simpan (" . $koneksi->error . ")";continue;
+            $errors[] = "Baris $i: Error prepare insert statement - " . $koneksi->error;
+            continue;
         }
         
         $stmtInsert->bind_param("isds", $id_karyawan, $tgl_rapel, $nominal_rapel, $keterangan);
@@ -391,7 +369,7 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
             ];
         } else {
             $errorCount++;
-            $errors[] = "Baris $i: Gagal menyimpan NIK $nik_karyawan ke database (" . $stmtInsert->error . ")";
+            $errors[] = "Baris $i: Gagal menyimpan data untuk NIK $nik_karyawan - " . $stmtInsert->error;
         }
         $stmtInsert->close();
         
@@ -409,7 +387,7 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         
         if (!$stmtUpdate) {
             $errorCount++;
-            $errors[] = "Baris $i: Sistem gagal menyiapkan perintah update (" . $koneksi->error . ")";
+            $errors[] = "Baris $i: Error prepare update statement - " . $koneksi->error;
             continue;
         }
         
@@ -428,7 +406,7 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
             ];
         } else {
             $errorCount++;
-            $errors[] = "Baris $i: Gagal menimpa data lama untuk NIK $nik_karyawan (" . $stmtUpdate->error . ")";
+            $errors[] = "Baris $i: Gagal mengupdate data untuk NIK $nik_karyawan - " . $stmtUpdate->error;
         }
         $stmtUpdate->close();
     }
@@ -468,7 +446,7 @@ if ($errorCount > 0 && $successCount == 0) {
 }
 
 // Get sample errors (max 5)
-$errorSample = array_slice($errors, 0, 10);
+$errorSample = array_slice($errors, 0, 5);
 
 // ================================
 // SEND RESPONSE

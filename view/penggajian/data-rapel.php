@@ -666,25 +666,38 @@
             .then(data => {
                 let message = data.message || 'Import selesai';
                 
-                // Add details if available
+                // Tambahkan ringkasan sukses/update
                 if (data.insert_count || data.update_count || data.error_count) {
-                    message += '<br><small>';
-                    if (data.insert_count > 0) message += `✓ ${data.insert_count} data baru<br>`;
-                    if (data.update_count > 0) message += `⟳ ${data.update_count} data diupdate<br>`;
-                    if (data.error_count > 0) message += `✗ ${data.error_count} data error<br>`;
-                    message += '</small>';
+                    message += '<br><div class="mt-2 text-start small">';
+                    if (data.insert_count > 0) message += `<div class="text-success"><i class="fa fa-check"></i> ${data.insert_count} data baru</div>`;
+                    if (data.update_count > 0) message += `<div class="text-primary"><i class="fa fa-sync"></i> ${data.update_count} data diupdate</div>`;
+                    if (data.error_count > 0) message += `<div class="text-danger"><i class="fa fa-times"></i> ${data.error_count} data gagal</div>`;
+                    message += '</div>';
+                }
+
+                // FITUR BARU: Tampilkan list detail error dari array PHP
+                if (data.errors && data.errors.length > 0) {
+                    message += '<hr><div class="text-start text-danger" style="max-height: 120px; overflow-y: auto; font-size: 0.85em; background: #fff0f0; padding: 10px; border-radius: 5px;">';
+                    message += '<strong>Detail Masalah:</strong><ul class="mb-0 ps-3">';
+                    data.errors.forEach(err => {
+                        message += `<li>${err}</li>`;
+                    });
+                    if (data.total_errors > data.errors.length) {
+                        message += `<li><em>...dan ${data.total_errors - data.errors.length} masalah lainnya</em></li>`;
+                    }
+                    message += '</ul></div>';
                 }
                 
                 Swal.fire({
                     icon: data.status === 'success' ? 'success' : data.status === 'warning' ? 'warning' : 'error',
-                    title: data.status === 'success' ? 'Berhasil!' : data.status === 'warning' ? 'Selesai dengan Warning' : 'Gagal!',
+                    title: data.status === 'success' ? 'Berhasil!' : data.status === 'warning' ? 'Selesai (Dengan Warning)' : 'Gagal!',
                     html: message,
                     showConfirmButton: true
                 });
                 
                 if(data.status === "success" || data.status === "warning") {
                     loadRapel();
-                    this.reset();
+                    document.getElementById("formImportRapel").reset();
                 }
             })
             .catch(error => {
