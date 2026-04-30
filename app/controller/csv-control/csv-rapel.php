@@ -358,11 +358,18 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         continue;
     }
 
-    // Sanitize keterangan
+    // Normalisasi dan Sanitize Keterangan
+    // Hapus spasi kosong berlebih di awal/akhir dan di antara kata, 
+    // serta seragamkan penggunaan huruf kapital (agar "Rapel" sama dengan "RAPEL")
+    $keterangan = trim($keterangan); // Buang spasi ujung-ujung
+    $keterangan = preg_replace('/\s+/', ' ', $keterangan); // Ubah spasi dobel jadi spasi tunggal
     $keterangan = substr($keterangan, 0, 500); // Limit length
+    
+    // Opsional tapi sangat disarankan: Buat huruf jadi kapital semua untuk pengecekan (biar aman)
+    $keterangan = strtoupper($keterangan);
 
     // ================================
-    // CHECK IF DATA EXISTS
+    // CHECK IF DATA EXISTS (Cek Kombinasi ID, Tgl, dan Keterangan)
     // ================================
     $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?");
     
