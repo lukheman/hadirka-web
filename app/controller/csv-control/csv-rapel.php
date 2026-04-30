@@ -224,38 +224,57 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
             continue;
         }
 
-        // Handle Excel serial number
+        $tgl_rapel = null;
+
+        // 1. Handle format Serial Number bawaan Excel (misal: 45280)
         if (is_numeric($tglRapel)) {
             $tgl_rapel = Date::excelToDateTimeObject($tglRapel)->format('Y-m-d');
         } else {
-            // FIX: Normalisasi garis miring (/) menjadi strip (-)
-            // PHP strtotime() membaca '/' sebagai mm/dd/yyyy dan '-' sebagai dd-mm-yyyy
-            $tglRapelNormal = str_replace('/', '-', $tglRapel);
+            // 2. Daftar tebakan format tanggal yang umum digunakan
+            $dateFormats = [
+                'Y-m-d', 'd/m/Y', 'd-m-Y', 'Y/m/d', 
+                'd.m.Y', 'j/n/Y', 'j-n-Y', 'd/m/y'
+            ];
             
-            $timestamp = strtotime($tglRapelNormal);
-            if ($timestamp !== false) {
-                $tgl_rapel = date('Y-m-d', $timestamp);
-            } else {
-                $errorCount++;
-                $errors[] = "Baris $i: Format tanggal tidak valid '$tglRapel' untuk NIK $nik_karyawan";
-                continue;
+            foreach ($dateFormats as $format) {
+                $dateObj = DateTime::createFromFormat($format, $tglRapel);
+                // Validasi ketat (menghindari PHP menganggap 32/01/2023 jadi 01/02/2023)
+                if ($dateObj && $dateObj->format($format) === $tglRapel) {
+                    $tgl_rapel = $dateObj->format('Y-m-d');
+                    break;
+                }
+            }
+            
+            // 3. Fallback: Jika tidak cocok dengan array di atas, paksa baca pakai strtotime
+            if (!$tgl_rapel) {
+                // Ubah semua simbol garis miring atau titik menjadi strip (-)
+                $tglNormal = str_replace(['/', '.'], '-', $tglRapel);
+                $timestamp = strtotime($tglNormal);
+                
+                if ($timestamp !== false) {
+                    $tgl_rapel = date('Y-m-d', $timestamp);
+                } else {
+                    $errorCount++;
+                    $errors[] = "Baris $i: Format tanggal tidak dipahami '$tglRapel' (Gunakan yyyy-mm-dd)";
+                    continue;
+                }
             }
         }
         
-        // Validate date range
+        // Validate date range (Pastikan tidak salah ketik tahun 1900 atau 2050)
         $dateObj = new DateTime($tgl_rapel);
-        $minDate = new DateTime('1900-01-01');
-        $maxDate = new DateTime('+1 year');
+        $minDate = new DateTime('2000-01-01'); // Dibatasi masuk akal mulai thn 2000
+        $maxDate = new DateTime('+2 year');
         
         if ($dateObj < $minDate || $dateObj > $maxDate) {
             $errorCount++;
-            $errors[] = "Baris $i: Tanggal rapel di luar jangkauan untuk NIK $nik_karyawan";
+            $errors[] = "Baris $i: Tahun pada tanggal '$tglRapel' di luar batas untuk NIK $nik_karyawan";
             continue;
         }
         
     } catch (Exception $e) {
         $errorCount++;
-        $errors[] = "Baris $i: Error konversi tanggal untuk NIK $nik_karyawan - " . $e->getMessage();
+        $errors[] = "Baris $i: Error membaca tanggal untuk NIK $nik_karyawan";
         continue;
     }
 
@@ -268,47 +287,67 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         continue;
     }
 
-    // FIX: Bersihkan huruf (seperti Rp, spasi) dan sisakan hanya angka, titik, koma
-    $nominal_clean = preg_replace('/[^0-9,.]/', '', $nominal);
+    // Bersihkan semua karakter KECUALI angka, titik, dan koma (Rp, spasi, minus akan hilang)
+    $nominal_clean = preg_replace('/[^0-9.,]/', '', $nominal);
     
-    // Logika cerdas untuk mendeteksi format ribuan/desimal
-    if (strpos($nominal_clean, ',') !== false && strpos($nominal_clean, '.') !== false) {
-        // Jika ada titik DAN koma (misal: 1.000.000,00 atau 1,000,000.00)
-        $lastComma = strrpos($nominal_clean, ',');
+    $hasDot = strpos($nominal_clean, '.') !== false;
+    $hasComma = strpos($nominal_clean, ',') !== false;
+
+    // Skenario 1: Ada Titik DAN Koma (misal: 1.000.000,50 atau 1,000,000.56)
+    if ($hasDot && $hasComma) {
         $lastDot = strrpos($nominal_clean, '.');
+        $lastComma = strrpos($nominal_clean, ',');
         
-        if ($lastDot > $lastComma) { // Contoh: 1,000,000.00
+        if ($lastDot > $lastComma) {
+            // Titik di akhir -> Format Internasional (1,000.56)
             $nominal_clean = str_replace(',', '', $nominal_clean);
-        } else { // Contoh: 1.000.000,00
-            $nominal_clean = str_replace('.', '', $nominal_clean);
-            $nominal_clean = str_replace(',', '.', $nominal_clean);
+        } else {
+            // Koma di akhir -> Format Indonesia (1.000,5)
+            $nominal_clean = str_replace('.', '', $nominal_clean); // buang pemisah ribuan
+            $nominal_clean = str_replace(',', '.', $nominal_clean); // ubah koma jadi titik desimal
         }
-    } else {
-        // Jika HANYA ADA TITIK (misal 1.000.000)
-        if (strpos($nominal_clean, '.') !== false) {
+    } 
+    // Skenario 2: Hanya ada TITIK (misal: 1.000.000 atau 1000.56)
+    elseif ($hasDot) {
+        // Cek berapa banyak titiknya
+        if (substr_count($nominal_clean, '.') > 1) {
+            // Jika lebih dari 1 titik (1.000.000), ini PASTI pemisah ribuan
+            $nominal_clean = str_replace('.', '', $nominal_clean);
+        } else {
+            // Jika cuma ada 1 titik, lihat digit di belakang titik ada berapa
             $parts = explode('.', $nominal_clean);
-            // Cek digit di belakang titik. Jika BUKAN 2 digit, asumsikan itu ribuan (bukan sen)
-            if (strlen(end($parts)) !== 2) {
+            if (strlen(end($parts)) === 3) {
+                // Kalau pas 3 digit belakang (1.000), ini pemisah ribuan (Seribu)
                 $nominal_clean = str_replace('.', '', $nominal_clean);
+            } else {
+                // Kalau bukan 3 digit (misal .5 atau .56), ini adalah desimal
+                // Biarkan titiknya tetap ada
             }
         }
-        // Jika HANYA ADA KOMA (misal 1,000,000)
-        else if (strpos($nominal_clean, ',') !== false) {
+    } 
+    // Skenario 3: Hanya ada KOMA (misal: 1,000,000 atau 1000,5)
+    elseif ($hasComma) {
+        if (substr_count($nominal_clean, ',') > 1) {
+            // Lebih dari 1 koma, pasti format US/Internasional (1,000,000)
+            $nominal_clean = str_replace(',', '', $nominal_clean);
+        } else {
             $parts = explode(',', $nominal_clean);
-            if (strlen(end($parts)) === 2) { // Contoh 1000000,50
-                $nominal_clean = str_replace(',', '.', $nominal_clean);
-            } else { // Contoh 1,000,000
+            if (strlen(end($parts)) === 3) {
+                // Pas 3 digit (1,000), ini ribuannya orang bule
                 $nominal_clean = str_replace(',', '', $nominal_clean);
+            } else {
+                // Bukan 3 digit (1000,5), berarti koma ini adalah desimal Indonesia
+                $nominal_clean = str_replace(',', '.', $nominal_clean);
             }
         }
     }
     
-    // Casting ke Float dengan aman setelah string bersih dari format ribuan
+    // Konversi string yang sudah sangat bersih menjadi angka pecahan riil (float)
     $nominal_rapel = (float) $nominal_clean;
 
     if ($nominal_rapel <= 0) {
         $errorCount++;
-        $errors[] = "Baris $i: Nominal rapel tidak valid '$nominal' untuk NIK $nik_karyawan";
+        $errors[] = "Baris $i: Nominal tidak dapat dibaca '$nominal' untuk NIK $nik_karyawan";
         continue;
     }
     
