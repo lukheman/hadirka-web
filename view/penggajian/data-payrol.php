@@ -930,6 +930,7 @@
 
         let excelData = filteredData.map((row, index) => ({
             "No": index + 1,
+            "NIK": row.nik_karyawan || "-",
             "Nama": row.nama,
             "Jabatan": row.jabatan,
             "Site": row.site || "-",

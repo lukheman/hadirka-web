@@ -75,7 +75,7 @@ try {
 
         $data[] = [
             "no" => $no++,
-            "id_karyawan" => $r['id_karyawan'], // Tambahkan ID untuk edit
+            "id_karyawan" => $r['id_karyawan'],"nik_karyawan" => $r['nik_karyawan'] ?? "-",
             "nama" => $r['nama_lengkap'] ?? "-",
             "jabatan" => $jabatan,
             "site" => $r['nama_site'] ?? null,
@@ -104,5 +104,4 @@ try {
         "line" => $e->getLine()
     ]);
 }
-
 exit;
