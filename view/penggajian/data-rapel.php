@@ -666,38 +666,45 @@
             .then(data => {
                 let message = data.message || 'Import selesai';
                 
-                // Tambahkan ringkasan sukses/update
+                // 1. Tambahkan ringkasan sukses/update/error
                 if (data.insert_count || data.update_count || data.error_count) {
                     message += '<br><div class="mt-2 text-start small">';
-                    if (data.insert_count > 0) message += `<div class="text-success"><i class="fa fa-check"></i> ${data.insert_count} data baru</div>`;
-                    if (data.update_count > 0) message += `<div class="text-primary"><i class="fa fa-sync"></i> ${data.update_count} data diupdate</div>`;
-                    if (data.error_count > 0) message += `<div class="text-danger"><i class="fa fa-times"></i> ${data.error_count} data gagal</div>`;
+                    if (data.insert_count > 0) message += `<div class="text-success"><i class="fa fa-check"></i> ${data.insert_count} data baru berhasil diinput</div>`;
+                    if (data.update_count > 0) message += `<div class="text-primary"><i class="fa fa-sync"></i> ${data.update_count} data berhasil diupdate</div>`;
+                    if (data.error_count > 0) message += `<div class="text-danger fw-bold"><i class="fa fa-times"></i> ${data.error_count} data gagal diproses</div>`;
                     message += '</div>';
                 }
 
-                // FITUR BARU: Tampilkan list detail error dari array PHP
+                // 2. TAMPILKAN LIST LETAK ERROR DI SINI
                 if (data.errors && data.errors.length > 0) {
-                    message += '<hr><div class="text-start text-danger" style="max-height: 120px; overflow-y: auto; font-size: 0.85em; background: #fff0f0; padding: 10px; border-radius: 5px;">';
-                    message += '<strong>Detail Masalah:</strong><ul class="mb-0 ps-3">';
+                    message += '<hr><div class="text-start text-danger" style="max-height: 150px; overflow-y: auto; font-size: 0.85em; background: #fff0f0; padding: 10px; border-radius: 5px; border: 1px solid #ffcdd2;">';
+                    message += '<strong class="mb-1 d-block">Detail Letak Masalah:</strong><ul class="mb-0 ps-3">';
+                    
+                    // Looping data error dari backend
                     data.errors.forEach(err => {
-                        message += `<li>${err}</li>`;
+                        message += `<li class="mb-1">${err}</li>`;
                     });
+                    
+                    // Jika error lebih banyak dari batas sampel yang dikirim
                     if (data.total_errors > data.errors.length) {
-                        message += `<li><em>...dan ${data.total_errors - data.errors.length} masalah lainnya</em></li>`;
+                        message += `<li><em>...dan ${data.total_errors - data.errors.length} baris masalah lainnya.</em></li>`;
                     }
+                    
                     message += '</ul></div>';
                 }
                 
+                // Munculkan SweetAlert
                 Swal.fire({
                     icon: data.status === 'success' ? 'success' : data.status === 'warning' ? 'warning' : 'error',
-                    title: data.status === 'success' ? 'Berhasil!' : data.status === 'warning' ? 'Selesai (Dengan Warning)' : 'Gagal!',
+                    title: data.status === 'success' ? 'Berhasil!' : data.status === 'warning' ? 'Selesai (Ada Warning)' : 'Gagal!',
                     html: message,
-                    showConfirmButton: true
+                    showConfirmButton: true,
+                    width: '600px' // Diperlebar agar teks error muat dibaca
                 });
                 
                 if(data.status === "success" || data.status === "warning") {
                     loadRapel();
-                    document.getElementById("formImportRapel").reset();
+                    this.reset();
                 }
             })
             .catch(error => {

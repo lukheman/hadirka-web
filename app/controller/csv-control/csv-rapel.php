@@ -484,8 +484,8 @@ if ($errorCount > 0 && $successCount == 0) {
     $status = 'warning';
 }
 
-// Get sample errors (max 5)
-$errorSample = array_slice($errors, 0, 5);
+// Get sample errors (Tampilkan hingga 50 rincian error pertama)
+$errorSample = array_slice($errors, 0, 50);
 
 // ================================
 // SEND RESPONSE
