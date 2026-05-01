@@ -22,6 +22,31 @@
         height: 36px !important;
         right: 5px !important;
     }
+
+    /* ==========================================================
+       Khusus mengecilkan Select2 HANYA di bagian Filter Karyawan 
+       ========================================================== */
+    #wrapper-filter-karyawan .select2-container .select2-selection--single {
+        height: 33px !important; /* Rata-rata tinggi form-select-sm Bootstrap */
+        border: 1px solid #d9dee3 !important;
+        border-radius: 0.25rem !important;
+        display: flex !important;
+        align-items: center !important; /* Memaksa teks rata tengah vertikal */
+    }
+
+    #wrapper-filter-karyawan .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: normal !important;
+        padding-left: 0.5rem !important; /* Menyamakan jarak kiri dengan filter lain */
+        font-size: 0.875rem !important;
+        color: #697a8d !important;
+        width: 100%;
+    }
+
+    #wrapper-filter-karyawan .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 31px !important;
+        top: 0 !important;
+        right: 5px !important;
+    }
 </style>
 
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -43,6 +68,66 @@
             </div>
         </div>
     </div>
+
+    <!-- FILTER TRANSAKSI APD -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Filter Site</label>
+                    <?php if ($_SESSION['site'] == 0) { ?>
+                        <select id="filterSite" class="form-select form-select-sm" onchange="loadTable()">
+                            <option value="">-- Semua Site --</option>
+                            <?php
+                            $q_site = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
+                            while ($s = $q_site->fetch_assoc()) {
+                                echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
+                            }
+                            ?>
+                        </select>
+                    <?php } else { ?>
+                        <input id="filterSite" type="hidden" value="<?= $_SESSION['site'] ?>">
+                        <input type="text" class="form-control form-control-sm bg-light" value="Site Anda (Otomatis)" readonly>
+                    <?php } ?>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Filter Departemen</label>
+                    <select id="filterDepartemen" class="form-select form-select-sm" onchange="loadTable()">
+                        <option value="">-- Semua Departemen --</option>
+                        <?php
+                        $q_dept = $koneksi->query("SELECT * FROM tb_departemen ORDER BY nama_departemen ASC");
+                        while ($d = $q_dept->fetch_assoc()) {
+                            echo "<option value='{$d['id_departemen']}'>{$d['nama_departemen']}</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Filter Jabatan</label>
+                    <select id="filterJabatan" class="form-select form-select-sm" onchange="loadTable()">
+                        <option value="">-- Semua Jabatan --</option>
+                        <?php
+                        $q_jab = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
+                        while ($j = $q_jab->fetch_assoc()) {
+                            echo "<option value='{$j['id_jabatan']}'>{$j['nama_jabatan']}</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <!-- TAMBAHAN FILTER KARYAWAN -->
+                <div class="col-md-3" id="wrapper-filter-karyawan">
+                    <label class="form-label small fw-bold text-muted">Filter Karyawan</label>
+                    <select id="filterKaryawan" class="form-select form-select-sm" onchange="loadTable()">
+                        <option value="">-- Semua Karyawan --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /FILTER TRANSAKSI APD -->
 
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center border-bottom">
@@ -226,9 +311,22 @@
     });
 
     async function loadTable() {
-        const res = await fetch(api_get_trx);
-        const html = await res.text();
-        document.getElementById('tbody-transaksi').innerHTML = html;
+        // Ambil nilai dari dropdown filter
+        let site = document.getElementById("filterSite") ? document.getElementById("filterSite").value : '';
+        let departemen = document.getElementById("filterDepartemen") ? document.getElementById("filterDepartemen").value : '';
+        let jabatan = document.getElementById("filterJabatan") ? document.getElementById("filterJabatan").value : '';
+        let karyawan = document.getElementById("filterKaryawan") ? document.getElementById("filterKaryawan").value : '';
+
+        // Sisipkan parameter ke URL
+        let url = `${api_get_trx}?site=${site}&departemen=${departemen}&jabatan=${jabatan}&karyawan=${karyawan}`;
+
+        try {
+            const res = await fetch(url);
+            const html = await res.text();
+            document.getElementById('tbody-transaksi').innerHTML = html;
+        } catch (e) {
+            console.error("Gagal memuat tabel: ", e);
+        }
     }
 
     // Load semua data karyawan ke dropdown (Sekali saja saat halaman dimuat)
@@ -238,13 +336,17 @@
             const data = await res.json();
 
             let html = '<option value="">-- Ketik NIK / Nama Karyawan --</option>';
+            let filterHtml = '<option value="">-- Semua Karyawan --</option>';
+
             data.forEach(k => {
                 let id_tampil = k.nik_karyawan ? k.nik_karyawan : k.id_karyawan;
                 html += `<option value="${k.id_karyawan}">[${id_tampil}] - ${k.nama_lengkap}</option>`;
+                filterHtml += `<option value="${k.id_karyawan}">[${id_tampil}] - ${k.nama_lengkap}</option>`;
             });
 
             document.getElementById('id_karyawan').innerHTML = html;
             document.getElementById('edit_id_karyawan').innerHTML = html;
+            document.getElementById('filterKaryawan').innerHTML = filterHtml; // Isi dropdown filter
 
             // Inisialisasi Select2
             if (typeof $ !== 'undefined') {
@@ -252,10 +354,9 @@
                     dropdownParent: $('#modalTransaksi'),
                     placeholder: "-- Ketik NIK / Nama Karyawan --",
                     allowClear: true,
-                    width: '100%' // <-- TAMBAHKAN INI
+                    width: '100%'
                 });
 
-                // Inisialisasi Select2 untuk Modal Edit
                 $('#edit_id_karyawan').select2({
                     dropdownParent: $('#modalEditTransaksi'),
                     placeholder: "-- Ketik NIK / Nama Karyawan --",
@@ -263,18 +364,28 @@
                     width: '100%'
                 });
 
+                // Inisialisasi Select2 untuk Filter Karyawan (Tanpa Parent Modal)
+                $('#filterKaryawan').select2({
+                    placeholder: "-- Semua Karyawan --",
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                // Deteksi ketika Filter Karyawan diubah, panggil loadTable()
+                $('#filterKaryawan').on('change', function() {
+                    loadTable();
+                });
+
                 $('#id_apd').select2({
                     dropdownParent: $('#modalTransaksi'),
                     placeholder: "-- Pilih APD --",
-                    width: '100%' // <-- TAMBAHKAN INI
+                    width: '100%'
                 });
 
-                // Deteksi ketika Karyawan dipilih, langsung fetch detailnya
                 $('#id_karyawan').on('select2:select', function(e) {
                     getDetailKaryawan(e.params.data.id);
                 });
 
-                // Deteksi ketika Karyawan di-clear (dikosongkan)
                 $('#id_karyawan').on('select2:clear', function(e) {
                     getDetailKaryawan('');
                 });

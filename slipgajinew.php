@@ -762,6 +762,9 @@ require_once 'app/controller/read.php';
             const start = document.getElementById("startDate").value;
             const end = document.getElementById("endDate").value;
 
+            // 1. Ambil nama Site yang sedang dipilih pada Dropdown
+            const selectedSite = document.getElementById("siteFilter").value;
+
             if (!start || !end) {
                 alert("Tanggal mulai & akhir wajib diisi.");
                 return;
@@ -785,6 +788,8 @@ require_once 'app/controller/read.php';
             slipElem.style.visibility = "hidden";
 
             const total = options.length;
+
+            const safe = (s) => s.replace(/[\/\\:?<>|"]/g, "-");
 
             for (let i = 0; i < total; i++) {
                 const opt = options[i].value.split("|");
@@ -830,7 +835,7 @@ require_once 'app/controller/read.php';
                 // Nama file PDF
                 // --- MENGGUNAKAN PERIODE YANG SUDAH DIDEKLARASIKAN DI AWAL FUNGSI ---
                 const periodeStr = `Periode ${start} sd ${end}`;
-                const safe = (s) => s.replace(/[\/\\:?<>|"]/g, "-");
+                
                 const filename = `${safe(nama)}-${safe(jab)}-${periodeStr}.pdf`;
                 // --------------------------------------------------------------------
 
@@ -868,7 +873,13 @@ require_once 'app/controller/read.php';
             zip.generateAsync({
                 type: "blob"
             }).then(function(content) {
-                saveAs(content, "Slip-Gaji.zip");
+                // 3. MENGATUR NAMA FILE ZIP MENJADI DINAMIS
+                // Jika tidak milih site, namanya "Semua-Site"
+                const siteName = selectedSite ? safe(selectedSite) : "Semua-Site"; 
+                const zipFilename = `Batch-Slip-Gaji-${siteName}-Periode-${start}-sd-${end}.zip`;
+                
+                // Simpan dengan nama baru
+                saveAs(content, zipFilename);
 
                 text.innerHTML = "Selesai! ZIP berhasil di-download.";
                 bar.style.width = "100%";
