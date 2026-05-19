@@ -93,6 +93,33 @@ if (!function_exists('generateSlipGaji')) {
             ];
         }
 
+        // ================= Hitung Potongan Tidak Tetap =================
+        $total_potongan_lainnya = 0;
+        $potonganLainRows = [];
+        $sqlPotLain = "SELECT nominal_potongan, jenis_potongan, tgl_potongan, ket_potongan 
+                       FROM tb_potongan_tidak_tetap
+                       WHERE id_karyawan = '$id_karyawan'
+                       AND tgl_potongan BETWEEN '$startDate' AND '$endDate'";
+        $qpotlain = mysqli_query($koneksi, $sqlPotLain);
+        while ($potlain = mysqli_fetch_assoc($qpotlain)) {
+            $nominal = floatval($potlain['nominal_potongan']);
+            $total_potongan_lainnya += $nominal;
+            
+            // --- TAMBAHKAN LOGIKA INI AGAR SAMA DENGAN WEB ---
+            $namaPotongan = $potlain['jenis_potongan'];
+            $ket = trim((string)$potlain['ket_potongan']);
+            if (!empty($ket)) {
+                $namaPotongan .= " (" . $ket . ")";
+            }
+            // --------------------------------------------------
+
+            $potonganLainRows[] = [
+                'nama' => $namaPotongan, // <-- Ubah variabelnya jadi $namaPotongan
+                'jumlah' => $nominal,
+                'tgl_potong' => $potlain['tgl_potongan']
+            ];
+        }
+
         // ================= 5) Looping Absensi =================
         $absenRows = [];
         $qa = mysqli_query($koneksi, "SELECT tgl_absen, jam_kerja, ket_absen FROM tb_absen WHERE id_karyawan='$id_karyawan' AND tgl_absen BETWEEN '$startDate' AND '$endDate'");
@@ -345,9 +372,9 @@ if (!function_exists('generateSlipGaji')) {
         $total_pendapatan = $basic + $total_tunjangan_db + $total_lembur + $total_overtime +
             $total_spl_1_7 + $total_spl_8 + $total_spl_9_up +
             $total_rapel;
-            // $pendapatan_kelebihan_hari;
+        // $pendapatan_kelebihan_hari;
 
-        $total_potongan = $total_potongan_db + $total_potongan_pinjaman +
+        $total_potongan = $total_potongan_db + $total_potongan_pinjaman + $total_potongan_lainnya +
             $total_pot_izin  + $total_pot_mangkir +
             $total_potongan_perjam + $total_pot_pkwt;
 
@@ -366,7 +393,8 @@ if (!function_exists('generateSlipGaji')) {
         if ($total_spl_9_up > 0) $listPendapatan[] = ['nama' => 'SPL 9+ (' . $total_jam_spl_9_up . ' Jam)', 'jumlah' => $total_spl_9_up];
         // if ($pendapatan_kelebihan_hari > 0) $listPendapatan[] = ['nama' => 'Kelebihan Hari Kerja (' . $kelebihan_hari . ' Hari)', 'jumlah' => $pendapatan_kelebihan_hari];
 
-        $listPotongan = array_merge($potonganRows, $pinjamanRows);
+        $listPotongan = array_merge($potonganRows, $pinjamanRows, $potonganLainRows);
+
         if ($total_pot_izin > 0) $listPotongan[] = ['nama' => 'Potongan Izin', 'jumlah' => $total_pot_izin];
         // if ($total_pot_sakit > 0) $listPotongan[] = ['nama' => 'Potongan Sakit', 'jumlah' => $total_pot_sakit];
         if ($total_pot_mangkir > 0) $listPotongan[] = ['nama' => 'Potongan Mangkir', 'jumlah' => $total_pot_mangkir];

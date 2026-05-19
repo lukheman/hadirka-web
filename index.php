@@ -19,6 +19,7 @@ $routes = [
     'data-site'       => 'view/master-data/data-site.php',
     'data-tunjangan'  => 'view/master-data/data-tunjangan.php',
     'data-potongan'   => 'view/master-data/data-potongan-tetap.php',
+    'data-potongan-tidak-tetap' => 'view/penggajian/data-potongan-tidak-tetap.php',
     'data-departemen' => 'view/master-data/data-departemen.php',
     'karier'          => 'view/master-data/data-karier.php',
     'data-devisi'     => 'view/master-data/data-devisi.php',
@@ -42,8 +43,8 @@ $routes = [
     'data-pinjaman'   => 'view/penggajian/data-pinjaman.php',
     'data-rapel'      => 'view/penggajian/data-rapel.php',
     'data-thr'        => 'view/penggajian/data-thr.php',
-    // 'laporan-keuangan'=> 'view/finance-payrol/laporan-keuangan.php',
-    // 'kelola-transaksi'=> 'view/finance-payrol/kelola-transaksi.php',
+    'laporan-keuangan'=> 'view/finance-payrol/laporan-keuangan.php',
+    'kelola-transaksi'=> 'view/finance-payrol/kelola-transaksi.php',
 
     // APD
     'master-apd'      => 'view/k3/master-apd.php',
@@ -91,8 +92,8 @@ if (!in_array($user_level, [0, 1, 2, 3]) && in_array($page, $hrd_pages)) {
 
 // 1.b Modul Finance & Payroll (Hanya Admin, Direktur, HRD) - SUPERVISOR DILARANG
 $finance_pages = [
-    'data-periode', 'payroll', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-rapel', 'data-thr', 'slip-gaji'
-    // , 'laporan-keuangan', 'kelola-transaksi'
+    'data-periode', 'payroll', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-potongan-tidak-tetap', 'data-rapel', 'data-thr', 'slip-gaji'
+    , 'laporan-keuangan', 'kelola-transaksi'
 ];
 
 if (!in_array($user_level, [0, 1, 2]) && in_array($page, $finance_pages)) {

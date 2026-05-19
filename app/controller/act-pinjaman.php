@@ -9,18 +9,53 @@ switch($action){
     case 'add':
         $id_karyawan = $_POST['id_karyawan'] ?? '';
         $tgl_pinjaman = $_POST['tgl_pinjaman'] ?? '';
-        $tgl_bayar = $_POST['tgl_bayar_pinjaman'] ?? null;
-        $nominal = $_POST['nominal_pinjaman'] ?? 0;
+        $tgl_bayar_awal = $_POST['tgl_bayar_pinjaman'] ?? '';
+        $nominal_total = (float) ($_POST['nominal_pinjaman'] ?? 0);
+        $tenor = (int) ($_POST['tenor'] ?? 1);
         $ket = $_POST['ket_pinjaman'] ?? '';
 
-        if(!$id_karyawan || !$tgl_pinjaman || !$nominal){
-            echo json_encode(['status'=>'error','msg'=>'Field wajib diisi']); exit;
+        if(!$id_karyawan || !$tgl_pinjaman || !$tgl_bayar_awal || $nominal_total <= 0 || $tenor < 1){
+            echo json_encode(['status'=>'error','msg'=>'Semua field wajib diisi dengan benar']); exit;
         }
 
-        $stmt = $koneksi->prepare("INSERT INTO tb_pinjaman(id_karyawan,tgl_pinjaman,tgl_bayar_pinjaman,nominal_pinjaman,ket_pinjaman) VALUES(?,?,?,?,?)");
-        $stmt->bind_param("issds",$id_karyawan,$tgl_pinjaman,$tgl_bayar,$nominal,$ket);
-        echo $stmt->execute() ? json_encode(['status'=>'success']) : json_encode(['status'=>'error','msg'=>$stmt->error]);
-        $stmt->close();
+        // Bagi rata nominal pinjaman
+        $cicilan_dasar = floor($nominal_total / $tenor);
+        $sisa_bagi = $nominal_total - ($cicilan_dasar * $tenor);
+
+        // Gunakan transaksi agar jika 1 error, semua dibatalkan
+        mysqli_begin_transaction($koneksi);
+        try {
+            $stmt = $koneksi->prepare("INSERT INTO tb_pinjaman(id_karyawan, tgl_pinjaman, tgl_bayar_pinjaman, nominal_pinjaman, ket_pinjaman) VALUES(?,?,?,?,?)");
+
+            for ($j = 0; $j < $tenor; $j++) {
+            $tgl_jatuh_tempo = date('Y-m-d', strtotime("+$j month", strtotime($tgl_bayar_awal)));
+            
+            // Cicilan bulan terakhir menanggung sisa pembagian agar totalnya genap
+            $nominal_cicilan_ini = $cicilan_dasar;
+            if ($j === ($tenor - 1)) {
+                $nominal_cicilan_ini += $sisa_bagi; 
+            }
+
+            $ket_cicilan = $ket;
+            if ($tenor > 1) {
+                $cicilan_ke = $j + 1;
+                $ket_cicilan = $ket . " (Cicilan $cicilan_ke/$tenor)";
+            }
+
+                $stmt->bind_param("issds", $id_karyawan, $tgl_pinjaman, $tgl_jatuh_tempo, $nominal_cicilan_ini, $ket_cicilan);
+                if (!$stmt->execute()) {
+                    throw new Exception("Gagal menyimpan data cicilan ke-$cicilan_ke");
+                }
+            }
+            
+            $stmt->close();
+            mysqli_commit($koneksi);
+            echo json_encode(['status'=>'success']);
+
+        } catch (Exception $e) {
+            mysqli_rollback($koneksi);
+            echo json_encode(['status'=>'error','msg'=>$e->getMessage()]);
+        }
     break;
 
     case 'edit':

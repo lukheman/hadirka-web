@@ -579,16 +579,25 @@ require_once 'app/controller/read.php';
             });
 
 
-            // 3) PINJAMAN
+            // 3) PINJAMAN (Kasbon & Cicilan SIO)
             if (Array.isArray(data.pinjaman)) {
                 data.pinjaman.forEach(p => {
                     potBody.innerHTML += `
-                <tr><td>${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
+                <tr><td style="text-transform:uppercase;">${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
             `;
                 });
             }
 
-            // 4) TOTAL POTONGAN
+            // 4) POTONGAN TIDAK TETAP (Denda, Sumbangan, dll)
+            if (Array.isArray(data.potongan_lain)) {
+                data.potongan_lain.forEach(p => {
+                    potBody.innerHTML += `
+                <tr><td style="text-transform:uppercase;">${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
+            `;
+                });
+            }
+
+            // 5) TOTAL POTONGAN
             potBody.innerHTML += `
         <tr class="bold">
             <td>JUMLAH POTONGAN</td>

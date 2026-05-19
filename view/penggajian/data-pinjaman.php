@@ -76,15 +76,23 @@
     <div class="container-xxl flex-grow-1 container-p-y">
 
         <div class="d-flex align-items-center justify-content-between mb-4">
+            <!-- Kelompok Kiri: Teks -->
             <div>
                 <h4 class="fw-bold mb-0">
                     <span class="text-muted fw-light">Master Data /</span> Data Pinjaman
                 </h4>
                 <p class="text-muted mb-0">Kelola dan pantau data pinjaman karyawan secara efisien.</p>
             </div>
-            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPinjaman">
-                <i class="fa fa-plus me-2"></i> Tambah Pinjaman Baru
-            </button>
+
+            <!-- Kelompok Kanan: Tombol -->
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPinjaman">
+                    <i class="fa fa-plus me-2"></i> Tambah Pinjaman Baru
+                </button>
+                <button class="btn btn-warning shadow-sm" onclick="postingPinjaman()">
+                    <i class="fa fa-send me-2"></i> Posting ke Keuangan
+                </button>
+            </div>
         </div>
 
         <div class="row mb-4">
@@ -140,10 +148,11 @@
                                 </p>
                                 <div class="d-flex flex-wrap gap-2 mb-3">
                                     <span class="format-badge">B: NIK</span>
-                                    <span class="format-badge">E: Nominal</span>
+                                    <span class="format-badge">E: Nominal (Total)</span>
                                     <span class="format-badge">F: Tgl Pinjam</span>
-                                    <span class="format-badge">G: Tgl Bayar</span>
+                                    <span class="format-badge">G: Tgl Bayar (Awal)</span>
                                     <span class="format-badge">H: Ket</span>
+                                    <span class="format-badge bg-warning text-dark">I: Tenor (Bulan)</span>
                                 </div>
                             </div>
                             <div class="col-md-5">
@@ -239,20 +248,33 @@
                     <?php } ?>
                 </select>
 
-                <label>Tanggal Pinjaman</label>
+                <label class="mt-3">Tanggal Pinjaman (Pencairan)</label>
                 <input type="date" name="tgl_pinjaman" class="form-control mb-3" required>
 
-                <label>Tanggal Bayar</label>
-                <input type="date" name="tgl_bayar_pinjaman" class="form-control mb-3">
+                <div class="row">
+                    <div class="col-md-8">
+                        <label>Total Pinjaman (Rp)</label>
+                        <input type="number" name="nominal_pinjaman" id="inputPlafon" class="form-control mb-1" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Cicil (Bulan)</label>
+                        <input type="number" name="tenor" id="inputTenor" class="form-control mb-1" value="1" min="1" required>
+                    </div>
+                </div>
+                <small class="text-muted d-block mb-3">* Biarkan angka 1 jika pinjaman langsung potong lunas.</small>
 
-                <label>Jumlah Pinjaman</label>
-                <input type="number" name="nominal_pinjaman" class="form-control mb-3" required>
+                <div class="alert alert-info py-2 mb-3" style="display: none;" id="infoCicilan">
+                    Dipotong per bulan: <b id="textCicilan">Rp 0</b>
+                </div>
+
+                <label id="labelTglBayar">Tanggal Pembayaran</label>
+                <input type="date" name="tgl_bayar_pinjaman" class="form-control mb-3" required>
 
                 <label>Keterangan</label>
-                <input type="text" name="ket_pinjaman" class="form-control">
+                <input type="text" name="ket_pinjaman" placeholder="Contoh: Panjar / SIO" class="form-control">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-success">Simpan</button>
+                <button type="submit" class="btn btn-success">Simpan</button>
             </div>
         </form>
     </div>
@@ -278,13 +300,13 @@
                     <?php } ?>
                 </select>
 
-                <label>Tanggal Pinjaman</label>
+                <label class="mt-3">Tanggal Pinjaman</label>
                 <input type="date" name="tgl_pinjaman" class="form-control mb-3" required>
 
                 <label>Tanggal Bayar</label>
                 <input type="date" name="tgl_bayar_pinjaman" class="form-control mb-3">
 
-                <label>Jumlah Pinjaman</label>
+                <label>Total Pinjaman</label>
                 <input type="number" name="nominal_pinjaman" class="form-control mb-3" required>
 
                 <label>Keterangan</label>
@@ -390,7 +412,7 @@
             let fd = new FormData(formImport);
 
             // Gunakan path absolut dari domain jika ragu
-            fetch("/app/controller/csv-control/csv-pinjaman.php", {
+            fetch("app/controller/csv-control/csv-pinjaman.php", {
                     method: "POST",
                     body: fd
                 })
@@ -500,8 +522,70 @@
             }
         });
 
+        // UBAH BAGIAN INI AGAR BISA DIPANGGIL DARI TOMBOL HTML
+        window.postingPinjaman = function() {
+            const bulan = document.getElementById("filterBulan").value;
+            if (!bulan) return alert("Pilih bulan terlebih dahulu!");
+
+            if (confirm("Posting pencairan pinjaman bulan ini ke Laporan Keuangan? (Data lama di bulan ini akan direplace otomatis)")) {
+                fetch("app/controller/act-posting-pinjaman.php", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        },
+                        body: "bulan=" + bulan
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === "success") alert(res.message);
+                        else if (res.status === "warning") alert(res.message);
+                        else alert("Gagal: " + res.message);
+                    });
+            }
+        }; // Akhir dari window.postingPinjaman
+
         // Inisialisasi Select2 saat halaman dimuat
         initSelect2();
         loadPinjaman();
     });
+
+    // Hitung estimasi cicilan otomatis (Hanya muncul jika dicicil)
+    const inputPlafon = document.getElementById("inputPlafon");
+    const inputTenor = document.getElementById("inputTenor");
+    const infoCicilan = document.getElementById("infoCicilan");
+    const textCicilan = document.getElementById("textCicilan");
+    const labelTglBayar = document.getElementById("labelTglBayar"); // Tangkap elemen label
+
+    function hitungCicilan() {
+        let plafon = parseFloat(inputPlafon.value) || 0;
+        let tenor = parseInt(inputTenor.value) || 1;
+
+        // Logika Mengubah Teks Label Tanggal
+        if (tenor > 1) {
+            labelTglBayar.innerText = "Tanggal Mulai Pembayaran";
+        } else {
+            labelTglBayar.innerText = "Tanggal Pembayaran";
+        }
+
+        // Info cicilan hanya muncul jika tenor lebih dari 1 bulan (dicicil)
+        if (plafon > 0 && tenor > 1) {
+            // Menyamakan logika dengan PHP (Gunakan pembulatan ke bawah agar sisa dibebankan di akhir)
+            let cicilanDasar = Math.floor(plafon / tenor);
+            let sisaBagi = plafon - (cicilanDasar * tenor);
+            let cicilanTerakhir = cicilanDasar + sisaBagi;
+
+            if (sisaBagi > 0) {
+                textCicilan.innerText = "Rp " + cicilanDasar.toLocaleString('id-ID') + " (Bulan terakhir: Rp " + cicilanTerakhir.toLocaleString('id-ID') + ")";
+            } else {
+                textCicilan.innerText = "Rp " + cicilanDasar.toLocaleString('id-ID');
+            }
+
+            infoCicilan.style.display = "block";
+        } else {
+            infoCicilan.style.display = "none";
+        }
+    }
+
+    inputPlafon.addEventListener("input", hitungCicilan);
+    inputTenor.addEventListener("input", hitungCicilan);
 </script>

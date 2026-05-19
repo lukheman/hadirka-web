@@ -77,20 +77,19 @@ if (!$result) {
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 
-// Tulis Header Kolom 
+// Tulis Header Kolom Sesuai File Database Karyawan IPIP.xlsx
 $headers = [
-    'A1' => 'NO', 'B1' => 'NAMA LENGKAP', 'C1' => 'NIK KARYAWAN', 'D1' => 'JENIS KELAMIN', 
-    'E1' => 'AGAMA', 'F1' => 'TEMPAT LAHIR', 'G1' => 'TANGGAL LAHIR', 'H1' => 'NATIONALITY',
-    'I1' => 'NIK (KTP)', 'J1' => 'NO. KK', 'K1' => 'NPWP', 'L1' => 'BPJS TK', 
-    'M1' => 'BPJS KESEHATAN', 'N1' => 'STATUS PERNIKAHAN', 'O1' => 'NAMA IBU KANDUNG',
-    'P1' => 'ALAMAT KTP', 'Q1' => 'PROVINSI', 'R1' => 'KABUPATEN/KOTA', 'S1' => 'KECAMATAN', 
-    'T1' => 'DESA', 'U1' => 'RT/RW', 'V1' => 'PENDIDIKAN TERAKHIR', 'W1' => 'JURUSAN', 
-    'X1' => 'TINGKAT PENDIDIKAN', 'Y1' => 'NAMA BANK', 'Z1' => 'ATAS NAMA REKENING', 
-    'AA1' => 'NOMOR REKENING', 'AB1' => 'SITE', 'AC1' => 'DEPARTEMEN', 'AD1' => 'JABATAN', 
-    'AE1' => 'TANGGAL MULAI', 'AF1' => 'TANGGAL SELESAI', 'AG1' => 'NO TELP', 
-    'AH1' => 'EMAIL PRIBADI', 'AI1' => 'NAMA KONTAK 1', 'AJ1' => 'HUBUNGAN 1', 
-    'AK1' => 'TELP DARURAT 1', 'AL1' => 'NAMA KONTAK 2', 'AM1' => 'HUBUNGAN 2', 
-    'AN1' => 'TELP DARURAT 2', 'AO1' => 'STATUS KARYAWAN', 'AP1' => 'TGL KELUAR', 'AQ1' => 'ALASAN KELUAR'
+    'A1' => 'No', 'B1' => 'NIK Karyawan', 'C1' => 'Nama Lengkap', 'D1' => 'Jenis Kelamin (L/P)', 
+    'E1' => 'Site', 'F1' => 'Departemen', 'G1' => 'Jabatan', 'H1' => 'Tanggal Masuk Site',
+    'I1' => 'Tanggal Selesai Kontrak', 'J1' => 'Tempat Lahir', 'K1' => 'Tanggal Lahir', 'L1' => 'Kewarganegaraan',
+    'M1' => 'Agama', 'N1' => 'Jenjang Pendidikan', 'O1' => 'Pendidikan Terakhir', 'P1' => 'Jurusan', 
+    'Q1' => 'Atas Nama Rekening', 'R1' => 'Nomor Rekening', 'S1' => 'Nama Bank', 'T1' => 'Nama Ibu Kandung',
+    'U1' => 'NIK KTP', 'V1' => 'Alamat KTP', 'W1' => 'RT/RW', 'X1' => 'Desa', 
+    'Y1' => 'Kecamatan', 'Z1' => 'Kabupaten', 'AA1' => 'Provinsi', 'AB1' => 'Email Pribadi', 
+    'AC1' => 'No Telepon', 'AD1' => 'Nama Kontak Darurat 1', 'AE1' => 'Hubungan 1', 'AF1' => 'No Telepon Darurat 1', 
+    'AG1' => 'Nama Kontak Darurat 2', 'AH1' => 'Hubungan 2', 'AI1' => 'No Telepon Darurat 2', 'AJ1' => 'NPWP', 
+    'AK1' => 'BPJS Ketenagakerjaan', 'AL1' => 'BPJS Kesehatan', 'AM1' => 'Status Pernikahan', 'AN1' => 'Nomor KK', 
+    'AO1' => 'Status Karyawan', 'AP1' => 'Tanggal Keluar', 'AQ1' => 'Keterangan'
 ];
 
 foreach ($headers as $cell => $val) {
@@ -104,45 +103,45 @@ $no = 1;
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $sheet->setCellValue('A' . $rowNum, $no++);
-        $sheet->setCellValue('B' . $rowNum, $row['nama_lengkap']);
-        $sheet->setCellValueExplicit('C' . $rowNum, $row['nik_karyawan'], DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('B' . $rowNum, $row['nik_karyawan'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('C' . $rowNum, $row['nama_lengkap']);
         $sheet->setCellValue('D' . $rowNum, $row['jenis_kelamin']);
-        $sheet->setCellValue('E' . $rowNum, $row['agama']);
-        $sheet->setCellValue('F' . $rowNum, $row['tempat_lahir']);
-        $sheet->setCellValue('G' . $rowNum, $row['tgl_lahir']);
-        $sheet->setCellValue('H' . $rowNum, $row['nationality'] ?? '-');
-        $sheet->setCellValueExplicit('I' . $rowNum, $row['nik_ktp'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('J' . $rowNum, $row['kk_number'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('K' . $rowNum, $row['npwp'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('L' . $rowNum, $row['bpjs_tk'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('M' . $rowNum, $row['bpjs_kes'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValue('N' . $rowNum, $row['status_pernikahan'] ?? '-');
-        $sheet->setCellValue('O' . $rowNum, $row['nama_ibu'] ?? '-');
-        $sheet->setCellValue('P' . $rowNum, $row['alamat_ktp'] ?? '-');
-        $sheet->setCellValue('Q' . $rowNum, $row['provinsi'] ?? '-');
-        $sheet->setCellValue('R' . $rowNum, $row['kabupaten'] ?? '-');
-        $sheet->setCellValue('S' . $rowNum, $row['kecamatan'] ?? '-');
-        $sheet->setCellValue('T' . $rowNum, $row['desa'] ?? '-');
-        $sheet->setCellValueExplicit('U' . $rowNum, $row['rt_rw'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValue('V' . $rowNum, $row['last_education'] ?? '-');
-        $sheet->setCellValue('W' . $rowNum, $row['major'] ?? '-');
-        $sheet->setCellValue('X' . $rowNum, $row['education_level'] ?? '-');
-        $sheet->setCellValue('Y' . $rowNum, $row['nama_bank'] ?? '-');
-        $sheet->setCellValue('Z' . $rowNum, $row['atas_nama_rek'] ?? '-');
-        $sheet->setCellValueExplicit('AA' . $rowNum, $row['no_rek'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValue('AB' . $rowNum, $row['nama_site'] ?? '-');
-        $sheet->setCellValue('AC' . $rowNum, $row['nama_departemen'] ?? '-');
-        $sheet->setCellValue('AD' . $rowNum, $row['nama_jabatan'] ?? '-');
-        $sheet->setCellValue('AE' . $rowNum, $row['tgl_mulai'] ?? '-');
-        $sheet->setCellValue('AF' . $rowNum, $row['tgl_selesai'] ?? '-');
-        $sheet->setCellValueExplicit('AG' . $rowNum, $row['no_telp'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValue('AH' . $rowNum, $row['email_pribadi'] ?? '-');
-        $sheet->setCellValue('AI' . $rowNum, $row['nama_kontak1'] ?? '-');
-        $sheet->setCellValue('AJ' . $rowNum, $row['hubungan1'] ?? '-');
-        $sheet->setCellValueExplicit('AK' . $rowNum, $row['no_telp_darurat1'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValue('AL' . $rowNum, $row['nama_kontak2'] ?? '-');
-        $sheet->setCellValue('AM' . $rowNum, $row['hubungan2'] ?? '-');
-        $sheet->setCellValueExplicit('AN' . $rowNum, $row['no_telp_darurat2'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('E' . $rowNum, $row['nama_site'] ?? '-');
+        $sheet->setCellValue('F' . $rowNum, $row['nama_departemen'] ?? '-');
+        $sheet->setCellValue('G' . $rowNum, $row['nama_jabatan'] ?? '-');
+        $sheet->setCellValue('H' . $rowNum, $row['tgl_mulai'] ?? '-');
+        $sheet->setCellValue('I' . $rowNum, $row['tgl_selesai'] ?? '-');
+        $sheet->setCellValue('J' . $rowNum, $row['tempat_lahir'] ?? '-');
+        $sheet->setCellValue('K' . $rowNum, $row['tgl_lahir'] ?? '-');
+        $sheet->setCellValue('L' . $rowNum, $row['nationality'] ?? '-');
+        $sheet->setCellValue('M' . $rowNum, $row['agama'] ?? '-');
+        $sheet->setCellValue('N' . $rowNum, $row['education_level'] ?? '-');
+        $sheet->setCellValue('O' . $rowNum, $row['last_education'] ?? '-');
+        $sheet->setCellValue('P' . $rowNum, $row['major'] ?? '-');
+        $sheet->setCellValue('Q' . $rowNum, $row['atas_nama_rek'] ?? '-');
+        $sheet->setCellValueExplicit('R' . $rowNum, $row['no_rek'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('S' . $rowNum, $row['nama_bank'] ?? '-');
+        $sheet->setCellValue('T' . $rowNum, $row['nama_ibu'] ?? '-');
+        $sheet->setCellValueExplicit('U' . $rowNum, $row['nik_ktp'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('V' . $rowNum, $row['alamat_ktp'] ?? '-');
+        $sheet->setCellValueExplicit('W' . $rowNum, $row['rt_rw'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('X' . $rowNum, $row['desa'] ?? '-');
+        $sheet->setCellValue('Y' . $rowNum, $row['kecamatan'] ?? '-');
+        $sheet->setCellValue('Z' . $rowNum, $row['kabupaten'] ?? '-');
+        $sheet->setCellValue('AA' . $rowNum, $row['provinsi'] ?? '-');
+        $sheet->setCellValue('AB' . $rowNum, $row['email_pribadi'] ?? '-');
+        $sheet->setCellValueExplicit('AC' . $rowNum, $row['no_telp'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('AD' . $rowNum, $row['nama_kontak1'] ?? '-');
+        $sheet->setCellValue('AE' . $rowNum, $row['hubungan1'] ?? '-');
+        $sheet->setCellValueExplicit('AF' . $rowNum, $row['no_telp_darurat1'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('AG' . $rowNum, $row['nama_kontak2'] ?? '-');
+        $sheet->setCellValue('AH' . $rowNum, $row['hubungan2'] ?? '-');
+        $sheet->setCellValueExplicit('AI' . $rowNum, $row['no_telp_darurat2'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('AJ' . $rowNum, $row['npwp'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('AK' . $rowNum, $row['bpjs_tk'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('AL' . $rowNum, $row['bpjs_kes'] ?? '-', DataType::TYPE_STRING);
+        $sheet->setCellValue('AM' . $rowNum, $row['status_pernikahan'] ?? '-');
+        $sheet->setCellValueExplicit('AN' . $rowNum, $row['kk_number'] ?? '-', DataType::TYPE_STRING);
         $sheet->setCellValue('AO' . $rowNum, $row['status_karyawan'] ?? '-');
         $sheet->setCellValue('AP' . $rowNum, $row['tgl_keluar'] ?? '-');
         $sheet->setCellValue('AQ' . $rowNum, $row['alasan_keluar'] ?? '-');
@@ -151,7 +150,7 @@ if ($result && $result->num_rows > 0) {
     }
 }
 
-// Auto-size kolom agar rapi
+// Auto-size kolom agar rapi (Sesuai kolom terakhir yaitu AQ)
 foreach (range('A', 'Z') as $col) { $sheet->getColumnDimension($col)->setAutoSize(true); }
 foreach (range('A', 'Q') as $col) { $sheet->getColumnDimension('A'.$col)->setAutoSize(true); }
 

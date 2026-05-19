@@ -157,6 +157,32 @@ if (!function_exists('generateSlipGaji')) {
             ];
         }
 
+        // ================= 3c) Hitung Potongan Tidak Tetap =================
+        $total_potongan_lainnya = 0;
+        $potonganLainRows = [];
+        $sqlPotLain = "SELECT nominal_potongan, jenis_potongan, tgl_potongan, ket_potongan 
+                       FROM tb_potongan_tidak_tetap
+                       WHERE id_karyawan = '$id_karyawan'
+                       AND tgl_potongan BETWEEN '$startDate' AND '$endDate'";
+        $qpotlain = mysqli_query($koneksi, $sqlPotLain);
+        while ($potlain = mysqli_fetch_assoc($qpotlain)) {
+            $nominal = floatval($potlain['nominal_potongan']);
+            $total_potongan_lainnya += $nominal;
+            
+            // Gabungkan Jenis dan Keterangan (Jika Keterangan tidak kosong)
+            $namaPotongan = $potlain['jenis_potongan'];
+            $ket = trim((string)$potlain['ket_potongan']);
+            if (!empty($ket)) {
+                $namaPotongan .= " (" . $ket . ")";
+            }
+
+            $potonganLainRows[] = [
+                'nama' => $namaPotongan, // Sekarang berisi misal: "Denda (Helm Hilang)"
+                'jumlah' => $nominal,
+                'tgl_potong' => $potlain['tgl_potongan']
+            ];
+        }
+
         // ================= 4) Get Absen =================
         $absenRows = [];
         $sqlAbs = "SELECT tgl_absen, jam_kerja, ket_absen
@@ -415,6 +441,7 @@ if (!function_exists('generateSlipGaji')) {
         $total_potongan =
             $total_potongan_tunjangan +
             $total_potongan_pinjaman +
+            $total_potongan_lainnya +
             $total_pot_izin +
             $total_pot_mangkir +
             $total_potongan_perjam +
@@ -494,6 +521,8 @@ if (!function_exists('generateSlipGaji')) {
 
             'pinjaman' => $pinjamanRows,
             'total_potongan_pinjaman' => $total_potongan_pinjaman,
+            'potongan_lain' => $potonganLainRows,
+            'total_potongan_lainnya' => $total_potongan_lainnya,
             'mangkir' => $mangkir_count,
             'total_jam_kurang' => $total_jam_kurang,
             'potongan_perjam' => $total_potongan_perjam,

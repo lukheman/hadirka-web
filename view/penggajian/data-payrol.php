@@ -169,6 +169,33 @@
     }
 
     /* --- TABLE STYLE --- */
+    /* --- DATATABLES CONTROLS SPACING --- */
+    .dataTables_wrapper .row:first-child {
+        padding: 1rem 1.5rem 0.5rem 1.5rem; /* Jarak untuk bagian atas (Search & Length) */
+        margin: 0;
+        align-items: center;
+    }
+    
+    .dataTables_wrapper .row:last-child {
+        padding: 0.5rem 1.5rem 1rem 1.5rem; /* Jarak untuk bagian bawah (Pagination & Info) */
+        margin: 0;
+        align-items: center;
+    }
+
+    /* Mengatasi input pencarian agar tidak terlalu menempel ke teks */
+    .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+    
+    .dataTables_length label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
     .table-responsive {
         border-radius: 8px;
         overflow-x: auto;
@@ -548,12 +575,16 @@
                     </select>
                 </div>
 
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-6 col-md-6">
                     <label class="form-label" style="visibility: hidden;">Action</label>
-                    <button id="btnExportExcel" class="btn btn-success w-100">
-                        <i class="bx bx-download"></i>
-                        Export ke Excel
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button id="btnExportExcel" class="btn btn-success w-100">
+                            <i class="bx bx-download"></i> Export ke Excel
+                        </button>
+                        <button id="btnPostingKeuangan" class="btn btn-primary w-100" onclick="postingKeuangan()">
+                            <i class="bx bx-send"></i> Posting Laporan
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -564,7 +595,7 @@
                 Database Payroll Karyawan
                 <span class="badge-count ms-auto" id="recordCount">0 Data</span>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body">
                 <div class="table-responsive">
                     <table id="payrolTable" class="table table-hover">
                         <thead>
@@ -592,10 +623,15 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
     let allPayrollData = [];
-
+    let dataTablesInstances = {};
+    
     function showLoading() {
         document.getElementById("loadingOverlay").style.display = "flex";
     }
@@ -781,51 +817,57 @@
     }
 
     function renderTable(data) {
-        const tbody = document.getElementById("dataPayrol");
-        tbody.innerHTML = "";
+    const tbody = document.getElementById("dataPayrol");
+    
+    // 1. Hancurkan instance DataTables sebelumnya (jika ada) agar tidak error saat render ulang
+    if ($.fn.DataTable.isDataTable('#payrolTable')) {
+        $('#payrolTable').DataTable().destroy();
+    }
 
-        let filterSite = document.getElementById("filterSite").value;
-        let filterJabatan = document.getElementById("filterJabatan").value;
-        let filterBank = document.getElementById("filterBank").value;
+    tbody.innerHTML = "";
 
-        let filteredData = data.filter(row => {
-            let siteMatch = !filterSite || row.site === filterSite;
-            let jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-            
-            let bankMatch = true;
-            if (filterBank) {
-                let normalizedBank = normalizeBankName(row.bank);
-                bankMatch = normalizedBank === filterBank;
-            }
-            
-            return siteMatch && jabatanMatch && bankMatch;
-        });
+    let filterSite = document.getElementById("filterSite").value;
+    let filterJabatan = document.getElementById("filterJabatan").value;
+    let filterBank = document.getElementById("filterBank").value;
 
-        document.getElementById("recordCount").textContent = `${filteredData.length} Data`;
-        updateStats(filteredData);
-
-        if (filteredData.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9">
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📋</div>
-                            <div class="empty-state-text">Tidak ada data yang sesuai dengan filter</div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            return;
+    let filteredData = data.filter(row => {
+        let siteMatch = !filterSite || row.site === filterSite;
+        let jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
+        
+        let bankMatch = true;
+        if (filterBank) {
+            let normalizedBank = normalizeBankName(row.bank);
+            bankMatch = normalizedBank === filterBank;
         }
+        
+        return siteMatch && jabatanMatch && bankMatch;
+    });
 
-        filteredData.forEach((row, index) => {
-            let tr = document.createElement("tr");
-            tr.classList.add("fade-in");
+    document.getElementById("recordCount").textContent = `${filteredData.length} Data`;
+    updateStats(filteredData);
 
-            let bankDisplay = row.bank || "BELUM PUNYA REKENING";
-            let bankBadge = !row.bank ? '<span class="badge-warning">Belum Ada</span>' : `<strong>${bankDisplay}</strong>`;
+    if (filteredData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-text">Tidak ada data yang sesuai dengan filter</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return; // Jangan inisiasi DataTables jika kosong
+    }
 
-            tr.innerHTML = `
+    // 2. Kumpulkan baris HTML agar render lebih cepat
+    let rowsHtml = "";
+    filteredData.forEach((row, index) => {
+        let bankDisplay = row.bank || "BELUM PUNYA REKENING";
+        let bankBadge = !row.bank ? '<span class="badge-warning">Belum Ada</span>' : `<strong>${bankDisplay}</strong>`;
+
+        rowsHtml += `
+            <tr class="fade-in">
                 <td class="text-center fw-bold">${index + 1}</td>
                 <td><strong>${row.nama}</strong></td>
                 <td><span class="badge bg-primary">${row.jabatan}</span></td>
@@ -841,15 +883,41 @@
                         <i class="bx bx-edit"></i>
                     </button>
                 </td>
-            `;
+            </tr>
+        `;
+    });
 
-            tbody.appendChild(tr);
-        });
-    }
+    tbody.innerHTML = rowsHtml;
+
+    // 3. Aktifkan DataTables untuk fitur "slide-slide" (Pagination)
+    $('#payrolTable').DataTable({
+        "pageLength": 10,             // Jumlah data per slide/halaman
+        "lengthMenu": [10, 25, 50],   // Pilihan jumlah data
+        "ordering": false,            // Dimatikan agar nomor urut tidak berantakan
+        "language": {
+            "lengthMenu": "Tampilkan _MENU_ data",
+            "search": "Cari Cepat:",
+            "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            "infoEmpty": "Tidak ada data",
+            "paginate": {
+                "first": "Pertama",
+                "last": "Terakhir",
+                "next": "Selanjutnya",
+                "previous": "Sebelumnya"
+            }
+        }
+    });
+}
 
     function loadPayrol() {
         let startDate = document.getElementById("startDate").value;
         let endDate = document.getElementById("endDate").value;
+
+        // --- TAMBAHKAN 3 BARIS INI ---
+    if ($.fn.DataTable.isDataTable('#payrolTable')) {
+        $('#payrolTable').DataTable().destroy();
+    }
+    // -----------------------------
 
         // Tampilkan indikator loading elegan langsung di dalam tabel
         const tbody = document.getElementById("dataPayrol");
@@ -966,4 +1034,38 @@
         document.getElementById("btnExportExcel").addEventListener("click", exportExcel);
         document.getElementById("editBank").addEventListener("change", toggleRekeningFields);
     });
+
+    function postingKeuangan() {
+        let startDate = document.getElementById("startDate").value;
+        let endDate = document.getElementById("endDate").value;
+
+        if (!confirm(`Tutup Buku & Posting Payroll periode ini (${startDate} s/d ${endDate}) ke Laporan Keuangan?\n\nPastikan data absensi dan kasbon sudah final.`)) {
+            return;
+        }
+
+        const btn = document.getElementById('btnPostingKeuangan');
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+        btn.disabled = true;
+
+        $.ajax({
+            url: "app/controller/act-posting-payroll.php",
+            type: "POST",
+            data: { startDate: startDate, endDate: endDate },
+            dataType: "json",
+            success: function(res) {
+                if (res.status === "success") {
+                    alert(res.message);
+                } else {
+                    alert("Gagal: " + res.message);
+                }
+            },
+            error: function() {
+                alert("Terjadi kesalahan server saat memposting data.");
+            },
+            complete: function() {
+                btn.innerHTML = '<i class="bx bx-send"></i> Posting Laporan';
+                btn.disabled = false;
+            }
+        });
+    }
 </script>

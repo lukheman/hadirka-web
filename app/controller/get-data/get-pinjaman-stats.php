@@ -1,6 +1,6 @@
 <?php
 header("Content-Type: application/json");
-require '../../config/koneksi.php';
+require_once __DIR__ . '/../../config/koneksi.php';
 
 // 1. Tangkap parameter bulan (Format: YYYY-MM)
 $bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';

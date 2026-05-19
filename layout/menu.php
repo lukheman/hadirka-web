@@ -131,7 +131,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $payroll_pages = ['data-periode', 'payroll', 'slip-gaji', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-rapel', 'data-thr'];
+        $payroll_pages = ['data-periode', 'payroll', 'slip-gaji', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-potongan-tidak-tetap', 'data-rapel', 'data-thr'];
         ?>
         <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -164,6 +164,11 @@ function isMenuOpen($pages_array, $current_page)
                         <div>Pinjaman Dana</div>
                     </a>
                 </li>
+                <li class="menu-item <?= isActive('data-potongan-tidak-tetap', $current_page); ?>">
+                    <a class="menu-link" href="data-potongan-tidak-tetap">
+                        <div>Potongan Tidak Tetap</div>
+                    </a>
+                </li>
                 <li class="menu-item <?= isActive('data-rapel', $current_page); ?>">
                     <a class="menu-link" href="data-rapel">
                         <div>Kalkulasi Rapel</div>
@@ -177,7 +182,7 @@ function isMenuOpen($pages_array, $current_page)
             </ul>
         </li>
 
-        <!-- <?php
+        <?php
         $finance_pages = ['laporan-keuangan','kelola-transaksi'];
         ?>
         <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>">
@@ -199,7 +204,7 @@ function isMenuOpen($pages_array, $current_page)
                     </a>
                 </li>
             </ul>
-        </li> -->
+        </li>
 
     <?php endif; ?>
 

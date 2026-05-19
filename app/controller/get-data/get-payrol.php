@@ -8,7 +8,7 @@ ini_set('log_errors', 1);
 header("Content-Type: application/json");
 
 try {
-    include '../../config/koneksi.php';
+    include __DIR__ . '/../../config/koneksi.php';
     include '../../config/function.php';
     include '../../config/function-slip.php';
 
@@ -37,6 +37,7 @@ try {
             LEFT JOIN tb_site s ON kr.id_site = s.id_site
             WHERE kr.tgl_mulai <= '$endDate' 
               AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= '$startDate')
+            GROUP BY k.id_karyawan  -- FIX BUG: TAMBAHKAN INI DISINI
             ORDER BY k.nama_lengkap ASC";
 
     $q = mysqli_query($koneksi, $sql);
