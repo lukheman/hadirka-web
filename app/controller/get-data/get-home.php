@@ -89,7 +89,9 @@ function hitungTotalPeriode($koneksi, $mulai, $selesai)
             if (function_exists('generateSlipGaji')) {
                 $slip = generateSlipGaji($r['nik_karyawan'], $mulai, $selesai);
                 if (!isset($slip['error']) && !isset($slip['skip'])) {
-                    $gaji_net = (int)($slip['gaji_bersih'] ?? 0);
+                    // UBAH DARI: $gaji_net = (int)($slip['gaji_bersih'] ?? 0);
+                    // MENJADI:
+                    $gaji_net = (int)round($slip['gaji_bersih'] ?? 0);
                     // Samakan dengan Payroll: Abaikan jika gajinya minus
                     if ($gaji_net > 0) {
                         $t_gaji += $gaji_net;
