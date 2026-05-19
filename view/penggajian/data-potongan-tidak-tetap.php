@@ -284,7 +284,7 @@
                 <input type="date" name="tgl_potongan" class="form-control mb-3" required>
 
                 <label>Jenis Potongan</label>
-                <select name="jenis_potongan" class="form-select mb-3" required>
+                <select name="jenis_potongan" id="edit_jenis_potongan" class="form-select mb-3" required>
                     <option value="">Pilih Kategori...</option>
                     <option value="Denda">Denda</option>
                     <option value="Sumbangan">Sumbangan</option>
@@ -473,7 +473,7 @@
                 formEdit.querySelector("input[name=id_potongan_tidak_tetap]").value = btnEdit.dataset.id;
                 $('#selectKaryawanEdit').val(btnEdit.dataset.idkaryawan).trigger('change');
                 formEdit.querySelector("input[name=tgl_potongan]").value = btnEdit.dataset.tglpotongan;
-                formEdit.querySelector("input[name=jenis_potongan]").value = btnEdit.dataset.jenispotongan;
+                formEdit.querySelector("select[name=jenis_potongan]").value = btnEdit.dataset.jenispotongan;
                 formEdit.querySelector("input[name=nominal_potongan]").value = btnEdit.dataset.potongan;
                 formEdit.querySelector("input[name=ket_potongan]").value = btnEdit.dataset.ket;
 

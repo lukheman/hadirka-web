@@ -61,7 +61,8 @@ try {
                 $gaji_bersih = 0;
             } else {
                 $jabatan = $slip['jabatan'] ?? "-";
-                $gaji_bersih = (int)($slip['gaji_bersih'] ?? 0);
+                // UBAH DARI (int) MENJADI round()
+                $gaji_bersih = (int)round($slip['gaji_bersih'] ?? 0);
             }
         } else {
             // If function doesn't exist, use default values
@@ -76,7 +77,8 @@ try {
 
         $data[] = [
             "no" => $no++,
-            "id_karyawan" => $r['id_karyawan'],"nik_karyawan" => $r['nik_karyawan'] ?? "-",
+            "id_karyawan" => $r['id_karyawan'],
+            "nik_karyawan" => $r['nik_karyawan'] ?? "-",
             "nama" => $r['nama_lengkap'] ?? "-",
             "jabatan" => $jabatan,
             "site" => $r['nama_site'] ?? null,
@@ -94,7 +96,6 @@ try {
         "data" => $data,
         "count" => count($data)
     ]);
-
 } catch (Exception $e) {
     // Return error as JSON
     http_response_code(500);
