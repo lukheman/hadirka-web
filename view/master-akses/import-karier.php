@@ -42,6 +42,9 @@
                 <button class="btn btn-info btn-sm" onclick="exportKarierCSV()">
                     <i class="fa fa-file-export"></i> Export CSV
                 </button>
+                <button class="btn btn-warning btn-sm" id="btnExtendBatch">
+    <i class="fa fa-calendar-check"></i> Batch Perpanjang (+6 Bulan)
+</button>
             </div>
 
             <div class="d-flex align-items-center gap-2">
@@ -104,6 +107,7 @@
                     <table class="table table-bordered MyTableKarier">
                         <thead class="table-info">
                             <tr>
+                                <th class="text-center"><input type="checkbox" id="checkAllExtend"></th>
                                 <th class="text-center">No</th>
                                 <th class="text-center">NIK</th>
                                 <th class="text-center">Nama</th>
@@ -570,6 +574,86 @@ let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan
             let url = `app/controller/export/export-karier.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
             window.location.href = url;
         };
+
+        // Nonaktifkan sorting pada kolom pertama (Checkbox) di Datatables
+        // Ubah inisiasi datatable di dalam fungsi loadKarier() menjadi:
+        $(".MyTableKarier").DataTable({
+            responsive: true,
+            pageLength: 10,
+            columnDefs: [{ orderable: false, targets: 0 }] 
+        });
+
+        // --- CHECKBOX ALL TOGGLE ---
+        document.addEventListener("change", e => {
+            if (e.target.id === "checkAllExtend") {
+                let isChecked = e.target.checked;
+                document.querySelectorAll(".chk-extend").forEach(chk => {
+                    chk.checked = isChecked;
+                });
+            }
+        });
+
+        // --- BATCH EXTEND CONTRACT ---
+        document.getElementById("btnExtendBatch").addEventListener("click", () => {
+            let selected = [];
+            document.querySelectorAll(".chk-extend:checked").forEach(chk => {
+                selected.push(chk.value);
+            });
+
+            if (selected.length === 0) {
+                showToast("Pilih minimal satu karyawan untuk diperpanjang!", "error");
+                return;
+            }
+
+            if (confirm(`Yakin ingin memperpanjang kontrak ${selected.length} karyawan terpilih selama 6 bulan?\n(Sistem hanya akan memproses karyawan berstatus Aktif)`)) {
+                let fd = new FormData();
+                fd.append("action", "extend_batch");
+                selected.forEach(id => fd.append("id_karier[]", id));
+
+                fetch("app/controller/act-karier.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        showToast(res.msg, "success");
+                        document.getElementById("checkAllExtend").checked = false;
+                        loadKarier();
+                    } else {
+                        showToast(res.msg, "error");
+                    }
+                })
+                .catch(err => showToast("Terjadi kesalahan sistem.", "error"));
+            }
+        });
+
+        // --- SINGLE EXTEND CONTRACT (Untuk import-karier.php) ---
+        document.addEventListener("click", e => {
+            let btn = e.target.closest(".btnExtendKarier");
+            if (!btn) return;
+
+            let nama = btn.dataset.nama;
+            if (confirm(`Perpanjang kontrak ${nama} selama 6 bulan?\n(Hanya bisa jika status karyawan Aktif)`)) {
+                let fd = new FormData();
+                fd.append("action", "extend_single");
+                fd.append("id_karier", btn.dataset.id);
+
+                fetch("app/controller/act-karier.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        showToast(res.msg, "success");
+                        loadKarier();
+                    } else {
+                        showToast(res.msg, "error");
+                    }
+                });
+            }
+        });
 
     });
 </script>

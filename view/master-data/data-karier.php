@@ -420,6 +420,33 @@
             }
         });
 
+        // --- SINGLE EXTEND CONTRACT (Untuk data-karier.php) ---
+        document.addEventListener("click", e => {
+            let btn = e.target.closest(".btnExtendKarier");
+            if (!btn) return;
+
+            let nama = btn.dataset.nama;
+            if (confirm(`Perpanjang kontrak ${nama} selama 6 bulan?\n(Hanya bisa jika status karyawan Aktif)`)) {
+                let fd = new FormData();
+                fd.append("action", "extend_single");
+                fd.append("id_karier", btn.dataset.id);
+
+                fetch("app/controller/act-karier.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        showToast(res.msg, "success");
+                        loadKarier();
+                    } else {
+                        showToast(res.msg, "error");
+                    }
+                });
+            }
+        });
+
 
         // --- Load awal ---
         loadKarier();

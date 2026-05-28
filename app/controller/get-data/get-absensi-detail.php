@@ -1,6 +1,6 @@
 <?php
-require '../../config/koneksi.php';
-require '../../config/function.php';
+require_once __DIR__ . '/../../config/koneksi.php';
+require_once __DIR__ . '/../../config/function.php';
 
 $id_karyawan = $_GET['id_karyawan'] ?? '';
 $tgl_a = $_GET['tgl_a'] ?? date('Y-m-01');

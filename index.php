@@ -339,7 +339,8 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
                                 © <?= date('Y'); ?> | <strong>Outsourcing System</strong>
                             </div>
                             <div>
-                                <a href="https://rianrauf.my.id/" target="_blank" class="footer-link me-4">Developer</a>
+                                <!-- <a href="https://rianrauf.my.id/" target="_blank" class="footer-link me-4">Developer</a> -->
+                                <a href="#" class="footer-link me-4">Developer</a>
                                 <a href="#" class="footer-link">Support</a>
                             </div>
                         </div>

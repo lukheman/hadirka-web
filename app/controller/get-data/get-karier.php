@@ -2,8 +2,8 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require '../../config/koneksi.php';
-require '../../config/function.php';
+require_once __DIR__ . '/../../config/koneksi.php';
+require_once __DIR__ . '/../../config/function.php';
 
 $id = !empty($_GET['id']) ? decrypt($_GET['id']) : null;
 $no = 1;
@@ -62,7 +62,12 @@ if ($id) {
 
 while ($r = $q->fetch_assoc()) { ?>
     <tr class="text-center">
+        <?php if ($id) { ?>
         <td><?= $no ?></td>
+    <?php } else { ?>
+        <td><input type="checkbox" class="chk-extend" value="<?= $r['id_karier'] ?>"></td>
+        <td><?= $no ?></td>
+    <?php } ?>
         <td><?= $r['nik_karyawan'] ?></td>
         <td><?= $r['nama_lengkap'] ?></td>
         <td><?= $r['nama_site'] ?></td>
@@ -90,6 +95,12 @@ while ($r = $q->fetch_assoc()) { ?>
             <a href="data-tunjangan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Tunjangan</a>
             <a href="data-potongan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Potongan</a>
 
+            <button class="btn btn-warning btn-sm btnExtendKarier"
+                data-id="<?= $r['id_karier'] ?>"
+                data-nama="<?= $r['nama_lengkap'] ?>">
+                <i class="fa fa-calendar-plus"></i> +6 Bln
+            </button>
+            
             <button class="btn btn-primary btn-sm btnEditKarier"
                 data-id="<?= $r['id_karier'] ?>"
                 data-id_karyawan="<?= $r['id_karyawan'] ?>"

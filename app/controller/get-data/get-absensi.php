@@ -1,7 +1,7 @@
 <?php
 // path ini menyesuaikan struktur projectmu.
 // Jika file ini berada di app/controller/get-data/get-absensi.php, gunakan '../../../config/koneksi.php'
-require '../../config/koneksi.php'; // <-- ubah jika perlu
+require_once __DIR__ . '/../../config/koneksi.php'; // <-- ubah jika perlu
 // require '../../../config/function.php'; // jika perlu helper tambahan
 
 // Terima via POST
