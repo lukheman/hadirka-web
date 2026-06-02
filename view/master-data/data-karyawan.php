@@ -181,7 +181,7 @@
                     </p>
                     <label for="file_excel" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
                     <input type="file" name="file_excel" id="file_excel" class="form-control" accept=".xls,.xlsx" required data-bs-toggle="tooltip" title="Pilih file Excel untuk import data karyawan">
-                    <a href="assets/template-csv/Format_Template_Import_Database_Karyawan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
+                    <a href="assets/template-csv/Format_Impor_Database_Karyawan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
                     <div id="progressWrapper" class="progress mt-2" style="display:none;height:20px;">
                         <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
                     </div>

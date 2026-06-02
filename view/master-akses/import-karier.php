@@ -23,7 +23,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-upload"></i> Import Data
                             </button>
-                            <a href="/assets/template-csv/Format_Template_Import_Data_Karier.xlsx" class="btn btn-outline-secondary ml-2">
+                            <a href="/assets/template-csv/Format_Impor_Data_Karier.xlsx" class="btn btn-outline-secondary ml-2">
                                 <i class="fas fa-download"></i> Download Template
                             </a>
                         </div>
