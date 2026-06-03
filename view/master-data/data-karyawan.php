@@ -274,6 +274,9 @@
                                     <option>Belum Menikah</option>
                                     <option>Cerai Hidup</option>
                                     <option>Cerai Mati</option>
+                                    <option>TK/0</option>
+                                    <option>K/1</option>
+                                    <option>K/2</option>
                                 </select>
                                 <label class="form-label mt-3">Nama Ibu Kandung</label>
                                 <input type="text" class="form-control" name="nama_ibu">
@@ -455,6 +458,9 @@
                                 <option value="Belum Menikah">Belum Menikah</option>
                                 <option value="Cerai Hidup">Cerai Hidup</option>
                                 <option value="Cerai Mati">Cerai Mati</option>
+                                <option value="TK/0">TK/0</option>
+                                <option value="K/1">K/1</option>
+                                <option value="K/2">K/2</option>
                             </select>
                             <label class="mt-3">Nama Ibu Kandung</label>
                             <input type="text" id="edit_nama_ibu" name="nama_ibu" class="form-control">
