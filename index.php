@@ -379,6 +379,33 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             if (typeof flatpickr !== "undefined") {
                 $(".date-picker").flatpickr();
             }
+
+            // Live Sidebar Menu Search
+$('.navbar-nav input[placeholder="Search..."]').on('keyup', function() {
+    let filter = $(this).val().toLowerCase();
+    
+    if (filter === '') {
+        // Reset tampilan jika input kosong
+        $('.menu-inner .menu-item').show();
+        $('.menu-inner .menu-item').removeClass('open');
+        return;
+    }
+
+    $('.menu-inner .menu-item').each(function() {
+        let menuText = $(this).text().toLowerCase();
+        
+        if (menuText.includes(filter)) {
+            $(this).show();
+            // Pastikan parent dropdown tetap terbuka jika sub-menunya cocok
+            $(this).parents('.menu-item').show().addClass('open');
+        } else {
+            // Sembunyikan menu yang tidak cocok, kecuali ia memiliki child yang cocok
+            if ($(this).find('.menu-item:visible').length === 0) {
+                $(this).hide();
+            }
+        }
+    });
+});
         });
 
         /**
