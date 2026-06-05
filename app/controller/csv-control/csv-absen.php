@@ -122,6 +122,11 @@ try {
                 $value = $cellObj->getValue();
             }
 
+            // Pastikan null otomatis menjadi string kosong
+            if ($value === null) {
+                $value = '';
+            }
+
             // Trim whitespace
             if (is_string($value)) {
                 $value = trim($value);
@@ -188,7 +193,7 @@ try {
     // ================================
     for ($i = 2; $i <= $highestRow; $i++) {
         $nikData = getCellValue($sheet, $colNIK . $i);
-        $nik_karyawan = $nikData['value'];
+        $nik_karyawan = (string) $nikData['value'];
         $nik_karyawan = str_replace(' ', '', $nik_karyawan);
 
         if (empty($nik_karyawan)) {
@@ -227,7 +232,7 @@ try {
                     $dateObj = Date::excelToDateTimeObject($valTgl);
                     $tgl = $dateObj->format('Y-m-d');
                 } elseif (!empty($valTgl) && !is_numeric($valTgl)) {
-                    $timestamp = strtotime(str_replace('/', '-', $valTgl));
+                    $timestamp = strtotime(str_replace('/', '-', (string) $valTgl));
                     if ($timestamp !== false) {
                         $tgl = date('Y-m-d', $timestamp);
                     }
