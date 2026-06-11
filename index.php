@@ -45,6 +45,7 @@ $routes = [
     'data-thr'        => 'view/penggajian/data-thr.php',
     'laporan-keuangan'=> 'view/finance-payrol/laporan-keuangan.php',
     'kelola-transaksi'=> 'view/finance-payrol/kelola-transaksi.php',
+    'data-coa' => 'view/finance-payrol/data-coa.php',
 
     // APD
     'master-apd'      => 'view/k3/master-apd.php',

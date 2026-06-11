@@ -50,6 +50,9 @@ while($row = mysqli_fetch_assoc($qKategori)){
                 <button type="button" class="btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahTransaksi">
                     <i class="bx bx-plus-circle me-1"></i> Tambah Transaksi
                 </button>
+                <a href="?page=data-coa" class="btn btn-sm btn-warning shadow-sm">
+    <i class="bx bx-list-ol me-1"></i> Kelola COA
+</a>
             </div>
         </div>
     </div>
