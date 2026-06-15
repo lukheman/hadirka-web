@@ -33,8 +33,8 @@
             </div>
         </div>
 
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-            <div>
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div class="mb-2">
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahKarier">
                     <i class="fa fa-plus"></i> Tambah Karier Manual
                 </button>
@@ -43,15 +43,15 @@
                     <i class="fa fa-file-export"></i> Export CSV
                 </button>
                 <button class="btn btn-warning btn-sm" id="btnExtendBatch">
-    <i class="fa fa-calendar-check"></i> Batch Perpanjang (+6 Bulan)
-</button>
+                    <i class="fa fa-calendar-check"></i> Batch Perpanjang (+6 Bulan)
+                </button>
             </div>
 
             <div class="d-flex align-items-center gap-2">
                 <?php if ($_SESSION['site'] == 0) { ?>
                     <select id="filterSite" class="form-select form-select-sm">
                         <option value="">-- Semua Site --</option>
-                        <?php 
+                        <?php
                         $sites = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
                         while ($s = $sites->fetch_assoc()) {
                             echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
@@ -64,7 +64,7 @@
 
                 <select id="filterJabatan" class="form-select form-select-sm">
                     <option value="">-- Semua Jabatan --</option>
-                    <?php 
+                    <?php
                     $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
                     while ($j = $jabatans->fetch_assoc()) {
                         echo "<option value='{$j['id_jabatan']}'>{$j['nama_jabatan']}</option>";
@@ -392,7 +392,7 @@
             let bulan = document.getElementById("filterBulan").value;
 
             // Buat URL dengan parameter GET
-let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
+            let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
 
             fetch(url)
                 .then(res => res.text())
@@ -570,34 +570,39 @@ let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan
             let status = document.getElementById("filterStatus").value;
             let bulan = document.getElementById("filterBulan").value;
 
-            // Buka tab/jendela baru ke URL export dengan membawa parameter filter
-            let url = `app/controller/export/export-karier.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
+            // AMBIL DATA ID YANG DICENTANG (Mencakup Semua Halaman Pagination)
+            let table = $(".MyTableKarier").DataTable();
+            let selectedIds = [];
+            table.$(".chk-extend:checked").each(function() {
+                selectedIds.push($(this).val());
+            });
+            
+            // Gabungkan array menjadi string, misal: "12,15,20"
+            let idsString = selectedIds.join(',');
+
+            // Buka tab/jendela baru ke URL export dengan membawa parameter filter DAN ids
+            let url = `app/controller/export/export-karier.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}&ids=${idsString}`;
             window.location.href = url;
         };
 
-        // Nonaktifkan sorting pada kolom pertama (Checkbox) di Datatables
-        // Ubah inisiasi datatable di dalam fungsi loadKarier() menjadi:
-        $(".MyTableKarier").DataTable({
-            responsive: true,
-            pageLength: 10,
-            columnDefs: [{ orderable: false, targets: 0 }] 
-        });
-
-        // --- CHECKBOX ALL TOGGLE ---
+        // --- CHECKBOX ALL TOGGLE (Mencakup Semua Halaman Datatables) ---
         document.addEventListener("change", e => {
             if (e.target.id === "checkAllExtend") {
                 let isChecked = e.target.checked;
-                document.querySelectorAll(".chk-extend").forEach(chk => {
-                    chk.checked = isChecked;
-                });
+                // Gunakan API DataTable untuk mencentang semua checkbox di semua halaman (pagination)
+                let table = $(".MyTableKarier").DataTable();
+                table.$(".chk-extend").prop("checked", isChecked);
             }
         });
 
         // --- BATCH EXTEND CONTRACT ---
         document.getElementById("btnExtendBatch").addEventListener("click", () => {
+            let table = $(".MyTableKarier").DataTable();
             let selected = [];
-            document.querySelectorAll(".chk-extend:checked").forEach(chk => {
-                selected.push(chk.value);
+            
+            // Ambil semua checkbox yang dicentang di seluruh halaman
+            table.$(".chk-extend:checked").each(function() {
+                selected.push($(this).val());
             });
 
             if (selected.length === 0) {
@@ -611,20 +616,20 @@ let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan
                 selected.forEach(id => fd.append("id_karier[]", id));
 
                 fetch("app/controller/act-karier.php", {
-                    method: "POST",
-                    body: fd
-                })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.status === "success") {
-                        showToast(res.msg, "success");
-                        document.getElementById("checkAllExtend").checked = false;
-                        loadKarier();
-                    } else {
-                        showToast(res.msg, "error");
-                    }
-                })
-                .catch(err => showToast("Terjadi kesalahan sistem.", "error"));
+                        method: "POST",
+                        body: fd
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === "success") {
+                            showToast(res.msg, "success");
+                            document.getElementById("checkAllExtend").checked = false;
+                            loadKarier();
+                        } else {
+                            showToast(res.msg, "error");
+                        }
+                    })
+                    .catch(err => showToast("Terjadi kesalahan sistem.", "error"));
             }
         });
 
@@ -640,18 +645,18 @@ let url = `app/controller/get-data/get-karier.php?site=${site}&jabatan=${jabatan
                 fd.append("id_karier", btn.dataset.id);
 
                 fetch("app/controller/act-karier.php", {
-                    method: "POST",
-                    body: fd
-                })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.status === "success") {
-                        showToast(res.msg, "success");
-                        loadKarier();
-                    } else {
-                        showToast(res.msg, "error");
-                    }
-                });
+                        method: "POST",
+                        body: fd
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === "success") {
+                            showToast(res.msg, "success");
+                            loadKarier();
+                        } else {
+                            showToast(res.msg, "error");
+                        }
+                    });
             }
         });
 

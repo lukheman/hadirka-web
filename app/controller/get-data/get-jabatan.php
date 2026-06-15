@@ -1,5 +1,5 @@
 <?php
-require '../../config/koneksi.php';
+require __DIR__.'/../../config/koneksi.php';
 
 $q = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY id_jabatan DESC");
 $no = 1;

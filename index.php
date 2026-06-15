@@ -27,6 +27,8 @@ $routes = [
     'import-karier'   => 'view/master-akses/import-karier.php',
     'data-kontrak'   => 'view/master-data/data-kontrak.php',
     'data-bpjs-tk'   => 'view/master-data/data-bpjs-tk.php',
+    'data-calon-karyawan' => 'view/master-data/data-calon-karyawan.php',
+    'data-loker' => 'view/master-data/data-loker.php',
 
     // Kehadiran
     'rekapan-absensi' => 'view/kehadiran/rekapan-absensi.php',
@@ -81,7 +83,7 @@ if ($user_level == 4) {
 // 1. Modul HRD Umum (Hanya Admin, Direktur, HRD, Supervisor)
 $hrd_pages = [
     'data-karyawan', 'data-site', 'data-tunjangan', 'data-potongan', 'data-departemen',
-    'karier', 'data-devisi', 'data-jabatan', 'import-karier', 'data-kontrak', 'data-bpjs-tk',
+    'karier', 'data-devisi', 'data-jabatan', 'import-karier', 'data-kontrak', 'data-bpjs-tk', 'data-calon-karyawan', 'data-loker',
     'rekapan-absensi', 'dayli-absen', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks', 'pengumuman'
 ];
 

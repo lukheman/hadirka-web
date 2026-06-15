@@ -41,8 +41,8 @@ $query = mysqli_query($koneksi, $sql);
 if ($query) {
     while ($row = mysqli_fetch_assoc($query)) {
         $kelompok = $row['kelompok'];
-        
-        if(isset($data[$kelompok])) {
+
+        if (isset($data[$kelompok])) {
             $data[$kelompok][] = [
                 'id_transaksi' => $row['id_transaksi'],
                 'id_kategori' => $row['id_kategori'],
@@ -53,7 +53,8 @@ if ($query) {
                 'keterangan' => htmlspecialchars($row['keterangan']),
                 'tipe_arus' => $row['tipe_arus'],
                 'nominal' => number_format($row['nominal'], 0, ',', '.'),
-                'nominal_raw' => (int)$row['nominal'] 
+                'nominal_raw' => (int)$row['nominal'],
+                'bukti_transaksi' => $row['bukti_transaksi']
             ];
         }
     }
@@ -61,4 +62,3 @@ if ($query) {
 
 echo json_encode(['status' => 'success', 'data' => $data]);
 exit;
-?>

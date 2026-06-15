@@ -148,7 +148,7 @@ try {
 
             $eliminasiHtml = "   
                 <h6 class='text-danger'><i class='fa fa-user-slash'></i> Data Eliminasi</h6>
-                <table class='table table-sm table-borderless info-table'>
+                <table class='table table-sm table-borderless info-table' style='font-size: 13px;'>
                     <tr>
                         <td><strong>Status Karyawan</strong></td>
                         <td>: <span class='badge bg-danger'>{$row['status_karyawan']}</span></td>
@@ -168,7 +168,7 @@ try {
 
         // Build detail HTML (child row)
         $detail = "
-        <div class='card'>
+        <div class='card' style='font-size: 13px;'>
             <div class='card-body'>
                 <div class='row '>
                     <!-- Kolom 1 -->

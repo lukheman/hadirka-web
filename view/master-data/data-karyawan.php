@@ -29,33 +29,39 @@
         }
 
         .info-table {
-            table-layout: fixed;
             width: 100%;
-            white-space: normal !important;
-            /* Timpa text-nowrap jika ada */
-            word-wrap: break-word;
-            word-break: break-word;
+            margin-bottom: 0;
+        }
+
+        .info-table td {
+            padding: 0.2rem 0 !important; /* Merapatkan jarak antar baris */
+            vertical-align: top;
+            color: #566a7f;
         }
 
         .info-table td:first-child {
-            width: 105px;
-            /* kolom label */
-            white-space: nowrap;
+            width: 35%; /* Proporsi ideal agar label tidak terpotong */
             font-weight: 600;
-            vertical-align: top;
+            white-space: nowrap; 
+        }
+
+        /* Class baru khusus untuk titik dua (:) */
+        .info-table td.separator {
+            width: 15px; 
+            text-align: center;
+            white-space: nowrap;
         }
 
         .info-table td:last-child {
             width: auto;
-            white-space: normal;
-            overflow-wrap: anywhere;
-            word-break: normal;
+            word-break: break-word; /* Aman untuk email panjang tanpa merusak angka */
         }
 
-        /* Untuk detail alamat*/
+        /* Untuk detail alamat */
         .col-md-4 p {
             white-space: normal;
             word-break: break-word;
+            line-height: 1.6;
         }
     </style>
     <div class="content-wrapper">

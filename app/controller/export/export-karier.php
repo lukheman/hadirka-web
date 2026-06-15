@@ -12,7 +12,7 @@ if (ob_get_length()) {
     ob_end_clean();
 }
 
-require '../../config/koneksi.php';
+require __DIR__ . '/../../config/koneksi.php';
 require '../../../vendor/autoload.php'; // Pastikan jumlah ../ sudah pas menuju folder root vendor
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -24,21 +24,34 @@ $site    = $_GET['site'] ?? '';
 $jabatan = $_GET['jabatan'] ?? '';
 $status  = $_GET['status'] ?? 'Aktif'; 
 $bulan   = $_GET['bulan'] ?? '';
+$ids     = $_GET['ids'] ?? ''; // Tambahan: Tangkap parameter IDs
 
 // Build WHERE Clause
 $where = ["1=1"];
 
-if (!empty($site)) {
-    $where[] = "k.id_site = '" . $koneksi->real_escape_string($site) . "'";
-}
-if (!empty($jabatan)) {
-    $where[] = "k.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
-}
-if (!empty($status)) {
-    $where[] = "kr.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
-}
-if (!empty($bulan)) {
-    $where[] = "MONTH(k.tgl_selesai) = '" . $koneksi->real_escape_string($bulan) . "'";
+if (!empty($ids)) {
+    // JIKA ADA DATA YANG DICENTANG: 
+    // Pecah string ID menjadi array, pastikan semuanya integer, lalu gabungkan lagi (untuk keamanan)
+    $id_array = explode(',', $ids);
+    $id_array = array_map('intval', $id_array);
+    $id_string = implode(',', $id_array);
+    
+    // Override filter lain, fokus ambil berdasarkan ID yang dicentang
+    $where[] = "k.id_karier IN ($id_string)";
+} else {
+    // JIKA TIDAK ADA YANG DICENTANG: Gunakan logika filter biasa
+    if (!empty($site)) {
+        $where[] = "k.id_site = '" . $koneksi->real_escape_string($site) . "'";
+    }
+    if (!empty($jabatan)) {
+        $where[] = "k.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+    }
+    if (!empty($status)) {
+        $where[] = "kr.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+    }
+    if (!empty($bulan)) {
+        $where[] = "MONTH(k.tgl_selesai) = '" . $koneksi->real_escape_string($bulan) . "'";
+    }
 }
 
 $where_sql = implode(" AND ", $where);

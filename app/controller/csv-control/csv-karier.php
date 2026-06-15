@@ -4,7 +4,7 @@ ini_set('display_errors', 1);
 ob_clean();
 
 header("Content-Type: application/json");
-require '../../config/koneksi.php';
+require __DIR__ . '/../../config/koneksi.php';
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;

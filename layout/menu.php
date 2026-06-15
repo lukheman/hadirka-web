@@ -35,7 +35,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $master_pages = ['data-karyawan', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-devisi', 'data-tunjangan', 'data-potongan'];
+        $master_pages = ['data-karyawan', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-devisi', 'data-tunjangan', 'data-potongan', 'data-kontrak', 'data-bpjs-tk'];
         ?>
         <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -76,6 +76,28 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('data-bpjs-tk', $current_page); ?>">
                     <a class="menu-link" href="data-bpjs-tk">
                         <div>Data BPJS Ketenagakerjaan</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <?php
+        $master_pages = ['data-loker','data-calon-karyawan'];
+        ?>
+        <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-collection"></i>
+                <div data-i18n="Master Data">Rekruitmen</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?= isActive('data-loker', $current_page); ?>">
+                    <a class="menu-link" href="data-loker">
+                        <div>Data Loker</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('data-calon-karyawan', $current_page); ?>">
+                    <a class="menu-link" href="data-calon-karyawan">
+                        <div>Data Calon Karyawan</div>
                     </a>
                 </li>
             </ul>
@@ -183,7 +205,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $finance_pages = ['laporan-keuangan','kelola-transaksi'];
+        $finance_pages = ['laporan-keuangan', 'kelola-transaksi'];
         ?>
         <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
