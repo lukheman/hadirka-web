@@ -1,4 +1,4 @@
-    <style>
+<style>
         /* sedikit styling untuk icon expand */
         td.dt-control {
             cursor: pointer;
@@ -71,7 +71,6 @@
             </h4>
             <div class="pb-3">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <!-- BUTTONS -->
                     <div>
                         <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalTambahKaryawan">
                             <i class="fa fa-plus"></i> Tambah Karyawan
@@ -79,13 +78,11 @@
                         <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#ModalImport" title="Klik untuk mengimpor data karyawan dari file Excel">
                             <i class="fa fa-upload"></i> Import Data
                         </button>
-                        <!-- TOMBOL EXPORT BARU -->
                         <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel">
                             <i class="fa fa-file-export"></i> Export Data
                         </button>
                     </div>
 
-                    <!-- FILTER AJAX -->
                     <div class="d-flex align-items-center gap-2" style="max-width: 520px;">
                         <?php
                         if ($_SESSION['site'] == 0) { ?>
@@ -137,13 +134,11 @@
                 </div>
             </div>
 
-            <!-- TABLE -->
             <div class="card position-relative">
                 <h5 class="card-header">
                     <i class="fa fa-database"></i> Database Karyawan
                 </h5>
                 <div class="card-body">
-                    <!-- Spinner Loading -->
                     <div class="text-center" id="loadingSpinner" style="display: none;">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Memuat data...</span>
@@ -169,11 +164,9 @@
                     </div>
                 </div>
             </div>
-            <!--/ TABLE -->
-        </div>
+            </div>
     </div>
 
-    <!-- MODAL IMPORT -->
     <div class="modal fade" id="ModalImport" tabindex="-1" aria-labelledby="ModalImportLabel" aria-hidden="true">
         <div class="modal-dialog">
             <form id="formImport" class="modal-content" enctype="multipart/form-data">
@@ -202,7 +195,6 @@
         </div>
     </div>
 
-    <!-- TOAST -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
         <div id="toastAlert" class="toast text-bg-primary border-0" role="alert" data-bs-delay="4000">
             <div class="d-flex">
@@ -212,7 +204,6 @@
         </div>
     </div>
 
-    <!-- MODAL TAMBAH -->
     <div class="modal fade" id="modalTambahKaryawan" tabindex="-1">
         <div class="modal-dialog modal-xl ">
             <div class="modal-content">
@@ -276,20 +267,28 @@
                                 <label class="form-label mt-3">Status Pernikahan</label>
                                 <select class="form-control" name="status_pernikahan">
                                     <option value="">-- Pilih --</option>
-                                    <option>Menikah</option>
-                                    <option>Belum Menikah</option>
-                                    <option>Cerai Hidup</option>
-                                    <option>Cerai Mati</option>
-                                    <option>TK/0</option>
-                                    <option>K/1</option>
-                                    <option>K/2</option>
+                                    <option value="Menikah">Menikah</option>
+                                    <option value="Belum Menikah">Belum Menikah</option>
+                                    <option value="Cerai Hidup">Cerai Hidup</option>
+                                    <option value="Cerai Mati">Cerai Mati</option>
+                                </select>
+                                <label class="form-label mt-3">Status PTKP</label>
+                                <select class="form-control" name="status_ptkp">
+                                    <option value="">-- Pilih --</option>
+                                    <option value="TK/0">TK/0</option>
+                                    <option value="TK/1">TK/1</option>
+                                    <option value="TK/2">TK/2</option>
+                                    <option value="TK/3">TK/3</option>
+                                    <option value="K/0">K/0</option>
+                                    <option value="K/1">K/1</option>
+                                    <option value="K/2">K/2</option>
+                                    <option value="K/3">K/3</option>
                                 </select>
                                 <label class="form-label mt-3">Nama Ibu Kandung</label>
                                 <input type="text" class="form-control" name="nama_ibu">
                             </div>
                         </div>
 
-                        <!-- Alamat -->
                         <hr>
                         <h6>ALAMAT KTP</h6>
                         <div class="row">
@@ -311,7 +310,6 @@
                             </div>
                         </div>
 
-                        <!-- Pendidikan -->
                         <hr>
                         <h6>PENDIDIKAN</h6>
                         <div class="row">
@@ -327,7 +325,6 @@
                             </div>
                         </div>
 
-                        <!-- Bank -->
                         <hr>
                         <h6>AKUN BANK</h6>
                         <div class="row">
@@ -345,7 +342,6 @@
                             <input type="text" class="form-control" name="no_rek">
                         </div>
 
-                        <!-- Karier -->
                         <hr>
                         <h6>PENEMPATAN KERJA</h6>
                         <div class="row">
@@ -377,7 +373,6 @@
                             <input type="date" class="form-control" name="tgl_selesai">
                         </div>
 
-                        <!-- Kontak Darurat -->
                         <hr>
                         <h6>KONTAK DARURAT 1</h6>
                         <div class="row">
@@ -421,7 +416,6 @@
         </div>
     </div>
 
-    <!-- Modal Edit Data Karyawan -->
     <div class="modal fade" id="ModalEdit" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <form id="formEdit" class="modal-content">
@@ -464,9 +458,18 @@
                                 <option value="Belum Menikah">Belum Menikah</option>
                                 <option value="Cerai Hidup">Cerai Hidup</option>
                                 <option value="Cerai Mati">Cerai Mati</option>
+                            </select>
+                            <label class="mt-3">Status PTKP</label>
+                            <select id="edit_status_ptkp" name="status_ptkp" class="form-control">
+                                <option value="">-- Pilih --</option>
                                 <option value="TK/0">TK/0</option>
+                                <option value="TK/1">TK/1</option>
+                                <option value="TK/2">TK/2</option>
+                                <option value="TK/3">TK/3</option>
+                                <option value="K/0">K/0</option>
                                 <option value="K/1">K/1</option>
                                 <option value="K/2">K/2</option>
+                                <option value="K/3">K/3</option>
                             </select>
                             <label class="mt-3">Nama Ibu Kandung</label>
                             <input type="text" id="edit_nama_ibu" name="nama_ibu" class="form-control">
@@ -529,7 +532,6 @@
                         </div>
                     </div>
 
-                    <!-- Bank -->
                     <hr>
                     <h6>AKUN BANK</h6>
                     <div class="row">
@@ -580,7 +582,6 @@
                         </div>
                     </div>
 
-                    <!-- Kontak Darurat -->
                     <hr>
                     <h6>KONTAK DARURAT 1</h6>
                     <div class="row">
@@ -626,7 +627,6 @@
         </div>
     </div>
 
-    <!-- Modal Eliminasi Karyawan -->
     <div class="modal fade" id="ModalEliminasi" tabindex="-1">
         <div class="modal-dialog">
             <form id="formEliminasi" class="modal-content">
@@ -674,8 +674,7 @@
         </div>
     </div>
 
-    <!-- Modal Lihat Foto -->
-     <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalLihatFoto" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content bg-transparent border-0 shadow-none">
                 <div class="modal-header border-0 p-0 justify-content-end">
@@ -689,7 +688,6 @@
         </div>
     </div>
 
-    <!-- JS: jQuery, Bootstrap, DataTables, Toastr -->
     <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -902,6 +900,7 @@
                                 $("#edit_tempat_lahir").val(d.tempat_lahir);
                                 $("#edit_tgl_lahir").val(d.tgl_lahir);
                                 $("#edit_status_pernikahan").val(d.status_pernikahan);
+                                $("#edit_status_ptkp").val(d.status_ptkp);
                                 $("#edit_nama_ibu").val(d.nama_ibu);
                                 if (d.foto && d.foto !== "") {
                                     $("#preview_foto_karyawan").html(`<img src="app/uploads/profil/${d.foto}" width="80" height="80" class="rounded-circle shadow-sm" style="object-fit: cover;">`);

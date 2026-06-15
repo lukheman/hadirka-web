@@ -125,7 +125,7 @@ try {
         // --- LOGIKA FOTO ---
         $foto_karyawan = $row['foto'] ?? '';
         if (!empty($foto_karyawan)) {
-            $url_foto = 'app/uploads/profil/' . htmlspecialchars($foto_karyawan); // <-- TAMBAHKAN app/
+            $url_foto = 'app/uploads/profil/' . htmlspecialchars($foto_karyawan); 
         } else {
             $url_foto = 'assets/img/avatars/person.png';
         }
@@ -171,7 +171,6 @@ try {
         <div class='card' style='font-size: 13px;'>
             <div class='card-body'>
                 <div class='row '>
-                    <!-- Kolom 1 -->
                     <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-user'></i> Data Pribadi</h6>
                         <table class='table table-sm table-borderless info-table'>
@@ -179,12 +178,12 @@ try {
                             <tr><td><strong>Tanggal Lahir</strong></td><td>: $tgl_lahir_format ($usia)</td></tr>
                             <tr><td><strong>Jenis Kelamin</strong></td><td>: " . ($row['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "</td></tr>
                             <tr><td><strong>Agama</strong></td><td>: " . htmlspecialchars($row['agama'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Status</strong></td><td>: " . htmlspecialchars($row['status_pernikahan'] ?? '-') . "</td></tr>
+                            <tr><td><strong>Status Pernikahan</strong></td><td>: " . htmlspecialchars($row['status_pernikahan'] ?? '-') . "</td></tr>
+                            <tr><td><strong>Status PTKP</strong></td><td>: " . htmlspecialchars($row['status_ptkp'] ?? '-') . "</td></tr>
                             <tr><td><strong>Nationality</strong></td><td>: " . htmlspecialchars($row['nationality'] ?? '-') . "</td></tr>
                         </table>
                     </div>
                     
-                    <!-- Kolom 2 -->
                     <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-id-card'></i> Identitas & Kontak</h6>
                         <table class='table table-sm table-borderless info-table'>
@@ -198,7 +197,6 @@ try {
                         </table>
                     </div>
                     
-                    <!-- Kolom 3 -->
                     <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-briefcase'></i> Karier & Pendidikan</h6>
                         <table class='table table-sm table-borderless info-table'>

@@ -9,7 +9,7 @@ if (ob_get_length()) {
     ob_end_clean();
 }
 
-require '../../config/koneksi.php';
+require  __DIR__ . '/../../config/koneksi.php';
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -47,7 +47,7 @@ if (!empty($bulan)) {
 
 $where_sql = implode(" AND ", $where);
 
-// Eksekusi Query Utama (Sama seperti get-karyawan.php)
+// Eksekusi Query Utama
 $query = "SELECT 
         kar.*, i.*, k.*,
         s.nama_site, d.nama_departemen, j.nama_jabatan,
@@ -77,7 +77,7 @@ if (!$result) {
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 
-// Tulis Header Kolom Sesuai File Database Karyawan IPIP.xlsx
+// Tulis Header Kolom (Menambahkan Status PTKP di AN, KK geser ke AO, dsb)
 $headers = [
     'A1' => 'No', 'B1' => 'NIK Karyawan', 'C1' => 'Nama Lengkap', 'D1' => 'Jenis Kelamin (L/P)', 
     'E1' => 'Site', 'F1' => 'Departemen', 'G1' => 'Jabatan', 'H1' => 'Tanggal Masuk Site',
@@ -88,8 +88,12 @@ $headers = [
     'Y1' => 'Kecamatan', 'Z1' => 'Kabupaten', 'AA1' => 'Provinsi', 'AB1' => 'Email Pribadi', 
     'AC1' => 'No Telepon', 'AD1' => 'Nama Kontak Darurat 1', 'AE1' => 'Hubungan 1', 'AF1' => 'No Telepon Darurat 1', 
     'AG1' => 'Nama Kontak Darurat 2', 'AH1' => 'Hubungan 2', 'AI1' => 'No Telepon Darurat 2', 'AJ1' => 'NPWP', 
-    'AK1' => 'BPJS Ketenagakerjaan', 'AL1' => 'BPJS Kesehatan', 'AM1' => 'Status Pernikahan', 'AN1' => 'Nomor KK', 
-    'AO1' => 'Status Karyawan', 'AP1' => 'Tanggal Keluar', 'AQ1' => 'Keterangan'
+    'AK1' => 'BPJS Ketenagakerjaan', 'AL1' => 'BPJS Kesehatan', 'AM1' => 'Status Pernikahan', 
+    'AN1' => 'Status PTKP', // <-- FIELD BARU
+    'AO1' => 'Nomor KK', 
+    'AP1' => 'Status Karyawan', 
+    'AQ1' => 'Tanggal Keluar', 
+    'AR1' => 'Keterangan'
 ];
 
 foreach ($headers as $cell => $val) {
@@ -141,18 +145,21 @@ if ($result && $result->num_rows > 0) {
         $sheet->setCellValueExplicit('AK' . $rowNum, $row['bpjs_tk'] ?? '-', DataType::TYPE_STRING);
         $sheet->setCellValueExplicit('AL' . $rowNum, $row['bpjs_kes'] ?? '-', DataType::TYPE_STRING);
         $sheet->setCellValue('AM' . $rowNum, $row['status_pernikahan'] ?? '-');
-        $sheet->setCellValueExplicit('AN' . $rowNum, $row['kk_number'] ?? '-', DataType::TYPE_STRING);
-        $sheet->setCellValue('AO' . $rowNum, $row['status_karyawan'] ?? '-');
-        $sheet->setCellValue('AP' . $rowNum, $row['tgl_keluar'] ?? '-');
-        $sheet->setCellValue('AQ' . $rowNum, $row['alasan_keluar'] ?? '-');
+        
+        // --- DATA BARU & DATA YANG BERGESER ---
+        $sheet->setCellValue('AN' . $rowNum, $row['status_ptkp'] ?? '-'); // Kolom AN (Status PTKP)
+        $sheet->setCellValueExplicit('AO' . $rowNum, $row['kk_number'] ?? '-', DataType::TYPE_STRING); // Kolom AO
+        $sheet->setCellValue('AP' . $rowNum, $row['status_karyawan'] ?? '-'); // Kolom AP
+        $sheet->setCellValue('AQ' . $rowNum, $row['tgl_keluar'] ?? '-'); // Kolom AQ
+        $sheet->setCellValue('AR' . $rowNum, $row['alasan_keluar'] ?? '-'); // Kolom AR
 
         $rowNum++;
     }
 }
 
-// Auto-size kolom agar rapi (Sesuai kolom terakhir yaitu AQ)
+// Auto-size kolom agar rapi (Update batas loop agar mencakup kolom AR)
 foreach (range('A', 'Z') as $col) { $sheet->getColumnDimension($col)->setAutoSize(true); }
-foreach (range('A', 'Q') as $col) { $sheet->getColumnDimension('A'.$col)->setAutoSize(true); }
+foreach (range('A', 'R') as $col) { $sheet->getColumnDimension('A'.$col)->setAutoSize(true); } // <-- Update sampai AR
 
 // Logika nama site untuk nama file
 $nama_site_file = "SEMUA_SITE"; 

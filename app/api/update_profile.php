@@ -1,7 +1,7 @@
 <?php
 // File: update_profile.php (FINAL CODE - PERBAIKAN KRITIS)
 
-include 'koneksi-api.php';
+include __DIR__ . '/koneksi-api.php';
 header('Content-Type: application/json');
 
 // =======================
@@ -49,6 +49,7 @@ $no_telp           = safe($data['no_telp']);
 $nationality       = safe($data['nationality']);
 $agama             = safe($data['agama']);
 $status_pernikahan = safe($data['status_pernikahan']);
+$status_ptkp       = safe($data['status_ptkp']);
 
 // =======================
 // FIELD tb_identitas
@@ -228,7 +229,8 @@ try {
             no_telp = ?,
             nationality = ?,
             agama = ?,
-            status_pernikahan = ?
+            status_pernikahan = ?,
+            status_ptkp = ?
         WHERE id_karyawan = ?
     ");
 
@@ -243,6 +245,7 @@ try {
         $nationality,
         $agama,
         $status_pernikahan,
+        $status_ptkp,
         $id_karyawan
     );
 

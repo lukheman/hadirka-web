@@ -75,7 +75,7 @@ if ($action == "add") {
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
 
         $sql1 = "INSERT INTO tb_karyawan 
-        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_karyawan, foto)
+        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, status_karyawan, foto)
         VALUES (
             '" . input('nik_karyawan') . "',
             '" . input('nama_lengkap') . "',
@@ -87,7 +87,9 @@ if ($action == "add") {
             '" . input('nationality') . "',
             '" . input('agama') . "',
             '" . input('status_pernikahan') . "',
-            'Aktif'
+            '" . input('status_ptkp') . "',
+            'Aktif',
+            ''
         )";
 
         if (!$koneksi->query($sql1)) {
@@ -214,7 +216,8 @@ if ($action == "edit") {
             'no_telp'           => input('no_telp'),
             'nationality'       => input('nationality'),
             'agama'             => input('agama'),
-            'status_pernikahan' => input('status_pernikahan')
+            'status_pernikahan' => input('status_pernikahan'),
+            'status_ptkp'       => input('status_ptkp')
         ];
 
         // --- PROSES UPLOAD FOTO (EDIT) ---

@@ -1,8 +1,8 @@
 <?php
 header("Content-Type: application/json");
 
-require '../../config/koneksi.php';
-require '../../../vendor/autoload.php';
+require __DIR__ . '/../../config/koneksi.php';
+require __DIR__ . '/../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -173,13 +173,14 @@ try {
             $bpjs_tk           = escapeString($koneksi, $row['AK'] ?? '');
             $bpjs_kes          = escapeString($koneksi, $row['AL'] ?? '');
             $status_pernikahan = escapeString($koneksi, $row['AM'] ?? '');
-            $kk_number         = escapeString($koneksi, $row['AN'] ?? '');
-            $status_karyawan = trim($row['AO'] ?? '') === ''
+            $status_ptkp       = escapeString($koneksi, $row['AN'] ?? ''); 
+            $kk_number         = escapeString($koneksi, $row['AO'] ?? '');
+            
+            $status_karyawan = trim($row['AP'] ?? '') === ''
                 ? 'Aktif'
-                : escapeString($koneksi, $row['AO']);
-            $tgl_keluar = formatTanggal($row['AP'] ?? '');
-            $alasan_keluar   = escapeString($koneksi, $row['AQ'] ?? '');
-
+                : escapeString($koneksi, $row['AP']);
+            $tgl_keluar = formatTanggal($row['AQ'] ?? '');
+            $alasan_keluar   = escapeString($koneksi, $row['AR'] ?? '');
 
             // === Validasi wajib ===
             if (empty($nik_karyawan) || empty($nama_lengkap)) {
@@ -210,11 +211,6 @@ try {
 
             if ($cekEliminasi->num_rows > 0) {
                 
-                // // kebijakan 1: tolak
-                // $response["gagal"]++;
-                // $response["errors"][] = "Baris $rowNum: NIK $nik_karyawan sudah terdaftar sebagai karyawan keluar (tb_tereliminasi).";
-                // continue;
-
                 // kebijakan 2: reaktivasi otomatis
                 $rowElim = $cekEliminasi->fetch_assoc();
                 $id_karyawan = $rowElim['id_karyawan'];
@@ -244,6 +240,7 @@ try {
                 addUpdateField($updateFields, 'nationality', $nationality);
                 addUpdateField($updateFields, 'agama', $agama);
                 addUpdateField($updateFields, 'status_pernikahan', $status_pernikahan);
+                addUpdateField($updateFields, 'status_ptkp', $status_ptkp);
                 addUpdateField($updateFields, 'status_karyawan', $status_karyawan);
 
                 // tanggal lahir (boleh null hanya jika diisi)
@@ -318,13 +315,13 @@ try {
                 // INSERT - Karyawan baru
                 $sqlKaryawan = "INSERT INTO tb_karyawan (
                     nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir,
-                    email_pribadi, no_telp, nationality, agama, status_pernikahan,
+                    email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp,
                     status_karyawan
                 ) VALUES (
                     '$nik_karyawan', '$nama_lengkap', '$jenis_kelamin',
                     " . ($tgl_lahir ? "'$tgl_lahir'" : "NULL") . ",
                     '$tempat_lahir', '$email_pribadi', '$no_telp', '$nationality',
-                    '$agama', '$status_pernikahan', '$status_karyawan'
+                    '$agama', '$status_pernikahan', '$status_ptkp', '$status_karyawan'
                 )";
 
                 if (!$koneksi->query($sqlKaryawan)) {
