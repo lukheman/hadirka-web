@@ -1,7 +1,7 @@
 <?php
 // POST_karyawan.php (FINAL: Mengambil Data Dasar + Karier Aktif Tanpa Duplikasi)
 
-include 'koneksi-api.php'; // Pastikan jalur koneksi benar
+include __DIR__ . '/koneksi-api.php'; // Pastikan jalur koneksi benar
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
