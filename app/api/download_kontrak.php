@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Sesuaikan URL ini dengan struktur folder Anda (berdasarkan file data-kontrak.php Anda, file ada di app/uploads/kontrak/)
     // Gunakan host dinamis agar fleksibel
     $host = $_SERVER['HTTP_HOST'];
-    $file_url = "http://" . $host . "/app/uploads/kontrak/" . $file_name;
+    $file_url = "http://" . $host . "/uploads/kontrak/" . $file_name;
 
     http_response_code(200);
     echo json_encode([
