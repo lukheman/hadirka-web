@@ -6,7 +6,7 @@
  */
 
 // Sesuaikan path koneksi database dengan struktur folder Anda
-require '../../config/koneksi.php';
+require_once __DIR__ . '/../../config/koneksi.php';
 
 // Tangkap parameter filter dari GET URL
 $periode = isset($_GET['periode']) ? $_GET['periode'] : '';

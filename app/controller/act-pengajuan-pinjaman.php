@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once '../config/koneksi.php';
+require_once __DIR__ . '/../config/koneksi.php';
 
 // Menangkap parameter action dari POST atau GET
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
