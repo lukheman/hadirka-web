@@ -9,6 +9,36 @@ require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+// --- FUNGSI BARU: PEMBERSIH FORMAT MATA UANG ---
+function cleanRupiah($val) {
+    if (empty($val)) return 0;
+    
+    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
+    if (is_numeric($val)) return floatval($val);
+    
+    $val = (string)$val;
+    // Hapus karakter huruf (Rp, rp) dan spasi
+    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
+    
+    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
+    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
+        if (strrpos($val, ',') > strrpos($val, '.')) {
+            $val = str_replace('.', '', $val); // hapus titik ribuan
+            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
+        } else {
+            // Jika format English (Contoh: 36,881.30)
+            $val = str_replace(',', '', $val); // hapus koma ribuan
+        }
+    } elseif (strpos($val, ',') !== false) {
+        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
+        $val = str_replace(',', '.', $val);
+    }
+    
+    // Konversi akhir ke tipe Float
+    return floatval($val);
+}
+
 /**
  * Cari ID berdasarkan nama (case-insensitive, trimmed)
  */
@@ -54,7 +84,11 @@ if (!in_array($ext, ['xls', 'xlsx'])) {
 
 try {
     $spreadsheet = IOFactory::load($file);
-    $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+    
+    // PERBAIKAN PENTING:
+    // Parameter ke-3 (formatData) diubah jadi FALSE agar Excel tidak memaksa 
+    // mengambil string berformat "Rp", melainkan nilai angka aslinya.
+    $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, false, true);
 
     foreach ($sheet as $i => $row) {
         if ($i == 1) continue;
@@ -63,7 +97,7 @@ try {
         if (empty($nik)) continue;
 
         // 1. Ambil Data Karyawan (Cek Departemen/Jabatan untuk backup insert karier baru)
-        $cekKaryawan = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik'");
+        $cekKaryawan = $koneksi->query("SELECT id_karyawan, status_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik'");
         if ($cekKaryawan->num_rows == 0) {
             $response["gagal"]++;
             $response["errors"][] = "Row $i : NIK '$nik' tidak terdaftar";
@@ -82,7 +116,6 @@ try {
             $status_karyawan === 'black list') {
             
             $response["gagal"]++;
-            // Perbaikan penulisan array dalam string menggunakan kurung kurawal {}
             $response["errors"][] = "Row $i : NIK '$nik' ditolak karena sudah $status_karyawan";
             continue; // Skip baris ini dan lanjut ke karyawan berikutnya di Excel
         }
@@ -90,30 +123,31 @@ try {
 
         $id_karyawan = $dataKaryawan['id_karyawan'];
 
-        // Ambil Nilai dari Excel
-        $nama_site  = trim($row['D'] ?? '');
+        // Ambil Nilai dari Excel & Terapkan cleanRupiah() pada nilai angka/uang
+        $nama_site       = trim($row['D'] ?? '');
         $nama_departemen = trim($row['E'] ?? '');
-        $nama_jabatan = trim($row['F'] ?? '');
-        $basic      = intval($row['G'] ?? 0);
-        $t_daerah   = intval($row['H'] ?? 0);
-        $t_hidup    = intval($row['I'] ?? 0);
-        $t_makan    = intval($row['J'] ?? 0);
-        $t_skill    = intval($row['K'] ?? 0);
-        $p_bonus    = intval($row['L'] ?? 0);
-        $t_posisi   = intval($row['M'] ?? 0);
-        $ot_pertama = intval($row['N'] ?? 0);
-        $ot_kedua   = intval($row['O'] ?? 0);
-        $spl        = intval($row['P'] ?? 0);
-        $ot1_spl    = intval($row['Q'] ?? 0);
-        $ot2_spl    = intval($row['R'] ?? 0);
-        $pot_bpjs   = intval($row['S'] ?? 0);
-        $pot_jht    = intval($row['T'] ?? 0);
-        $pph21      = intval($row['U'] ?? 0);
-        $pot_izin   = intval($row['V'] ?? 0);
-        $pot_mangkir = intval($row['W'] ?? 0);
+        $nama_jabatan    = trim($row['F'] ?? '');
+        
+        $basic      = cleanRupiah($row['G'] ?? 0);
+        $t_daerah   = cleanRupiah($row['H'] ?? 0);
+        $t_hidup    = cleanRupiah($row['I'] ?? 0);
+        $t_makan    = cleanRupiah($row['J'] ?? 0);
+        $t_skill    = cleanRupiah($row['K'] ?? 0);
+        $p_bonus    = cleanRupiah($row['L'] ?? 0);
+        $t_posisi   = cleanRupiah($row['M'] ?? 0);
+        $ot_pertama = cleanRupiah($row['N'] ?? 0);
+        $ot_kedua   = cleanRupiah($row['O'] ?? 0);
+        $spl        = cleanRupiah($row['P'] ?? 0);
+        $ot1_spl    = cleanRupiah($row['Q'] ?? 0);
+        $ot2_spl    = cleanRupiah($row['R'] ?? 0);
+        $pot_bpjs   = cleanRupiah($row['S'] ?? 0);
+        $pot_jht    = cleanRupiah($row['T'] ?? 0);
+        $pph21      = cleanRupiah($row['U'] ?? 0);
+        $pot_izin   = cleanRupiah($row['V'] ?? 0);
+        $pot_mangkir = cleanRupiah($row['W'] ?? 0);
+        
         $tgl_masuk_site = formatTanggal($row['X'] ?? '');
         $tgl_selesai_kontrak = formatTanggal($row['Y'] ?? '');
-
 
         // === Ambil ID referensi ===
         $id_site       = getId($koneksi, 'tb_site', 'nama_site', $nama_site, 'id_site');
