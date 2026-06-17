@@ -2,7 +2,7 @@
 header("Content-Type: application/json");
 
 // Sesuaikan struktur direktori koneksi dan vendor Anda
-require '../../config/koneksi.php';
+require __DIR__ . "/../../config/koneksi.php';
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;

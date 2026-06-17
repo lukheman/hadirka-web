@@ -1,5 +1,5 @@
 <?php
-include "../../config/koneksi.php";
+include __DIR__ . "/../../config/koneksi.php";
 
 $sql = "SELECT pi.*, k.nama_lengkap, k.nik_karyawan FROM tb_pengajuan_izin pi
         JOIN tb_karyawan k ON k.id_karyawan = pi.id_karyawan ORDER BY pi.tgl_izin DESC";

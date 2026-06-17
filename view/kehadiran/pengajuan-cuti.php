@@ -1,9 +1,25 @@
 <style>
     /* Efek Zoom pada Lampiran */
-    .preview-thumbnail { transition: all 0.2s ease-in-out; cursor: pointer; background: #fff; }
-    .preview-thumbnail:hover { transform: scale(1.1); border-color: #696cff !important; box-shadow: 0 0.25rem 0.5rem rgba(105, 108, 255, 0.4) !important; }
-    #modalPreviewGambar .modal-content { backdrop-filter: blur(5px); background-color: rgba(0, 0, 0, 0.5) !important; }
-    .w-px-100 { width: 100px !important; }
+    .preview-thumbnail {
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        background: #fff;
+    }
+
+    .preview-thumbnail:hover {
+        transform: scale(1.1);
+        border-color: #696cff !important;
+        box-shadow: 0 0.25rem 0.5rem rgba(105, 108, 255, 0.4) !important;
+    }
+
+    #modalPreviewGambar .modal-content {
+        backdrop-filter: blur(5px);
+        background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .w-px-100 {
+        width: 100px !important;
+    }
 
     /* Menyesuaikan style Select2 agar rapi seperti di referensi APD Anda */
     .select2-container .select2-selection--single {
@@ -11,11 +27,13 @@
         border: 1px solid #d9dee3 !important;
         border-radius: 0.375rem !important;
     }
+
     .select2-container--default .select2-selection--single .select2-selection__rendered {
         line-height: 36px !important;
         padding-left: 14px !important;
         color: #697a8d !important;
     }
+
     .select2-container--default .select2-selection--single .select2-selection__arrow {
         height: 36px !important;
         right: 5px !important;
@@ -44,7 +62,9 @@
                     </tr>
                 </thead>
                 <tbody id="tbody-cuti" class="table-border-bottom-0">
-                    <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+                    <tr>
+                        <td colspan="7" class="text-center">Memuat data...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -89,7 +109,7 @@
                         <label class="form-label">Lampiran Bukti (Opsional)</label>
                         <input class="form-control" type="file" id="bukti_cuti" name="bukti_cuti" accept="image/jpeg, image/png, image/webp, application/pdf">
                     </div>
-                     <div class="mb-3">
+                    <div class="mb-3">
                         <label class="form-label">Status Awal</label>
                         <select class="form-select" id="status_cuti" name="status_cuti">
                             <option value="pending">Pending (Butuh Persetujuan)</option>
@@ -98,7 +118,7 @@
                     </div>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
-                     <small id="form-error" class="text-danger"></small>
+                    <small id="form-error" class="text-danger"></small>
                     <div>
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary" id="btn-submit-cuti">Simpan</button>
@@ -117,6 +137,30 @@
                 <img src="" id="imgPreview" class="img-fluid rounded shadow-lg border border-3 border-white">
             </div>
         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalProsesAdmin" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="formProsesAdmin" class="modal-content">
+            <input type="hidden" id="proses_id" name="id">
+            <input type="hidden" id="proses_status" name="status">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="modalProsesTitle">Proses Pengajuan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 mb-3">
+                    <span id="proses_teks_info" class="fw-bold"></span>
+                </div>
+                <label class="fw-bold mb-1">Pesan / Keterangan Admin</label>
+                <textarea name="ket_admin" id="proses_ket_admin" class="form-control" rows="3" placeholder="Opsional (Wajib diisi jika ditolak)"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary" id="btnProsesSubmit">Simpan Keputusan</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -188,8 +232,8 @@
             // Hitung selisih waktu
             const diffTime = Math.abs(akhir - awal);
             // Konversi ke hari dan tambah 1 (karena cuti dari tgl 1 s/d 1 = 1 hari)
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
-            
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
             document.getElementById('lama_cuti').value = diffDays;
         }
     }
@@ -201,14 +245,14 @@
 
     async function tambahCutiAdmin(event) {
         event.preventDefault();
-        
+
         const form = document.getElementById('formTambahCuti');
         const formData = new FormData(form);
-        formData.append('is_admin_web', 'true'); 
+        formData.append('is_admin_web', 'true');
 
         const btnSubmit = document.getElementById('btn-submit-cuti');
         const errorText = document.getElementById('form-error');
-        
+
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = 'Menyimpan...';
         errorText.innerText = '';
@@ -218,23 +262,23 @@
                 method: 'POST',
                 body: formData
             });
-            
+
             const result = await response.json();
-            
+
             if (result.status === 'success') {
                 var myModalEl = document.getElementById('modalTambahCuti');
                 var modal = bootstrap.Modal.getInstance(myModalEl);
                 modal.hide();
-                
+
                 form.reset();
                 if (typeof $ !== 'undefined') {
                     $('#id_karyawan').val(null).trigger('change'); // Reset select2
                 }
-                
+
                 loadTableCuti();
                 alert(result.message);
             } else {
-                 errorText.innerText = result.message;
+                errorText.innerText = result.message;
             }
         } catch (error) {
             errorText.innerText = 'Terjadi kesalahan sistem.';
@@ -244,21 +288,39 @@
         }
     }
 
-    async function updateStatus(id, newStatus) {
+    function updateStatus(id, newStatus) {
+        document.getElementById('proses_id').value = id;
+        document.getElementById('proses_status').value = newStatus;
+        document.getElementById('proses_ket_admin').value = '';
+        document.getElementById('proses_ket_admin').required = (newStatus === 'ditolak');
+
+        document.getElementById('modalProsesTitle').innerText = newStatus === 'disetujui' ? 'Setujui Izin' : (newStatus === 'ditolak' ? 'Tolak Izin' : 'Set Pending');
+        document.getElementById('proses_teks_info').innerText = `Anda akan mengubah status menjadi: ${newStatus.toUpperCase()}`;
+
+        new bootstrap.Modal(document.getElementById('modalProsesAdmin')).show();
+    }
+
+    document.getElementById('formProsesAdmin').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        let fd = new FormData(this);
+        fd.append('action', 'update-status');
+
         try {
-            const response = await fetch(`${api_act_cuti}?action=update-status&id=${id}&status=${newStatus}`);
-            if (!response.ok) throw new Error(`Server merespon ${response.status}`);
-            
+            const response = await fetch(api_act_cuti, {
+                method: 'POST',
+                body: fd
+            });
             const result = await response.json();
             if (result.status === 'success') {
-                loadTableCuti(); 
+                bootstrap.Modal.getInstance(document.getElementById('modalProsesAdmin')).hide();
+                loadTableCuti();
             } else {
                 alert("Gagal: " + result.message);
             }
-        } catch (e) { 
+        } catch (err) {
             alert("Terjadi kesalahan sistem.");
         }
-    }
+    });
 
     async function deleteCuti(id) {
         if (confirm("Hapus permanen data pengajuan cuti ini?")) {
@@ -270,7 +332,7 @@
                 } else {
                     alert("Gagal menghapus: " + result.message);
                 }
-            } catch(e) {
+            } catch (e) {
                 alert("Terjadi kesalahan saat menghapus data.");
             }
         }

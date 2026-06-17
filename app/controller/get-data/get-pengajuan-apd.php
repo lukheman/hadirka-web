@@ -1,5 +1,5 @@
 <?php
-include "../../config/koneksi.php";
+include __DIR__ . "/../../config/koneksi.php";
 
 $sql = "SELECT pa.*, k.nama_lengkap, k.nik_karyawan, m.nama_apd 
         FROM tb_pengajuan_apd pa

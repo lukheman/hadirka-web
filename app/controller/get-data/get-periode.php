@@ -1,5 +1,5 @@
 <?php
-include "../../config/koneksi.php";
+include __DIR__ . "/../../config/koneksi.php";
 
 $query = mysqli_query($koneksi, "SELECT * FROM tb_priode ORDER BY tgl_mulai DESC");
 

@@ -45,7 +45,9 @@
                     </tr>
                 </thead>
                 <tbody id="tbody-izin" class="table-border-bottom-0">
-                    <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+                    <tr>
+                        <td colspan="6" class="text-center">Memuat data...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -60,6 +62,30 @@
                 <img src="" id="imgPreview" class="img-fluid rounded shadow-lg border border-3 border-white">
             </div>
         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalProsesAdmin" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="formProsesAdmin" class="modal-content">
+            <input type="hidden" id="proses_id" name="id">
+            <input type="hidden" id="proses_status" name="status">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="modalProsesTitle">Proses Pengajuan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 mb-3">
+                    <span id="proses_teks_info" class="fw-bold"></span>
+                </div>
+                <label class="fw-bold mb-1">Pesan / Keterangan Admin</label>
+                <textarea name="ket_admin" id="proses_ket_admin" class="form-control" rows="3" placeholder="Opsional (Wajib diisi jika ditolak)"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary" id="btnProsesSubmit">Simpan Keputusan</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -79,24 +105,39 @@
         new bootstrap.Modal(document.getElementById('modalPreviewGambar')).show();
     }
 
-    async function updateStatus(id, newStatus) {
+    function updateStatus(id, newStatus) {
+        document.getElementById('proses_id').value = id;
+        document.getElementById('proses_status').value = newStatus;
+        document.getElementById('proses_ket_admin').value = '';
+        document.getElementById('proses_ket_admin').required = (newStatus === 'ditolak');
+
+        document.getElementById('modalProsesTitle').innerText = newStatus === 'disetujui' ? 'Setujui Izin' : (newStatus === 'ditolak' ? 'Tolak Izin' : 'Set Pending');
+        document.getElementById('proses_teks_info').innerText = `Anda akan mengubah status menjadi: ${newStatus.toUpperCase()}`;
+
+        new bootstrap.Modal(document.getElementById('modalProsesAdmin')).show();
+    }
+
+    document.getElementById('formProsesAdmin').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        let fd = new FormData(this);
+        fd.append('action', 'update-status');
+
         try {
-            const response = await fetch(`${api_act}?action=update-status&id=${id}&status=${newStatus}`);
-            
-            // Cek jika response sukses (200 OK)
-            if (!response.ok) throw new Error(`Server merespon ${response.status}`);
-            
+            const response = await fetch(api_act, {
+                method: 'POST',
+                body: fd
+            });
             const result = await response.json();
             if (result.status === 'success') {
-                loadTableIzin(); 
+                bootstrap.Modal.getInstance(document.getElementById('modalProsesAdmin')).hide();
+                loadTableIzin();
             } else {
                 alert("Gagal: " + result.message);
             }
-        } catch (e) { 
-            console.error("Update Error:", e);
+        } catch (err) {
             alert("Terjadi kesalahan sistem.");
         }
-    }
+    });
 
     async function deleteIzin(id) {
         if (confirm("Hapus permanen data pengajuan ini?")) {
@@ -108,7 +149,7 @@
                 } else {
                     alert("Gagal menghapus: " + result.message);
                 }
-            } catch(e) {
+            } catch (e) {
                 alert("Terjadi kesalahan saat menghapus data.");
             }
         }

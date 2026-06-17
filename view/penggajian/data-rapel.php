@@ -443,7 +443,21 @@
                         pageLength: 10,
                         order: [[2, 'desc']], // Sort by date
                         language: {
-                            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
+                            // MENGGUNAKAN TRANSLASI INLINE UNTUK MENGHINDARI CORS ERROR
+                            "sEmptyTable":   "Tidak ada data rapel yang tersedia.",
+                            "sProcessing":   "Sedang memproses...",
+                            "sLengthMenu":   "Tampilkan _MENU_ data",
+                            "sZeroRecords":  "Tidak ditemukan data yang sesuai",
+                            "sInfo":         "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                            "sInfoEmpty":    "Menampilkan 0 sampai 0 dari 0 data",
+                            "sInfoFiltered": "(disaring dari _MAX_ data keseluruhan)",
+                            "sSearch":       "Cari:",
+                            "oPaginate": {
+                                "sFirst":    "Pertama",
+                                "sPrevious": "Sebelumnya",
+                                "sNext":     "Selanjutnya",
+                                "sLast":     "Terakhir"
+                            }
                         }
                     });
                     

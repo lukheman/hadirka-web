@@ -66,6 +66,30 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalProsesAdmin" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="formProsesAdmin" class="modal-content">
+            <input type="hidden" id="proses_id" name="id">
+            <input type="hidden" id="proses_status" name="status">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="modalProsesTitle">Proses Pengajuan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 mb-3">
+                    <span id="proses_teks_info" class="fw-bold"></span>
+                </div>
+                <label class="fw-bold mb-1">Pesan / Keterangan Admin</label>
+                <textarea name="ket_admin" id="proses_ket_admin" class="form-control" rows="3" placeholder="Opsional (Wajib diisi jika ditolak)"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary" id="btnProsesSubmit">Simpan Keputusan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     const api_get_apd = 'app/controller/get-data/get-pengajuan-apd.php';
     const api_act_apd = 'app/controller/act-pengajuan-apd.php';
@@ -86,29 +110,40 @@
         new bootstrap.Modal(document.getElementById('modalPreviewGambar')).show();
     }
 
-    async function updateStatusApd(id, newStatus) {
-        let confirmText = "";
-        if (newStatus === 'disetujui') {
-            confirmText = "Setujui pengajuan ini? Data akan otomatis tercatat di log pengambilan APD & stok dipotong.";
-        } else if (newStatus === 'ditolak') {
-            confirmText = "Tolak pengajuan APD ini?";
-        } else {
-            confirmText = "Kembalikan status pengajuan ini menjadi Pending?";
-        }
 
-        if (confirm(confirmText)) {
-            try {
-                const res = await fetch(`${api_act_apd}?action=update-status&id=${id}&status=${newStatus}`);
-                const result = await res.json();
-                if (result.status === 'success') {
-                    loadTablePengajuanApd();
-                    alert("Status berhasil diperbarui!"); 
-                } else {
-                    alert("Gagal: " + result.message);
-                }
-            } catch (e) { alert("Terjadi kesalahan sistem."); }
-        }
+    function updateStatusApd(id, newStatus) {
+        document.getElementById('proses_id').value = id;
+        document.getElementById('proses_status').value = newStatus;
+        document.getElementById('proses_ket_admin').value = '';
+        document.getElementById('proses_ket_admin').required = (newStatus === 'ditolak');
+
+        document.getElementById('modalProsesTitle').innerText = newStatus === 'disetujui' ? 'Setujui Izin' : (newStatus === 'ditolak' ? 'Tolak Izin' : 'Set Pending');
+        document.getElementById('proses_teks_info').innerText = `Anda akan mengubah status menjadi: ${newStatus.toUpperCase()}`;
+
+        new bootstrap.Modal(document.getElementById('modalProsesAdmin')).show();
     }
+
+    document.getElementById('formProsesAdmin').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        let fd = new FormData(this);
+        fd.append('action', 'update-status');
+
+        try {
+            const response = await fetch(api_act_apd, {
+                method: 'POST',
+                body: fd
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                bootstrap.Modal.getInstance(document.getElementById('modalProsesAdmin')).hide();
+                loadTablePengajuanApd();
+            } else {
+                alert("Gagal: " + result.message);
+            }
+        } catch (err) {
+            alert("Terjadi kesalahan sistem.");
+        }
+    });
 
     async function deletePengajuanApd(id) {
         if (confirm("Hapus permanen data pengajuan APD ini? Data tidak bisa dikembalikan.")) {

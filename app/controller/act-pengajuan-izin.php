@@ -1,14 +1,14 @@
 <?php
 header('Content-Type: application/json');
-include "../config/koneksi.php";
+include __DIR__ . "/../config/koneksi.php";
 $action = $_GET['action'] ?? '';
 
 if ($action == 'update-status') {
-    // SECURITY: Cegah SQL Injection
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $status = mysqli_real_escape_string($koneksi, $_GET['status']); 
+    $id = mysqli_real_escape_string($koneksi, $_POST['id'] ?? $_GET['id']);
+    $status = mysqli_real_escape_string($koneksi, $_POST['status'] ?? $_GET['status']); 
+    $ket_admin = mysqli_real_escape_string($koneksi, $_POST['ket_admin'] ?? ''); 
     
-    $sql = "UPDATE tb_pengajuan_izin SET status_izin = '$status' WHERE id_pengajuan_izin = '$id'";
+    $sql = "UPDATE tb_pengajuan_izin SET status_izin = '$status', ket_admin = '$ket_admin' WHERE id_pengajuan_izin = '$id'";
     
     if (mysqli_query($koneksi, $sql)) {
         echo json_encode(['status' => 'success']);
