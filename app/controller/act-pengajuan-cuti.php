@@ -55,7 +55,7 @@ if ($action == 'tambah_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // B. Proses Upload Gambar (Opsional)
+    // B. Proses Upload & Kompresi Gambar (Opsional)
     if (isset($_FILES['bukti_cuti']) && $_FILES['bukti_cuti']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = '../../uploads/cuti/';
         if (!file_exists($upload_dir)) mkdir($upload_dir, 0755, true);
@@ -68,15 +68,82 @@ if ($action == 'tambah_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Penamaan file: cuti_idkaryawan_tglawal_timestamp.ext
-        $file_name = 'cuti_' . $id_karyawan . '_' . date('Ymd', strtotime($tgl_awal)) . '_' . time() . '.' . $file_ext;
+        // Penamaan file (selalu simpan sebagai JPG jika itu gambar, agar ukuran lebih kecil)
+        $final_ext = ($file_ext === 'pdf') ? 'pdf' : 'jpg';
+        $file_name = 'cuti_' . $id_karyawan . '_' . date('Ymd', strtotime($tgl_awal)) . '_' . time() . '.' . $final_ext;
         $target_path = $upload_dir . $file_name;
+        $file_tmp = $_FILES['bukti_cuti']['tmp_name'];
 
-        if (move_uploaded_file($_FILES['bukti_cuti']['tmp_name'], $target_path)) {
-            // Simpan path relatif ke database (menyesuaikan kebiasaan folder Anda)
+        $upload_sukses = false;
+
+        // Jika file adalah PDF, langsung pindahkan (tidak bisa dikompresi sbg gambar)
+        if ($file_ext === 'pdf') {
+            if (move_uploaded_file($file_tmp, $target_path)) {
+                $upload_sukses = true;
+            }
+        } 
+        // Jika file adalah gambar, lakukan kompresi
+        else {
+            // 1. Dapatkan informasi gambar asli
+            list($width, $height, $type) = getimagesize($file_tmp);
+            
+            // Tentukan rasio kompresi (maksimal lebar atau tinggi 1024px)
+            $max_dim = 1024;
+            $ratio = $width / $height;
+
+            if ($width > $max_dim || $height > $max_dim) {
+                if ($ratio > 1) {
+                    $new_width = $max_dim;
+                    $new_height = $max_dim / $ratio;
+                } else {
+                    $new_height = $max_dim;
+                    $new_width = $max_dim * $ratio;
+                }
+            } else {
+                $new_width = $width;
+                $new_height = $height;
+            }
+
+            // 2. Buat kanvas gambar baru
+            $image_p = imagecreatetruecolor($new_width, $new_height);
+            
+            // Pastikan background transparan untuk PNG/WEBP ditangani dengan benar jika diubah ke JPG (dijadikan putih)
+            $white = imagecolorallocate($image_p, 255, 255, 255);
+            imagefill($image_p, 0, 0, $white);
+
+            // 3. Buat objek gambar dari file sementara berdasarkan tipe aslinya
+            $image = null;
+            switch ($type) {
+                case IMAGETYPE_JPEG:
+                    $image = imagecreatefromjpeg($file_tmp);
+                    break;
+                case IMAGETYPE_PNG:
+                    $image = imagecreatefrompng($file_tmp);
+                    break;
+                case IMAGETYPE_WEBP:
+                    $image = imagecreatefromwebp($file_tmp);
+                    break;
+            }
+
+            if ($image !== null) {
+                // 4. Salin dan ubah ukuran gambar asli ke kanvas baru
+                imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+                
+                // 5. Simpan gambar hasil kompresi (kualitas 75% cukup baik dan sangat menghemat ukuran)
+                if (imagejpeg($image_p, $target_path, 75)) {
+                    $upload_sukses = true;
+                }
+                
+                // Bersihkan memory
+                imagedestroy($image_p);
+                imagedestroy($image);
+            }
+        }
+
+        if ($upload_sukses) {
             $path_bukti = 'uploads/cuti/' . $file_name;
         } else {
-            echo json_encode(['status' => 'error', 'message' => "Gagal mengunggah file."]);
+            echo json_encode(['status' => 'error', 'message' => "Gagal mengunggah dan mengompres file."]);
             exit;
         }
     }
