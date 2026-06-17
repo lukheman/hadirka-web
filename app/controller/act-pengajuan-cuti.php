@@ -96,8 +96,9 @@ if ($action == 'tambah_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // BLOK 2: UPDATE STATUS (PERSETUJUAN)
 // ==========================================
 if ($action == 'update-status') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $new_status = mysqli_real_escape_string($koneksi, $_GET['status']);
+    // Tangkap dari POST, fallback ke GET jika tidak ada
+    $id = mysqli_real_escape_string($koneksi, $_POST['id'] ?? $_GET['id']);
+    $new_status = mysqli_real_escape_string($koneksi, $_POST['status'] ?? $_GET['status']);
     $ket_admin = mysqli_real_escape_string($koneksi, $_POST['ket_admin'] ?? '');
 
     $q_cek = mysqli_query($koneksi, "SELECT * FROM tb_pengajuan_cuti WHERE id_pengajuan_cuti = '$id'");

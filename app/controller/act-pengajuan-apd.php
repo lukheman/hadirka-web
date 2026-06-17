@@ -4,8 +4,9 @@ include __DIR__ . "/../config/koneksi.php";
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 if ($action == 'update-status') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $new_status = mysqli_real_escape_string($koneksi, $_GET['status']);
+    // Tangkap dari POST, fallback ke GET jika tidak ada
+    $id = mysqli_real_escape_string($koneksi, $_POST['id'] ?? $_GET['id']);
+    $new_status = mysqli_real_escape_string($koneksi, $_POST['status'] ?? $_GET['status']);
     $ket_admin = mysqli_real_escape_string($koneksi, $_POST['ket_admin'] ?? '');
 
     // 1. Ambil data pengajuan saat ini
