@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 include __DIR__ . "/../config/koneksi.php";
-$action = $_GET['action'] ?? '';
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 // ==========================================
 // BLOK BARU: AMBIL SEMUA DATA KARYAWAN UNTUK DROPDOWN
