@@ -69,6 +69,11 @@ switch ($action) {
             sendResponse('error', 'Semua form wajib diisi dengan benar', null, 400);
         }
 
+        // --- TAMBAHKAN VALIDASI MAKSIMAL 6 HARI DI SINI ---
+        if ($lama_cuti > 6) {
+            sendResponse('error', 'Maksimal cuti dalam satu kali pengajuan adalah 6 hari.', null, 400);
+        }
+
         // [BARU] Validasi backend: Tolak jika tidak ada file yang diunggah
         if (!isset($_FILES['bukti_cuti']) || $_FILES['bukti_cuti']['error'] === UPLOAD_ERR_NO_FILE) {
             sendResponse('error', 'Bukti lampiran cuti wajib diupload.', null, 400);

@@ -30,6 +30,12 @@ if ($action == 'tambah_admin' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $tahun_cuti = date('Y', strtotime($tgl_awal));
     $path_bukti = NULL;
 
+    // --- TAMBAHKAN VALIDASI MAKSIMAL 6 HARI DI SINI ---
+    if ($lama_cuti > 6) {
+        echo json_encode(['status' => 'error', 'message' => "Maksimal cuti dalam satu kali pengajuan adalah 6 hari."]);
+        exit;
+    }
+
     // A. Logika Pengecekan Jatah Cuti (Jika Admin memilih langsung Disetujui)
     if ($status_cuti == 'disetujui') {
         $q_jatah = mysqli_query($koneksi, "SELECT * FROM tb_jatah_cuti WHERE id_karyawan = '$id_karyawan' AND tahun = '$tahun_cuti'");

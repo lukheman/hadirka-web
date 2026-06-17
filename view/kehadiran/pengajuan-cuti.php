@@ -234,6 +234,14 @@
             // Konversi ke hari dan tambah 1 (karena cuti dari tgl 1 s/d 1 = 1 hari)
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
+            // --- TAMBAHKAN VALIDASI MAKSIMAL 6 HARI ---
+            if (diffDays > 6) {
+                alert("Maksimal cuti dalam satu kali pengajuan adalah 6 hari!");
+                document.getElementById('tgl_akhir').value = '';
+                document.getElementById('lama_cuti').value = '';
+                return;
+            }
+
             document.getElementById('lama_cuti').value = diffDays;
         }
     }
