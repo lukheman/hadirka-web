@@ -7,7 +7,7 @@ if (mysqli_connect_errno()) {
 }
 
 function url() {
-    return 'http://localhost/tjs-outsoorsing/';
-    // return 'https://hris.triputrajayasultra.com/';
+    // return 'http://localhost/tjs-outsoorsing/';
+    return 'https://hris.triputrajayasultra.com/';
 }
 ?>
