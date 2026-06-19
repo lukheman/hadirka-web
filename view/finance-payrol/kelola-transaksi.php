@@ -425,8 +425,17 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                             const iconArus = row.tipe_arus === 'Masuk' ? 'bx-down-arrow-circle' : 'bx-up-arrow-circle';
                             const btnBukti = row.bukti_transaksi ?
                                 `<button class="btn btn-sm btn-info me-1" onclick="lihatBukti('${row.bukti_transaksi}')" title="Lihat Bukti"><i class="bx bx-file"></i></button>` : '';
-                            const badgeNeraca = row.tipe_neraca === 'debit' ? 'bg-label-primary' : 'bg-label-warning'; // Gunakan class css template Anda
-                            const txtNeraca = row.tipe_neraca.toUpperCase();
+                            // Tentukan warna badge secara aman
+let badgeNeraca = 'bg-label-secondary text-muted'; // Default jika NULL
+if (row.tipe_neraca === 'debit') {
+    badgeNeraca = 'bg-label-primary';
+} else if (row.tipe_neraca === 'kredit') {
+    badgeNeraca = 'bg-label-warning';
+}
+                            // Validasi aman: jika null/kosong, berikan string strip '-', jika ada isinya baru di-toUpperCase
+const txtNeraca = row.tipe_neraca ? row.tipe_neraca.toUpperCase() : '-';
+
+
 
                             // Penting: Gunakan tipe_arus dan nominal_raw dari Javascript objek langsung, 
                             // jangan sembunyikan di attribute HTML yang rawan error
@@ -436,7 +445,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                                 <td>${row.tanggal}</td>
                                 <td><span class="text-primary fw-semibold">${row.kode_akun}</span> - ${row.nama_akun}</td>
                                 <td>${row.keterangan}</td>
-                                <td><span class="badge ${badgeColor}" data-arus="${row.tipe_arus}"><i class="bx ${iconArus} me-1"></i>${row.tipe_arus}</span></td>
+                                <td><span class="badge ${badgeNeraca} fw-bold">${txtNeraca}</span></td>
                                 <td><span class="badge bg-label-secondary text-dark fw-bold">${txtNeraca}</span></td> <td class="fw-bold"><span class="nominal-val" data-nilai="${row.nominal_raw}">Rp ${row.nominal}</span></td>
                                 <td class="text-center text-nowrap">
                                     ${btnBukti}
