@@ -10,6 +10,36 @@ require '../../../vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
+// --- FUNGSI PEMBERSIH FORMAT MATA UANG ---
+function cleanRupiah($val) {
+    if (empty($val)) return 0;
+    
+    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
+    if (is_numeric($val)) return floatval($val);
+    
+    $val = (string)$val;
+    // Hapus karakter huruf (Rp, rp) dan spasi
+    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
+    
+    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
+    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
+        if (strrpos($val, ',') > strrpos($val, '.')) {
+            $val = str_replace('.', '', $val); // hapus titik ribuan
+            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
+        } else {
+            // Jika format English (Contoh: 36,881.30)
+            $val = str_replace(',', '', $val); // hapus koma ribuan
+        }
+    } elseif (strpos($val, ',') !== false) {
+        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
+        $val = str_replace(',', '.', $val);
+    }
+    
+    // Konversi akhir ke tipe Float
+    return floatval($val);
+}
+
 try {
     // Pastikan request adalah POST
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -22,7 +52,11 @@ try {
 
     $fileTmpPath = $_FILES['file_csv_potongan']['tmp_name'];
     $spreadsheet = IOFactory::load($fileTmpPath);
-    $data = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+    
+    // PERBAIKAN PENTING:
+    // Parameter ke-3 (formatData) diubah jadi FALSE agar Excel tidak 
+    // memaksa mengambil string berformat "Rp", melainkan angka aslinya.
+    $data = $spreadsheet->getActiveSheet()->toArray(null, true, false, true);
     
     $successCount = 0;
     $errorCount = 0;
@@ -50,9 +84,9 @@ try {
 
         $id_karyawan = $resK['id_karyawan'];
 
-        // 2. Bersihkan Nominal (Hapus titik/koma/simbol)
-        $nominal = trim($row['E'] ?? '0');
-        $nominal_potongan = (float) preg_replace('/[^0-9.]/', '', str_replace(',', '.', $nominal));
+        // 2. Bersihkan Nominal Menggunakan Pembersih `cleanRupiah`
+        $nominal = $row['E'] ?? 0;
+        $nominal_potongan = cleanRupiah($nominal);
 
         // 3. Konversi Tanggal Potongan (Kolom F)
         $tglPotonganRaw = $row['F'] ?? '';
@@ -77,7 +111,6 @@ try {
         }
 
         // 5. Cek Duplikat atau Update
-        // KINI DUPLIKAT JIKA: Karyawan, Tanggal, Jenis Potongan, DAN Keterangan sama
         $stmtCheck = $koneksi->prepare("SELECT id_potongan_tidak_tetap FROM tb_potongan_tidak_tetap WHERE id_karyawan = ? AND tgl_potongan = ? AND jenis_potongan = ? AND ket_potongan = ?");
         $stmtCheck->bind_param("isss", $id_karyawan, $tgl_potongan, $jenis_potongan, $ket_potongan);
         $stmtCheck->execute();
@@ -86,16 +119,14 @@ try {
         $stmtCheck->close();
 
         if ($isDuplicate) {
-            // Jika data sudah ada (termasuk keterangannya sama persis), Update HANYA nominalnya
+            // Jika data sudah ada, Update HANYA nominalnya
             $stmtUpd = $koneksi->prepare("UPDATE tb_potongan_tidak_tetap SET nominal_potongan=? WHERE id_karyawan=? AND tgl_potongan=? AND jenis_potongan=? AND ket_potongan=?");
-            // d=double, i=integer, s=string
             $stmtUpd->bind_param("disss", $nominal_potongan, $id_karyawan, $tgl_potongan, $jenis_potongan, $ket_potongan);
             $stmtUpd->execute();
             $stmtUpd->close();
         } else {
-            // Jika data belum ada (atau keterangannya beda), Insert sebagai data baru
+            // Jika data belum ada, Insert sebagai data baru
             $stmtIns = $koneksi->prepare("INSERT INTO tb_potongan_tidak_tetap (id_karyawan, tgl_potongan, nominal_potongan, jenis_potongan, ket_potongan) VALUES (?,?,?,?,?)");
-            // i=integer, s=string, d=double
             $stmtIns->bind_param("isdss", $id_karyawan, $tgl_potongan, $nominal_potongan, $jenis_potongan, $ket_potongan);
             $stmtIns->execute();
             $stmtIns->close();

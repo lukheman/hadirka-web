@@ -37,23 +37,34 @@ function sendJsonResponse($status, $message, $data = [])
     exit;
 }
 
-function cleanCurrency($string)
-{
-    if (empty($string)) return 0;
-    $clean = preg_replace('/[^0-9,.-]/', '', $string);
-    if (strpos($clean, ',') !== false && strpos($clean, '.') !== false) {
-        $lastComma = strrpos($clean, ',');
-        $lastDot = strrpos($clean, '.');
-        if ($lastDot > $lastComma) {
-            $clean = str_replace(',', '', $clean);
+// --- FUNGSI PEMBERSIH FORMAT MATA UANG (TERSTANDAR) ---
+function cleanRupiah($val) {
+    if (empty($val)) return 0;
+    
+    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
+    if (is_numeric($val)) return floatval($val);
+    
+    $val = (string)$val;
+    // Hapus karakter huruf (Rp, rp) dan spasi
+    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
+    
+    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
+    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
+        if (strrpos($val, ',') > strrpos($val, '.')) {
+            $val = str_replace('.', '', $val); // hapus titik ribuan
+            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
         } else {
-            $clean = str_replace('.', '', $clean);
-            $clean = str_replace(',', '.', $clean);
+            // Jika format English (Contoh: 36,881.30)
+            $val = str_replace(',', '', $val); // hapus koma ribuan
         }
-    } elseif (strpos($clean, ',') !== false) {
-        $clean = str_replace(',', '.', $clean);
+    } elseif (strpos($val, ',') !== false) {
+        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
+        $val = str_replace(',', '.', $val);
     }
-    return (float) $clean;
+    
+    // Konversi akhir ke tipe Float
+    return floatval($val);
 }
 
 if (!isset($koneksi) || !$koneksi) sendJsonResponse('error', 'Koneksi database gagal');
@@ -65,7 +76,11 @@ if ($file['error'] !== UPLOAD_ERR_OK) sendJsonResponse('error', 'Upload gagal: K
 try {
     $spreadsheet = IOFactory::load($file['tmp_name']);
     $sheet = $spreadsheet->getActiveSheet();
-    $data = $sheet->toArray(null, true, true, true);
+    
+    // PERBAIKAN PENTING 1:
+    // Parameter ke-3 (formatData) diubah jadi FALSE agar Excel tidak 
+    // memaksa mengambil string berformat "Rp", melainkan angka aslinya.
+    $data = $sheet->toArray(null, true, false, true);
 } catch (Exception $e) {
     sendJsonResponse('error', 'Excel Error: ' . $e->getMessage());
 }
@@ -88,6 +103,11 @@ for ($i = 2; $i <= count($data); $i++) {
     if (!isset($data[$i])) continue;
     $row = $data[$i];
 
+    // PERBAIKAN PENTING 2 (PENGAMAN LOOP):
+    // Selalu reset variabel penampung data sql fetch di awal loop 
+    // agar data baris sebelumnya tidak bocor ke baris yang salah/error.
+    $id_karyawan = null;
+
     $nik_karyawan = isset($row[$colNIK]) ? trim($row[$colNIK]) : '';
     if (empty($nik_karyawan)) {
         $skippedRows[] = $i;
@@ -95,7 +115,7 @@ for ($i = 2; $i <= count($data); $i++) {
     }
 
     $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
-    if (!$stmtK) sendJsonResponse('error', "Query Karyawan Error: " . $koneksi->error); // Penjagaan ketat
+    if (!$stmtK) sendJsonResponse('error', "Query Karyawan Error: " . $koneksi->error);
     
     $stmtK->bind_param("s", $nik_karyawan);
     $stmtK->execute();
@@ -123,16 +143,16 @@ for ($i = 2; $i <= count($data); $i++) {
         continue;
     }
 
-    $str_gapok = (string) cleanCurrency($row[$colGapok] ?? 0);
-    $str_lokasi = (string) cleanCurrency($row[$colTunjLokasi] ?? 0);
-    $str_kebutuhan = (string) cleanCurrency($row[$colTunjKebutuhan] ?? 0);
-    $str_nominal = (string) cleanCurrency($row[$colNominalTHR] ?? 0);
+    // PERBAIKAN PENTING 3: Menggunakan fungsi cleanRupiah() yang baru
+    $str_gapok = (string) cleanRupiah($row[$colGapok] ?? 0);
+    $str_lokasi = (string) cleanRupiah($row[$colTunjLokasi] ?? 0);
+    $str_kebutuhan = (string) cleanRupiah($row[$colTunjKebutuhan] ?? 0);
+    $str_nominal = (string) cleanRupiah($row[$colNominalTHR] ?? 0);
     $str_masa_kerja = trim((string)($row[$colMasaKerja] ?? '0'));
 
     $stmtCheck = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ?");
-    if (!$stmtCheck) sendJsonResponse('error', "Query Check Error: " . $koneksi->error); // Penjagaan ketat
+    if (!$stmtCheck) sendJsonResponse('error', "Query Check Error: " . $koneksi->error);
     
-    // PERBAIKAN: Binding 'is' (id int, periode string/year) agar tidak bentrok
     $stmtCheck->bind_param("is", $id_karyawan, $periode); 
     $stmtCheck->execute();
     $stmtCheck->store_result();
@@ -179,7 +199,7 @@ for ($i = 2; $i <= count($data); $i++) {
 
 // 3. SAPU BERSIH BUFFER TERAKHIR SEBELUM FINAL JSON
 $status = ($errorCount > 0 && $successCount == 0) ? 'error' : (($errorCount > 0) ? 'warning' : 'success');
-ob_clean(); // <--- INI PENTING BANGET BIAR JSON GAK CORRUPT!
+ob_clean(); 
 
 echo json_encode([
     'status' => $status,

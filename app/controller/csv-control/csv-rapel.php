@@ -26,6 +26,36 @@ function sendJsonResponse($status, $message, $data = []) {
     exit;
 }
 
+// --- FUNGSI PEMBERSIH FORMAT MATA UANG ---
+function cleanRupiah($val) {
+    if (empty($val)) return 0;
+    
+    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
+    if (is_numeric($val)) return floatval($val);
+    
+    $val = (string)$val;
+    // Hapus karakter huruf (Rp, rp) dan spasi
+    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
+    
+    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
+    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
+        if (strrpos($val, ',') > strrpos($val, '.')) {
+            $val = str_replace('.', '', $val); // hapus titik ribuan
+            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
+        } else {
+            // Jika format English (Contoh: 36,881.30)
+            $val = str_replace(',', '', $val); // hapus koma ribuan
+        }
+    } elseif (strpos($val, ',') !== false) {
+        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
+        $val = str_replace(',', '.', $val);
+    }
+    
+    // Konversi akhir ke tipe Float
+    return floatval($val);
+}
+
 // ================================
 // CHECK DATABASE CONNECTION
 // ================================
@@ -110,7 +140,11 @@ if (!in_array($mimeType, $allowedMimeTypes)) {
 try {
     $spreadsheet = IOFactory::load($fileTmpPath);
     $sheet = $spreadsheet->getActiveSheet();
-    $data = $sheet->toArray(null, true, true, true);
+    
+    // PERBAIKAN PENTING:
+    // Parameter ke-3 (formatData) diubah jadi FALSE agar Excel tidak 
+    // memaksa mengambil string berformat "Rp", melainkan angka aslinya.
+    $data = $sheet->toArray(null, true, false, true);
 } catch (Exception $e) {
     sendJsonResponse('error', 'Gagal membaca file: ' . $e->getMessage());
 }
@@ -167,6 +201,9 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     
     $row = $data[$i];
     $processedRows++;
+
+    $id_karyawan = null;
+    $nama_lengkap = null;
 
     // ================================
     // SKIP EMPTY ROWS
@@ -279,7 +316,7 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     }
 
     // ================================
-    // CONVERT NOMINAL
+    // CONVERT NOMINAL (PERBAIKAN DI SINI)
     // ================================
     if (empty($nominal) && $nominal !== '0') {
         $errorCount++;
@@ -287,63 +324,8 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         continue;
     }
 
-    // Bersihkan semua karakter KECUALI angka, titik, dan koma (Rp, spasi, minus akan hilang)
-    $nominal_clean = preg_replace('/[^0-9.,]/', '', $nominal);
-    
-    $hasDot = strpos($nominal_clean, '.') !== false;
-    $hasComma = strpos($nominal_clean, ',') !== false;
-
-    // Skenario 1: Ada Titik DAN Koma (misal: 1.000.000,50 atau 1,000,000.56)
-    if ($hasDot && $hasComma) {
-        $lastDot = strrpos($nominal_clean, '.');
-        $lastComma = strrpos($nominal_clean, ',');
-        
-        if ($lastDot > $lastComma) {
-            // Titik di akhir -> Format Internasional (1,000.56)
-            $nominal_clean = str_replace(',', '', $nominal_clean);
-        } else {
-            // Koma di akhir -> Format Indonesia (1.000,5)
-            $nominal_clean = str_replace('.', '', $nominal_clean); // buang pemisah ribuan
-            $nominal_clean = str_replace(',', '.', $nominal_clean); // ubah koma jadi titik desimal
-        }
-    } 
-    // Skenario 2: Hanya ada TITIK (misal: 1.000.000 atau 1000.56)
-    elseif ($hasDot) {
-        // Cek berapa banyak titiknya
-        if (substr_count($nominal_clean, '.') > 1) {
-            // Jika lebih dari 1 titik (1.000.000), ini PASTI pemisah ribuan
-            $nominal_clean = str_replace('.', '', $nominal_clean);
-        } else {
-            // Jika cuma ada 1 titik, lihat digit di belakang titik ada berapa
-            $parts = explode('.', $nominal_clean);
-            if (strlen(end($parts)) === 3) {
-                // Kalau pas 3 digit belakang (1.000), ini pemisah ribuan (Seribu)
-                $nominal_clean = str_replace('.', '', $nominal_clean);
-            } else {
-                // Kalau bukan 3 digit (misal .5 atau .56), ini adalah desimal
-                // Biarkan titiknya tetap ada
-            }
-        }
-    } 
-    // Skenario 3: Hanya ada KOMA (misal: 1,000,000 atau 1000,5)
-    elseif ($hasComma) {
-        if (substr_count($nominal_clean, ',') > 1) {
-            // Lebih dari 1 koma, pasti format US/Internasional (1,000,000)
-            $nominal_clean = str_replace(',', '', $nominal_clean);
-        } else {
-            $parts = explode(',', $nominal_clean);
-            if (strlen(end($parts)) === 3) {
-                // Pas 3 digit (1,000), ini ribuannya orang bule
-                $nominal_clean = str_replace(',', '', $nominal_clean);
-            } else {
-                // Bukan 3 digit (1000,5), berarti koma ini adalah desimal Indonesia
-                $nominal_clean = str_replace(',', '.', $nominal_clean);
-            }
-        }
-    }
-    
-    // Konversi string yang sudah sangat bersih menjadi angka pecahan riil (float)
-    $nominal_rapel = (float) $nominal_clean;
+    // Menggunakan fungsi cleanRupiah agar fleksibel membaca format Rp ataupun angka murni
+    $nominal_rapel = cleanRupiah($nominal);
 
     if ($nominal_rapel <= 0) {
         $errorCount++;
@@ -359,13 +341,9 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     }
 
     // Normalisasi dan Sanitize Keterangan
-    // Hapus spasi kosong berlebih di awal/akhir dan di antara kata, 
-    // serta seragamkan penggunaan huruf kapital (agar "Rapel" sama dengan "RAPEL")
-    $keterangan = trim($keterangan); // Buang spasi ujung-ujung
-    $keterangan = preg_replace('/\s+/', ' ', $keterangan); // Ubah spasi dobel jadi spasi tunggal
-    $keterangan = substr($keterangan, 0, 500); // Limit length
-    
-    // Opsional tapi sangat disarankan: Buat huruf jadi kapital semua untuk pengecekan (biar aman)
+    $keterangan = trim($keterangan); 
+    $keterangan = preg_replace('/\s+/', ' ', $keterangan); 
+    $keterangan = substr($keterangan, 0, 500); 
     $keterangan = strtoupper($keterangan);
 
     // ================================
@@ -379,14 +357,13 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         continue;
     }
     
-    // Tambahkan variabel $keterangan ke dalam pengecekan (iss = integer, string, string)
     $stmtCheck->bind_param("iss", $id_karyawan, $tgl_rapel, $keterangan);
     $stmtCheck->execute();
     $stmtCheck->store_result();
 
     if ($stmtCheck->num_rows == 0) {
         // ================================
-        // INSERT NEW DATA (Jika Keterangan beda, buat baru)
+        // INSERT NEW DATA
         // ================================
         $stmtCheck->close();
         
@@ -422,11 +399,10 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
         
     } else {
         // ================================
-        // UPDATE EXISTING DATA (Jika ID, Tgl, dan Keterangan sama persis)
+        // UPDATE EXISTING DATA
         // ================================
         $stmtCheck->close();
         
-        // Kita hanya perlu update nominalnya saja, karena keterangannya sudah pasti sama
         $stmtUpdate = $koneksi->prepare("
             UPDATE tb_rapel 
             SET nominal_rapel = ? 
@@ -439,7 +415,6 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
             continue;
         }
         
-        // diss = double (nominal), integer (id), string (tgl), string (ket)
         $stmtUpdate->bind_param("diss", $nominal_rapel, $id_karyawan, $tgl_rapel, $keterangan);
         
         if ($stmtUpdate->execute()) {
@@ -494,7 +469,7 @@ if ($errorCount > 0 && $successCount == 0) {
     $status = 'warning';
 }
 
-// Get sample errors (Tampilkan hingga 50 rincian error pertama)
+// Get sample errors
 $errorSample = array_slice($errors, 0, 50);
 
 // ================================

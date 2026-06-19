@@ -10,6 +10,36 @@ require '../../../vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
+// --- FUNGSI PEMBERSIH FORMAT MATA UANG ---
+function cleanRupiah($val) {
+    if (empty($val)) return 0;
+    
+    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
+    if (is_numeric($val)) return floatval($val);
+    
+    $val = (string)$val;
+    // Hapus karakter huruf (Rp, rp) dan spasi
+    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
+    
+    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
+    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
+        if (strrpos($val, ',') > strrpos($val, '.')) {
+            $val = str_replace('.', '', $val); // hapus titik ribuan
+            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
+        } else {
+            // Jika format English (Contoh: 36,881.30)
+            $val = str_replace(',', '', $val); // hapus koma ribuan
+        }
+    } elseif (strpos($val, ',') !== false) {
+        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
+        $val = str_replace(',', '.', $val);
+    }
+    
+    // Konversi akhir ke tipe Float
+    return floatval($val);
+}
+
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         throw new Exception("Metode request tidak valid.");
@@ -21,7 +51,11 @@ try {
 
     $fileTmpPath = $_FILES['file_csv_pinjaman']['tmp_name'];
     $spreadsheet = IOFactory::load($fileTmpPath);
-    $data = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+    
+    // PERBAIKAN PENTING 1:
+    // Parameter ke-3 (formatData) diubah jadi FALSE agar Excel tidak 
+    // memaksa mengambil string berformat "Rp", melainkan angka aslinya.
+    $data = $spreadsheet->getActiveSheet()->toArray(null, true, false, true);
     
     $successCount = 0;
     $errorCount = 0;
@@ -33,6 +67,10 @@ try {
     for ($i = $startRow; $i <= count($data); $i++) {
         $row = $data[$i];
         
+        // PERBAIKAN PENTING 2 (PENGAMAN LOOP):
+        // Reset variabel penampung di awal loop agar data tidak bocor ke baris berikutnya
+        $id_karyawan = null;
+
         $nik = trim($row['B'] ?? '');
         if (empty($nik)) continue;
 
@@ -51,9 +89,9 @@ try {
 
         $id_karyawan = $resK['id_karyawan'];
 
-        // 2. Bersihkan Nominal Total
-        $nominal = trim($row['E'] ?? '0');
-        $nominal_total = (float) preg_replace('/[^0-9.]/', '', str_replace(',', '.', $nominal));
+        // 2. Bersihkan Nominal Total menggunakan cleanRupiah
+        $nominal = $row['E'] ?? '0';
+        $nominal_total = cleanRupiah($nominal);
 
         // 3. Konversi Tanggal Pinjaman (Kolom F)
         $tglPinjamRaw = $row['F'] ?? '';
