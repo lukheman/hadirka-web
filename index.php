@@ -13,6 +13,13 @@ error_reporting(E_ALL ^ (E_NOTICE | E_WARNING));
  * Memisahkan logika routing agar mudah dikelola
  */
 $page = $_GET['page'] ?? 'home';
+
+// CRITICAL FIX: CEGAT LOGOUT DI SINI SEBELUM HTML DI-RENDER SECARA NATIVE
+if ($page === 'logout') {
+    require_once 'app/controller/logout.php';
+    exit;
+}
+
 $routes = [
     // Master Data
     'data-karyawan'   => 'view/master-data/data-karyawan.php',
