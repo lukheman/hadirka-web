@@ -111,16 +111,17 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                                     <tr>
                                         <th width="5%">No</th>
                                         <th width="15%">Tanggal</th>
-                                        <th width="25%">Kategori Akun</th>
-                                        <th width="25%">Keterangan</th>
+                                        <th width="20%">Kategori Akun</th>
+                                        <th width="20%">Keterangan</th>
                                         <th width="10%">Arus Kas</th>
+                                        <th width="10%">Posisi</th>
                                         <th width="15%">Nominal</th>
                                         <th width="5%" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbody-<?= $id ?>">
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">
+                                        <td colspan="8" class="text-center text-muted py-4">
                                             <div class="spinner-border spinner-border-sm text-primary"></div> Memuat data...
                                         </td>
                                     </tr>
@@ -168,23 +169,30 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">Tipe Arus Kas</label>
                             <select class="form-select" name="tipe_arus" required>
                                 <option value="Masuk">Uang Masuk (Kas Bertambah)</option>
                                 <option value="Keluar">Uang Keluar (Kas Berkurang)</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label">Posisi Neraca (D/K)</label>
+                            <select class="form-select" name="tipe_neraca" required>
+                                <option value="debit">Debit</option>
+                                <option value="kredit">Kredit</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label">Nominal (Rp)</label>
                             <input type="number" class="form-control" name="nominal" placeholder="Contoh: 5000000" required>
                         </div>
                     </div>
                     <div class="mb-3">
-    <label class="form-label">Upload Bukti Transaksi <small class="text-muted">(Opsional, Max 1MB/Gambar otomatis dikompres)</small></label>
-    <input type="file" class="form-control file-bukti" id="input_bukti_add" name="bukti_transaksi" accept="image/*,application/pdf">
-    <div id="preview_bukti_add" class="mt-2 text-sm text-muted"></div>
-</div>
+                        <label class="form-label">Upload Bukti Transaksi <small class="text-muted">(Opsional, Max 1MB/Gambar otomatis dikompres)</small></label>
+                        <input type="file" class="form-control file-bukti" id="input_bukti_add" name="bukti_transaksi" accept="image/*,application/pdf">
+                        <div id="preview_bukti_add" class="mt-2 text-sm text-muted"></div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Keterangan Tambahan</label>
                         <textarea class="form-control" name="keterangan" rows="2" placeholder="Contoh: Pembayaran Invoice INV001 (Opsional)"></textarea>
@@ -230,23 +238,30 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">Tipe Arus Kas</label>
                             <select class="form-select" name="tipe_arus" id="edit_arus" required>
                                 <option value="Masuk">Uang Masuk (Kas Bertambah)</option>
                                 <option value="Keluar">Uang Keluar (Kas Berkurang)</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label">Posisi Neraca (D/K)</label>
+                            <select class="form-select" name="tipe_neraca" id="edit_neraca" required>
+                                <option value="debit">Debit</option>
+                                <option value="kredit">Kredit</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label">Nominal (Rp)</label>
                             <input type="number" class="form-control" name="nominal" id="edit_nominal" required>
                         </div>
                     </div>
                     <div class="mb-3">
-    <label class="form-label">Upload Bukti Transaksi <small class="text-muted">(Kosongkan jika tidak diganti)</small></label>
-    <input type="file" class="form-control file-bukti" id="input_bukti_edit" name="bukti_transaksi" accept="image/*,application/pdf">
-    <div id="preview_bukti_edit" class="mt-2 text-sm text-muted"></div>
-</div>
+                        <label class="form-label">Upload Bukti Transaksi <small class="text-muted">(Kosongkan jika tidak diganti)</small></label>
+                        <input type="file" class="form-control file-bukti" id="input_bukti_edit" name="bukti_transaksi" accept="image/*,application/pdf">
+                        <div id="preview_bukti_edit" class="mt-2 text-sm text-muted"></div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Keterangan Tambahan</label>
                         <textarea class="form-control" name="keterangan" id="edit_keterangan" rows="2" placeholder="(Opsional)"></textarea>
@@ -275,7 +290,10 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
     let processedFileEdit = null;
 
     // Fungsi Kompresi Gambar
-    async function compressImage(file, { quality = 0.7, type = 'image/jpeg' }) {
+    async function compressImage(file, {
+        quality = 0.7,
+        type = 'image/jpeg'
+    }) {
         if (!file.type.startsWith('image/')) return file;
         const imageBitmap = await createImageBitmap(file);
         const canvas = document.createElement('canvas');
@@ -316,7 +334,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
             const file = this.files[0];
             const isAddModal = this.id === 'input_bukti_add';
             const previewBox = document.getElementById(isAddModal ? 'preview_bukti_add' : 'preview_bukti_edit');
-            
+
             // Reset state
             if (isAddModal) processedFileAdd = null;
             else processedFileEdit = null;
@@ -332,15 +350,17 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                     if (isAddModal) processedFileAdd = file;
                     else processedFileEdit = file;
                     previewBox.innerHTML = `<span class="text-primary fw-bold"><i class="bx bxs-file-pdf"></i> ${file.name}</span>`;
-                
+
                 } else if (file.type.startsWith('image/')) {
                     previewBox.innerHTML = '<span class="spinner-border spinner-border-sm text-primary me-2"></span> Mengompres gambar...';
                     try {
-                        const compressedFile = await compressImage(file, { quality: 0.7 });
-                        
+                        const compressedFile = await compressImage(file, {
+                            quality: 0.7
+                        });
+
                         if (isAddModal) processedFileAdd = compressedFile;
                         else processedFileEdit = compressedFile;
-                        
+
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             previewBox.innerHTML = `
@@ -396,7 +416,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                     const rows = dataJSON.data[kelompok] || [];
 
                     if (rows.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Belum ada transaksi di kelompok ${kelompok}.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Belum ada transaksi di kelompok ${kelompok}.</td></tr>`;
                         divSummary.style.setProperty("display", "none", "important");
                     } else {
                         let no = 1;
@@ -405,31 +425,34 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                             const iconArus = row.tipe_arus === 'Masuk' ? 'bx-down-arrow-circle' : 'bx-up-arrow-circle';
                             const btnBukti = row.bukti_transaksi ?
                                 `<button class="btn btn-sm btn-info me-1" onclick="lihatBukti('${row.bukti_transaksi}')" title="Lihat Bukti"><i class="bx bx-file"></i></button>` : '';
+                            const badgeNeraca = row.tipe_neraca === 'debit' ? 'bg-label-primary' : 'bg-label-warning'; // Gunakan class css template Anda
+                            const txtNeraca = row.tipe_neraca.toUpperCase();
 
                             // Penting: Gunakan tipe_arus dan nominal_raw dari Javascript objek langsung, 
                             // jangan sembunyikan di attribute HTML yang rawan error
                             tbody.innerHTML += `
-                                <tr>
-                                    <td>${no++}</td>
-                                    <td>${row.tanggal}</td>
-                                    <td><span class="text-primary fw-semibold">${row.kode_akun}</span> - ${row.nama_akun}</td>
-                                    <td>${row.keterangan}</td>
-                                    <td><span class="badge ${badgeColor}" data-arus="${row.tipe_arus}"><i class="bx ${iconArus} me-1"></i>${row.tipe_arus}</span></td>
-                                    <td class="fw-bold"><span class="nominal-val" data-nilai="${row.nominal_raw}">Rp ${row.nominal}</span></td>
-                                    <td class="text-center text-nowrap">
-    ${btnBukti}
-    <button class="btn btn-sm btn-warning me-1" 
-        data-id="${row.id_transaksi}"
-        data-tanggal="${row.tanggal_raw}"
-        data-kategori="${row.id_kategori}"
-        data-arus="${row.tipe_arus}"
-        data-nominal="${row.nominal_raw}"
-        data-ket="${row.keterangan}"
-        data-bukti="${row.bukti_transaksi}" 
-        onclick="bukaModalEdit(this)"><i class="bx bx-edit"></i></button>
-    <button class="btn btn-sm btn-danger" onclick="hapusTransaksi(${row.id_transaksi})"><i class="bx bx-trash"></i></button>
-</td>
-                                </tr>
+                            <tr>
+                                <td>${no++}</td>
+                                <td>${row.tanggal}</td>
+                                <td><span class="text-primary fw-semibold">${row.kode_akun}</span> - ${row.nama_akun}</td>
+                                <td>${row.keterangan}</td>
+                                <td><span class="badge ${badgeColor}" data-arus="${row.tipe_arus}"><i class="bx ${iconArus} me-1"></i>${row.tipe_arus}</span></td>
+                                <td><span class="badge bg-label-secondary text-dark fw-bold">${txtNeraca}</span></td> <td class="fw-bold"><span class="nominal-val" data-nilai="${row.nominal_raw}">Rp ${row.nominal}</span></td>
+                                <td class="text-center text-nowrap">
+                                    ${btnBukti}
+                                    <button class="btn btn-sm btn-warning me-1" 
+                                        data-id="${row.id_transaksi}"
+                                        data-tanggal="${row.tanggal_raw}"
+                                        data-kategori="${row.id_kategori}"
+                                        data-arus="${row.tipe_arus}"
+                                        data-neraca="${row.tipe_neraca}" 
+                                        data-nominal="${row.nominal_raw}"
+                                        data-ket="${row.keterangan}"
+                                        data-bukti="${row.bukti_transaksi}" 
+                                        onclick="bukaModalEdit(this)"><i class="bx bx-edit"></i></button>
+                                        <button class="btn btn-sm btn-danger" onclick="hapusTransaksi(${row.id_transaksi})"><i class="bx bx-trash"></i></button>
+                                   </td>
+                               </tr>
                             `;
                         });
 
@@ -482,19 +505,23 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
     document.getElementById('formTambahTransaksi').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnSimpan');
-        btn.innerHTML = 'Menyimpan...'; btn.disabled = true;
+        btn.innerHTML = 'Menyimpan...';
+        btn.disabled = true;
 
         const formData = new FormData(this);
         formData.append('action', 'add');
-        
+
         // Ganti file raw bawaan form dengan file yang sudah dikompres
-        formData.delete('bukti_transaksi'); 
+        formData.delete('bukti_transaksi');
         if (processedFileAdd) {
             formData.append('bukti_transaksi', processedFileAdd);
         }
 
         try {
-            const res = await fetch('app/controller/act-kelola-transaksi.php', { method: 'POST', body: formData });
+            const res = await fetch('app/controller/act-kelola-transaksi.php', {
+                method: 'POST',
+                body: formData
+            });
             const data = await res.json();
             if (data.status === 'success') {
                 this.reset();
@@ -502,11 +529,14 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                 document.getElementById('preview_bukti_add').innerHTML = '';
                 bootstrap.Modal.getInstance(document.getElementById('modalTambahTransaksi')).hide();
                 loadDataTransaksi();
-            } else { alert(data.msg); }
+            } else {
+                alert(data.msg);
+            }
         } catch (error) {
             alert('Terjadi kesalahan sistem.');
         } finally {
-            btn.innerHTML = '<i class="bx bx-save me-1"></i> Simpan Transaksi'; btn.disabled = false;
+            btn.innerHTML = '<i class="bx bx-save me-1"></i> Simpan Transaksi';
+            btn.disabled = false;
         }
     });
 
@@ -514,12 +544,13 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
     function bukaModalEdit(btn) {
         // Reset file input dan preview tiap kali modal dibuka
         document.getElementById('input_bukti_edit').value = '';
-        processedFileEdit = null; 
+        processedFileEdit = null;
 
         document.getElementById('edit_id_transaksi').value = btn.getAttribute('data-id');
         document.getElementById('edit_tanggal').value = btn.getAttribute('data-tanggal');
         document.getElementById('edit_kategori').value = btn.getAttribute('data-kategori');
         document.getElementById('edit_arus').value = btn.getAttribute('data-arus');
+        document.getElementById('edit_neraca').value = btn.getAttribute('data-neraca'); // Tambahkan baris ini
         document.getElementById('edit_nominal').value = btn.getAttribute('data-nominal');
         document.getElementById('edit_keterangan').value = btn.getAttribute('data-ket');
 
@@ -551,30 +582,37 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
     document.getElementById('formEditTransaksi').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnUpdate');
-        btn.innerHTML = 'Memperbarui...'; btn.disabled = true;
+        btn.innerHTML = 'Memperbarui...';
+        btn.disabled = true;
 
         const formData = new FormData(this);
         formData.append('action', 'edit');
 
         // Ganti file raw bawaan form dengan file yang sudah dikompres
-        formData.delete('bukti_transaksi'); 
+        formData.delete('bukti_transaksi');
         if (processedFileEdit) {
             formData.append('bukti_transaksi', processedFileEdit);
         }
 
         try {
-            const res = await fetch('app/controller/act-kelola-transaksi.php', { method: 'POST', body: formData });
+            const res = await fetch('app/controller/act-kelola-transaksi.php', {
+                method: 'POST',
+                body: formData
+            });
             const data = await res.json();
             if (data.status === 'success') {
                 this.reset();
                 processedFileEdit = null;
                 bootstrap.Modal.getInstance(document.getElementById('modalEditTransaksi')).hide();
                 loadDataTransaksi();
-            } else { alert(data.msg); }
+            } else {
+                alert(data.msg);
+            }
         } catch (error) {
             alert('Terjadi kesalahan sistem saat memperbarui data.');
         } finally {
-            btn.innerHTML = '<i class="bx bx-check me-1"></i> Update Transaksi'; btn.disabled = false;
+            btn.innerHTML = '<i class="bx bx-check me-1"></i> Update Transaksi';
+            btn.disabled = false;
         }
     });
 

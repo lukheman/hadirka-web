@@ -198,19 +198,20 @@ function isMenuOpen($pages_array, $current_page)
                 </li>
                 <li class="menu-item <?= isActive('data-thr', $current_page); ?>">
                     <a class="menu-link" href="data-thr">
-                        <div>Manajemen THR</div>
+                        <div>Sub THR Karyawan</div>
                     </a>
                 </li>
             </ul>
         </li>
 
         <?php
-        $finance_pages = ['laporan-keuangan', 'kelola-transaksi'];
+        // REVISI: Gabungkan sub-menu baru ke variabel deteksi accordion open
+        $finance_pages = ['kelola-transaksi', 'jurnal-umum', 'buku-besar', 'neraca-saldo', 'laporan-keuangan'];
         ?>
         <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-money"></i>
-                <div data-i18n="Payroll System">Manajemen Keuangan</div>
+                <i class="menu-icon tf-icons bx bx-spreadsheet"></i>
+                <div data-i18n="Manajemen Keuangan">Manajemen Keuangan</div>
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('kelola-transaksi', $current_page); ?>">
@@ -218,11 +219,24 @@ function isMenuOpen($pages_array, $current_page)
                         <div>Kelola Transaksi</div>
                     </a>
                 </li>
-            </ul>
-            <ul class="menu-sub">
+                <li class="menu-item <?= isActive('jurnal-umum', $current_page); ?>">
+                    <a class="menu-link" href="jurnal-umum">
+                        <div>Jurnal Umum</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('buku-besar', $current_page); ?>">
+                    <a class="menu-link" href="buku-besar">
+                        <div>Buku Besar</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('neraca-saldo', $current_page); ?>">
+                    <a class="menu-link" href="neraca-saldo">
+                        <div>Neraca Saldo</div>
+                    </a>
+                </li>
                 <li class="menu-item <?= isActive('laporan-keuangan', $current_page); ?>">
                     <a class="menu-link" href="laporan-keuangan">
-                        <div>Laporan Keuangan</div>
+                        <div>Laporan Laba Rugi</div>
                     </a>
                 </li>
             </ul>

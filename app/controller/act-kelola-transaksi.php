@@ -17,10 +17,11 @@ if ($action == 'add') {
     $tanggal_transaksi = mysqli_real_escape_string($koneksi, $_POST['tanggal_transaksi']);
     $id_kategori       = mysqli_real_escape_string($koneksi, $_POST['id_kategori']);
     $tipe_arus         = mysqli_real_escape_string($koneksi, $_POST['tipe_arus']);
+    $tipe_neraca       = mysqli_real_escape_string($koneksi, $_POST['tipe_neraca']);
     $nominal           = mysqli_real_escape_string($koneksi, $_POST['nominal']);
     $keterangan        = mysqli_real_escape_string($koneksi, $_POST['keterangan']);
 
-    if (empty($tanggal_transaksi) || empty($id_kategori) || empty($nominal)) {
+    if (empty($tanggal_transaksi) || empty($id_kategori) || empty($nominal) || empty($tipe_neraca)) { // <-- Tambah validasi
         echo json_encode(['status' => 'error', 'msg' => 'Data formulir tidak lengkap!']);
         exit;
     }
@@ -56,8 +57,8 @@ if ($action == 'add') {
         }
     }
 
-    $query = "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan, bukti_transaksi) 
-              VALUES ('$tanggal_transaksi', '$id_kategori', '$nominal', '$tipe_arus', '$keterangan', '$bukti_name')";
+    $query = "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan, bukti_transaksi, tipe_neraca) 
+              VALUES ('$tanggal_transaksi', '$id_kategori', '$nominal', '$tipe_arus', '$keterangan', '$bukti_name', '$tipe_neraca')";
 
     if (mysqli_query($koneksi, $query)) {
         echo json_encode(['status' => 'success', 'msg' => 'Data berhasil disimpan']);
@@ -73,10 +74,11 @@ if ($action == 'edit') {
     $tanggal_transaksi = mysqli_real_escape_string($koneksi, $_POST['tanggal_transaksi']);
     $id_kategori       = mysqli_real_escape_string($koneksi, $_POST['id_kategori']);
     $tipe_arus         = mysqli_real_escape_string($koneksi, $_POST['tipe_arus']);
+    $tipe_neraca       = mysqli_real_escape_string($koneksi, $_POST['tipe_neraca']);
     $nominal           = mysqli_real_escape_string($koneksi, $_POST['nominal']);
     $keterangan        = mysqli_real_escape_string($koneksi, $_POST['keterangan']);
 
-    if (empty($id_transaksi) || empty($tanggal_transaksi) || empty($id_kategori) || empty($nominal)) {
+    if (empty($id_transaksi) || empty($tanggal_transaksi) || empty($id_kategori) || empty($nominal) || empty($tipe_neraca)) { // <-- Tambah validasi
         echo json_encode(['status' => 'error', 'msg' => 'Data formulir tidak lengkap!']);
         exit;
     }
@@ -128,6 +130,7 @@ if ($action == 'edit') {
                   id_kategori = '$id_kategori', 
                   nominal = '$nominal', 
                   tipe_arus = '$tipe_arus', 
+                  tipe_neraca = '$tipe_neraca', -- <-- Tambah ini
                   keterangan = '$keterangan' 
                   $update_bukti 
               WHERE id_transaksi = '$id_transaksi'";

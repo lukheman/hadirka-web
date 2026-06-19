@@ -44,16 +44,17 @@ if ($query) {
 
         if (isset($data[$kelompok])) {
             $data[$kelompok][] = [
-                'id_transaksi' => $row['id_transaksi'],
-                'id_kategori' => $row['id_kategori'],
-                'tanggal' => date('d M Y', strtotime($row['tanggal_transaksi'])),
-                'tanggal_raw' => $row['tanggal_transaksi'],
-                'kode_akun' => $row['kode_akun'],
-                'nama_akun' => $row['nama_akun'],
-                'keterangan' => htmlspecialchars($row['keterangan']),
-                'tipe_arus' => $row['tipe_arus'],
-                'nominal' => number_format($row['nominal'], 0, ',', '.'),
-                'nominal_raw' => (int)$row['nominal'],
+                'id_transaksi'    => $row['id_transaksi'],
+                'id_kategori'     => $row['id_kategori'],
+                'tanggal'         => date('d M Y', strtotime($row['tanggal_transaksi'])),
+                'tanggal_raw'     => $row['tanggal_transaksi'],
+                'kode_akun'       => $row['kode_akun'],
+                'nama_akun'       => $row['nama_akun'],
+                'keterangan'      => htmlspecialchars($row['keterangan']),
+                'tipe_arus'       => $row['tipe_arus'],
+                'tipe_neraca'     => $row['tipe_neraca'], // <-- Tambahkan baris ini
+                'nominal'         => number_format($row['nominal'], 0, ',', '.'),
+                'nominal_raw'     => (int)$row['nominal'],
                 'bukti_transaksi' => $row['bukti_transaksi']
             ];
         }
