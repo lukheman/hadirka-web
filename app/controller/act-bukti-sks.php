@@ -1,21 +1,26 @@
 <?php
 header('Content-Type: application/json');
-include "../config/koneksi.php";
+include __DIR__."/../config/koneksi.php";
 
-$action = $_GET['action'] ?? '';
+// Deteksi action dari POST atau GET
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 if ($action == 'update-status') {
-    $id = $_GET['id'];
-    $status = $_GET['status'];
+    // Karena menggunakan FormData dari Javascript, kita tangkap menggunakan $_POST
+    $id = mysqli_real_escape_string($koneksi, $_POST['id']);
+    $status = mysqli_real_escape_string($koneksi, $_POST['status']);
+    $ket_admin = mysqli_real_escape_string($koneksi, $_POST['ket_admin'] ?? '');
     $tgl_diterima = date('Y-m-d H:i:s');
 
-    $sql = "UPDATE tb_bukti_sks SET status = '$status', tgl_diterima ='$tgl_diterima' WHERE id_bukti_sks = '$id'";
+    // Tambahkan ket_admin ke Query
+    $sql = "UPDATE tb_bukti_sks SET status = '$status', ket_admin = '$ket_admin', tgl_diterima ='$tgl_diterima' WHERE id_bukti_sks = '$id'";
     
     if (mysqli_query($koneksi, $sql)) {
         echo json_encode(['status' => 'success']);
     } else {
-        echo json_encode(['status' => 'error']);
+        echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
     }
+    exit;
 }
 
 if ($action == 'delete') {
@@ -33,7 +38,8 @@ if ($action == 'delete') {
     if (mysqli_query($koneksi, $sql)) {
         echo json_encode(['status' => 'success']);
     } else {
-        echo json_encode(['status' => 'error']);
+        echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
     }
+    exit;
 }
 ?>

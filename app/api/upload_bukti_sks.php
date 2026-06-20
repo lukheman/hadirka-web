@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 
-require_once 'koneksi-api.php'; // Hubungkan ke database
+require_once __DIR__.'/koneksi-api.php'; // Hubungkan ke database
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode([

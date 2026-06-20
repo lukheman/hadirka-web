@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 
-require_once 'koneksi-api.php'; 
+require_once __DIR__.'/koneksi-api.php'; 
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -22,8 +22,8 @@ if (empty($id_karyawan)) {
     exit;
 }
 
-// ✅ FIX: Query dengan id_karyawan di SELECT
-$sql = "SELECT id_bukti_sks, id_karyawan, tgl_sks, bukti_sks, tgl_kirim, tgl_diterima, status 
+// ✅ FIX: Query ditambahkan ket_admin
+$sql = "SELECT id_bukti_sks, id_karyawan, tgl_sks, bukti_sks, tgl_kirim, tgl_diterima, status, ket_admin 
         FROM tb_bukti_sks 
         WHERE id_karyawan = '$id_karyawan'
         ORDER BY tgl_kirim DESC";
@@ -33,15 +33,15 @@ $result = mysqli_query($koneksi, $sql);
 $data_sks = [];
 if ($result) {
     while ($row = mysqli_fetch_assoc($result)) {
-        // ✅ FIX: Tambahkan id_karyawan dan kirim full timestamp
         $data_sks[] = [
             'id_bukti_sks' => (int)$row['id_bukti_sks'],
-            'id_karyawan'  => $row['id_karyawan'], // ✅ DITAMBAHKAN
-            'tgl_sks'      => $row['tgl_sks'], // Full timestamp, Flutter yang parse
+            'id_karyawan'  => $row['id_karyawan'], 
+            'tgl_sks'      => $row['tgl_sks'], 
             'bukti_sks'    => $row['bukti_sks'],
             'tgl_kirim'    => $row['tgl_kirim'],
-            'tgl_diterima' => $row['tgl_diterima'], // Bisa null
+            'tgl_diterima' => $row['tgl_diterima'], 
             'status'       => $row['status'],
+            'ket_admin'    => $row['ket_admin'], // ✅ DITAMBAHKAN
         ];
     }
 } else {
