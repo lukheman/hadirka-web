@@ -647,6 +647,57 @@
         }
     }
 
+    // =========================================================================
+    // FIX DROPDOWN TERPOTONG DI DALAM DATATABLES
+    // =========================================================================
+    
+    // Saat dropdown dibuka, pindahkan elemen menu ke dalam <body>
+    $('body').on('show.bs.dropdown', '.table-responsive, .dataTables_scrollBody', function (e) {
+        // Ambil elemen tombol yang diklik dan menu dropdown-nya
+        var $button = $(e.target);
+        var $menu = $button.next('.dropdown-menu');
+        
+        // Pindahkan menu ke body agar terbebas dari overflow tabel
+        $('body').append($menu.detach());
+        
+        // Kalkulasi posisi tombol saat ini di layar
+        var buttonOffset = $button.offset();
+        
+        // Terapkan posisi baru ke menu dropdown secara absolut
+        $menu.css({
+            'display': 'block',
+            'position': 'absolute',
+            'top': buttonOffset.top + $button.outerHeight(),
+            // Pengurangan lebar agar sejajar di kanan (karena dropdown-menu-end)
+            'left': buttonOffset.left - $menu.outerWidth() + $button.outerWidth(),
+            'z-index': 9999 // Pastikan melayang di atas segalanya
+        });
+        
+        // Simpan referensi ke parent asli agar bisa dikembalikan nanti
+        $menu.data('parent', $button.parent());
+    });
+
+    // Saat dropdown ditutup, kembalikan posisi menu ke dalam tabel asalnya
+    $('body').on('hide.bs.dropdown', function (e) {
+        $('.dropdown-menu').each(function() {
+            var $parent = $(this).data('parent');
+            if ($parent) {
+                // Kembalikan ke tempat semula
+                $parent.append($(this).detach());
+                // Bersihkan CSS yang ditambahkan secara dinamis tadi
+                $(this).css({
+                    'display': '',
+                    'position': '',
+                    'top': '',
+                    'left': '',
+                    'z-index': ''
+                });
+                $(this).removeData('parent');
+            }
+        });
+    });
+    // =========================================================================
+
     document.addEventListener("DOMContentLoaded", () => {
         setDefaultDateRange();
         loadPengajuan();
