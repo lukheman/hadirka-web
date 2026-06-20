@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Makassar');
 
 // Menggunakan variabel $koneksi sesuai permintaan
 // $koneksi = mysqli_connect('localhost', 'root', '', 'database_outsoorsing');
