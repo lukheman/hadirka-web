@@ -17,6 +17,15 @@ while ($row = mysqli_fetch_assoc($q)) {
         'Ditolak'  => 'danger'
     ][$status];
 
+    // --- PERBAIKAN TANGGAL DIPROSES ---
+    // Cek apakah tgl_diterima null, kosong, atau default 0000-00-00
+    if (!empty($row['tgl_diterima']) && $row['tgl_diterima'] != '0000-00-00 00:00:00') {
+        $tgl_diproses = date('d/m/y H:i', strtotime($row['tgl_diterima']));
+    } else {
+        $tgl_diproses = '-'; // Tampilkan strip jika belum diproses
+    }
+    // ----------------------------------
+
     echo '<tr>
         <td>
             <div class="d-flex align-items-center">
@@ -31,7 +40,9 @@ while ($row = mysqli_fetch_assoc($q)) {
         </td>
         <td><i class="bx bx-calendar-event me-1 text-primary"></i>'.date('d/m/Y', strtotime($row['tgl_sks'])).'</td>
         <td><small class="text-muted">'.date('d/m/y H:i', strtotime($row['tgl_kirim'])).'</small></td>
-        <td><small class="text-muted">'.date('d/m/y H:i', strtotime($row['tgl_diterima'])).'</small></td>
+        
+        <td><small class="text-muted">'.$tgl_diproses.'</small></td>
+        
         <td class="text-center">';
     
     if (!empty($row['bukti_sks'])) {
