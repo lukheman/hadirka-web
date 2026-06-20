@@ -754,23 +754,6 @@
             }
         });
 
-        // Trigger buka modal proses data dari baris tabel
-        document.addEventListener("click", e => {
-            const btnProses = e.target.closest(".btnProses");
-            if (btnProses) {
-                document.getElementById("id_pengajuan").value = btnProses.dataset.id;
-                document.getElementById("infoPengajuan").innerHTML =
-                    `<strong>Karyawan:</strong> ${btnProses.dataset.nama} <br> 
-                     <strong>Nominal:</strong> Rp ${parseInt(btnProses.dataset.nominal).toLocaleString('id-ID')}`;
-
-                document.getElementById("status_pinjaman").value = '';
-                document.getElementById("keterangan_admin").value = '';
-                document.getElementById("formAcc").style.display = 'none';
-
-                new bootstrap.Modal(document.getElementById("modalProsesPengajuan")).show();
-            }
-        });
-
         // Submit form keputusan proses admin
         document.getElementById("formProsesPengajuan").addEventListener("submit", e => {
             e.preventDefault();
@@ -799,45 +782,63 @@
     function closeAllDropdowns() {
         document.querySelectorAll('.custom-dropdown-menu.show').forEach(menu => {
             menu.classList.remove('show');
+            menu.style.top = '';
+            menu.style.left = '';
         });
     }
 
     document.addEventListener('click', function(e) {
+        // Klik tombol titik tiga
         const btn = e.target.closest('.btnDropdownAksi');
-
         if (btn) {
             e.stopPropagation();
             const index = btn.dataset.index;
             const menu = document.getElementById('dropdownMenu_' + index);
-
             if (!menu) return;
 
             const isOpen = menu.classList.contains('show');
-
-            // Tutup semua dropdown dulu
             closeAllDropdowns();
 
             if (!isOpen) {
-                // Hitung posisi tombol di layar
+                // Tampilkan dulu agar offsetWidth bisa dibaca
+                menu.style.visibility = 'hidden';
+                menu.style.display = 'block';
+
                 const rect = btn.getBoundingClientRect();
+                const menuW = menu.offsetWidth;
+                const menuH = menu.offsetHeight;
 
-                menu.classList.add('show');
+                let top = rect.bottom + window.scrollY + 4;
+                let left = rect.right + window.scrollX - menuW;
 
-                // Posisikan menu tepat di bawah tombol
-                let top = rect.bottom + 4;
-                let left = rect.right - menu.offsetWidth;
-
-                // Pastikan tidak keluar dari kanan layar
-                if (left < 0) left = rect.left;
-
-                // Pastikan tidak keluar dari bawah layar
-                if (top + menu.offsetHeight > window.innerHeight) {
-                    top = rect.top - menu.offsetHeight - 4;
+                // Jangan sampai keluar kiri layar
+                if (left < 8) left = rect.left + window.scrollX;
+                // Jangan sampai keluar bawah layar
+                if (rect.bottom + menuH > window.innerHeight) {
+                    top = rect.top + window.scrollY - menuH - 4;
                 }
 
                 menu.style.top = top + 'px';
                 menu.style.left = left + 'px';
+                menu.style.display = '';
+                menu.style.visibility = '';
+                menu.classList.add('show');
             }
+            return;
+        }
+
+        // Klik item .btnProses di dalam dropdown
+        const btnProses = e.target.closest('.btnProses');
+        if (btnProses) {
+            closeAllDropdowns();
+            document.getElementById("id_pengajuan").value = btnProses.dataset.id;
+            document.getElementById("infoPengajuan").innerHTML =
+                `<strong>Karyawan:</strong> ${btnProses.dataset.nama} <br>
+             <strong>Nominal:</strong> Rp ${parseInt(btnProses.dataset.nominal).toLocaleString('id-ID')}`;
+            document.getElementById("status_pinjaman").value = '';
+            document.getElementById("keterangan_admin").value = '';
+            document.getElementById("formAcc").style.display = 'none';
+            new bootstrap.Modal(document.getElementById("modalProsesPengajuan")).show();
             return;
         }
 
