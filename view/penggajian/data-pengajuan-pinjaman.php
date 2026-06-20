@@ -129,21 +129,6 @@
         background: linear-gradient(90deg, #f8f9fc 0%, #eef3ff 100%);
     }
 
-    /* Tweak agar dropdown tidak terpotong oleh scrolling DataTables */
-    table.dataTable.nowrap th, table.dataTable.nowrap td {
-        white-space: nowrap;
-    }
-    
-    /* Memastikan dropdown mendapatkan z-index tertinggi dan posisi absolute-nya ter-render sempurna */
-    .dataTables_scrollBody {
-        overflow: visible !important;
-    }
-    
-    /* Agar area tabel tetap bisa di-scroll secara horizontal walau overflow visible di atas */
-    .dataTables_wrapper {
-        overflow-x: auto;
-    }
-
     .badge-count {
         background: linear-gradient(135deg, var(--success-color) 0%, #13b879 100%);
         color: white;
@@ -455,7 +440,7 @@
             // Dropdown Menu Aksi sesuai get-pengajuan-pinjaman asli
             let btn_aksi = `
             <div class='dropdown'>
-                <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' data-bs-toggle='dropdown' data-bs-boundary='window'>
+                <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' data-bs-toggle='dropdown'>
                     <i class='fa fa-ellipsis-v'></i>
                 </button>
                 <div class='dropdown-menu dropdown-menu-end shadow border-0'>
