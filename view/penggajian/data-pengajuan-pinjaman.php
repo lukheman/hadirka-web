@@ -98,7 +98,8 @@
         gap: 0.4rem;
     }
 
-    .form-control, .form-select {
+    .form-control,
+    .form-select {
         border: 2px solid #e3e6f0;
         border-radius: 8px;
         padding: 0.65rem 1rem;
@@ -106,7 +107,8 @@
         font-size: 0.95rem;
     }
 
-    .form-control:focus, .form-select:focus {
+    .form-control:focus,
+    .form-select:focus {
         border-color: var(--primary-color);
         box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.15);
     }
@@ -149,52 +151,80 @@
         box-shadow: var(--shadow-sm);
     }
 
-    .icon-calendar::before { content: "📅"; margin-right: 0.3rem; }
-    .icon-building::before { content: "🏢"; margin-right: 0.3rem; }
-    .icon-briefcase::before { content: "💼"; margin-right: 0.3rem; }
-    .icon-bank::before { content: "🏦"; margin-right: 0.3rem; }
+    .icon-calendar::before {
+        content: "📅";
+        margin-right: 0.3rem;
+    }
+
+    .icon-building::before {
+        content: "🏢";
+        margin-right: 0.3rem;
+    }
+
+    .icon-briefcase::before {
+        content: "💼";
+        margin-right: 0.3rem;
+    }
+
+    .icon-bank::before {
+        content: "🏦";
+        margin-right: 0.3rem;
+    }
 
     .empty-state {
         text-align: center;
         padding: 3rem 1rem;
         color: var(--text-muted);
     }
-    .empty-state-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
-    .empty-state-text { font-size: 1.1rem; font-weight: 600; }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state-text {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
 
     /* Mencegah teks terlipat ke bawah */
-#loanTable th, 
-#loanTable td {
-    white-space: nowrap;
-    vertical-align: middle; /* Memastikan konten berada di tengah secara vertikal */
-}
+    #loanTable th,
+    #loanTable td {
+        white-space: nowrap;
+        vertical-align: middle;
+        /* Memastikan konten berada di tengah secara vertikal */
+    }
 
-/* Membatasi lebar kolom alasan agar tidak terlalu panjang ke kanan jika teksnya banyak */
-#loanTable td:nth-child(7) { 
-    white-space: normal;
-    min-width: 150px;
-}
+    /* Membatasi lebar kolom alasan agar tidak terlalu panjang ke kanan jika teksnya banyak */
+    #loanTable td:nth-child(7) {
+        white-space: normal;
+        min-width: 150px;
+    }
 
-/* Styling untuk scrollbar agar lebih elegan (Opsional) */
-.dataTables_scrollBody::-webkit-scrollbar {
-    height: 8px;
-}
-.dataTables_scrollBody::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-.dataTables_scrollBody::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-}
-.dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
+    /* Styling untuk scrollbar agar lebih elegan (Opsional) */
+    .dataTables_scrollBody::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .dataTables_scrollBody::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .dataTables_scrollBody::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
 </style>
 
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
-        
+
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div>
                 <h4 class="fw-bold mb-0">
@@ -276,7 +306,7 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyPengajuan">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -381,7 +411,7 @@
 
     function renderTable(data) {
         const tbody = document.getElementById("tbodyPengajuan");
-        
+
         if ($.fn.DataTable.isDataTable('#loanTable')) {
             $('#loanTable').DataTable().destroy();
         }
@@ -395,13 +425,13 @@
         let filteredData = data.filter(row => {
             let siteMatch = !filterSite || row.site === filterSite;
             let jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-            
+
             let bankMatch = true;
             if (filterBank) {
                 let normalizedBank = normalizeBankName(row.nama_bank);
                 bankMatch = normalizedBank === filterBank;
             }
-            
+
             return siteMatch && jabatanMatch && bankMatch;
         });
 
@@ -424,11 +454,11 @@
         let rowsHtml = "";
         filteredData.forEach((row, index) => {
             let status_badge = '';
-            if(row.status_pinjaman === 'pending') status_badge = '<span class="badge bg-warning">Pending</span>';
-            else if(row.status_pinjaman === 'disetujui') status_badge = '<span class="badge bg-success">Disetujui</span>';
-            else if(row.status_pinjaman === 'ditolak') status_badge = '<span class="badge bg-danger">Ditolak</span>';
+            if (row.status_pinjaman === 'pending') status_badge = '<span class="badge bg-warning">Pending</span>';
+            else if (row.status_pinjaman === 'disetujui') status_badge = '<span class="badge bg-success">Disetujui</span>';
+            else if (row.status_pinjaman === 'ditolak') status_badge = '<span class="badge bg-danger">Ditolak</span>';
 
-            let base_url_uploads = "http://api-hris.triputrajayasultra.com/"; 
+            let base_url_uploads = "http://api-hris.triputrajayasultra.com/";
             let foto_wajah = row.foto_wajah ? `<a href='${base_url_uploads}${row.foto_wajah}' target='_blank' class='btn btn-xs btn-outline-info mb-1 py-1 px-2 text-xs'>Cek Wajah</a><br>` : "";
             let foto_id = row.foto_id_card ? `<a href='${base_url_uploads}${row.foto_id_card}' target='_blank' class='btn btn-xs btn-outline-primary py-1 px-2 text-xs'>Cek ID</a>` : "";
 
@@ -439,12 +469,12 @@
 
             // Dropdown Menu Aksi sesuai get-pengajuan-pinjaman asli
             let btn_aksi = `
-            <div class='dropdown'>
-                <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' data-bs-toggle='dropdown'>
-                    <i class='fa fa-ellipsis-v'></i>
-                </button>
-                <div class='dropdown-menu dropdown-menu-end shadow border-0'>
-                    <div class='dropdown-header text-uppercase small fw-bold'>Aksi Pengajuan</div>`;
+<div class='dropdown'>
+    <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' data-bs-toggle='dropdown' data-bs-boundary='window'>
+        <i class='fa fa-ellipsis-v'></i>
+    </button>
+    <div class='dropdown-menu dropdown-menu-end shadow border-0'>
+        <div class='dropdown-header text-uppercase small fw-bold'>Aksi Pengajuan</div>`;
 
             if (row.status_pinjaman !== 'disetujui') {
                 btn_aksi += `
@@ -473,7 +503,11 @@
             </div>`;
 
             let dateObj = new Date(row.tgl_pengajuan);
-            let formattedDate = isNaN(dateObj) ? row.tgl_pengajuan : dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            let formattedDate = isNaN(dateObj) ? row.tgl_pengajuan : dateObj.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
 
             rowsHtml += `
                 <tr>
@@ -495,12 +529,12 @@
         tbody.innerHTML = rowsHtml;
 
         $('#loanTable').DataTable({
-            "scrollX": true,          // Tambahkan baris ini
-    "autoWidth": false,       // Tambahkan baris ini agar lebar kolom lebih proporsional
-    "pageLength": 10,
-    "lengthMenu": [10, 25, 50],
-    "ordering": false,
-    "language": {
+            "scrollX": true, // Tambahkan baris ini
+            "autoWidth": false, // Tambahkan baris ini agar lebar kolom lebih proporsional
+            "pageLength": 10,
+            "lengthMenu": [10, 25, 50],
+            "ordering": false,
+            "language": {
                 "lengthMenu": "Tampilkan _MENU_ data",
                 "search": "Cari Cepat:",
                 "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
@@ -536,7 +570,10 @@
         $.ajax({
             url: "app/controller/get-data/get-pengajuan-pinjaman.php",
             type: "POST",
-            data: { startDate, endDate },
+            data: {
+                startDate,
+                endDate
+            },
             dataType: "json",
             success: function(res) {
                 if (res.status !== "success") {
@@ -563,13 +600,13 @@
         let filteredData = allLoanData.filter(row => {
             let siteMatch = !filterSite || row.site === filterSite;
             let jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-            
+
             let bankMatch = true;
             if (filterBank) {
                 let normalizedBank = normalizeBankName(row.nama_bank);
                 bankMatch = normalizedBank === filterBank;
             }
-            
+
             return siteMatch && jabatanMatch && bankMatch;
         });
 
@@ -702,19 +739,28 @@
             const fd = new FormData(e.target);
 
             fetch("app/controller/act-pengajuan-pinjaman.php", {
-                method: "POST",
-                body: fd
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === "success") {
-                    alert(res.msg);
-                    bootstrap.Modal.getInstance(document.getElementById("modalProsesPengajuan")).hide();
-                    loadPengajuan();
-                } else {
-                    alert("Gagal: " + res.msg);
-                }
-            });
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        alert(res.msg);
+                        bootstrap.Modal.getInstance(document.getElementById("modalProsesPengajuan")).hide();
+                        loadPengajuan();
+                    } else {
+                        alert("Gagal: " + res.msg);
+                    }
+                });
+        });
+
+        // Memastikan dropdown DataTables tidak terpotong oleh overflow wrapper
+        $('#loanTable').on('show.bs.dropdown', function() {
+            $('.dataTables_scrollBody').css("overflow", "visible");
+        });
+
+        $('#loanTable').on('hide.bs.dropdown', function() {
+            $('.dataTables_scrollBody').css("overflow", "auto");
         });
     });
 </script>
