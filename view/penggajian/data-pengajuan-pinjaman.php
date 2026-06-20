@@ -129,6 +129,21 @@
         background: linear-gradient(90deg, #f8f9fc 0%, #eef3ff 100%);
     }
 
+    /* Tweak agar dropdown tidak terpotong oleh scrolling DataTables */
+    table.dataTable.nowrap th, table.dataTable.nowrap td {
+        white-space: nowrap;
+    }
+    
+    /* Memastikan dropdown mendapatkan z-index tertinggi dan posisi absolute-nya ter-render sempurna */
+    .dataTables_scrollBody {
+        overflow: visible !important;
+    }
+    
+    /* Agar area tabel tetap bisa di-scroll secara horizontal walau overflow visible di atas */
+    .dataTables_wrapper {
+        overflow-x: auto;
+    }
+
     .badge-count {
         background: linear-gradient(135deg, var(--success-color) 0%, #13b879 100%);
         color: white;
@@ -440,7 +455,7 @@
             // Dropdown Menu Aksi sesuai get-pengajuan-pinjaman asli
             let btn_aksi = `
             <div class='dropdown'>
-                <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' data-bs-toggle='dropdown'>
+                <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' data-bs-toggle='dropdown' data-bs-boundary='window'>
                     <i class='fa fa-ellipsis-v'></i>
                 </button>
                 <div class='dropdown-menu dropdown-menu-end shadow border-0'>
@@ -646,57 +661,6 @@
             }
         }
     }
-
-    // =========================================================================
-    // FIX DROPDOWN TERPOTONG DI DALAM DATATABLES
-    // =========================================================================
-    
-    // Saat dropdown dibuka, pindahkan elemen menu ke dalam <body>
-    $('body').on('show.bs.dropdown', '.table-responsive, .dataTables_scrollBody', function (e) {
-        // Ambil elemen tombol yang diklik dan menu dropdown-nya
-        var $button = $(e.target);
-        var $menu = $button.next('.dropdown-menu');
-        
-        // Pindahkan menu ke body agar terbebas dari overflow tabel
-        $('body').append($menu.detach());
-        
-        // Kalkulasi posisi tombol saat ini di layar
-        var buttonOffset = $button.offset();
-        
-        // Terapkan posisi baru ke menu dropdown secara absolut
-        $menu.css({
-            'display': 'block',
-            'position': 'absolute',
-            'top': buttonOffset.top + $button.outerHeight(),
-            // Pengurangan lebar agar sejajar di kanan (karena dropdown-menu-end)
-            'left': buttonOffset.left - $menu.outerWidth() + $button.outerWidth(),
-            'z-index': 9999 // Pastikan melayang di atas segalanya
-        });
-        
-        // Simpan referensi ke parent asli agar bisa dikembalikan nanti
-        $menu.data('parent', $button.parent());
-    });
-
-    // Saat dropdown ditutup, kembalikan posisi menu ke dalam tabel asalnya
-    $('body').on('hide.bs.dropdown', function (e) {
-        $('.dropdown-menu').each(function() {
-            var $parent = $(this).data('parent');
-            if ($parent) {
-                // Kembalikan ke tempat semula
-                $parent.append($(this).detach());
-                // Bersihkan CSS yang ditambahkan secara dinamis tadi
-                $(this).css({
-                    'display': '',
-                    'position': '',
-                    'top': '',
-                    'left': '',
-                    'z-index': ''
-                });
-                $(this).removeData('parent');
-            }
-        });
-    });
-    // =========================================================================
 
     document.addEventListener("DOMContentLoaded", () => {
         setDefaultDateRange();
