@@ -231,6 +231,23 @@
     .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
         background: #a8a8a8;
     }
+
+    /* Custom dropdown fixed - tidak bergantung pada Popper.js */
+    .custom-dropdown-menu {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        background: white;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        min-width: 220px;
+        padding: 0.5rem 0;
+    }
+
+    .custom-dropdown-menu.show {
+        display: block;
+    }
 </style>
 
 <div class="content-wrapper">
@@ -480,42 +497,48 @@
 
             // Dropdown Menu Aksi sesuai get-pengajuan-pinjaman asli
             let btn_aksi = `
-            <div class='dropdown'>
-                <button type='button' class='btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow' 
-    data-bs-toggle='dropdown' 
-    data-bs-boundary="window" 
-    data-bs-strategy="fixed"
-    data-bs-offset="0,2">
-                    <i class='fa fa-ellipsis-v'></i>
-                </button>
-                <div class='dropdown-menu dropdown-menu-end shadow border-0'>
-                    <div class='dropdown-header text-uppercase small fw-bold'>Aksi Pengajuan</div>`;
+<div class='custom-dropdown-wrapper' style='position:relative;display:inline-block;'>
+    <button type='button' class='btn btn-sm btn-outline-secondary rounded-pill btnDropdownAksi'
+        data-index='${index}'>
+        <i class='fa fa-ellipsis-v'></i>
+    </button>
+    <div class='custom-dropdown-menu' id='dropdownMenu_${index}'>
+        <div class='dropdown-header text-uppercase small fw-bold text-muted px-3 py-1'>Aksi Pengajuan</div>`;
 
             if (row.status_pinjaman !== 'disetujui') {
                 btn_aksi += `
-                    <li>
-                        <a class='dropdown-item d-flex align-items-center btnProses' href='javascript:void(0)'
-                            data-id='${row.id_pengajuan_pinjaman}'
-                            data-nama='${row.nama_lengkap}'
-                            data-nominal='${row.nominal_pinjaman}'>
-                            <i class='fa fa-check-square me-2 text-primary'></i> Proses (ACC/Tolak + Ket)
-                        </a>
-                    </li>`;
+        <a class='dropdown-item d-flex align-items-center px-3 py-2 btnProses' href='javascript:void(0)'
+            data-id='${row.id_pengajuan_pinjaman}'
+            data-nama='${row.nama_lengkap}'
+            data-nominal='${row.nominal_pinjaman}'>
+            <i class='fa fa-check-square me-2 text-primary'></i> Proses (ACC/Tolak + Ket)
+        </a>`;
             }
 
             if (row.status_pinjaman !== 'pending') {
-                btn_aksi += `<li><a class='dropdown-item d-flex align-items-center' href='javascript:void(0)' onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "pending")'><i class='fa fa-clock me-2 text-warning'></i> Set Pending</a></li>`;
+                btn_aksi += `
+        <a class='dropdown-item d-flex align-items-center px-3 py-2' href='javascript:void(0)' 
+            onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "pending"); closeAllDropdowns();'>
+            <i class='fa fa-clock me-2 text-warning'></i> Set Pending
+        </a>`;
             }
 
             if (row.status_pinjaman !== 'ditolak') {
-                btn_aksi += `<li><a class='dropdown-item d-flex align-items-center' href='javascript:void(0)' onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "ditolak")'><i class='fa fa-times-circle me-2 text-danger'></i> Set Ditolak Cepat</a></li>`;
+                btn_aksi += `
+        <a class='dropdown-item d-flex align-items-center px-3 py-2' href='javascript:void(0)' 
+            onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "ditolak"); closeAllDropdowns();'>
+            <i class='fa fa-times-circle me-2 text-danger'></i> Set Ditolak Cepat
+        </a>`;
             }
 
             btn_aksi += `
-                    <div class='dropdown-divider'></div>
-                    <li><a class='dropdown-item d-flex align-items-center text-danger' href='javascript:void(0)' onclick='deletePengajuan(${row.id_pengajuan_pinjaman})'><i class='fa fa-trash me-2'></i> Hapus Permanen</a></li>
-                </div>
-            </div>`;
+        <div class='dropdown-divider'></div>
+        <a class='dropdown-item d-flex align-items-center px-3 py-2 text-danger' href='javascript:void(0)' 
+            onclick='deletePengajuan(${row.id_pengajuan_pinjaman}); closeAllDropdowns();'>
+            <i class='fa fa-trash me-2'></i> Hapus Permanen
+        </a>
+    </div>
+</div>`;
 
             let dateObj = new Date(row.tgl_pengajuan);
             let formattedDate = isNaN(dateObj) ? row.tgl_pengajuan : dateObj.toLocaleDateString('id-ID', {
@@ -770,30 +793,60 @@
         });
     });
 
-    // Fix dropdown terpotong di dalam overflow container
-    document.addEventListener('show.bs.dropdown', function(e) {
-        const toggle = e.relatedTarget;
-        const menu = toggle.nextElementSibling;
+    // =============================================
+    // CUSTOM DROPDOWN FIXED — Tanpa Popper.js
+    // =============================================
+    function closeAllDropdowns() {
+        document.querySelectorAll('.custom-dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
 
-        if (!menu) return;
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btnDropdownAksi');
 
-        const rect = toggle.getBoundingClientRect();
+        if (btn) {
+            e.stopPropagation();
+            const index = btn.dataset.index;
+            const menu = document.getElementById('dropdownMenu_' + index);
 
-        menu.style.position = 'fixed';
-        menu.style.top = (rect.bottom + 2) + 'px';
-        menu.style.left = (rect.left - menu.offsetWidth + rect.width) + 'px';
-        menu.style.zIndex = '9999';
-        menu.style.margin = '0';
-    });
+            if (!menu) return;
 
-    document.addEventListener('hide.bs.dropdown', function(e) {
-        const toggle = e.relatedTarget;
-        if (!toggle) return;
-        const menu = toggle.nextElementSibling;
-        if (menu) {
-            menu.style.position = '';
-            menu.style.top = '';
-            menu.style.left = '';
+            const isOpen = menu.classList.contains('show');
+
+            // Tutup semua dropdown dulu
+            closeAllDropdowns();
+
+            if (!isOpen) {
+                // Hitung posisi tombol di layar
+                const rect = btn.getBoundingClientRect();
+
+                menu.classList.add('show');
+
+                // Posisikan menu tepat di bawah tombol
+                let top = rect.bottom + 4;
+                let left = rect.right - menu.offsetWidth;
+
+                // Pastikan tidak keluar dari kanan layar
+                if (left < 0) left = rect.left;
+
+                // Pastikan tidak keluar dari bawah layar
+                if (top + menu.offsetHeight > window.innerHeight) {
+                    top = rect.top - menu.offsetHeight - 4;
+                }
+
+                menu.style.top = top + 'px';
+                menu.style.left = left + 'px';
+            }
+            return;
+        }
+
+        // Klik di luar dropdown → tutup semua
+        if (!e.target.closest('.custom-dropdown-menu')) {
+            closeAllDropdowns();
         }
     });
+
+    // Tutup dropdown saat scroll
+    window.addEventListener('scroll', closeAllDropdowns, true);
 </script>
