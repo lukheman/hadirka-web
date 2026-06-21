@@ -249,7 +249,7 @@
                 </select>
 
                 <label>Jumlah Potongan</label>
-                <input type="number" name="nominal_potongan" class="form-control mb-3" required>
+                <input type="text" name="nominal_potongan" class="form-control mb-3 nominal-mask" required>
 
                 <label>Keterangan Tambahan</label>
                 <input type="text" name="ket_potongan" class="form-control">
@@ -292,7 +292,7 @@
                 </select>
 
                 <label>Jumlah Potongan</label>
-                <input type="number" name="nominal_potongan" class="form-control mb-3" required>
+                <input type="text" name="nominal_potongan" class="form-control mb-3 nominal-mask" required>
 
                 <label>Keterangan Tambahan</label>
                 <input type="text" name="ket_potongan" class="form-control">
@@ -421,11 +421,30 @@
             });
         }
 
+        // =================== LISENER FORMAT OTOMATIS (MEMBERI TITIK) ===================
+        document.addEventListener("input", e => {
+            if (e.target.classList.contains("nominal-mask")) {
+                let input = e.target;
+                let cursorPos = input.selectionStart;
+                let prevLength = input.value.length;
+                let val = input.value.replace(/\D/g, "");
+                let formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                input.value = formatted;
+                let diff = formatted.length - prevLength;
+                input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            }
+        });
+
         // === TAMBAH ===
         formTambah.addEventListener("submit", e => {
             e.preventDefault();
             let fd = new FormData(formTambah);
             fd.append("action", "add");
+
+            // --- PERBAIKAN: Bersihkan titik dari nominal sebelum dikirim ke PHP ---
+            let nominalClean = fd.get("nominal_potongan").replace(/\./g, "");
+            fd.set("nominal_potongan", nominalClean);
+            // ------------------------------------------
 
             fetch("app/controller/act-potongan-tidak-tetap.php", {
                     method: "POST",
@@ -448,6 +467,11 @@
             e.preventDefault();
             let fd = new FormData(formEdit);
             fd.append("action", "edit");
+
+            // --- PERBAIKAN: Bersihkan titik dari nominal sebelum dikirim ke PHP ---
+            let nominalClean = fd.get("nominal_potongan").replace(/\./g, "");
+            fd.set("nominal_potongan", nominalClean);
+            // ------------------------------------------
 
             fetch("app/controller/act-potongan-tidak-tetap.php", {
                     method: "POST",
@@ -474,7 +498,13 @@
                 $('#selectKaryawanEdit').val(btnEdit.dataset.idkaryawan).trigger('change');
                 formEdit.querySelector("input[name=tgl_potongan]").value = btnEdit.dataset.tglpotongan;
                 formEdit.querySelector("select[name=jenis_potongan]").value = btnEdit.dataset.jenispotongan;
-                formEdit.querySelector("input[name=nominal_potongan]").value = btnEdit.dataset.potongan;
+
+                // --- PERBAIKAN: Format nominal agar langsung muncul titiknya ---
+                let rawNominal = btnEdit.dataset.potongan.toString();
+                let angkaBulat = rawNominal.split(".")[0].replace(/\D/g, "");
+                formEdit.querySelector("input[name=nominal_potongan]").value = angkaBulat.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                // -------------------------------------------------------------
+
                 formEdit.querySelector("input[name=ket_potongan]").value = btnEdit.dataset.ket;
 
                 new bootstrap.Modal(document.getElementById("modalEditPotongan")).show();

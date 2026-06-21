@@ -250,7 +250,7 @@
                         <label class="form-label fw-bold">Nominal Rapel</label>
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" name="nominal_rapel" class="form-control" placeholder="0" required>
+                            <input type="text" name="nominal_rapel" class="form-control nominal-mask" placeholder="0" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -296,7 +296,7 @@
                         <label class="form-label fw-bold">Nominal Rapel</label>
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" name="nominal_rapel" class="form-control" required>
+                            <input type="text" name="nominal_rapel" class="form-control nominal-mask" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -493,6 +493,26 @@
                     console.error('Error updating stats:', error);
                 });
         }
+
+        // =================== LISENER FORMAT OTOMATIS (MEMBERI TITIK) ===================
+        document.addEventListener("input", e => {
+            if (e.target.classList.contains("nominal-mask")) {
+                let input = e.target;
+                let cursorPos = input.selectionStart;
+                let prevLength = input.value.length;
+
+                // 1. Buang SEMUA karakter non-angka
+                let val = input.value.replace(/\D/g, "");
+
+                // 2. Format ulang dari angka bersih
+                let formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                input.value = formatted;
+
+                // 3. Sesuaikan posisi kursor agar tidak loncat ke ujung
+                let diff = formatted.length - prevLength;
+                input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            }
+        });
         
         // ============================================
         // HANDLER: Form Tambah Submit
@@ -502,6 +522,11 @@
             
             let fd = new FormData(formTambah);
             fd.append("action", "add");
+
+            // --- PERBAIKAN: Bersihkan titik dari nominal sebelum dikirim ke PHP ---
+            let nominalClean = fd.get("nominal_rapel").replace(/\./g, "");
+            fd.set("nominal_rapel", nominalClean);
+            // ----------------------------------------------------------------------
             
             // Disable button
             const btnSubmit = formTambah.querySelector('button[type="submit"]');
@@ -553,7 +578,13 @@
                 
                 formEdit.querySelector("input[name=id_rapel]").value = d.id;
                 formEdit.querySelector("input[name=tgl_rapel]").value = d.tgl;
-                formEdit.querySelector("input[name=nominal_rapel]").value = d.nominal;
+                
+                // --- PERBAIKAN: Format nominal agar langsung muncul titiknya ---
+                let rawNominal = d.nominal.toString();
+                let angkaBulat = rawNominal.split(".")[0].replace(/\D/g, "");
+                formEdit.querySelector("input[name=nominal_rapel]").value = angkaBulat.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                // -------------------------------------------------------------
+
                 formEdit.querySelector("textarea[name=ket_rapel]").value = d.ket || '';
                 
                 // Set select2 value
@@ -593,6 +624,11 @@
             let fd = new FormData(formEdit);
             fd.append("action", "edit");
             
+            // --- PERBAIKAN: Bersihkan titik dari nominal sebelum dikirim ke PHP ---
+            let nominalClean = fd.get("nominal_rapel").replace(/\./g, "");
+            fd.set("nominal_rapel", nominalClean);
+            // ----------------------------------------------------------------------
+
             // Disable button
             const btnSubmit = formEdit.querySelector('button[type="submit"]');
             btnSubmit.disabled = true;

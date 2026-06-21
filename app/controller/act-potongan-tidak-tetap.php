@@ -10,7 +10,7 @@ switch ($action) {
         $id_karyawan = $_POST['id_karyawan'] ?? '';
         $tgl_potongan = $_POST['tgl_potongan'] ?? '';
         $jenis_potongan = $_POST['jenis_potongan'] ?? '';
-        $nominal = $_POST['nominal_potongan'] ?? 0;
+        $nominal = isset($_POST['nominal_potongan']) ? floatval(str_replace('.', '', $_POST['nominal_potongan'])) : 0;
         $ket = $_POST['ket_potongan'] ?? '';
 
         if (!$id_karyawan || !$tgl_potongan || !$nominal || !$jenis_potongan) {
@@ -29,7 +29,7 @@ switch ($action) {
         $id_karyawan = $_POST['id_karyawan'] ?? '';
         $tgl_potongan = $_POST['tgl_potongan'] ?? '';
         $jenis_potongan = $_POST['jenis_potongan'] ?? '';
-        $nominal = $_POST['nominal_potongan'] ?? 0;
+        $nominal = isset($_POST['nominal_potongan']) ? floatval(str_replace('.', '', $_POST['nominal_potongan'])) : 0;
         $ket = $_POST['ket_potongan'] ?? '';
 
         if (!$id || !$id_karyawan || !$tgl_potongan || !$nominal || !$jenis_potongan) {

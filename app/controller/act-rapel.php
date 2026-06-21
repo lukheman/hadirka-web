@@ -75,7 +75,7 @@ switch ($action) {
         // Sanitize and validate input
         $id_karyawan = isset($_POST['id_karyawan']) ? intval($_POST['id_karyawan']) : 0;
         $tgl_rapel = isset($_POST['tgl_rapel']) ? trim($_POST['tgl_rapel']) : '';
-        $nominal_rapel = isset($_POST['nominal_rapel']) ? floatval($_POST['nominal_rapel']) : 0;
+        $nominal_rapel = isset($_POST['nominal_rapel']) ? floatval(str_replace('.', '', $_POST['nominal_rapel'])) : 0;
 
         // Ambil keterangan dan bersihkan spasi gandanya (Normalisasi)
         $ket_rapel = isset($_POST['ket_rapel']) ? trim($_POST['ket_rapel']) : '';
@@ -165,7 +165,7 @@ switch ($action) {
         $id_rapel = isset($_POST['id_rapel']) ? intval($_POST['id_rapel']) : 0;
         $id_karyawan = isset($_POST['id_karyawan']) ? intval($_POST['id_karyawan']) : 0;
         $tgl_rapel = isset($_POST['tgl_rapel']) ? trim($_POST['tgl_rapel']) : '';
-        $nominal_rapel = isset($_POST['nominal_rapel']) ? floatval($_POST['nominal_rapel']) : 0;
+        $nominal_rapel = isset($_POST['nominal_rapel']) ? floatval(str_replace('.', '', $_POST['nominal_rapel'])) : 0;
 
         // Ambil keterangan dan bersihkan spasi gandanya (Normalisasi)
         $ket_rapel = isset($_POST['ket_rapel']) ? trim($_POST['ket_rapel']) : '';
