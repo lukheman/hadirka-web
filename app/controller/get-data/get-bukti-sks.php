@@ -40,8 +40,10 @@ while ($row = mysqli_fetch_assoc($q)) {
             </div>
         </td>
         <td><i class="bx bx-calendar-event me-1 text-primary"></i>'.date('d/m/Y', strtotime($row['tgl_sks'])).'</td>
-        <td><small class="text-muted">'.$ket_sks.'</small></td>
+        
         <td><small class="text-muted">'.date('d/m/y H:i', strtotime($row['tgl_kirim'])).'</small></td>
+
+        <td><small class="text-muted">'.$ket_sks.'</small></td>
         
         <td><small class="text-muted">'.$tgl_diproses.'</small></td>
         

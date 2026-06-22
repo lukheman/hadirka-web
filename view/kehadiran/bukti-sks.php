@@ -9,8 +9,8 @@
                     <tr>
                         <th class="py-3">Nama Karyawan</th>
                         <th>Tanggal SKS</th>
-                        <th>Keterangan</th>
                         <th>Tgl Kirim</th>
+                        <th>Keterangan</th>
                         <th>Tgl Diproses Admin</th>
                         <th class="text-center">Lampiran SKS</th>
                         <th>Status</th>
