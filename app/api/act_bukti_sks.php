@@ -20,6 +20,7 @@ switch ($action) {
     case 'ajukan':
         $id_karyawan = mysqli_real_escape_string($koneksi, $_POST['id_karyawan'] ?? '');
         $tgl_sks     = mysqli_real_escape_string($koneksi, $_POST['tgl_sks'] ?? '');
+        $ket_sks     = mysqli_real_escape_string($koneksi, $_POST['ket_sks'] ?? ''); // Tangkap ini
 
         if (empty($id_karyawan) || empty($tgl_sks)) {
             echo json_encode(['status' => 'error', 'message' => 'ID Karyawan dan Tanggal SKS harus diisi.']);
@@ -74,8 +75,8 @@ switch ($action) {
         $tgl_kirim_timestamp = date('Y-m-d H:i:s'); 
         $tgl_sks_timestamp = $tgl_sks . ' 00:00:00'; 
 
-        $sql = "INSERT INTO tb_bukti_sks (id_karyawan, tgl_sks, bukti_sks, tgl_kirim, tgl_diterima, status)
-                VALUES ('$id_karyawan', '$tgl_sks_timestamp', '$bukti_sks_url', '$tgl_kirim_timestamp', NULL, 'pending')";
+        $sql = "INSERT INTO tb_bukti_sks (id_karyawan, tgl_sks, bukti_sks, tgl_kirim, tgl_diterima, status, ket_sks)
+                VALUES ('$id_karyawan', '$tgl_sks_timestamp', '$bukti_sks_url', '$tgl_kirim_timestamp', NULL, 'pending', '$ket_sks')";
 
         if (mysqli_query($koneksi, $sql)) {
             echo json_encode(['status' => 'success', 'message' => 'Bukti SKS berhasil diunggah dan diajukan.']);

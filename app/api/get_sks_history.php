@@ -22,8 +22,8 @@ if (empty($id_karyawan)) {
     exit;
 }
 
-// ✅ FIX: Query ditambahkan ket_admin
-$sql = "SELECT id_bukti_sks, id_karyawan, tgl_sks, bukti_sks, tgl_kirim, tgl_diterima, status, ket_admin 
+// Tambahkan ket_sks di query SELECT
+$sql = "SELECT id_bukti_sks, id_karyawan, tgl_sks, bukti_sks, tgl_kirim, tgl_diterima, status, ket_admin, ket_sks 
         FROM tb_bukti_sks 
         WHERE id_karyawan = '$id_karyawan'
         ORDER BY tgl_kirim DESC";
@@ -41,7 +41,8 @@ if ($result) {
             'tgl_kirim'    => $row['tgl_kirim'],
             'tgl_diterima' => $row['tgl_diterima'], 
             'status'       => $row['status'],
-            'ket_admin'    => $row['ket_admin'], // ✅ DITAMBAHKAN
+            'ket_admin'    => $row['ket_admin'],
+            'ket_sks'      => $row['ket_sks'],
         ];
     }
 } else {
