@@ -18,7 +18,7 @@ if ($action == 'add') {
     $id_kategori       = mysqli_real_escape_string($koneksi, $_POST['id_kategori']);
     $tipe_arus         = mysqli_real_escape_string($koneksi, $_POST['tipe_arus']);
     $tipe_neraca       = mysqli_real_escape_string($koneksi, $_POST['tipe_neraca']);
-    $nominal           = mysqli_real_escape_string($koneksi, $_POST['nominal']);
+    $nominal = isset($_POST['nominal']) ? floatval(str_replace('.', '', $_POST['nominal'])) : 0;
     $keterangan        = mysqli_real_escape_string($koneksi, $_POST['keterangan']);
 
     if (empty($tanggal_transaksi) || empty($id_kategori) || empty($nominal) || empty($tipe_neraca)) { // <-- Tambah validasi
@@ -75,7 +75,7 @@ if ($action == 'edit') {
     $id_kategori       = mysqli_real_escape_string($koneksi, $_POST['id_kategori']);
     $tipe_arus         = mysqli_real_escape_string($koneksi, $_POST['tipe_arus']);
     $tipe_neraca       = mysqli_real_escape_string($koneksi, $_POST['tipe_neraca']);
-    $nominal           = mysqli_real_escape_string($koneksi, $_POST['nominal']);
+    $nominal = isset($_POST['nominal']) ? floatval(str_replace('.', '', $_POST['nominal'])) : 0;
     $keterangan        = mysqli_real_escape_string($koneksi, $_POST['keterangan']);
 
     if (empty($id_transaksi) || empty($tanggal_transaksi) || empty($id_kategori) || empty($nominal) || empty($tipe_neraca)) { // <-- Tambah validasi

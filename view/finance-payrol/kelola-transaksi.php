@@ -10,10 +10,25 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 ?>
 
 <!-- Tambahkan CSS DataTables -->
+ <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
 <style>
     .dataTables_wrapper .row {
         margin-bottom: 0.5rem;
+    }
+    
+    /* Perbaikan UI Select2 untuk Bootstrap 5 */
+    .select2-container--bootstrap-5 .select2-selection { 
+        border: 1px solid #d9dee3 !important; /* Sesuaikan warna form bawaan template */
+        min-height: 38px;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single {
+        padding: 0.375rem 0.75rem;
+    }
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+        border-color: #696cff !important;
+        box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.25) !important;
     }
 </style>
 
@@ -156,7 +171,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kategori Akun</label>
-                            <select class="form-select" name="id_kategori" required>
+                            <select class="form-select" name="id_kategori" id="add_kategori" required>
                                 <option value="">-- Pilih Kategori Akun --</option>
                                 <?php foreach ($kategoriGroups as $kelompok => $kategoris): ?>
                                     <optgroup label="Kelompok: <?= strtoupper($kelompok) ?>">
@@ -185,7 +200,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Nominal (Rp)</label>
-                            <input type="number" class="form-control" name="nominal" placeholder="Contoh: 5000000" required>
+                            <input type="text" class="form-control nominal-mask" name="nominal" placeholder="Contoh: 5.000.000" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -254,7 +269,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Nominal (Rp)</label>
-                            <input type="number" class="form-control" name="nominal" id="edit_nominal" required>
+                            <input type="text" class="form-control nominal-mask" name="nominal" id="edit_nominal" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -281,7 +296,34 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
+    // --- TAMBAHAN SELECT 2 ---
+    $(document).ready(function() {
+        // Inisialisasi Select2 di Modal Tambah
+        $('#add_kategori').select2({
+            theme: 'bootstrap-5',
+            dropdownParent: $('#modalTambahTransaksi'),
+            placeholder: '-- Pilih Kategori Akun --',
+            width: '100%'
+        });
+
+        // Inisialisasi Select2 di Modal Edit
+        $('#edit_kategori').select2({
+            theme: 'bootstrap-5',
+            dropdownParent: $('#modalEditTransaksi'),
+            placeholder: '-- Pilih Kategori Akun --',
+            width: '100%'
+        });
+
+        // Reset dropdown saat modal tambah ditutup
+        $('#modalTambahTransaksi').on('hidden.bs.modal', function() {
+            $('#add_kategori').val('').trigger('change');
+        });
+    });
+    // -------------------------
+
     // Inisialisasi variabel untuk menyimpan instance DataTables
     let dataTablesInstances = {};
 
@@ -512,6 +554,26 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         }
     }
 
+    // =================== LISENER FORMAT OTOMATIS (MEMBERI TITIK) ===================
+    document.addEventListener("input", e => {
+        if (e.target.classList.contains("nominal-mask")) {
+            let input = e.target;
+            let cursorPos = input.selectionStart;
+            let prevLength = input.value.length;
+
+            // Buang SEMUA karakter non-angka
+            let val = input.value.replace(/\D/g, "");
+
+            // Format ulang dari angka bersih dengan titik
+            let formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            input.value = formatted;
+
+            // Sesuaikan posisi kursor
+            let diff = formatted.length - prevLength;
+            input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+        }
+    });
+
     // --- UPDATE EVENT SUBMIT ADD ---
     document.getElementById('formTambahTransaksi').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -521,6 +583,11 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 
         const formData = new FormData(this);
         formData.append('action', 'add');
+
+        // --- PERBAIKAN: Bersihkan titik dari nominal ---
+        let nominalCleanAdd = formData.get("nominal").replace(/\./g, "");
+        formData.set("nominal", nominalCleanAdd);
+        // -----------------------------------------------
 
         // Ganti file raw bawaan form dengan file yang sudah dikompres
         formData.delete('bukti_transaksi');
@@ -536,6 +603,9 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
             const data = await res.json();
             if (data.status === 'success') {
                 this.reset();
+
+                $('#add_kategori').val('').trigger('change');
+                
                 processedFileAdd = null;
                 document.getElementById('preview_bukti_add').innerHTML = '';
                 bootstrap.Modal.getInstance(document.getElementById('modalTambahTransaksi')).hide();
@@ -559,10 +629,14 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 
         document.getElementById('edit_id_transaksi').value = btn.getAttribute('data-id');
         document.getElementById('edit_tanggal').value = btn.getAttribute('data-tanggal');
-        document.getElementById('edit_kategori').value = btn.getAttribute('data-kategori');
+        $('#edit_kategori').val(btn.getAttribute('data-kategori')).trigger('change');
         document.getElementById('edit_arus').value = btn.getAttribute('data-arus');
         document.getElementById('edit_neraca').value = btn.getAttribute('data-neraca'); // Tambahkan baris ini
-        document.getElementById('edit_nominal').value = btn.getAttribute('data-nominal');
+
+        let rawNominal = btn.getAttribute('data-nominal').toString();
+        let angkaBulat = rawNominal.split(".")[0].replace(/\D/g, "");
+        document.getElementById('edit_nominal').value = angkaBulat.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
         document.getElementById('edit_keterangan').value = btn.getAttribute('data-ket');
 
         const bukti = btn.getAttribute('data-bukti');
@@ -598,6 +672,11 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 
         const formData = new FormData(this);
         formData.append('action', 'edit');
+
+        // --- PERBAIKAN: Bersihkan titik dari nominal ---
+        let nominalCleanEdit = formData.get("nominal").replace(/\./g, "");
+        formData.set("nominal", nominalCleanEdit);
+        // -----------------------------------------------
 
         // Ganti file raw bawaan form dengan file yang sudah dikompres
         formData.delete('bukti_transaksi');
