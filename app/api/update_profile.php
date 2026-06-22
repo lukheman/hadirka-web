@@ -235,7 +235,7 @@ try {
     ");
 
     $stmt->bind_param(
-        "ssssssssss",
+        "sssssssssss",
         $nama_lengkap,
         $jenis_kelamin,
         $tgl_lahir,
