@@ -11,6 +11,22 @@ if ($action == 'proses') {
     $keterangan_admin = $_POST['keterangan_admin'] ?? '';
     $tgl_bayar = !empty($_POST['tgl_bayar_pinjaman']) ? $_POST['tgl_bayar_pinjaman'] : null;
 
+    // Ambil keterangan admin dari form
+    $keterangan_admin = $_POST['keterangan_admin'] ?? '';
+
+    // Jika status disetujui, sisipkan pesan otomatis
+    if ($status == 'disetujui') {
+        $pesan_otomatis = "Pinjaman akan ditransfer pada hari sabtu.";
+        
+        if (empty(trim($keterangan_admin))) {
+            // Jika HR/Admin tidak mengisi komentar sama sekali
+            $keterangan_admin = $pesan_otomatis;
+        } else {
+            // Jika HR/Admin mengisi komentar lain, kita gabungkan
+            $keterangan_admin = trim($keterangan_admin) . "\n\nCatatan Sistem: " . $pesan_otomatis;
+        }
+    }
+
     if (!$id_pengajuan || !$status) {
         echo json_encode(['status' => 'error', 'msg' => 'Data tidak lengkap']);
         exit;

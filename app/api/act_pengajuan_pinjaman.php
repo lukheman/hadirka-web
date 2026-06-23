@@ -70,6 +70,12 @@ switch ($action) {
             sendResponse('error', 'Nominal pinjaman melebihi batas maksimal Rp 1.000.000', null, 400);
         }
 
+        // --- TAMBAHKAN KODE INI UNTUK VALIDASI TANGGAL 10 - 25 ---
+        $tanggal_hari_ini = (int)date('d', strtotime($tgl_pengajuan));
+        if ($tanggal_hari_ini < 10 || $tanggal_hari_ini > 25) {
+            sendResponse('error', 'Pengajuan pinjaman hanya dibuka pada tanggal 10 hingga 25 setiap bulannya.', null, 400);
+        }
+
         $id_karyawan_safe      = mysqli_real_escape_string($koneksi, $id_karyawan);
         $tgl_pengajuan_safe    = mysqli_real_escape_string($koneksi, $tgl_pengajuan);
         $nominal_pinjaman_safe = mysqli_real_escape_string($koneksi, $nominal_pinjaman);
