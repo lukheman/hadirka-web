@@ -301,7 +301,7 @@
     async function checkNotification() {
         try {
             // PERBAIKAN 1: Sesuaikan nama file dengan file kodingan nomor 4 Anda
-            const response = await fetch('app/controller/get-data/get-notif-home.php');
+            const response = await fetch('app/controller/get-data/get-home-notif.php');
             const data = await response.json();
 
             if (data.show === true) {
