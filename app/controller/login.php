@@ -22,12 +22,8 @@ if (!isset($_SESSION['id_user']) && isset($_COOKIE['remember_me']) && strpos($_C
             $_SESSION['level'] = $user_data['level'];
             $_SESSION['login_time'] = time();
 
-            // Jika safety, langsung ke master apd
-            if ($_SESSION['level'] == 3) {
-                header("Location: " . $url . "?page=master-apd");
-            } else {
-                header("Location: $url");
-            }
+            // REVISI 1: Langsung arahkan ke dashboard (url default / home)
+            header("Location: $url");
             exit;
         }
     }
@@ -80,13 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
 
-            // Jika safety, langsung ke master apd
-            if ($_SESSION['level'] == 3) {
-                header("Location: " . $url . "?page=master-apd");
-            } else {
-                header("Location: $url");
-            }
+            // REVISI 2: Langsung arahkan ke dashboard (url default / home) untuk semua user
+            header("Location: $url");
             exit;
+            
         } else {
             header("Location: login?error=wrongpass");
             exit;
@@ -96,3 +89,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+?>
