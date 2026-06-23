@@ -23,7 +23,7 @@
         </div>
 
         
-        <?php if (in_array($user_level, [0, 1, 2])): ?>
+        <?php if (in_array($user_level, [0, 1, 2, 6])): ?>
         <div class="col-lg-12 mb-4">
             <div class="row">
                 <div class="col-6">
@@ -99,6 +99,7 @@
         </div>
         <?php endif; ?>
 
+        <?php if ($user_level != 6): ?>
         <div class="col-lg-12 mb-4">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between pb-2">
@@ -126,7 +127,7 @@
                 </div>
             </div>
         </div>
-
+        <?php endif; ?>
     </div>
 </div>
 
@@ -242,11 +243,11 @@
         const idSite = document.getElementById("siteDropdown").value;
         let url = `app/controller/get-data/get-home.php?id_site=${idSite}`;
 
-        // Optimasi: Jika user adalah Supervisor, langsung minta 'only_karyawan' 
+        // Optimasi parameter API berdasarkan Level User
         // agar backend tidak membebani server dengan menghitung slip gaji.
-        <?php if ($user_level == 3): ?>
+        <?php if (in_array($user_level, [3, 4, 5])): // Supervisor, Safety, Admin ?>
         url += `&only_karyawan=1`;
-        <?php else: ?>
+        <?php else: // Master, Direktur, HRD, Finance ?>
         if (idPriode) url += `&id_priode=${idPriode}`;
         <?php endif; ?>
 
@@ -294,7 +295,37 @@
         }
     }
 
+    // =========================================================
+    // FUNGSI MENGAMBIL NOTIFIKASI DARI API GET-NOTIF-HOME.PHP
+    // =========================================================
+    async function checkNotification() {
+        try {
+            // PERBAIKAN 1: Sesuaikan nama file dengan file kodingan nomor 4 Anda
+            const response = await fetch('app/controller/get-data/get-notif-home.php');
+            const data = await response.json();
+
+            if (data.show === true) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: data.title,
+                        html: data.msg,
+                        confirmButtonText: 'Baik, Mengerti',
+                        confirmButtonColor: '#696cff',
+                        backdrop: `rgba(0,0,123,0.4)`
+                    });
+                } else {
+                    // Fallback jika library Swal gagal dimuat
+                    alert(data.msg.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""));
+                }
+            }
+        } catch (error) {
+            console.error("Gagal memuat notifikasi:", error);
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
+        // 1. Load Statistik
         const dropdown = document.getElementById("periodeDropdown");
         // Jika dropdown ada (bukan supervisor), muat dengan value. Jika tidak ada, muat tanpa parameter (akan diselamatkan oleh 'only_karyawan=1')
         if (dropdown && dropdown.options.length > 0) {
@@ -302,5 +333,9 @@
         } else {
             loadDashboard('');
         }
+
+        // 2. Load Notifikasi (Diberi sedikit delay agar dashboard mulus saat loading pertama)
+        // PERBAIKAN 2: Sesuaikan pemanggilan dengan nama fungsi di atas
+        setTimeout(checkNotification, 500); 
     });
 </script>

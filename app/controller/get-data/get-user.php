@@ -1,5 +1,5 @@
 <?php
-require '../../config/koneksi.php';
+require __DIR__ . '/../../config/koneksi.php';
 header('Content-Type: text/html; charset=utf-8');
 
 // Variabel Base URL dari fungsi Anda (Pastikan url() mengembalikan contoh: http://localhost/tjs-outsoorsing/)
@@ -18,12 +18,14 @@ while ($row = $q->fetch_assoc()) {
     $site = (htmlspecialchars($row['site']) == 0) ? 0 : $qrSq['nama_site'];
 
     $lvl_angka = (int)$row['level'];
-    if ($lvl_angka === 0) { $level = 'Admin'; }
+    if ($lvl_angka === 0) { $level = 'Master'; }
     elseif ($lvl_angka === 1) { $level = 'Direktur'; }
     elseif ($lvl_angka === 2) { $level = 'HRD'; }
     elseif ($lvl_angka === 3) { $level = 'Supervisor'; }
     elseif ($lvl_angka === 4) { $level = 'Safety'; }
-    else { $level = 'User Biasa'; }
+    elseif ($lvl_angka === 5) { $level = 'Admin'; }
+    elseif ($lvl_angka === 6) { $level = 'Finance'; }
+    else { $level = 'Tidak Diketahui'; }
 
     $foto = $row['foto'];
     

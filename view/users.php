@@ -76,12 +76,13 @@
 
                 <label>Level</label>
                 <select name="level" class="form-select mb-2" required>
-                    <option value="0">Admin</option>
-                    <option value="1">Direktur</option>
-                    <option value="2">HRD</option>
-                    <option value="3">Supervisor</option>
-                    <option value="4">Safety</option>
-                    <option value="5">User Biasa</option>
+                    <option value="0">Master</option>
+    <option value="1">Direktur</option>
+    <option value="2">HRD</option>
+    <option value="3">Supervisor</option>
+    <option value="4">Safety</option>
+    <option value="5">Admin</option>
+    <option value="6">Finance</option>
                 </select>
 
                 <label>Foto Profil</label>
@@ -133,12 +134,13 @@
 
                 <label>Level</label>
                 <select name="level" class="form-select mb-2">
-                    <option value="0">Admin</option>
-                    <option value="1">Direktur</option>
-                    <option value="2">HRD</option>
-                    <option value="3">Supervisor</option>
-                    <option value="4">Safety</option>
-                    <option value="5">User Biasa</option>
+                    <option value="0">Master</option>
+    <option value="1">Direktur</option>
+    <option value="2">HRD</option>
+    <option value="3">Supervisor</option>
+    <option value="4">Safety</option>
+    <option value="5">Admin</option>
+    <option value="6">Finance</option>
                 </select>
 
                 <label>Foto Profil <small>(pilih jika ingin ganti)</small></label>
@@ -258,7 +260,7 @@
                 formEdit.querySelector('input[name=nama_user]').value = btn.dataset.nama || '';
                 formEdit.querySelector('input[name=jabatan]').value = btn.dataset.jabatan || '';
                 formEdit.querySelector('select[name=site]').value = btn.dataset.site || '';
-                formEdit.querySelector('select[name=level]').value = btn.dataset.level || 'user';
+                formEdit.querySelector('select[name=level]').value = btn.dataset.level || '5';
                 if (btn.dataset.fotoUrl) {
                     document.getElementById('fotoPreviewEdit').innerHTML = `<img src="${btn.dataset.fotoUrl}" width="80" class="rounded-circle">`;
                 } else {

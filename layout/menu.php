@@ -18,8 +18,8 @@ function isMenuOpen($pages_array, $current_page)
 ?>
 
 <ul class="menu-inner py-1">
-    <!-- Hanya Tampil jika Admin, Direktur, HRD, Supervisor -->
-    <?php if (in_array($user_level, [0, 1, 2, 3])): ?>
+    <!-- Tampil untuk semua role -->
+    <?php if (in_array($user_level, [0, 1, 2, 3, 4, 5, 6])): ?>
         <li class="menu-item <?= isActive('home', $current_page); ?>">
             <a href="home" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
@@ -28,8 +28,8 @@ function isMenuOpen($pages_array, $current_page)
         </li>
     <?php endif; ?>
 
-    <!-- Hanya Tampil jika Admin, Direktur, HRD , Supervisor -->
-    <?php if (in_array($user_level, [0, 1, 2, 3])): ?>
+    <!-- Hanya Tampil jika Master, Direktur, HRD, Supervisor, Admin -->
+    <?php if (in_array($user_level, [0, 1, 2, 3, 5])): ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Data Utama</span>
         </li>
@@ -146,8 +146,8 @@ function isMenuOpen($pages_array, $current_page)
 
     <?php endif; ?>
 
-    <!-- Hanya Tampil jika Admin, Direktur, HRD -->
-    <?php if (in_array($user_level, [0, 1, 2])): ?>
+    <!-- Hanya Tampil jika Master, Direktur, HRD, Finance -->
+    <?php if (in_array($user_level, [0, 1, 2, 6])): ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Finance & Payroll</span>
         </li>
@@ -244,7 +244,7 @@ function isMenuOpen($pages_array, $current_page)
 
     <?php endif; ?>
 
-    <!-- Hanya Tampil jika Admin, Direktur, Safety, Supervisor  -->
+    <!-- Hanya Tampil jika Master, Direktur, Safety, Supervisor  -->
     <?php if (in_array($user_level, [0, 1, 3, 4])): ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Inventaris K3</span>
@@ -279,8 +279,8 @@ function isMenuOpen($pages_array, $current_page)
 
     <?php endif; ?>
 
-    <!-- Hanya Tampil jika Admin, Direktur, HRD, Supervisor  -->
-    <?php if (in_array($user_level, [0, 1, 2, 3])): ?>
+    <!-- Hanya Tampil jika Master, Direktur, HRD, Supervisor, Admin  -->
+    <?php if (in_array($user_level, [0, 1, 2, 3, 5])): ?>
 
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Informasi</span>

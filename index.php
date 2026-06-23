@@ -80,53 +80,40 @@ $routes = [
 // Ambil level user dari session saat login. Jika tidak ada, anggap level 99 (tidak punya akses khusus)
 $user_level = $_SESSION['level'] ?? 99;
 
-// ======= ATURAN KETAT KHUSUS SAFETY (LEVEL 4) =======
-if ($user_level == 4) {
-    // Halaman yang diizinkan hanya K3 dan Logout
-    $safety_allowed_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd', 'logout'];
-
-    // Jika Safety mencoba buka halaman selain yang di atas (termasuk 'home')
-    if (!in_array($page, $safety_allowed_pages)) {
-        echo "<script>alert('Akses Ditolak! Anda hanya memiliki akses ke modul K3.'); window.location.href='?page=master-apd';</script>";
-        exit;
-    }
-}
-
-// 1. Modul HRD Umum (Hanya Admin, Direktur, HRD, Supervisor)
+// 1. Modul HRD Umum (Hanya Master, Direktur, HRD, Supervisor, Admin)
 $hrd_pages = [
     'data-karyawan', 'data-site', 'data-tunjangan', 'data-potongan', 'data-departemen',
     'karier', 'data-devisi', 'data-jabatan', 'import-karier', 'data-kontrak', 'data-bpjs-tk', 'data-calon-karyawan', 'data-loker',
     'rekapan-absensi', 'dayli-absen', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks', 'pengumuman'
 ];
 
-// Level 5 = Supervisor
-if (!in_array($user_level, [0, 1, 2, 3]) && in_array($page, $hrd_pages)) {
-    echo "<script>alert('Akses Ditolak! Khusus Admin, Direktur, HRD, dan Supervisor.'); window.location.href='?page=home';</script>";
+if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
+    echo "<script>alert('Akses Ditolak! Khusus Master, Direktur, HRD, Supervisor, dan Admin.'); window.location.href='?page=home';</script>";
     exit;
 }
 
-// 1.b Modul Finance & Payroll (Hanya Admin, Direktur, HRD) - SUPERVISOR DILARANG
+// 1.b Modul Finance & Payroll (Hanya Master, Direktur, HRD, Finance)
 $finance_pages = [
     'data-periode', 'payroll', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-potongan-tidak-tetap', 'data-rapel', 'data-thr', 'slip-gaji',
     'laporan-keuangan', 'kelola-transaksi', 'data-coa', 'jurnal-umum', 'buku-besar', 'neraca-saldo'
 ];
 
-if (!in_array($user_level, [0, 1, 2]) && in_array($page, $finance_pages)) {
-    echo "<script>alert('Akses Ditolak! Modul Keuangan khusus Admin, Direktur, dan HRD.'); window.location.href='?page=home';</script>";
+if (!in_array($user_level, [0, 1, 2, 6]) && in_array($page, $finance_pages)) {
+    echo "<script>alert('Akses Ditolak! Modul Keuangan khusus Master, Direktur, HRD, dan Finance.'); window.location.href='?page=home';</script>";
     exit;
 }
 
-// 2. Modul K3 (Hanya Admin, Direktur, Safety, Supervisor)
+// 2. Modul K3 (Hanya Master, Direktur, Safety, Supervisor)
 $k3_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
 if (!in_array($user_level, [0, 1, 3, 4]) && in_array($page, $k3_pages)) {
     echo "<script>alert('Akses Ditolak! Khusus tim K3 dan Supervisor.'); window.location.href='?page=home';</script>";
     exit;
 }
 
-// 3. Modul Sistem & Setup (Hanya Admin)
+// 3. Modul Sistem & Setup (Hanya Master)
 $system_pages = ['data-users-login', 'maintenance', 'error', 'documentation', 'data-kandidat'];
 if (!in_array($user_level, [0]) && in_array($page, $system_pages)) {
-    echo "<script>alert('Akses Ditolak! Khusus Admin.'); window.location.href='?page=home';</script>";
+    echo "<script>alert('Akses Ditolak! Khusus Master Data.'); window.location.href='?page=home';</script>";
     exit;
 }
 
