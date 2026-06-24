@@ -16,7 +16,7 @@ if ($action == 'proses') {
 
     // Jika status disetujui, sisipkan pesan otomatis
     if ($status == 'disetujui') {
-        $pesan_otomatis = "Pinjaman akan ditransfer pada hari sabtu.";
+        $pesan_otomatis = "Pinjaman akan diproses pada hari sabtu.";
         
         if (empty(trim($keterangan_admin))) {
             // Jika HR/Admin tidak mengisi komentar sama sekali
