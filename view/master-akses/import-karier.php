@@ -396,7 +396,7 @@
                         $(".MyTableKarier").DataTable().destroy();
                     }
                     tbody.innerHTML = html;
-                    
+
                     // KOREKSI: Konfigurasi digabung di sini agar tidak memicu error double init
                     $(".MyTableKarier").DataTable({
                         responsive: true,
@@ -416,7 +416,7 @@
         document.getElementById("filterStatus").addEventListener("change", loadKarier);
         document.getElementById("filterBulan").addEventListener("change", loadKarier);
 
-        // --- 3. PROSES IMPORT EXCEL ---
+        // --- 3. PROSES IMPORT EXCEL (SUDAH DIPERBAIKI UNTUK MENAMPILKAN ERROR) ---
         formImport.addEventListener("submit", function(e) {
             e.preventDefault();
             let fd = new FormData(this);
@@ -424,10 +424,10 @@
 
             btnImport.disabled = true;
             importResult.innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-spinner fa-spin"></i> Memproses file, mohon tunggu...
-                </div>
-            `;
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i> Memproses file, mohon tunggu...
+        </div>
+    `;
 
             fetch("app/controller/csv-control/csv-karier.php", {
                     method: "POST",
@@ -441,23 +441,49 @@
                         data = JSON.parse(text);
                     } catch (error) {
                         showToast("Response bukan JSON!", "error");
-                        importResult.innerHTML = "";
+                        importResult.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan format response server.</div>`;
                         return;
                     }
 
                     if (data.success) {
-                        showToast(`Import berhasil! Data masuk: ${data.berhasil}, Gagal: ${data.gagal}`, "success");
-                        loadKarier(); // RELOAD TABEL OTOMATIS SETELAH IMPORT
-                        this.reset();
+                        // Jika ada baris yang gagal dihitung oleh backend
+                        if (data.errors && data.errors.length > 0) {
+                            showToast(`Import selesai. Berhasil: ${data.berhasil}, Gagal: ${data.gagal}`, "warning");
+
+                            // Cetak daftar baris yang error ke dalam id="importResult"
+                            let errorHtml = `
+                        <div class="alert alert-warning mt-3">
+                            <h6 class="fw-bold"><i class="fas fa-exclamation-triangle text-danger"></i> Beberapa Baris Gagal Diimport (${data.gagal} data):</h6>
+                            <ul class="mb-0" style="max-height: 200px; overflow-y: auto;">
+                    `;
+
+                            data.errors.forEach(err => {
+                                errorHtml += `<li>${err}</li>`;
+                            });
+
+                            errorHtml += `
+                            </ul>
+                        </div>
+                    `;
+                            importResult.innerHTML = errorHtml;
+                        } else {
+                            // Jika sukses total tanpa ada baris yang gagal
+                            showToast(`Import berhasil! Semua data masuk (${data.berhasil} data)`, "success");
+                            importResult.innerHTML = `<div class="alert alert-success mt-3"><i class="fas fa-check-circle"></i> Semua data (${data.berhasil}) berhasil diimport tanpa error.</div>`;
+                            this.reset();
+                        }
+
+                        loadKarier(); // RELOAD TABEL UTOMATIS
                     } else {
+                        // Ini jika file belum dipilih atau format salah (Error Fatal)
                         showToast(data.error || "Import gagal!", "error");
+                        importResult.innerHTML = `<div class="alert alert-danger mt-3"><i class="fas fa-times-circle"></i> ${data.error || "Import gagal!"}</div>`;
                     }
-                    importResult.innerHTML = "";
                 })
                 .catch(err => {
                     btnImport.disabled = false;
                     showToast("Request error: " + err.message, "error");
-                    importResult.innerHTML = "";
+                    importResult.innerHTML = `<div class="alert alert-danger mt-3">Koneksi/Sistem bermasalah.</div>`;
                 });
         });
 
