@@ -90,7 +90,8 @@ function kembali()
 function rupiah($angka)
 {
     $angka = (float)$angka; // ubah string kosong atau null jadi 0
-    $rupiah = number_format($angka, 0, ',', '.');
+    // Ubah angka 0 menjadi 2 agar menampilkan 2 angka di belakang koma secara default
+    $rupiah = number_format($angka, 2, ',', '.');
     return 'Rp ' . $rupiah;
 }
 

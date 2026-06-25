@@ -124,6 +124,7 @@ try {
         $id_karyawan = $dataKaryawan['id_karyawan'];
 
         // Ambil Nilai dari Excel & Terapkan cleanRupiah() pada nilai angka/uang
+        // Nama Karyawan di kolom C di skip
         $nama_site       = trim($row['D'] ?? '');
         $nama_departemen = trim($row['E'] ?? '');
         $nama_jabatan    = trim($row['F'] ?? '');
@@ -131,23 +132,19 @@ try {
         $basic      = cleanRupiah($row['G'] ?? 0);
         $t_daerah   = cleanRupiah($row['H'] ?? 0);
         $t_hidup    = cleanRupiah($row['I'] ?? 0);
-        $t_makan    = cleanRupiah($row['J'] ?? 0);
-        $t_skill    = cleanRupiah($row['K'] ?? 0);
-        $p_bonus    = cleanRupiah($row['L'] ?? 0);
-        $t_posisi   = cleanRupiah($row['M'] ?? 0);
-        $ot_pertama = cleanRupiah($row['N'] ?? 0);
-        $ot_kedua   = cleanRupiah($row['O'] ?? 0);
-        $spl        = cleanRupiah($row['P'] ?? 0);
-        $ot1_spl    = cleanRupiah($row['Q'] ?? 0);
-        $ot2_spl    = cleanRupiah($row['R'] ?? 0);
-        $pot_bpjs   = cleanRupiah($row['S'] ?? 0);
-        $pot_jht    = cleanRupiah($row['T'] ?? 0);
-        $pph21      = cleanRupiah($row['U'] ?? 0);
-        $pot_izin   = cleanRupiah($row['V'] ?? 0);
-        $pot_mangkir = cleanRupiah($row['W'] ?? 0);
+        $t_skill    = cleanRupiah($row['J'] ?? 0);
+        $t_posisi   = cleanRupiah($row['K'] ?? 0);
+        $t_makan    = cleanRupiah($row['L'] ?? 0);
+        $p_bonus    = cleanRupiah($row['M'] ?? 0);
+        $lembur     = cleanRupiah($row['N'] ?? 0); // Pengganti ke-5 kolom OT/SPL
+        $pot_bpjs   = cleanRupiah($row['O'] ?? 0);
+        $pot_jht    = cleanRupiah($row['P'] ?? 0);
+        $pph21      = cleanRupiah($row['Q'] ?? 0);
+        $pot_izin   = cleanRupiah($row['R'] ?? 0);
+        $pot_mangkir = cleanRupiah($row['S'] ?? 0);
         
-        $tgl_masuk_site = formatTanggal($row['X'] ?? '');
-        $tgl_selesai_kontrak = formatTanggal($row['Y'] ?? '');
+        $tgl_masuk_site = formatTanggal($row['T'] ?? '');
+        $tgl_selesai_kontrak = formatTanggal($row['U'] ?? '');
 
         // === Ambil ID referensi ===
         $id_site       = getId($koneksi, 'tb_site', 'nama_site', $nama_site, 'id_site');
@@ -183,16 +180,10 @@ try {
 
             // Update Karier Terakhir
             $koneksi->query("UPDATE tb_karier SET
-                id_site='$id_site',
-                id_departemen='$id_departemen',
-                id_jabatan='$id_jabatan', 
+                id_site='$id_site', id_departemen='$id_departemen', id_jabatan='$id_jabatan', 
                 gaji_pokok=$basic,
-                ot_pertama=$ot_pertama,
-                ot_kedua=$ot_kedua,
-                spl=$spl,
-                ot1_spl=$ot1_spl,
-                ot2_spl=$ot2_spl,
-                pot_izin=$pot_izin,
+                lembur=$lembur, 
+                pot_izin=$pot_izin, 
                 pot_mangkir=$pot_mangkir,
                 " . implode(",", $setTanggal) . "
             WHERE id_karier='$id_karier'");
@@ -203,11 +194,9 @@ try {
 
             $koneksi->query("INSERT INTO tb_karier (
                 id_karyawan, id_site, id_departemen, id_jabatan,
-                gaji_pokok, ot_pertama, ot_kedua, spl, ot1_spl, ot2_spl, 
-                pot_izin, pot_mangkir, tgl_mulai, tgl_selesai
+                gaji_pokok, lembur, pot_izin, pot_mangkir, tgl_mulai, tgl_selesai
             ) VALUES (
-                '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan',
-                $basic, $ot_pertama, $ot_kedua, $spl, $ot1_spl, $ot2_spl, 
+                '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan', $basic, $lembur,
                 $pot_izin, $pot_mangkir, '$tglMulai', " . ($tglSelesai ? "'$tglSelesai'" : "NULL") . "
             )");
             $id_karier = $koneksi->insert_id;
@@ -219,7 +208,7 @@ try {
             "Tunjangan Skill" => $t_skill,
             "Tunjangan Hidup" => $t_hidup,
             "Tunjangan Daerah" => $t_daerah,
-            "Performance Bonus" => $p_bonus,
+            "Bonus Kehadiran" => $p_bonus, // <--- UBAH DISINI
             "Tunjangan Posisi" => $t_posisi
         ];
 

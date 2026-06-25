@@ -77,11 +77,7 @@ while ($r = $q->fetch_assoc()) { ?>
         <!-- Gaji Pokok -->
         <td><?= rupiah($r['gaji_pokok']) ?></td>
         <!-- OT -->
-        <td><?= rupiah($r['ot_pertama']) ?></td>
-        <td><?= rupiah($r['ot_kedua']) ?></td>
-        <td><?= rupiah($r['spl']) ?></td>
-        <td><?= rupiah($r['ot1_spl']) ?></td>
-        <td><?= rupiah($r['ot2_spl']) ?></td>
+        <td><?= rupiah($r['lembur']) ?></td>
 
         <!-- Potongan -->
         <td><?= rupiah($r['pot_izin']) ?></td>
@@ -110,11 +106,7 @@ while ($r = $q->fetch_assoc()) { ?>
 
                 data-gaji_pokok="<?= $r['gaji_pokok'] ?>"
 
-                data-ot_pertama="<?= $r['ot_pertama'] ?>"
-                data-ot_kedua="<?= $r['ot_kedua'] ?>"
-                data-spl="<?= $r['spl'] ?>"
-                data-ot1_spl="<?= $r['ot1_spl'] ?>"
-                data-ot2_spl="<?= $r['ot2_spl'] ?>"
+                data-lembur="<?= $r['lembur'] ?>"
 
                 data-pot_izin="<?= $r['pot_izin'] ?>"
                 data-pot_mangkir="<?= $r['pot_mangkir'] ?>"

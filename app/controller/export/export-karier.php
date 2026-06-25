@@ -76,29 +76,25 @@ $sheet = $spreadsheet->getActiveSheet();
 $headers = [
     'A1' => 'NO',
     'B1' => 'NIK KARYAWAN',
-    'C1' => 'NAMA LENGKAP (Info)', 
+    'C1' => 'NAMA LENGKAP', 
     'D1' => 'SITE',
     'E1' => 'DEPARTEMEN', 
     'F1' => 'JABATAN', 
     'G1' => 'GAJI BASIC', 
     'H1' => 'TUNJANGAN DAERAH', 
     'I1' => 'TUNJANGAN HIDUP', 
-    'J1' => 'TUNJANGAN MAKAN', 
-    'K1' => 'TUNJANGAN SKILL',
-    'L1' => 'PERFORMANCE BONUS', 
-    'M1' => 'TUNJANGAN POSISI', 
-    'N1' => 'OT PERTAMA', 
-    'O1' => 'OT KEDUA', 
-    'P1' => 'SPL', 
-    'Q1' => 'OT1 SPL', 
-    'R1' => 'OT2 SPL', 
-    'S1' => 'POTONGAN BPJS KES', 
-    'T1' => 'POTONGAN JHT', 
-    'U1' => 'PPH21', 
-    'V1' => 'POTONGAN IZIN', 
-    'W1' => 'POTONGAN MANGKIR', 
-    'X1' => 'TGL MASUK SITE', 
-    'Y1' => 'TGL SELESAI KONTRAK'
+    'J1' => 'TUNJANGAN SKILL',
+    'K1' => 'TUNJANGAN POSISI', 
+    'L1' => 'TUNJANGAN MAKAN',
+    'M1' => 'BONUS KEHADIRAN', 
+    'N1' => 'UPAH LEMBUR', 
+    'O1' => 'POTONGAN BPJS KES', 
+    'P1' => 'POTONGAN JHT', 
+    'Q1' => 'PPH21', 
+    'R1' => 'POTONGAN IZIN', 
+    'S1' => 'POTONGAN MANGKIR', 
+    'T1' => 'TGL MASUK SITE', 
+    'U1' => 'TGL SELESAI KONTRAK'
 ];
 
 // Set nilai header dan buat tulisan jadi bold
@@ -150,22 +146,18 @@ if ($result && $result->num_rows > 0) {
         $sheet->setCellValue('G' . $rowNum, $row['gaji_pokok']);
         $sheet->setCellValue('H' . $rowNum, $t_daerah);
         $sheet->setCellValue('I' . $rowNum, $t_hidup);
-        $sheet->setCellValue('J' . $rowNum, $t_makan);
-        $sheet->setCellValue('K' . $rowNum, $t_skill);
-        $sheet->setCellValue('L' . $rowNum, $p_bonus);
-        $sheet->setCellValue('M' . $rowNum, $t_posisi);
-        $sheet->setCellValue('N' . $rowNum, $row['ot_pertama']);
-        $sheet->setCellValue('O' . $rowNum, $row['ot_kedua']);
-        $sheet->setCellValue('P' . $rowNum, $row['spl']);
-        $sheet->setCellValue('Q' . $rowNum, $row['ot1_spl']);
-        $sheet->setCellValue('R' . $rowNum, $row['ot2_spl']);
-        $sheet->setCellValue('S' . $rowNum, $pot_bpjs);
-        $sheet->setCellValue('T' . $rowNum, $pot_jht);
-        $sheet->setCellValue('U' . $rowNum, $pph21);
-        $sheet->setCellValue('V' . $rowNum, $row['pot_izin']);
-        $sheet->setCellValue('W' . $rowNum, $row['pot_mangkir']);
-        $sheet->setCellValue('X' . $rowNum, $row['tgl_mulai']);
-        $sheet->setCellValue('Y' . $rowNum, $row['tgl_selesai']);
+        $sheet->setCellValue('J' . $rowNum, $t_skill);
+        $sheet->setCellValue('K' . $rowNum, $t_posisi);
+        $sheet->setCellValue('L' . $rowNum, $t_makan);
+        $sheet->setCellValue('M' . $rowNum, $p_bonus);
+        $sheet->setCellValue('N' . $rowNum, $row['lembur']);
+        $sheet->setCellValue('O' . $rowNum, $pot_bpjs);
+        $sheet->setCellValue('P' . $rowNum, $pot_jht);
+        $sheet->setCellValue('Q' . $rowNum, $pph21);
+        $sheet->setCellValue('R' . $rowNum, $row['pot_izin']);
+        $sheet->setCellValue('S' . $rowNum, $row['pot_mangkir']);
+        $sheet->setCellValue('T' . $rowNum, $row['tgl_mulai']);
+        $sheet->setCellValue('U' . $rowNum, $row['tgl_selesai']);
 
         $rowNum++;
     }

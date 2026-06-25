@@ -43,7 +43,7 @@ if (!function_exists('generateSlipGaji')) {
                 WHERE k.nik_karyawan='$nik' LIMIT 1";
         $q = mysqli_query($koneksi, $sql);
         $k = mysqli_fetch_assoc($q);
-        
+
         if (!$k) return ['error' => 'Karyawan tidak ditemukan'];
 
         // --- TAMBAHAN LOGIKA FILTER KARYAWAN KELUAR ---
@@ -52,7 +52,7 @@ if (!function_exists('generateSlipGaji')) {
             if (strtotime($k['tgl_keluar']) < strtotime($startDate)) {
                 // Berikan flag 'skip' agar diabaikan oleh frontend
                 return [
-                    'skip' => true, 
+                    'skip' => true,
                     'error' => 'Karyawan telah keluar sebelum rentang periode ini.'
                 ];
             }
@@ -74,20 +74,18 @@ if (!function_exists('generateSlipGaji')) {
         $tgl_mulai_karier = $karier['tgl_mulai'];
         $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
 
-        // ================= 2a) Ambil Tunjangan (Pendapatan) dari tb_tunjangan =================
-        $tunjanganRows = [];
+        // Ambil Nilai Dasar Lembur Bulanan/Karier
+        $base_lembur = floatval($karier['lembur'] ?? 0);
+
+        // ================= 2a) Ambil data mentah tunjangan terlebih dahulu (diproses setelah loop absen) tb_tunjangan =================
+        $tunjanganRawRows = []; // KOREKSI: Inisialisasi variabel harus sama dengan yang diisi di dalam loop
         $total_tunjangan = 0;
         $sqlTunj = "SELECT nama_tunjangan, jumlah_tunjangan 
-                    FROM tb_tunjangan 
-                    WHERE id_karier = '" . $karier['id_karier'] . "'";
+            FROM tb_tunjangan 
+            WHERE id_karier = '" . $karier['id_karier'] . "'";
         $qt = mysqli_query($koneksi, $sqlTunj);
         while ($tr = mysqli_fetch_assoc($qt)) {
-            $row = [
-                'nama' => $tr['nama_tunjangan'],
-                'jumlah' => floatval($tr['jumlah_tunjangan'])
-            ];
-            $tunjanganRows[] = $row;
-            $total_tunjangan += floatval($tr['jumlah_tunjangan']);
+            $tunjanganRawRows[] = $tr;
         }
 
         // ================= Ambil Potongan (BPJS/JHT/PPH21 dll) dari tb_potongan =================
@@ -114,7 +112,7 @@ if (!function_exists('generateSlipGaji')) {
             $n = strtolower($pr['nama']);
             if (strpos($n, 'bpjs') !== false) {
                 $bpjs_kesehatan += $pr['jumlah'];
-            } elseif (strpos($n, 'jht') !== false || strpos($n, 'jht ') !== false) {
+            } elseif (strpos($n, 'jht') !== false) {
                 $jht += $pr['jumlah'];
             } elseif (strpos($n, 'pph') !== false) {
                 $pph21 += $pr['jumlah'];
@@ -168,7 +166,7 @@ if (!function_exists('generateSlipGaji')) {
         while ($potlain = mysqli_fetch_assoc($qpotlain)) {
             $nominal = floatval($potlain['nominal_potongan']);
             $total_potongan_lainnya += $nominal;
-            
+
             // Gabungkan Jenis dan Keterangan (Jika Keterangan tidak kosong)
             $namaPotongan = $potlain['jenis_potongan'];
             $ket = trim((string)$potlain['ket_potongan']);
@@ -208,7 +206,7 @@ if (!function_exists('generateSlipGaji')) {
             if ($ketRawUpper === 'CUTI')  $cuti_days++;
         }
 
-        // ================= 5) Hitung Absen =================
+        // ================= 5) Hitung Absen Bulanan & Jam Lembur =================
         $absenForUI = [];
         $hari_kerja_count = 0;
         $mangkir_count = 0;
@@ -335,9 +333,10 @@ if (!function_exists('generateSlipGaji')) {
                     $h8   = ($jam > 7) ? min(1, $jam - 7) : 0;
                     $h9up = max(0, $jam - 8);
 
-                    $total_spl_1_7  += $h1_7 * floatval($karier['spl']);
-                    $total_spl_8    += $h8   * floatval($karier['ot1_spl']);
-                    $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
+                    // Pengalian Baru SPL berbasis 1 kolom 'lembur'
+                    $total_spl_1_7  += $h1_7 * ($base_lembur * 2);
+                    $total_spl_8    += $h8   * ($base_lembur * 3);
+                    $total_spl_9_up += $h9up * ($base_lembur * 4);
 
                     $total_jam_spl_1_7  += $h1_7;
                     $total_jam_spl_8    += $h8;
@@ -360,19 +359,19 @@ if (!function_exists('generateSlipGaji')) {
                     $ot = 0;
 
                     if ($hariNama === 'friday') {
-                        // Jumat: jam normal 5, WL jam ke-6, OT jam ke-7+
+                        // Jumat: Normal wajib 5 jam, jam ke-6 lembur pertama (1.5x), jam 7+ (2x)
                         $wl = min(1, max(0, $jam - 5));
                         $ot = max(0, $jam - 5 - $wl);
                     } else {
-                        // Hari biasa: jam normal 7, WL jam ke-8, OT jam ke-9+
+                        // Hari Biasa: Normal wajib 7 jam, jam ke-8 lembur pertama (1.5x), jam 9+ (2x)
                         $wl = min(1, max(0, $jam - 7));
                         $ot = max(0, $jam - 7 - $wl);
                     }
 
-                    $total_lembur += $wl * floatval($karier['ot_pertama']);
-                    $total_overtime += $ot * floatval($karier['ot_kedua']);
-                    $total_jam_wl += $wl;
-                    $total_jam_ot += $ot;
+                    $total_lembur   += $wl * ($base_lembur * 1.5);
+                    $total_overtime += $ot * ($base_lembur * 2.0);
+                    $total_jam_wl   += $wl;
+                    $total_jam_ot   += $ot;
 
                     // Potongan jika jam kerja kurang dari normal
                     if ($jam < $normal_hours) {
@@ -421,9 +420,41 @@ if (!function_exists('generateSlipGaji')) {
             ];
         }
 
-        // ================= Hitung total pendapatan & potongan =================
+        // ================= 6) Logika Baru: Kalkulasi Tunjangan Dinamis =================
+        $tunjanganRows = [];
+        $total_tunjangan = 0;
+
+        // Total Ketidakhadiran dalam sebulan selain OFF (Sakit, Izin, Cuti, Mangkir, New, Resign)
+        $total_ketidakhadiran = $sakit_days + $izin_days + $cuti_days + $mangkir_count + $new_count + $resign_count;
+
+        foreach ($tunjanganRawRows as $tr) {
+            $nama_t = $tr['nama_tunjangan'];
+            $jumlah_t = floatval($tr['jumlah_tunjangan']);
+
+            // A. Logika Tunjangan Makan: Hanya per masuk kerja hari biasa
+            if (stripos($nama_t, 'makan') !== false) {
+                $jumlah_t = $jumlah_t * $hari_kerja_count;
+            }
+
+            // B. Logika Bonus Kehadiran (Ubah nama dari performance bonus & cek batasan absen > 3)
+            if (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false) {
+                $nama_t = "Bonus Kehadiran";
+                if ($total_ketidakhadiran > 3) {
+                    $jumlah_t = 0;
+                    $nama_t .= " (Hangus: Absen > 3 Hari)";
+                }
+            }
+
+            $tunjanganRows[] = [
+                'nama' => $nama_t,
+                'jumlah' => $jumlah_t
+            ];
+            $total_tunjangan += $jumlah_t;
+        }
+
+        // ================= Perhitungan Gaji Pokok & Potongan =================
         $basic = floatval($karier['gaji_pokok']);
-        
+
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
 
@@ -446,8 +477,6 @@ if (!function_exists('generateSlipGaji')) {
             $total_pot_mangkir +
             $total_potongan_perjam +
             $total_potongan_pkwt;
-
-        $total_tunjangan = $total_tunjangan ?? 0;
 
         // ===== Perhitungan kelebihan hari kerja (jika hari kerja > 25) =====
         // $kelebihan_hari = 0;

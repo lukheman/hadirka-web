@@ -25,11 +25,7 @@
                                 <th class="text-center">Departemen</th>
                                 <th class="text-center">Jabatan</th>
                                 <th class="text-center">Gaji Pokok</th>
-                                <th class="text-center">OT Pertama</th>
-                                <th class="text-center">OT Kedua</th>
-                                <th class="text-center">SPL</th>
-                                <th class="text-center">OT1 SPL</th>
-                                <th class="text-center">OT2 SPL</th>
+                                <th class="text-center">Upah Lembur</th>
                                 <th class="text-center">Pot Izin</th>
                                 <th class="text-center">Pot Mangkir</th>
                                 <th class="text-center">Tgl Mulai</th>
@@ -56,7 +52,7 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <!-- Site -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Site</label>
                             <select name="id_site" class="form-control" required>
                                 <option value="">-- Pilih Site --</option>
@@ -70,7 +66,7 @@
                         </div>
 
                         <!-- Departemen -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Departemen</label>
                             <select name="id_departemen" class="form-control" required>
                                 <option value="">-- Pilih Departemen --</option>
@@ -84,7 +80,7 @@
                         </div>
 
                         <!-- Jabatan -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Jabatan</label>
                             <select name="id_jabatan" class="form-control" required>
                                 <option value="">-- Pilih Jabatan --</option>
@@ -97,56 +93,35 @@
                             </select>
                         </div>
 
-                        <!-- Gaji Pokok -->
-                        <div class="col-md-3">
-                            <label>Gaji Basic</label>
-                            <input type="number" name="gaji_pokok" class="form-control" required>
-                        </div>
+
 
                         <div class="col-md-12">
                             <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
                             <hr>
                         </div>
 
-                        <!-- OT Pertama -->
+                        <!-- Gaji Pokok -->
                         <div class="col-md-3">
-                            <label>OT Pertama (8 Jam)</label>
-                            <input type="number" name="ot_pertama" class="form-control">
+                            <label>Gaji Basic</label>
+                            <input type="text" name="gaji_pokok" class="form-control nominal-mask" required>
                         </div>
 
-                        <!-- OT Kedua -->
+                        <!-- Lembur -->
                         <div class="col-md-3">
-                            <label>OT Kedua (9 - Dst)</label>
-                            <input type="number" name="ot_kedua" class="form-control">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>SPL</label>
-                            <input type="number" name="spl" class="form-control">
-                        </div>
-
-                        <!-- OT1 SPL -->
-                        <div class="col-md-3">
-                            <label>OT1 SPL</label>
-                            <input type="number" name="ot1_spl" class="form-control">
-                        </div>
-
-                        <!-- OT2 SPL -->
-                        <div class="col-md-4">
-                            <label>OT2 SPL</label>
-                            <input type="number" name="ot2_spl" class="form-control">
+                            <label>Upah Lembur</label>
+                            <input type="text" name="lembur" class="form-control nominal-mask" required>
                         </div>
 
                         <!-- Pot Izin -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label>Potongan Izin</label>
-                            <input type="number" name="pot_izin" class="form-control">
+                            <input type="text" name="pot_izin" class="form-control nominal-mask">
                         </div>
 
                         <!-- Pot Mangkir -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label>Potongan Mangkir</label>
-                            <input type="number" name="pot_mangkir" class="form-control">
+                            <input type="text" name="pot_mangkir" class="form-control nominal-mask">
                         </div>
 
                         <!-- Tgl Mulai -->
@@ -186,7 +161,7 @@
                     <div class="row g-3">
 
                         <!-- Site -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Site</label>
                             <select name="id_site" class="form-control" required>
                                 <?php
@@ -199,7 +174,7 @@
                         </div>
 
                         <!-- Departemen -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Departemen</label>
                             <select name="id_departemen" class="form-control" required>
                                 <?php
@@ -212,7 +187,7 @@
                         </div>
 
                         <!-- Jabatan -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Jabatan</label>
                             <select name="id_jabatan" class="form-control" required>
                                 <?php
@@ -224,53 +199,32 @@
                             </select>
                         </div>
 
-                        <!-- Gaji Basic -->
-                        <div class="col-md-3">
-                            <label>Gaji Basic</label>
-                            <input type="number" name="gaji_pokok" class="form-control" required>
-                        </div>
-
                         <div class="col-md-12">
                             <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
                             <hr>
                         </div>
 
-
-                        <!-- OT -->
+                        <!-- Gaji Basic -->
                         <div class="col-md-3">
-                            <label>OT Pertama (8 Jam)</label>
-                            <input type="number" name="ot_pertama" class="form-control">
+                            <label>Gaji Basic</label>
+                            <input type="text" name="gaji_pokok" class="form-control nominal-mask" required>
                         </div>
 
+                        <!-- Lembur -->
                         <div class="col-md-3">
-                            <label>OT Kedua (9 - Dst)</label>
-                            <input type="number" name="ot_kedua" class="form-control">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>SPL</label>
-                            <input type="number" name="spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>OT1 SPL</label>
-                            <input type="number" name="ot1_spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label>OT2 SPL</label>
-                            <input type="number" name="ot2_spl" class="form-control">
+                            <label>Upah Lembur</label>
+                            <input type="text" name="lembur" class="form-control nominal-mask" required>
                         </div>
 
                         <!-- Potongan -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label>Potongan Izin</label>
-                            <input type="number" name="pot_izin" class="form-control">
+                            <input type="text" name="pot_izin" class="form-control nominal-mask">
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label>Potongan Mangkir</label>
-                            <input type="number" name="pot_mangkir" class="form-control">
+                            <input type="text" name="pot_mangkir" class="form-control nominal-mask">
                         </div>
 
                         <!-- Tanggal -->
@@ -303,6 +257,36 @@
     document.addEventListener("DOMContentLoaded", () => {
         const karyawanId = "<?= $_GET['id'] ?>";
         const tbody = document.getElementById("tbodyKarier");
+
+        // --- HELPER FORMAT DESIMAL INDONESIA ---
+        function formatIndo(val) {
+            if (val === undefined || val === null || val === '') return "";
+            let parts = val.toString().split(".");
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return parts.join(",");
+        }
+
+        // --- LISTENER MASKING NOMINAL OTOMATIS ---
+        document.addEventListener("input", e => {
+            if (e.target.classList.contains("nominal-mask")) {
+                let input = e.target;
+                let cursorPos = input.selectionStart;
+                let prevLength = input.value.length;
+
+                let val = input.value.replace(/[^0-9,]/g, "");
+                let parts = val.split(",");
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+                if (parts.length > 2) {
+                    input.value = parts[0] + "," + parts[1];
+                } else {
+                    input.value = parts.join(",");
+                }
+
+                let diff = input.value.length - prevLength;
+                input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            }
+        });
 
         // --- LOAD DATA ---
         function loadKarier() {
@@ -377,15 +361,13 @@
             form.querySelector("select[name=id_site]").value = btn.dataset.id_site;
             form.querySelector("select[name=id_departemen]").value = btn.dataset.id_departemen;
             form.querySelector("select[name=id_jabatan]").value = btn.dataset.id_jabatan;
-            form.querySelector("input[name=gaji_pokok]").value = btn.dataset.gaji_pokok;
 
-            form.querySelector("input[name=ot_pertama]").value = btn.dataset.ot_pertama;
-            form.querySelector("input[name=ot_kedua]").value = btn.dataset.ot_kedua;
-            form.querySelector("input[name=spl]").value = btn.dataset.spl;
-            form.querySelector("input[name=ot1_spl]").value = btn.dataset.ot1_spl;
-            form.querySelector("input[name=ot2_spl]").value = btn.dataset.ot2_spl;
-            form.querySelector("input[name=pot_izin]").value = btn.dataset.pot_izin;
-            form.querySelector("input[name=pot_mangkir]").value = btn.dataset.pot_mangkir;
+            // KOREKSI: Gunakan fungsi formatIndo di data-karier.php
+            form.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gaji_pokok);
+            form.querySelector("input[name=lembur]").value = formatIndo(btn.dataset.lembur);
+            form.querySelector("input[name=pot_izin]").value = formatIndo(btn.dataset.pot_izin);
+            form.querySelector("input[name=pot_mangkir]").value = formatIndo(btn.dataset.pot_mangkir);
+
             form.querySelector("input[name=tgl_mulai]").value = btn.dataset.tgl_mulai;
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
 
@@ -432,18 +414,18 @@
                 fd.append("id_karier", btn.dataset.id);
 
                 fetch("app/controller/act-karier.php", {
-                    method: "POST",
-                    body: fd
-                })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.status === "success") {
-                        showToast(res.msg, "success");
-                        loadKarier();
-                    } else {
-                        showToast(res.msg, "error");
-                    }
-                });
+                        method: "POST",
+                        body: fd
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === "success") {
+                            showToast(res.msg, "success");
+                            loadKarier();
+                        } else {
+                            showToast(res.msg, "error");
+                        }
+                    });
             }
         });
 

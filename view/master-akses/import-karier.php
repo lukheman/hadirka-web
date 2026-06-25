@@ -115,11 +115,7 @@
                                 <th class="text-center">Departemen</th>
                                 <th class="text-center">Jabatan</th>
                                 <th class="text-center">Gaji Pokok</th>
-                                <th class="text-center">OT Pertama</th>
-                                <th class="text-center">OT Kedua</th>
-                                <th class="text-center">SPL</th>
-                                <th class="text-center">OT1 SPL</th>
-                                <th class="text-center">OT2 SPL</th>
+                                <th class="text-center">Upah Lembur</th>
                                 <th class="text-center">Pot Izin</th>
                                 <th class="text-center">Pot Mangkir</th>
                                 <th class="text-center">Tgl Mulai</th>
@@ -159,7 +155,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Site</label>
                             <select name="id_site" class="form-control" required>
                                 <option value="">-- Pilih Site --</option>
@@ -172,7 +168,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Departemen</label>
                             <select name="id_departemen" class="form-control" required>
                                 <option value="">-- Pilih Departemen --</option>
@@ -185,7 +181,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Jabatan</label>
                             <select name="id_jabatan" class="form-control" required>
                                 <option value="">-- Pilih Jabatan --</option>
@@ -198,49 +194,29 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
-                            <label>Gaji Basic</label>
-                            <input type="number" name="gaji_pokok" class="form-control" required>
-                        </div>
-
                         <div class="col-md-12">
                             <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
                             <hr>
                         </div>
 
                         <div class="col-md-3">
-                            <label>OT Pertama (8 Jam)</label>
-                            <input type="number" name="ot_pertama" class="form-control">
+                            <label>Gaji Basic</label>
+                            <input type="text" name="gaji_pokok" class="form-control nominal-mask" required>
                         </div>
 
                         <div class="col-md-3">
-                            <label>OT Kedua (9 - Dst)</label>
-                            <input type="number" name="ot_kedua" class="form-control">
+                            <label>Upah Lembur</label>
+                            <input type="text" name="lembur" class="form-control nominal-mask" required>
                         </div>
 
                         <div class="col-md-3">
-                            <label>SPL</label>
-                            <input type="number" name="spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>OT1 SPL</label>
-                            <input type="number" name="ot1_spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label>OT2 SPL</label>
-                            <input type="number" name="ot2_spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-4">
                             <label>Potongan Izin</label>
-                            <input type="number" name="pot_izin" class="form-control">
+                            <input type="text" name="pot_izin" class="form-control nominal-mask">
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label>Potongan Mangkir</label>
-                            <input type="number" name="pot_mangkir" class="form-control">
+                            <input type="text" name="pot_mangkir" class="form-control nominal-mask">
                         </div>
 
                         <div class="col-md-6">
@@ -275,7 +251,7 @@
 
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Site</label>
                             <select name="id_site" class="form-control" required>
                                 <?php
@@ -287,7 +263,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Departemen</label>
                             <select name="id_departemen" class="form-control" required>
                                 <?php
@@ -299,7 +275,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label>Jabatan</label>
                             <select name="id_jabatan" class="form-control" required>
                                 <?php
@@ -311,49 +287,29 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
-                            <label>Gaji Basic</label>
-                            <input type="number" name="gaji_pokok" class="form-control" required>
-                        </div>
-
                         <div class="col-md-12">
                             <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
                             <hr>
                         </div>
 
                         <div class="col-md-3">
-                            <label>OT Pertama (8 Jam)</label>
-                            <input type="number" name="ot_pertama" class="form-control">
+                            <label>Gaji Basic</label>
+                            <input type="text" name="gaji_pokok" class="form-control nominal-mask" required>
                         </div>
 
                         <div class="col-md-3">
-                            <label>OT Kedua (9 - Dst)</label>
-                            <input type="number" name="ot_kedua" class="form-control">
+                            <label>Upah Lembur</label>
+                            <input type="text" name="lembur" class="form-control nominal-mask" required>
                         </div>
 
                         <div class="col-md-3">
-                            <label>SPL</label>
-                            <input type="number" name="spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>OT1 SPL</label>
-                            <input type="number" name="ot1_spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label>OT2 SPL</label>
-                            <input type="number" name="ot2_spl" class="form-control">
-                        </div>
-
-                        <div class="col-md-4">
                             <label>Potongan Izin</label>
-                            <input type="number" name="pot_izin" class="form-control">
+                            <input type="text" name="pot_izin" class="form-control nominal-mask">
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label>Potongan Mangkir</label>
-                            <input type="number" name="pot_mangkir" class="form-control">
+                            <input type="text" name="pot_mangkir" class="form-control nominal-mask">
                         </div>
 
                         <div class="col-md-6">
@@ -384,7 +340,46 @@
         const importResult = document.getElementById("importResult");
         const tbody = document.getElementById("tbodyKarier");
 
-        // --- 1. LOAD DATA TABEL KARIER (DENGAN FILTER) ---
+        // --- HELPER UNTUK MEMFORMAT ANGKA SAAT MODAL EDIT DIBUKA ---
+        function formatIndo(val) {
+            if (val === undefined || val === null || val === '') return "";
+            let parts = val.toString().split(".");
+            // Beri titik pada komponen ribuan
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            // Gabungkan kembali dengan koma desimal jika ada pecahan
+            return parts.join(",");
+        }
+
+        // --- 1. LISTENER FORMAT MASKING OTOMATIS SAAT MENGETIK ---
+        document.addEventListener("input", e => {
+            if (e.target.classList.contains("nominal-mask")) {
+                let input = e.target;
+                let cursorPos = input.selectionStart;
+                let prevLength = input.value.length;
+
+                // Bersihkan semua karakter selain angka dan koma desimal
+                let val = input.value.replace(/[^0-9,]/g, "");
+
+                // Pecah berdasarkan koma desimal
+                let parts = val.split(",");
+
+                // Format bagian angka bulat dengan titik ribuan
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+                // Batasi hanya boleh ada 1 koma desimal
+                if (parts.length > 2) {
+                    input.value = parts[0] + "," + parts[1];
+                } else {
+                    input.value = parts.join(",");
+                }
+
+                // Sesuaikan kembali posisi kursor ketikan agar tidak melompat
+                let diff = input.value.length - prevLength;
+                input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            }
+        });
+
+        // --- 2. LOAD DATA TABEL KARIER (DENGAN FILTER) ---
         function loadKarier() {
             let site = document.getElementById("filterSite").value;
             let jabatan = document.getElementById("filterJabatan").value;
@@ -401,9 +396,15 @@
                         $(".MyTableKarier").DataTable().destroy();
                     }
                     tbody.innerHTML = html;
+                    
+                    // KOREKSI: Konfigurasi digabung di sini agar tidak memicu error double init
                     $(".MyTableKarier").DataTable({
                         responsive: true,
-                        pageLength: 10
+                        pageLength: 10,
+                        columnDefs: [{
+                            orderable: false,
+                            targets: 0
+                        }]
                     });
                 })
                 .catch(err => console.error("Gagal meload data tabel: ", err));
@@ -415,7 +416,7 @@
         document.getElementById("filterStatus").addEventListener("change", loadKarier);
         document.getElementById("filterBulan").addEventListener("change", loadKarier);
 
-        // --- 2. PROSES IMPORT EXCEL ---
+        // --- 3. PROSES IMPORT EXCEL ---
         formImport.addEventListener("submit", function(e) {
             e.preventDefault();
             let fd = new FormData(this);
@@ -460,7 +461,7 @@
                 });
         });
 
-        // --- 3. TAMBAH KARIER MANUAL ---
+        // --- 4. TAMBAH KARIER MANUAL ---
         document.getElementById("formTambahKarier").addEventListener("submit", function(e) {
             e.preventDefault();
             let fd = new FormData(this);
@@ -484,7 +485,7 @@
                 });
         });
 
-        // --- 4. TAMPILKAN MODAL EDIT ---
+        // --- 5. TAMPILKAN MODAL EDIT ---
         document.addEventListener("click", e => {
             let btn = e.target.closest(".btnEditKarier");
             if (!btn) return;
@@ -494,22 +495,20 @@
             form.querySelector("select[name=id_site]").value = btn.dataset.id_site;
             form.querySelector("select[name=id_departemen]").value = btn.dataset.id_departemen;
             form.querySelector("select[name=id_jabatan]").value = btn.dataset.id_jabatan;
-            form.querySelector("input[name=gaji_pokok]").value = btn.dataset.gaji_pokok;
 
-            form.querySelector("input[name=ot_pertama]").value = btn.dataset.ot_pertama;
-            form.querySelector("input[name=ot_kedua]").value = btn.dataset.ot_kedua;
-            form.querySelector("input[name=spl]").value = btn.dataset.spl;
-            form.querySelector("input[name=ot1_spl]").value = btn.dataset.ot1_spl;
-            form.querySelector("input[name=ot2_spl]").value = btn.dataset.ot2_spl;
-            form.querySelector("input[name=pot_izin]").value = btn.dataset.pot_izin;
-            form.querySelector("input[name=pot_mangkir]").value = btn.dataset.pot_mangkir;
+            // KOREKSI: Gunakan fungsi formatIndo agar data pecahan langsung bermasker titik koma di modal edit
+            form.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gaji_pokok);
+            form.querySelector("input[name=lembur]").value = formatIndo(btn.dataset.lembur);
+            form.querySelector("input[name=pot_izin]").value = formatIndo(btn.dataset.pot_izin);
+            form.querySelector("input[name=pot_mangkir]").value = formatIndo(btn.dataset.pot_mangkir);
+
             form.querySelector("input[name=tgl_mulai]").value = btn.dataset.tgl_mulai;
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
 
             new bootstrap.Modal(document.getElementById("modalEditKarier")).show();
         });
 
-        // --- 5. SUBMIT EDIT KARIER ---
+        // --- 6. SUBMIT EDIT KARIER ---
         document.getElementById("formEditKarier").addEventListener("submit", function(e) {
             e.preventDefault();
             let fd = new FormData(this);
@@ -531,7 +530,7 @@
                 });
         });
 
-        // --- 6. DELETE KARIER ---
+        // --- 7. DELETE KARIER ---
         document.addEventListener("click", e => {
             let btn = e.target.closest(".btnDeleteKarier");
             if (!btn) return;
@@ -559,10 +558,10 @@
             }
         });
 
-        // --- 7. LOAD DATA TABEL SAAT PERTAMA KALI DIBUKA ---
+        // --- 8. LOAD DATA TABEL SAAT PERTAMA KALI DIBUKA ---
         loadKarier();
 
-        // --- 8. EXPORT CSV KARIER ---
+        // --- 9. EXPORT CSV KARIER ---
         window.exportKarierCSV = function() {
             // Ambil value dari filter saat ini
             let site = document.getElementById("filterSite").value;
@@ -576,7 +575,7 @@
             table.$(".chk-extend:checked").each(function() {
                 selectedIds.push($(this).val());
             });
-            
+
             // Gabungkan array menjadi string, misal: "12,15,20"
             let idsString = selectedIds.join(',');
 
@@ -599,7 +598,7 @@
         document.getElementById("btnExtendBatch").addEventListener("click", () => {
             let table = $(".MyTableKarier").DataTable();
             let selected = [];
-            
+
             // Ambil semua checkbox yang dicentang di seluruh halaman
             table.$(".chk-extend:checked").each(function() {
                 selected.push($(this).val());

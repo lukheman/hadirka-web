@@ -60,8 +60,7 @@ SELECT k.id_karyawan, k.nama_lengkap,
        COALESCE(d.nama_departemen, '') AS nama_departemen,
        COALESCE(j.nama_jabatan, '') AS nama_jabatan,
        COALESCE(s.nama_site, '') AS nama_site,
-       kar.tgl_mulai, kar.tgl_selesai,
-       kar.ot_pertama, kar.ot_kedua, kar.pot_izin, kar.pot_mangkir
+       kar.tgl_mulai, kar.tgl_selesai
 FROM tb_karyawan k
 LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan
 LEFT JOIN tb_jabatan j ON j.id_jabatan = kar.id_jabatan

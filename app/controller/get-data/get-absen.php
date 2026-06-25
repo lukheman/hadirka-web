@@ -2,8 +2,8 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require '../../config/koneksi.php';
-require '../../config/function.php';
+require __DIR__ . '/../../config/koneksi.php';
+require __DIR__ . '/../../config/function.php';
 
 $site   = $_POST['site'] ?? '';
 $tgl    = $_POST['tgl'] ?? date('Y-m-d');

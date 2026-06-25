@@ -52,8 +52,8 @@ if (!$karyawan) {
 }
 $nik = $karyawan['nik_karyawan'];
 
-// Mendapatkan Karier Aktif (Untuk ot_pertama, ot_kedua, dan tgl_mulai)
-$sqlKarier = "SELECT kar.tgl_mulai, kar.tgl_selesai, kar.ot_pertama, kar.ot_kedua, jab.nama_jabatan 
+// Mendapatkan Karier Aktif (Untuk lembur, dan tgl_mulai)
+$sqlKarier = "SELECT kar.tgl_mulai, kar.tgl_selesai, jab.nama_jabatan
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
             WHERE kar.id_karyawan = '$id_karyawan_safe'
@@ -69,8 +69,6 @@ if (!$karier) {
 }
 $tgl_mulai_karier = $karier['tgl_mulai'];
 $tgl_selesai_karier = $karier['tgl_selesai'];
-$ot_pertama = floatval($karier['ot_pertama'] ?? 0);
-$ot_kedua = floatval($karier['ot_kedua'] ?? 0);
 
 
 // =========================================================

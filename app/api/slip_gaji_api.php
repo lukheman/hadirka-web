@@ -18,10 +18,23 @@ if (!function_exists('generateSlipGaji')) {
         $endDate = mysqli_real_escape_string($koneksi, $endDate);
 
         // ================= 1) Get Karyawan =================
-        $sql = "SELECT nik_karyawan, nama_lengkap, id_karyawan FROM tb_karyawan WHERE id_karyawan='$id_karyawan' LIMIT 1";
+        $sql = "SELECT k.nik_karyawan, k.nama_lengkap, k.id_karyawan, k.status_karyawan, t.tgl_keluar 
+                FROM tb_karyawan k 
+                LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan 
+                WHERE k.id_karyawan='$id_karyawan' LIMIT 1";
         $q = mysqli_query($koneksi, $sql);
         $k = mysqli_fetch_assoc($q);
         if (!$k) return ['error' => 'Karyawan tidak ditemukan'];
+
+        // --- TAMBAHAN SINKRONISASI FILTER KARYAWAN KELUAR ---
+        if ($k['status_karyawan'] !== 'Aktif' && !empty($k['tgl_keluar'])) {
+            if (strtotime($k['tgl_keluar']) < strtotime($startDate)) {
+                return [
+                    'skip' => true,
+                    'error' => 'Karyawan telah keluar sebelum rentang periode ini.'
+                ];
+            }
+        }
 
         // ================= 2) Get Karier Aktif =================
         $sqlKarier = "SELECT kar.*, jab.nama_jabatan 
@@ -38,15 +51,18 @@ if (!function_exists('generateSlipGaji')) {
         $tgl_mulai_karier = $karier['tgl_mulai'];
         $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
 
+        // Nilai Dasar Lembur
+        $base_lembur = floatval($karier['lembur'] ?? 0);
+
         // ================= 3) Tunjangan & Potongan dari DB =================
-        $tunjanganRows = [];
-        $total_tunjangan_db = 0;
+        // Ambil Data Mentah Tunjangan
+        $tunjanganRawRows = [];
         $qt = mysqli_query($koneksi, "SELECT nama_tunjangan, jumlah_tunjangan FROM tb_tunjangan WHERE id_karier = '{$karier['id_karier']}'");
         while ($tr = mysqli_fetch_assoc($qt)) {
-            $tunjanganRows[] = ['nama' => $tr['nama_tunjangan'], 'jumlah' => floatval($tr['jumlah_tunjangan'])];
-            $total_tunjangan_db += floatval($tr['jumlah_tunjangan']);
+            $tunjanganRawRows[] = $tr;
         }
 
+        // Ambil Potongan
         $potonganRows = [];
         $total_potongan_db = 0;
         $bpjs_kesehatan = 0;
@@ -104,7 +120,7 @@ if (!function_exists('generateSlipGaji')) {
         while ($potlain = mysqli_fetch_assoc($qpotlain)) {
             $nominal = floatval($potlain['nominal_potongan']);
             $total_potongan_lainnya += $nominal;
-            
+
             // --- TAMBAHKAN LOGIKA INI AGAR SAMA DENGAN WEB ---
             $namaPotongan = $potlain['jenis_potongan'];
             $ket = trim((string)$potlain['ket_potongan']);
@@ -234,9 +250,9 @@ if (!function_exists('generateSlipGaji')) {
                     $h8 = ($jam > 7) ? min(1, $jam - 7) : 0;
                     $h9up = max(0, $jam - 8);
 
-                    $total_spl_1_7 += $h1_7 * floatval($karier['spl']);
-                    $total_spl_8 += $h8 * floatval($karier['ot1_spl']);
-                    $total_spl_9_up += $h9up * floatval($karier['ot2_spl']);
+                    $total_spl_1_7 += $h1_7 * ($base_lembur * 2);
+                    $total_spl_8 += $h8 * ($base_lembur * 3);
+                    $total_spl_9_up += $h9up * ($base_lembur * 4);
 
                     $total_jam_spl_1_7 += $h1_7;
                     $total_jam_spl_8 += $h8;
@@ -293,8 +309,8 @@ if (!function_exists('generateSlipGaji')) {
                         $ot = max(0, $jam - 7 - $wl);
                     }
 
-                    $total_lembur += $wl * floatval($karier['ot_pertama']);
-                    $total_overtime += $ot * floatval($karier['ot_kedua']);
+                    $total_lembur += $wl * ($base_lembur * 1.5);
+                    $total_overtime += $ot * ($base_lembur * 2.0);
                     $total_jam_wl += $wl;
                     $total_jam_ot += $ot;
 
@@ -345,7 +361,33 @@ if (!function_exists('generateSlipGaji')) {
             ];
         }
 
-        // ================= 6) Final Perhitungan =================
+
+        // ================= 6) Kalkulasi Tunjangan Dinamis API =================
+        $tunjanganRows = [];
+        $total_tunjangan_db = 0;
+        $total_ketidakhadiran = $sakit_days + $izin_days + $cuti_days + $mangkir_count + $new_count + $resign_count;
+
+        foreach ($tunjanganRawRows as $tr) {
+            $nama_t = $tr['nama_tunjangan'];
+            $jumlah_t = floatval($tr['jumlah_tunjangan']);
+
+            if (stripos($nama_t, 'makan') !== false) {
+                $jumlah_t = $jumlah_t * $hari_kerja_count;
+            }
+
+            if (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false) {
+                $nama_t = "Bonus Kehadiran";
+                if ($total_ketidakhadiran > 3) {
+                    $jumlah_t = 0;
+                    $nama_t .= " (Hangus: Absen > 3 Hari)";
+                }
+            }
+
+            $tunjanganRows[] = ['nama' => $nama_t, 'jumlah' => $jumlah_t];
+            $total_tunjangan_db += $jumlah_t;
+        }
+
+        // ================= 7) Finalisasi Nilai Pendapatan & Potongan =================
         $basic = floatval($karier['gaji_pokok']);
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
@@ -380,7 +422,7 @@ if (!function_exists('generateSlipGaji')) {
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
-        // Build Detail Lists untuk Output
+        // Build Detail Lists untuk Output JSON response
         $listPendapatan = array_merge(
             [['nama' => 'Gaji Pokok', 'jumlah' => $basic]],
             $tunjanganRows,
@@ -393,7 +435,7 @@ if (!function_exists('generateSlipGaji')) {
         if ($total_spl_9_up > 0) $listPendapatan[] = ['nama' => 'SPL 9+ (' . $total_jam_spl_9_up . ' Jam)', 'jumlah' => $total_spl_9_up];
         // if ($pendapatan_kelebihan_hari > 0) $listPendapatan[] = ['nama' => 'Kelebihan Hari Kerja (' . $kelebihan_hari . ' Hari)', 'jumlah' => $pendapatan_kelebihan_hari];
 
-        $listPotongan = array_merge($potonganRows, $pinjamanRows, $potonganLainRows);
+        $listPotongan = array_merge($potonganRows, $pinjamanRows, $potonganLainRows); // KOREKSI: Tambahkan $pinjamanRows
 
         if ($total_pot_izin > 0) $listPotongan[] = ['nama' => 'Potongan Izin', 'jumlah' => $total_pot_izin];
         // if ($total_pot_sakit > 0) $listPotongan[] = ['nama' => 'Potongan Sakit', 'jumlah' => $total_pot_sakit];

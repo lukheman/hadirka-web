@@ -11,10 +11,18 @@ require_once __DIR__ . '/../config/function.php';
 $action = $_POST['action'] ?? '';
 $response = [];
 
-// Konversi integer
-function intOrZero($val)
+// KOREKSI: Fungsi pintar floatOrZero untuk membersihkan titik ribuan & mengubah koma desimal
+function floatOrZero($val)
 {
-    return (isset($val) && is_numeric($val)) ? intval($val) : 0;
+    if (!isset($val) || $val === '') return 0;
+
+    // 1. Hilangkan titik ribuan terlebih dahulu agar tidak merusak is_numeric PHP
+    $val = str_replace('.', '', $val);
+
+    // 2. Konversi koma desimal menjadi titik standar PHP/Database
+    $val = str_replace(',', '.', $val);
+
+    return is_numeric($val) ? floatval($val) : 0;
 }
 
 // Valid tanggal
@@ -26,10 +34,10 @@ function validDate($date)
 try {
 
     if (!in_array($action, ['add', 'edit', 'delete', 'extend_single', 'extend_batch'])) {
-    throw new Exception("Action tidak valid");
-}
+        throw new Exception("Action tidak valid");
+    }
 
-// EXTEND SINGLE (Per Karyawan)
+    // EXTEND SINGLE (Per Karyawan)
     if ($action === 'extend_single') {
         $id_karier = intval($_POST['id_karier'] ?? 0);
         if ($id_karier <= 0) throw new Exception("ID karier tidak valid");
@@ -41,7 +49,7 @@ try {
             INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan 
             WHERE k.id_karier = $id_karier
         ");
-        
+
         if ($cek->num_rows === 0) throw new Exception("Data karier tidak ditemukan.");
         $row = $cek->fetch_assoc();
 
@@ -121,14 +129,10 @@ try {
         $id_departemen = intval($_POST['id_departemen']);
         $id_jabatan    = intval($_POST['id_jabatan']);
 
-        $gaji_pokok  = intOrZero($_POST['gaji_pokok']);
-        $ot_pertama  = intOrZero($_POST['ot_pertama']);
-        $ot_kedua    = intOrZero($_POST['ot_kedua']);
-        $spl         = intOrZero($_POST['spl']);
-        $ot1_spl     = intOrZero($_POST['ot1_spl']);
-        $ot2_spl     = intOrZero($_POST['ot2_spl']);
-        $pot_izin    = intOrZero($_POST['pot_izin']);
-        $pot_mangkir = intOrZero($_POST['pot_mangkir']);
+        $gaji_pokok  = floatOrZero($_POST['gaji_pokok']);
+        $lembur      = floatOrZero($_POST['lembur']);
+        $pot_izin    = floatOrZero($_POST['pot_izin']);
+        $pot_mangkir = floatOrZero($_POST['pot_mangkir']);
 
         $tgl_mulai   = $_POST['tgl_mulai'];
         $tgl_selesai = !empty($_POST['tgl_selesai']) ? $_POST['tgl_selesai'] : null;
@@ -150,89 +154,23 @@ try {
             }
             // ----------------------------------------
 
-            $sql = "INSERT INTO tb_karier 
-                (id_karyawan,id_site,id_departemen,id_jabatan,
-                gaji_pokok,ot_pertama,ot_kedua,spl,ot1_spl,ot2_spl,
-                pot_izin,pot_mangkir,
-                tgl_mulai,tgl_selesai)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
+            $sql = "INSERT INTO tb_karier (id_karyawan,id_site,id_departemen,id_jabatan,gaji_pokok,lembur,pot_izin,pot_mangkir,tgl_mulai,tgl_selesai) VALUES (?,?,?,?,?,?,?,?,?,?)";
             $stmt = $koneksi->prepare($sql);
-            $stmt->bind_param(
-                "iiiiddddddddss",
-                $id_karyawan,
-                $id_site,
-                $id_departemen,
-                $id_jabatan,
-                $gaji_pokok,
-                $ot_pertama,
-                $ot_kedua,
-                $spl,
-                $ot1_spl,
-                $ot2_spl,
-                $pot_izin,
-                $pot_mangkir,
-                $tgl_mulai,
-                $tgl_selesai
-            );
+            $stmt->bind_param("iiiiddddss", $id_karyawan, $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai);
         }
 
         // EDIT
         elseif ($action === 'edit') {
-
             if ($tgl_selesai === null) {
-
-                $sql = "UPDATE tb_karier SET
-                    id_site=?, id_departemen=?, id_jabatan=?,
-                    gaji_pokok=?, ot_pertama=?, ot_kedua=?, spl=?, 
-                    ot1_spl=?, ot2_spl=?, pot_izin=?, pot_mangkir=?,
-                    tgl_mulai=?, tgl_selesai=NULL
-                    WHERE id_karier=?";
-
+                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=NULL WHERE id_karier=?";
                 $stmt = $koneksi->prepare($sql);
-                $stmt->bind_param(
-                    "iiiidddddddsi",
-                    $id_site,
-                    $id_departemen,
-                    $id_jabatan,
-                    $gaji_pokok,
-                    $ot_pertama,
-                    $ot_kedua,
-                    $spl,
-                    $ot1_spl,
-                    $ot2_spl,
-                    $pot_izin,
-                    $pot_mangkir,
-                    $tgl_mulai,
-                    $id_karier
-                );
+                // KOREKSI: Mengubah tipe data dari "iiiidddsi" menjadi "iiiddddsi"
+                $stmt->bind_param("iiiddddsi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $id_karier);
             } else {
-
-                $sql = "UPDATE tb_karier SET
-                    id_site=?, id_departemen=?, id_jabatan=?,
-                    gaji_pokok=?, ot_pertama=?, ot_kedua=?, spl=?, 
-                    ot1_spl=?, ot2_spl=?, pot_izin=?, pot_mangkir=?,
-                    tgl_mulai=?, tgl_selesai=?
-                    WHERE id_karier=?";
-
+                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=? WHERE id_karier=?";
                 $stmt = $koneksi->prepare($sql);
-                $stmt->bind_param(
-                    "iiiidddddddssi",
-                    $id_site,
-                    $id_departemen,
-                    $id_jabatan,
-                    $gaji_pokok,
-                    $ot_pertama,
-                    $ot_kedua,
-                    $spl,
-                    $ot1_spl,
-                    $ot2_spl,
-                    $pot_izin,
-                    $pot_mangkir,
-                    $tgl_mulai,
-                    $tgl_selesai,
-                    $id_karier
-                );
+                // KOREKSI: Mengubah tipe data dari "iiiidddssi" menjadi "iiiddddssi"
+                $stmt->bind_param("iiiddddssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai, $id_karier);
             }
         }
 
