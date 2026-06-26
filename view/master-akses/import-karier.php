@@ -47,7 +47,7 @@
                 </button>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 mb-2">
                 <?php if ($_SESSION['site'] == 0) { ?>
                     <select id="filterSite" class="form-select form-select-sm">
                         <option value="">-- Semua Site --</option>
