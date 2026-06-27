@@ -1,10 +1,33 @@
 <?php
 include __DIR__ . "/../../config/koneksi.php";
 
+$start = $_GET['start_date'] ?? '';
+$end = $_GET['end_date'] ?? '';
+$site = $_GET['site'] ?? '';
+$jabatan = $_GET['jabatan'] ?? '';
+
+$where = ["1=1"];
+if ($start && $end) {
+    // Memfilter berdasarkan tanggal mulai cuti
+    $where[] = "pc.tgl_awal BETWEEN '$start' AND '$end'"; 
+}
+if ($site) {
+    $where[] = "kr.id_site = '$site'";
+}
+if ($jabatan) {
+    $where[] = "kr.id_jabatan = '$jabatan'";
+}
+
+$where_sql = implode(' AND ', $where);
+
 $sql = "SELECT pc.*, k.nama_lengkap, k.nik_karyawan 
         FROM tb_pengajuan_cuti pc
         JOIN tb_karyawan k ON k.id_karyawan = pc.id_karyawan 
+        LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
+        WHERE $where_sql
+        GROUP BY pc.id_pengajuan_cuti
         ORDER BY pc.id_pengajuan_cuti DESC";
+
 $q = mysqli_query($koneksi, $sql);
 
 if (mysqli_num_rows($q) == 0) {

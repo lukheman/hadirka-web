@@ -1,11 +1,38 @@
 <?php
 include __DIR__."/../../config/koneksi.php";
 
+$start = $_GET['start_date'] ?? '';
+$end = $_GET['end_date'] ?? '';
+$site = $_GET['site'] ?? '';
+$jabatan = $_GET['jabatan'] ?? '';
+
+$where = ["1=1"];
+if ($start && $end) {
+    $where[] = "s.tgl_sks BETWEEN '$start' AND '$end'";
+}
+if ($site) {
+    $where[] = "kr.id_site = '$site'";
+}
+if ($jabatan) {
+    $where[] = "kr.id_jabatan = '$jabatan'";
+}
+
+$where_sql = implode(' AND ', $where);
+
 $sql = "SELECT s.*, k.nama_lengkap, k.nik_karyawan 
         FROM tb_bukti_sks s
         JOIN tb_karyawan k ON k.id_karyawan = s.id_karyawan 
+        LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
+        WHERE $where_sql
+        GROUP BY s.id_bukti_sks
         ORDER BY s.tgl_kirim DESC";
+
 $q = mysqli_query($koneksi, $sql);
+
+if (mysqli_num_rows($q) == 0) {
+    echo '<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada data pengajuan SKS.</td></tr>';
+    exit;
+}
 
 while ($row = mysqli_fetch_assoc($q)) {
     $id = $row['id_bukti_sks'];

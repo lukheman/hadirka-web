@@ -1,8 +1,33 @@
 <?php
 include __DIR__ . "/../../config/koneksi.php";
 
-$sql = "SELECT pi.*, k.nama_lengkap, k.nik_karyawan FROM tb_pengajuan_izin pi
-        JOIN tb_karyawan k ON k.id_karyawan = pi.id_karyawan ORDER BY pi.tgl_izin DESC";
+$start = $_GET['start_date'] ?? '';
+$end = $_GET['end_date'] ?? '';
+$site = $_GET['site'] ?? '';
+$jabatan = $_GET['jabatan'] ?? '';
+
+$where = ["1=1"];
+if ($start && $end) {
+    $where[] = "pi.tgl_izin BETWEEN '$start' AND '$end'";
+}
+if ($site) {
+    $where[] = "kr.id_site = '$site'";
+}
+if ($jabatan) {
+    $where[] = "kr.id_jabatan = '$jabatan'";
+}
+
+$where_sql = implode(' AND ', $where);
+
+// Menggunakan GROUP BY agar tidak ada duplikasi jika ada history karir ganda
+$sql = "SELECT pi.*, k.nama_lengkap, k.nik_karyawan 
+        FROM tb_pengajuan_izin pi
+        JOIN tb_karyawan k ON k.id_karyawan = pi.id_karyawan 
+        LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
+        WHERE $where_sql
+        GROUP BY pi.id_pengajuan_izin
+        ORDER BY pi.tgl_izin DESC";
+        
 $q = mysqli_query($koneksi, $sql);
 
 if (mysqli_num_rows($q) == 0) {

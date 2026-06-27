@@ -296,33 +296,35 @@
     }
 
     // =========================================================
-    // FUNGSI MENGAMBIL NOTIFIKASI DARI API GET-NOTIF-HOME.PHP
-    // =========================================================
-    async function checkNotification() {
-        try {
-            // PERBAIKAN 1: Sesuaikan nama file dengan file kodingan nomor 4 Anda
-            const response = await fetch('app/controller/get-data/get-home-notif.php');
-            const data = await response.json();
+// FUNGSI MENGAMBIL NOTIFIKASI DARI API GET-HOME-NOTIF.PHP
+// =========================================================
+async function checkNotification() {
+    try {
+        const response = await fetch('app/controller/get-data/get-home-notif.php');
+        const data = await response.json();
 
-            if (data.show === true) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: data.title,
-                        html: data.msg,
-                        confirmButtonText: 'Baik, Mengerti',
-                        confirmButtonColor: '#696cff',
-                        backdrop: `rgba(0,0,123,0.4)`
-                    });
-                } else {
-                    // Fallback jika library Swal gagal dimuat
-                    alert(data.msg.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""));
-                }
+        if (data.show === true) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: `<h4 class="mb-0 fw-bold text-primary">${data.title}</h4>`,
+                    html: data.msg,
+                    confirmButtonText: '<i class="bx bx-check-circle" style="vertical-align: middle; margin-right: 5px;"></i> Terima Kasih',
+                    buttonsStyling: false,
+                    customClass: {
+                        confirmButton: 'btn btn-primary px-4 py-2 shadow-sm',
+                        popup: 'rounded-3'
+                    },
+                    backdrop: `rgba(34, 40, 50, 0.6)` // Warna backdrop gelap yang lebih elegan
+                });
+            } else {
+                alert(data.msg.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""));
             }
-        } catch (error) {
-            console.error("Gagal memuat notifikasi:", error);
         }
+    } catch (error) {
+        console.error("Gagal memuat notifikasi:", error);
     }
+}
 
     document.addEventListener("DOMContentLoaded", () => {
         // 1. Load Statistik

@@ -41,6 +41,32 @@
 </style>
 
 <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Dari Tanggal</label>
+                    <input type="date" id="startDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sampai Tanggal</label>
+                    <input type="date" id="endDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Site</label>
+                    <select id="filterSite" class="form-select">
+                        <option value="">Semua Site</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Jabatan</label>
+                    <select id="filterJabatan" class="form-select">
+                        <option value="">Semua Jabatan</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="card shadow-sm border-0">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold">Manajemen Persetujuan Cuti</h5>
@@ -48,11 +74,11 @@
                 <i class="bx bx-plus me-1"></i> Tambah Pengajuan
             </button>
         </div>
-        <div class="">
-            <table class="table table-hover border-top" style="table-layout: auto;">
+        <div class="table-responsive text-nowrap">
+            <table class="table table-hover border-top">
                 <thead>
-                    <tr>
-                        <th class="py-3">Karyawan</th>
+                    <tr class="align-middle text-nowrap">
+                        <th>Nama Karyawan</th>
                         <th>Tanggal Cuti (Awal - Akhir)</th>
                         <th>Lama</th>
                         <th>Alasan</th>
@@ -170,19 +196,76 @@
     const api_get_cuti = 'app/controller/get-data/get-pengajuan-cuti.php';
     const api_act_cuti = 'app/controller/act-pengajuan-cuti.php';
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadTableCuti();
-        loadAllKaryawan(); // Panggil fungsi dropdown karyawan saat halaman dimuat
-    });
+    // Fungsi set default tanggal (21 bln kemarin - 20 bln ini)
+    function setDefaultDateRange() {
+        let today = new Date();
+        let year = today.getFullYear();
+        let month = today.getMonth();
+        let prevMonth = month - 1;
+        let prevYear = year;
 
-    async function loadTableCuti() {
+        if (prevMonth < 0) {
+            prevMonth = 11;
+            prevYear = year - 1;
+        }
+
+        const format = (y, m, d) => `${y}-${(m + 1).toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
+        document.getElementById("startDate").value = format(prevYear, prevMonth, 21);
+        document.getElementById("endDate").value = format(year, month, 20);
+    }
+
+    // Fungsi load Dropdown Site & Jabatan via API yang sudah ada
+    async function loadFilterOptions() {
         try {
-            const res = await fetch(api_get_cuti + '?_=' + new Date().getTime());
-            document.getElementById('tbody-cuti').innerHTML = await res.text();
+            const res = await fetch('app/controller/get-data/get-site-departemen-jabatan.php');
+            const data = await res.json();
+
+            let siteOpt = '<option value="">Semua Site</option>';
+            data.site.forEach(s => siteOpt += `<option value="${s.id_site}">${s.nama_site}</option>`);
+            document.getElementById('filterSite').innerHTML = siteOpt;
+
+            let jabatanOpt = '<option value="">Semua Jabatan</option>';
+            data.jabatan.forEach(j => jabatanOpt += `<option value="${j.id_jabatan}">${j.nama_jabatan}</option>`);
+            document.getElementById('filterJabatan').innerHTML = jabatanOpt;
         } catch (e) {
-            document.getElementById('tbody-cuti').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+            console.error("Gagal memuat opsi filter:", e);
         }
     }
+
+    // ====================================================
+    // CONTOH UNTUK PENGAJUAN IZIN (Sesuaikan nama fungsi untuk Cuti/SKS)
+    // ====================================================
+    async function loadTableCuti() {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        const site = document.getElementById('filterSite').value;
+        const jabatan = document.getElementById('filterJabatan').value;
+
+        const params = new URLSearchParams({
+            start_date: start,
+            end_date: end,
+            site: site,
+            jabatan: jabatan,
+            _: new Date().getTime()
+        });
+
+        // Ubah api_get sesuai endpoint masing-masing
+        const res = await fetch(`${api_get_cuti}?${params.toString()}`);
+        document.getElementById('tbody-cuti').innerHTML = await res.text();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        setDefaultDateRange();
+        await loadFilterOptions();
+
+        loadTableCuti(); // Panggil fungsi load tabel terkait
+
+        // Auto reload saat filter diubah
+        const filters = ['startDate', 'endDate', 'filterSite', 'filterJabatan'];
+        filters.forEach(id => {
+            document.getElementById(id).addEventListener('change', loadTableCuti);
+        });
+    });
 
     // 1. Fungsi Fetch Data Karyawan (Sama seperti referensi APD)
     async function loadAllKaryawan() {

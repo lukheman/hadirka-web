@@ -22,29 +22,47 @@ if (in_array($user_level, [1, 2])) {
     if ($cek_pinjaman['jml'] > 0) {
         $show_notif = true;
         $response['title'] = "Menunggu Approval!";
-        $response['msg']   = "Terdapat <b>{$cek_pinjaman['jml']}</b> data pengajuan pinjaman karyawan yang berstatus PENDING dan perlu segera Anda proses.";
+        $response['msg']   = "
+            <div style='background: #fff2d6; border-left: 4px solid #ffab00; padding: 15px; border-radius: 6px; text-align: left; color: #566a7f;'>
+                Terdapat <b class='text-warning' style='font-size: 1.2rem;'>{$cek_pinjaman['jml']}</b> pengajuan pinjaman karyawan yang berstatus <b>PENDING</b>.
+            </div>
+            <p style='margin-top: 15px; text-align: left; color: #697a8d; font-size: 0.9rem;'>
+                Mohon segera ditindaklanjuti pada menu pengajuan pinjaman.
+            </p>
+        ";
     }
 }
 // 2. Admin (Level 5) -> Notif Izin, Cuti & Bukti SKS Pending
 elseif ($user_level == 5) {
-    $q_izin = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_izin WHERE status_izin = 'pending'"));
-    $q_cuti = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_cuti WHERE status_cuti = 'pending'"));
-    // Tambahan Query Bukti SKS
-    $q_sks  = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_bukti_sks WHERE status = 'Pending'"));
+    $start_date = date('Y-m-21', strtotime(date('Y-m-01') . ' -1 month'));
+    $end_date   = date('Y-m-d');
 
-    // Tambahkan $q_sks['jml'] ke total
+    $q_izin = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_izin WHERE status_izin = 'pending' AND tgl_izin BETWEEN '$start_date' AND '$end_date'"));
+    $q_cuti = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_cuti WHERE status_cuti = 'pending' AND tgl_awal BETWEEN '$start_date' AND '$end_date'"));
+    $q_sks  = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_bukti_sks WHERE status = 'Pending' AND tgl_sks BETWEEN '$start_date' AND '$end_date'"));
+
     $total_admin = $q_izin['jml'] + $q_cuti['jml'] + $q_sks['jml'];
 
     if ($total_admin > 0) {
         $show_notif = true;
-        $response['title'] = "Pemberitahuan Kehadiran!";
+        $response['title'] = "Antrean Validasi Kehadiran";
 
-        $msg = "Terdapat pengajuan karyawan yang belum diproses:<br><br>";
-        if ($q_cuti['jml'] > 0) $msg .= "📌 <b>{$q_cuti['jml']}</b> Pengajuan Cuti<br>";
-        if ($q_izin['jml'] > 0) $msg .= "📌 <b>{$q_izin['jml']}</b> Pengajuan Izin<br>";
-        // Tambahan baris untuk menampilkan jumlah SKS jika ada
-        if ($q_sks['jml'] > 0)  $msg .= "📌 <b>{$q_sks['jml']}</b> Bukti SKS/Sakit<br>";
+        $periode_str = date('d M', strtotime($start_date)) . " s/d " . date('d M Y');
 
+        $msg = "<p style='text-align: left; color: #566a7f; margin-bottom: 10px;'>Daftar pengajuan periode <b>{$periode_str}</b> yang belum diproses:</p>";
+        $msg .= "<div style='background: #f8f9fa; border-left: 4px solid #696cff; padding: 12px 15px; border-radius: 6px; text-align: left; color: #566a7f;'>";
+
+        if ($q_cuti['jml'] > 0) {
+            $msg .= "<div style='margin-bottom: 8px;'><i class='bx bx-calendar-event text-info' style='vertical-align: middle; font-size: 1.2rem; margin-right: 5px;'></i> <span style='vertical-align: middle;'><b>{$q_cuti['jml']}</b> Pengajuan Cuti</span></div>";
+        }
+        if ($q_izin['jml'] > 0) {
+            $msg .= "<div style='margin-bottom: 8px;'><i class='bx bx-message-square-edit text-warning' style='vertical-align: middle; font-size: 1.2rem; margin-right: 5px;'></i> <span style='vertical-align: middle;'><b>{$q_izin['jml']}</b> Pengajuan Izin</span></div>";
+        }
+        if ($q_sks['jml'] > 0) {
+            $msg .= "<div style='margin-bottom: 0;'><i class='bx bx-plus-medical text-danger' style='vertical-align: middle; font-size: 1.2rem; margin-right: 5px;'></i> <span style='vertical-align: middle;'><b>{$q_sks['jml']}</b> Bukti SKS/Sakit</span></div>";
+        }
+
+        $msg .= "</div>";
         $response['msg'] = $msg;
     }
 }
@@ -56,15 +74,20 @@ elseif ($user_level == 4) {
     if ($cek_apd['jml'] > 0) {
         $show_notif = true;
         $response['title'] = "Validasi APD Baru!";
-        $response['msg']   = "Terdapat <b>{$cek_apd['jml']}</b> pengajuan Alat Pelindung Diri (APD) baru yang berstatus PENDING dan perlu divalidasi.";
+        $response['msg']   = "
+            <div style='background: #e7e7ff; border-left: 4px solid #696cff; padding: 15px; border-radius: 6px; text-align: left; color: #566a7f;'>
+                Terdapat <b class='text-primary' style='font-size: 1.2rem;'>{$cek_apd['jml']}</b> pengajuan APD baru yang berstatus <b>PENDING</b>.
+            </div>
+            <p style='margin-top: 15px; text-align: left; color: #697a8d; font-size: 0.9rem;'>
+                Harap segera lakukan pengecekan dan validasi pengajuan.
+            </p>
+        ";
     }
 }
 
-// Session dihilangkan agar query selalu dicek dan notif muncul setiap ke dashboard
 if ($show_notif) {
     $response['show'] = true;
 }
 
-// Kembalikan data dalam format JSON ke frontend
 echo json_encode($response);
 exit;
