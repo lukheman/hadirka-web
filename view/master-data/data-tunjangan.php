@@ -47,7 +47,7 @@
                             <option value="Tunjangan Hidup">Tunjangan Hidup</option>
                             <option value="Tunjangan Makan">Tunjangan Makan</option>
                             <option value="Tunjangan Skill">Tunjangan Skill</option>
-                            <option value="Performance Bonus">Performance Bonus</option>
+                            <option value="Bonus Kehadiran">Bonus Kehadiran</option>
                             <option value="Tunjangan Posisi">Tunjangan Posisi</option>
                         </select>
                     </div>
@@ -80,7 +80,7 @@
                             <option value="Tunjangan Hidup">Tunjangan Hidup</option>
                             <option value="Tunjangan Makan">Tunjangan Makan</option>
                             <option value="Tunjangan Skill">Tunjangan Skill</option>
-                            <option value="Performance Bonus">Performance Bonus</option>
+                            <option value="Bonus Kehadiran">Bonus Kehadiran</option>
                             <option value="Tunjangan Posisi">Tunjangan Posisi</option>
                         </select>
                     </div>
