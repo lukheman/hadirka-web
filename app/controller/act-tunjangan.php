@@ -42,7 +42,7 @@ try {
             "Tunjangan Hidup",
             "Tunjangan Makan",
             "Tunjangan Skill",
-            "Performance Bonus",
+            "Bonus Kehadiran",
             "Tunjangan Posisi"
         ];
 

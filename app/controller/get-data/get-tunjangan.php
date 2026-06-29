@@ -1,5 +1,5 @@
 <?php
-require '../../config/koneksi.php';
+require __DIR__ . '/../../config/koneksi.php';
 require '../../config/function.php';
 
 $id_karier = decrypt($_GET['id']);
