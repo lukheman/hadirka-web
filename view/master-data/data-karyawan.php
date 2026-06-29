@@ -84,19 +84,12 @@
                     </div>
 
                     <div class="d-flex align-items-center gap-2" style="max-width: 520px;">
-                        <?php
-                        if ($_SESSION['site'] == 0) { ?>
-                            <select id="filterSite" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site">
-                                <option value="">-- Semua Site --</option>
-                                <?php foreach (data_site() as $d) { ?>
-                                    <option value="<?= htmlspecialchars($d['id_site']) ?>"><?= htmlspecialchars($d['nama_site']) ?></option>
-                                <?php } ?>
-                            </select>
-                        <?php } else { ?>
-                            <input id="filterSite" type="hidden" class="form-control-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site" value="<?= $_SESSION['site'] ?>">
-                        <?php
-                        }
-                        ?>
+                        <select id="filterSite" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site">
+                            <option value="">-- Semua Site --</option>
+                            <?php foreach (data_site() as $d) { ?>
+                                <option value="<?= htmlspecialchars($d['id_site']) ?>"><?= htmlspecialchars($d['nama_site']) ?></option>
+                            <?php } ?>
+                        </select>
 
                         <select id="filterJabatan" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan jabatan">
                             <option value="">-- Semua Jabatan --</option>

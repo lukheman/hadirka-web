@@ -182,7 +182,9 @@
                     if (res.status == "success") {
                         loadTunjangan();
                         alert("Berhasil!");
-                        // Tutup modal sesuai ID masing-masing
+                        bootstrap.Modal.getInstance(document.getElementById("modalEditTunjangan")).hide();
+                        this.reset();
+
                     } else {
                         alert("Gagal: " + res.message);
                     }
