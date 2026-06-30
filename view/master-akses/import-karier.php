@@ -48,19 +48,15 @@
             </div>
 
             <div class="d-flex align-items-center gap-2 mb-2">
-                <?php if ($_SESSION['site'] == 0) { ?>
-                    <select id="filterSite" class="form-select form-select-sm">
-                        <option value="">-- Semua Site --</option>
-                        <?php
-                        $sites = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
-                        while ($s = $sites->fetch_assoc()) {
-                            echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
-                        }
-                        ?>
-                    </select>
-                <?php } else { ?>
-                    <input id="filterSite" type="hidden" value="<?= $_SESSION['site'] ?>">
-                <?php } ?>
+                <select id="filterSite" class="form-select form-select-sm">
+                    <option value="">-- Semua Site --</option>
+                    <?php
+                    $sites = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
+                    while ($s = $sites->fetch_assoc()) {
+                        echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
+                    }
+                    ?>
+                </select>
 
                 <select id="filterJabatan" class="form-select form-select-sm">
                     <option value="">-- Semua Jabatan --</option>

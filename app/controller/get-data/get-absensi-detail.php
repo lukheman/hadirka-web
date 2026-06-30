@@ -242,7 +242,7 @@ $karyawan = $karyawanQ->fetch_assoc();
                     <td>
                         <?php if ($absen): ?>
                             <!-- EDIT (pakai id_absen) -->
-                            <button class="btn btn-sm btn-warning btnEditDetail"
+                            <button class="btn btn-sm btn-warning btnEditDetail mb-1"
                                 data-id_absen="<?= $absen['id_absen'] ?>"
                                 data-tgl="<?= $tgl ?>"
                                 data-jk="<?= $absen['jam_kerja'] ?>"

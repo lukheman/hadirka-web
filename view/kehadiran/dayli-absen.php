@@ -52,6 +52,8 @@
                     </label>
                     <select id="filterStatus" class="form-select form-select-sm">
                         <option value="">-- Semua --</option>
+                        <option value="HADIR">HADIR</option>
+                        <option value="OFF">SPL/OFF</option>
                         <option value="SAKIT">SAKIT</option>
                         <option value="IZIN">IZIN</option>
                         <option value="CUTI">CUTI</option>

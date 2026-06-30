@@ -81,6 +81,34 @@ switch ($action) {
         $nominal_pinjaman_safe = mysqli_real_escape_string($koneksi, $nominal_pinjaman);
         $alasan_pinjaman_safe  = mysqli_real_escape_string($koneksi, $alasan_pinjaman);
 
+        // --- NEW: VALIDASI AKUMULASI LIMIT PINJAMAN 1 JUTA PER BULAN ---
+        $tahun_target = date('Y', strtotime($tgl_pengajuan_safe));
+        $bulan_target = date('m', strtotime($tgl_pengajuan_safe));
+
+        // NEW: Hitung total pinjaman yang sudah diajukan bulan ini (yang pending atau disetujui)
+        $query_check_limit = "SELECT SUM(nominal_pinjaman) AS total_terpakai 
+                              FROM tb_pengajuan_pinjaman 
+                              WHERE id_karyawan = '$id_karyawan_safe' 
+                                AND status_pinjaman != 'ditolak' 
+                                AND YEAR(tgl_pengajuan) = '$tahun_target' 
+                                AND MONTH(tgl_pengajuan) = '$bulan_target'";
+        
+        $res_check_limit = mysqli_query($koneksi, $query_check_limit);
+        $row_limit = mysqli_fetch_assoc($res_check_limit);
+        $total_terpakai = (int)($row_limit['total_terpakai'] ?? 0);
+
+        $limit_maksimal = 1000000; // Batas 1 Juta
+        $sisa_kuota = $limit_maksimal - $total_terpakai;
+
+        if ($sisa_kuota <= 0) {
+            sendResponse('error', 'Batas maksimal pinjaman Anda bulan ini sudah habis (Maks Rp 1.000.000). Sisa kuota Anda: Rp 0', null, 400);
+        }
+
+        if ($nominal_pinjaman > $sisa_kuota) {
+            sendResponse('error', 'Nominal melebihi sisa kuota bulan ini. Sisa kuota yang bisa Anda ajukan: Rp ' . number_format($sisa_kuota, 0, ',', '.'), null, 400);
+        }
+        // ----------------------------------------------------------
+
         // Ambil NIK
         $nik_karyawan = 'UNKNOWN';
         $query_nik = mysqli_query($koneksi, "SELECT nik_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan_safe'");
@@ -112,8 +140,13 @@ switch ($action) {
         $sql = "INSERT INTO tb_pengajuan_pinjaman (id_karyawan, tgl_pengajuan, nominal_pinjaman, alasan_pinjaman, foto_wajah, foto_id_card, status_pinjaman)
                 VALUES ('$id_karyawan_safe', '$tgl_pinjaman_timestamp', '$nominal_pinjaman_safe', '$alasan_pinjaman_safe', '$path_wajah', '$path_id_card', 'pending')";
 
-        if (mysqli_query($koneksi, $sql)) sendResponse('success', 'Pengajuan pinjaman berhasil disubmit!');
-        else sendResponse('error', 'Gagal insert database', null, 500);
+        if (mysqli_query($koneksi, $sql)) {
+            // Berikan info sisa kuota baru di response sukses
+            $sisa_kuota_baru = $sisa_kuota - $nominal_pinjaman;
+            sendResponse('success', 'Pengajuan pinjaman berhasil disubmit! Sisa kuota bulan ini: Rp ' . number_format($sisa_kuota_baru, 0, ',', '.'));
+        } else {
+            sendResponse('error', 'Gagal insert database', null, 500);
+        }
         break;
 
     // ---------------------------------------------------------
