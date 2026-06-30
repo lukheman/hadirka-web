@@ -160,10 +160,30 @@
         box-shadow: var(--shadow-sm);
     }
 
-    .icon-calendar::before { content: "📅"; margin-right: 0.3rem; }
-    .icon-building::before { content: "🏢"; margin-right: 0.3rem; }
-    .icon-briefcase::before { content: "💼"; margin-right: 0.3rem; }
-    .icon-bank::before { content: "🏦"; margin-right: 0.3rem; }
+    .icon-calendar::before {
+        content: "📅";
+        margin-right: 0.3rem;
+    }
+
+    .icon-building::before {
+        content: "🏢";
+        margin-right: 0.3rem;
+    }
+
+    .icon-briefcase::before {
+        content: "💼";
+        margin-right: 0.3rem;
+    }
+
+    .icon-bank::before {
+        content: "🏦";
+        margin-right: 0.3rem;
+    }
+
+    .icon-status::before {
+        content: "📊";
+        margin-right: 0.3rem;
+    }
 
     .empty-state {
         text-align: center;
@@ -193,10 +213,23 @@
         min-width: 150px;
     }
 
-    .dataTables_scrollBody::-webkit-scrollbar { height: 8px; }
-    .dataTables_scrollBody::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-    .dataTables_scrollBody::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-    .dataTables_scrollBody::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    .dataTables_scrollBody::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .dataTables_scrollBody::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .dataTables_scrollBody::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
 
     /* ======================================================
        CUSTOM DROPDOWN — Di-render ke <body>, bukan ke tabel
@@ -208,7 +241,7 @@
         position: fixed !important;
         z-index: 99999 !important;
         background: #fff;
-        border: 1px solid rgba(0,0,0,0.08);
+        border: 1px solid rgba(0, 0, 0, 0.08);
         border-radius: 10px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
         min-width: 230px;
@@ -261,11 +294,11 @@
         <div class="filter-card">
             <div class="filter-header">Filter & Pencarian Data Pengajuan</div>
             <div class="row g-3">
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                     <label class="form-label icon-calendar">Dari Tanggal</label>
                     <input type="date" id="startDate" class="form-control">
                 </div>
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-2 col-md-6">
                     <label class="form-label icon-calendar">Sampai Tanggal</label>
                     <input type="date" id="endDate" class="form-control">
                 </div>
@@ -291,6 +324,16 @@
                         <option value="BCA">BCA</option>
                         <option value="BELUM_PUNYA">BELUM PUNYA REKENING</option>
                         <option value="LAINNYA">LAINNYA</option>
+                    </select>
+                </div>
+                <!-- TAMBAHAN: Filter Status -->
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label icon-status">Status</label>
+                    <select id="filterStatus" class="form-select">
+                        <option value="">Semua Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="disetujui">Disetujui</option>
+                        <option value="ditolak">Ditolak</option>
                     </select>
                 </div>
                 <div class="col-lg-12 text-end mt-3">
@@ -373,158 +416,161 @@
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-let allLoanData = [];
+    let allLoanData = [];
 
-// Referensi portal dropdown — elemen ini langsung child body/wrapper,
-// bebas dari transform/overflow apapun yang ada di dalam card/tabel
-const dropdownPortal = document.getElementById('loan-dropdown-portal');
+    // Referensi portal dropdown — elemen ini langsung child body/wrapper,
+    // bebas dari transform/overflow apapun yang ada di dalam card/tabel
+    const dropdownPortal = document.getElementById('loan-dropdown-portal');
 
-// ============================================================
-// HELPER: Bersihkan semua menu lama di portal
-// ============================================================
-function clearDropdownPortal() {
-    dropdownPortal.innerHTML = '';
-}
-
-// ============================================================
-// HELPER: Tutup semua dropdown yang sedang terbuka
-// ============================================================
-window.closeAllDropdowns = function () {
-    dropdownPortal.querySelectorAll('.custom-dropdown-menu.show').forEach(m => {
-        m.classList.remove('show');
-    });
-};
-
-// ============================================================
-// EVENT: Klik tombol titik tiga & item menu
-// (satu listener terpusat, event delegation)
-// ============================================================
-document.addEventListener('click', function (e) {
-
-    // 1. Klik tombol titik tiga (btnDropdownAksi)
-    const btn = e.target.closest('.btnDropdownAksi');
-    if (btn) {
-        e.stopPropagation();
-        const idx = btn.dataset.index;
-        const menu = document.getElementById('dropdownMenu_' + idx);
-        if (!menu) return;
-
-        const isOpen = menu.classList.contains('show');
-        closeAllDropdowns();
-
-        if (!isOpen) {
-            // Ukur dimensi menu sebelum ditampilkan
-            menu.style.visibility = 'hidden';
-            menu.style.display = 'block';
-            const mW = menu.offsetWidth;
-            const mH = menu.offsetHeight;
-            menu.style.display = '';
-            menu.style.visibility = '';
-
-            const r = btn.getBoundingClientRect();
-            let top  = r.bottom + 4;
-            let left = r.right - mW;
-
-            // Jangan keluar dari tepi layar
-            if (left < 8)                          left = 8;
-            if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
-            if (top + mH > window.innerHeight - 8) top  = r.top - mH - 4;
-            if (top < 8)                           top  = 8;
-
-            menu.style.top  = top  + 'px';
-            menu.style.left = left + 'px';
-            menu.classList.add('show');
-        }
-        return;
+    // ============================================================
+    // HELPER: Bersihkan semua menu lama di portal
+    // ============================================================
+    function clearDropdownPortal() {
+        dropdownPortal.innerHTML = '';
     }
 
-    // 2. Klik item "Proses (ACC/Tolak)" di dalam menu
-    const btnProses = e.target.closest('.btnProses');
-    if (btnProses) {
-        closeAllDropdowns();
-        document.getElementById('id_pengajuan').value = btnProses.dataset.id;
-        document.getElementById('infoPengajuan').innerHTML =
-            `<strong>Karyawan:</strong> ${btnProses.dataset.nama}<br>
+    // ============================================================
+    // HELPER: Tutup semua dropdown yang sedang terbuka
+    // ============================================================
+    window.closeAllDropdowns = function() {
+        dropdownPortal.querySelectorAll('.custom-dropdown-menu.show').forEach(m => {
+            m.classList.remove('show');
+        });
+    };
+
+    // ============================================================
+    // EVENT: Klik tombol titik tiga & item menu
+    // (satu listener terpusat, event delegation)
+    // ============================================================
+    document.addEventListener('click', function(e) {
+
+        // 1. Klik tombol titik tiga (btnDropdownAksi)
+        const btn = e.target.closest('.btnDropdownAksi');
+        if (btn) {
+            e.stopPropagation();
+            const idx = btn.dataset.index;
+            const menu = document.getElementById('dropdownMenu_' + idx);
+            if (!menu) return;
+
+            const isOpen = menu.classList.contains('show');
+            closeAllDropdowns();
+
+            if (!isOpen) {
+                // Ukur dimensi menu sebelum ditampilkan
+                menu.style.visibility = 'hidden';
+                menu.style.display = 'block';
+                const mW = menu.offsetWidth;
+                const mH = menu.offsetHeight;
+                menu.style.display = '';
+                menu.style.visibility = '';
+
+                const r = btn.getBoundingClientRect();
+                let top = r.bottom + 4;
+                let left = r.right - mW;
+
+                // Jangan keluar dari tepi layar
+                if (left < 8) left = 8;
+                if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
+                if (top + mH > window.innerHeight - 8) top = r.top - mH - 4;
+                if (top < 8) top = 8;
+
+                menu.style.top = top + 'px';
+                menu.style.left = left + 'px';
+                menu.classList.add('show');
+            }
+            return;
+        }
+
+        // 2. Klik item "Proses (ACC/Tolak)" di dalam menu
+        const btnProses = e.target.closest('.btnProses');
+        if (btnProses) {
+            closeAllDropdowns();
+            document.getElementById('id_pengajuan').value = btnProses.dataset.id;
+            document.getElementById('infoPengajuan').innerHTML =
+                `<strong>Karyawan:</strong> ${btnProses.dataset.nama}<br>
              <strong>Nominal:</strong> Rp ${parseInt(btnProses.dataset.nominal).toLocaleString('id-ID')}`;
-        document.getElementById('status_pinjaman').value = '';
-        document.getElementById('keterangan_admin').value = '';
-        document.getElementById('formAcc').style.display = 'none';
-        new bootstrap.Modal(document.getElementById('modalProsesPengajuan')).show();
-        return;
-    }
-
-    // 3. Klik di luar menu → tutup semua
-    if (!e.target.closest('#loan-dropdown-portal .custom-dropdown-menu')) {
-        closeAllDropdowns();
-    }
-});
-
-// Tutup saat scroll (capture phase agar menangkap scroll di dalam tabel juga)
-window.addEventListener('scroll', closeAllDropdowns, true);
-
-// ============================================================
-// FUNGSI: Render baris tabel + inject menu ke portal
-// ============================================================
-function renderTable(data) {
-    const tbody = document.getElementById('tbodyPengajuan');
-
-    if ($.fn.DataTable.isDataTable('#loanTable')) {
-        $('#loanTable').DataTable().destroy();
-    }
-
-    tbody.innerHTML = '';
-    clearDropdownPortal(); // <-- Bersihkan menu lama di portal
-
-    const filterSite    = document.getElementById('filterSite').value;
-    const filterJabatan = document.getElementById('filterJabatan').value;
-    const filterBank    = document.getElementById('filterBank').value;
-
-    const filteredData = data.filter(row => {
-        const siteMatch    = !filterSite    || row.site    === filterSite;
-        const jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-        let   bankMatch    = true;
-        if (filterBank) {
-            bankMatch = normalizeBankName(row.nama_bank) === filterBank;
+            document.getElementById('status_pinjaman').value = '';
+            document.getElementById('keterangan_admin').value = '';
+            document.getElementById('formAcc').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('modalProsesPengajuan')).show();
+            return;
         }
-        return siteMatch && jabatanMatch && bankMatch;
+
+        // 3. Klik di luar menu → tutup semua
+        if (!e.target.closest('#loan-dropdown-portal .custom-dropdown-menu')) {
+            closeAllDropdowns();
+        }
     });
 
-    document.getElementById('recordCount').textContent = `${filteredData.length} Data`;
+    // Tutup saat scroll (capture phase agar menangkap scroll di dalam tabel juga)
+    window.addEventListener('scroll', closeAllDropdowns, true);
 
-    if (filteredData.length === 0) {
-        tbody.innerHTML = `
+    // ============================================================
+    // FUNGSI: Render baris tabel + inject menu ke portal
+    // ============================================================
+    function renderTable(data) {
+        const tbody = document.getElementById('tbodyPengajuan');
+
+        if ($.fn.DataTable.isDataTable('#loanTable')) {
+            $('#loanTable').DataTable().destroy();
+        }
+
+        tbody.innerHTML = '';
+        clearDropdownPortal(); // <-- Bersihkan menu lama di portal
+
+        const filterSite = document.getElementById('filterSite').value;
+        const filterJabatan = document.getElementById('filterJabatan').value;
+        const filterBank = document.getElementById('filterBank').value;
+        const filterStatus = document.getElementById('filterStatus').value; // Tambahan
+
+        const filteredData = data.filter(row => {
+            const siteMatch = !filterSite || row.site === filterSite;
+            const jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
+            const statusMatch = !filterStatus || row.status_pinjaman === filterStatus; // Tambahan
+            let bankMatch = true;
+            if (filterBank) {
+                bankMatch = normalizeBankName(row.nama_bank) === filterBank;
+            }
+            // Tambahkan statusMatch ke return
+            return siteMatch && jabatanMatch && bankMatch && statusMatch;
+        });
+
+        document.getElementById('recordCount').textContent = `${filteredData.length} Data`;
+
+        if (filteredData.length === 0) {
+            tbody.innerHTML = `
             <tr><td colspan="11">
                 <div class="empty-state">
                     <div class="empty-state-icon">📋</div>
                     <div class="empty-state-text">Tidak ada data pengajuan yang sesuai dengan filter</div>
                 </div>
             </td></tr>`;
-        return;
-    }
-
-    let rowsHtml  = '';
-    let menusHtml = '';
-
-    filteredData.forEach((row, index) => {
-        // Badge status
-        let statusBadge = '';
-        if      (row.status_pinjaman === 'pending')   statusBadge = '<span class="badge bg-warning text-dark">Pending</span>';
-        else if (row.status_pinjaman === 'disetujui') statusBadge = '<span class="badge bg-success">Disetujui</span>';
-        else if (row.status_pinjaman === 'ditolak')   statusBadge = '<span class="badge bg-danger">Ditolak</span>';
-
-        // Foto
-        const baseUrl   = 'http://api-hris.triputrajayasultra.com/';
-        const fotoWajah = row.foto_wajah    ? `<a href='${baseUrl}${row.foto_wajah}'    target='_blank' class='btn btn-xs btn-outline-info    mb-1 py-1 px-2' style='font-size:0.75rem'>Cek Wajah</a><br>` : '';
-        const fotoId    = row.foto_id_card  ? `<a href='${baseUrl}${row.foto_id_card}'  target='_blank' class='btn btn-xs btn-outline-primary       py-1 px-2' style='font-size:0.75rem'>Cek ID</a>`    : '';
-
-        // Info rekening
-        let infoRekening = `<span class='text-muted'><small>Belum disetting</small></span>`;
-        if (row.nama_bank && row.no_rek) {
-            infoRekening = `<b>${row.nama_bank}</b><br>${row.no_rek}<br><small class='text-muted'>a.n ${row.atas_nama_rek || '-'}</small>`;
+            return;
         }
 
-        // Tombol aksi (hanya tombol, menu ada di portal)
-        const btnAksi = `
+        let rowsHtml = '';
+        let menusHtml = '';
+
+        filteredData.forEach((row, index) => {
+            // Badge status
+            let statusBadge = '';
+            if (row.status_pinjaman === 'pending') statusBadge = '<span class="badge bg-warning text-dark">Pending</span>';
+            else if (row.status_pinjaman === 'disetujui') statusBadge = '<span class="badge bg-success">Disetujui</span>';
+            else if (row.status_pinjaman === 'ditolak') statusBadge = '<span class="badge bg-danger">Ditolak</span>';
+
+            // Foto
+            const baseUrl = 'http://api-hris.triputrajayasultra.com/';
+            const fotoWajah = row.foto_wajah ? `<a href='${baseUrl}${row.foto_wajah}'    target='_blank' class='btn btn-xs btn-outline-info    mb-1 py-1 px-2' style='font-size:0.75rem'>Cek Wajah</a><br>` : '';
+            const fotoId = row.foto_id_card ? `<a href='${baseUrl}${row.foto_id_card}'  target='_blank' class='btn btn-xs btn-outline-primary       py-1 px-2' style='font-size:0.75rem'>Cek ID</a>` : '';
+
+            // Info rekening
+            let infoRekening = `<span class='text-muted'><small>Belum disetting</small></span>`;
+            if (row.nama_bank && row.no_rek) {
+                infoRekening = `<b>${row.nama_bank}</b><br>${row.no_rek}<br><small class='text-muted'>a.n ${row.atas_nama_rek || '-'}</small>`;
+            }
+
+            // Tombol aksi (hanya tombol, menu ada di portal)
+            const btnAksi = `
             <button type='button'
                 class='btn btn-sm btn-outline-secondary rounded-pill btnDropdownAksi'
                 data-index='${index}'
@@ -532,13 +578,13 @@ function renderTable(data) {
                 <i class='fa fa-ellipsis-v'></i>
             </button>`;
 
-        // Menu dropdown untuk portal
-        let menuHtml = `
+            // Menu dropdown untuk portal
+            let menuHtml = `
             <div class='custom-dropdown-menu' id='dropdownMenu_${index}'>
                 <div class='dropdown-header'>AKSI PENGAJUAN</div>`;
 
-        if (row.status_pinjaman !== 'disetujui') {
-            menuHtml += `
+            if (row.status_pinjaman !== 'disetujui') {
+                menuHtml += `
                 <a class='dropdown-item d-flex align-items-center btnProses'
                     href='javascript:void(0)'
                     data-id='${row.id_pengajuan_pinjaman}'
@@ -546,25 +592,25 @@ function renderTable(data) {
                     data-nominal='${row.nominal_pinjaman}'>
                     <i class='fa fa-check-square me-2 text-primary'></i> Proses (ACC/Tolak + Ket)
                 </a>`;
-        }
+            }
 
-        if (row.status_pinjaman !== 'pending') {
-            menuHtml += `
+            if (row.status_pinjaman !== 'pending') {
+                menuHtml += `
                 <a class='dropdown-item d-flex align-items-center' href='javascript:void(0)'
                     onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "pending"); closeAllDropdowns();'>
                     <i class='fa fa-clock me-2 text-warning'></i> Set Pending
                 </a>`;
-        }
+            }
 
-        if (row.status_pinjaman !== 'ditolak') {
-            menuHtml += `
+            if (row.status_pinjaman !== 'ditolak') {
+                menuHtml += `
                 <a class='dropdown-item d-flex align-items-center' href='javascript:void(0)'
                     onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "ditolak"); closeAllDropdowns();'>
                     <i class='fa fa-times-circle me-2 text-danger'></i> Set Ditolak Cepat
                 </a>`;
-        }
+            }
 
-        menuHtml += `
+            menuHtml += `
                 <div class='dropdown-divider'></div>
                 <a class='dropdown-item d-flex align-items-center text-danger' href='javascript:void(0)'
                     onclick='deletePengajuan(${row.id_pengajuan_pinjaman}); closeAllDropdowns();'>
@@ -572,15 +618,19 @@ function renderTable(data) {
                 </a>
             </div>`;
 
-        menusHtml += menuHtml;
+            menusHtml += menuHtml;
 
-        // Format tanggal
-        const dateObj       = new Date(row.tgl_pengajuan);
-        const formattedDate = isNaN(dateObj)
-            ? row.tgl_pengajuan
-            : dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            // Format tanggal
+            const dateObj = new Date(row.tgl_pengajuan);
+            const formattedDate = isNaN(dateObj) ?
+                row.tgl_pengajuan :
+                dateObj.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
 
-        rowsHtml += `
+            rowsHtml += `
             <tr>
                 <td class='text-center fw-bold'>${index + 1}</td>
                 <td>${row.nik_karyawan || ''}<br><b>${row.nama_lengkap || ''}</b></td>
@@ -594,239 +644,252 @@ function renderTable(data) {
                 <td class='text-center'>${statusBadge}</td>
                 <td class='text-center'>${btnAksi}</td>
             </tr>`;
-    });
+        });
 
-    tbody.innerHTML = rowsHtml;
+        tbody.innerHTML = rowsHtml;
 
-    // Inject semua menu ke portal (bukan ke tabel)
-    dropdownPortal.innerHTML = menusHtml;
+        // Inject semua menu ke portal (bukan ke tabel)
+        dropdownPortal.innerHTML = menusHtml;
 
-    // Init DataTables
-    $('#loanTable').DataTable({
-        scrollX:    true,
-        autoWidth:  false,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50],
-        ordering:   false,
-        language: {
-            lengthMenu: 'Tampilkan _MENU_ data',
-            search:     'Cari Cepat:',
-            info:       'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
-            infoEmpty:  'Tidak ada data',
-            paginate: {
-                first:    'Pertama',
-                last:     'Terakhir',
-                next:     'Selanjutnya',
-                previous: 'Sebelumnya'
+        // Init DataTables
+        $('#loanTable').DataTable({
+            scrollX: true,
+            autoWidth: false,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50],
+            ordering: false,
+            language: {
+                lengthMenu: 'Tampilkan _MENU_ data',
+                search: 'Cari Cepat:',
+                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                infoEmpty: 'Tidak ada data',
+                paginate: {
+                    first: 'Pertama',
+                    last: 'Terakhir',
+                    next: 'Selanjutnya',
+                    previous: 'Sebelumnya'
+                }
             }
-        }
-    });
-}
-
-// ============================================================
-// FUNGSI: Filter helper
-// ============================================================
-function normalizeBankName(bankName) {
-    if (!bankName) return 'BELUM_PUNYA';
-    const bank = bankName.toUpperCase().trim();
-    if (bank === 'BELUM PUNYA REKENING' || bank === 'BELUM_PUNYA' || bank === '') return 'BELUM_PUNYA';
-    if (bank.includes('MANDIRI')) return 'MANDIRI';
-    if (bank.includes('BRI'))     return 'BRI';
-    if (bank.includes('BNI'))     return 'BNI';
-    if (bank.includes('BCA'))     return 'BCA';
-    return 'LAINNYA';
-}
-
-function populateFilters(data) {
-    const sites = [...new Set(data.map(r => r.site).filter(Boolean))].sort();
-    const siteEl = document.getElementById('filterSite');
-    siteEl.innerHTML = '<option value="">Semua Site</option>';
-    sites.forEach(s => siteEl.innerHTML += `<option value="${s}">${s}</option>`);
-
-    const jabatans = [...new Set(data.map(r => r.jabatan).filter(j => j && j !== '-'))].sort();
-    const jabEl    = document.getElementById('filterJabatan');
-    jabEl.innerHTML = '<option value="">Semua Jabatan</option>';
-    jabatans.forEach(j => jabEl.innerHTML += `<option value="${j}">${j}</option>`);
-}
-
-// ============================================================
-// FUNGSI: Load data dari server
-// ============================================================
-function loadPengajuan() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate   = document.getElementById('endDate').value;
-
-    if ($.fn.DataTable.isDataTable('#loanTable')) {
-        $('#loanTable').DataTable().destroy();
+        });
     }
 
-    const tbody = document.getElementById('tbodyPengajuan');
-    tbody.innerHTML = `
+    // ============================================================
+    // FUNGSI: Filter helper
+    // ============================================================
+    function normalizeBankName(bankName) {
+        if (!bankName) return 'BELUM_PUNYA';
+        const bank = bankName.toUpperCase().trim();
+        if (bank === 'BELUM PUNYA REKENING' || bank === 'BELUM_PUNYA' || bank === '') return 'BELUM_PUNYA';
+        if (bank.includes('MANDIRI')) return 'MANDIRI';
+        if (bank.includes('BRI')) return 'BRI';
+        if (bank.includes('BNI')) return 'BNI';
+        if (bank.includes('BCA')) return 'BCA';
+        return 'LAINNYA';
+    }
+
+    function populateFilters(data) {
+        const sites = [...new Set(data.map(r => r.site).filter(Boolean))].sort();
+        const siteEl = document.getElementById('filterSite');
+        siteEl.innerHTML = '<option value="">Semua Site</option>';
+        sites.forEach(s => siteEl.innerHTML += `<option value="${s}">${s}</option>`);
+
+        const jabatans = [...new Set(data.map(r => r.jabatan).filter(j => j && j !== '-'))].sort();
+        const jabEl = document.getElementById('filterJabatan');
+        jabEl.innerHTML = '<option value="">Semua Jabatan</option>';
+        jabatans.forEach(j => jabEl.innerHTML += `<option value="${j}">${j}</option>`);
+    }
+
+    // ============================================================
+    // FUNGSI: Load data dari server
+    // ============================================================
+    function loadPengajuan() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if ($.fn.DataTable.isDataTable('#loanTable')) {
+            $('#loanTable').DataTable().destroy();
+        }
+
+        const tbody = document.getElementById('tbodyPengajuan');
+        tbody.innerHTML = `
         <tr><td colspan="11" class="text-center py-4">
             <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
             <span class="text-muted fw-bold ms-2">Memperbarui data tabel pengajuan...</span>
         </td></tr>`;
 
-    $.ajax({
-        url:      'app/controller/get-data/get-pengajuan-pinjaman.php',
-        type:     'POST',
-        data:     { startDate, endDate },
-        dataType: 'json',
-        success: function (res) {
-            if (res.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger fw-bold">Gagal memuat data: ${res.message}</td></tr>`;
-                return;
-            }
-            allLoanData = res.data;
-            populateFilters(allLoanData);
-            renderTable(allLoanData);
-        },
-        error: function () {
-            tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger fw-bold">Koneksi ke server terputus.</td></tr>`;
-        }
-    });
-}
-
-// ============================================================
-// FUNGSI: Export Excel
-// ============================================================
-function exportExcel() {
-    const filterSite    = document.getElementById('filterSite').value;
-    const filterJabatan = document.getElementById('filterJabatan').value;
-    const filterBank    = document.getElementById('filterBank').value;
-
-    const filteredData = allLoanData.filter(row => {
-        const siteMatch    = !filterSite    || row.site    === filterSite;
-        const jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-        let   bankMatch    = true;
-        if (filterBank) bankMatch = normalizeBankName(row.nama_bank) === filterBank;
-        return siteMatch && jabatanMatch && bankMatch;
-    });
-
-    if (filteredData.length === 0) {
-        alert('Tidak ada data pengajuan pinjaman untuk di-export!');
-        return;
-    }
-
-    const excelData = filteredData.map((row, i) => ({
-        'No':                   i + 1,
-        'NIK Karyawan':         row.nik_karyawan || '-',
-        'Nama Lengkap':         row.nama_lengkap,
-        'Jabatan':              row.jabatan,
-        'Site':                 row.site || '-',
-        'Tanggal Pengajuan':    row.tgl_pengajuan,
-        'Nominal Pinjaman (Rp)':row.nominal_pinjaman,
-        'Alasan Pinjaman':      row.alasan_pinjaman || '-',
-        'Atas Nama Rekening':   row.atas_nama_rek || '-',
-        'Nomor Rekening':       row.no_rek ? String(row.no_rek) : '-',
-        'Nama Bank':            row.nama_bank || 'BELUM PUNYA REKENING',
-        'Status':               row.status_pinjaman.toUpperCase()
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Pengajuan Pinjaman');
-
-    const start = document.getElementById('startDate').value || '0000-00-00';
-    const end   = document.getElementById('endDate').value   || '0000-00-00';
-    XLSX.writeFile(wb, `Data_Pengajuan_Pinjaman_${start}_sd_${end}.xlsx`);
-}
-
-// ============================================================
-// FUNGSI: Update status & hapus
-// ============================================================
-window.updateStatusPengajuan = async function (id, newStatus) {
-    const confirmText = newStatus === 'pending'
-        ? 'Kembalikan pengajuan ini ke status Pending? (Data akan ditarik dari Master Pinjaman jika sebelumnya sudah di-ACC)'
-        : 'Tolak pengajuan pinjaman ini secara langsung?';
-
-    if (!confirm(confirmText)) return;
-
-    try {
-        const res    = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=update-status&id=${id}&status=${newStatus}`);
-        const result = await res.json();
-        if (result.status === 'success') loadPengajuan();
-        else alert('Gagal: ' + result.msg);
-    } catch (e) {
-        alert('Terjadi kesalahan sistem.');
-    }
-};
-
-window.deletePengajuan = async function (id) {
-    if (!confirm('Hapus permanen data pengajuan pinjaman ini beserta buktinya?')) return;
-
-    try {
-        const res    = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=delete&id=${id}`);
-        const result = await res.json();
-        if (result.status === 'success') loadPengajuan();
-        else alert('Gagal menghapus: ' + result.msg);
-    } catch (e) {
-        alert('Terjadi kesalahan saat menghapus data.');
-    }
-};
-
-// ============================================================
-// INIT
-// ============================================================
-function setDefaultDateRange() {
-    const today    = new Date();
-    const year     = today.getFullYear();
-    const month    = today.getMonth();
-    let   prevMonth = month - 1;
-    let   prevYear  = year;
-    if (prevMonth < 0) { prevMonth = 11; prevYear = year - 1; }
-
-    const f = (y, m, d) =>
-        `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
-    document.getElementById('startDate').value = f(prevYear, prevMonth, 21);
-    document.getElementById('endDate').value   = f(year, month, 20);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    setDefaultDateRange();
-    loadPengajuan();
-
-    document.getElementById('startDate').addEventListener('change', loadPengajuan);
-    document.getElementById('endDate').addEventListener('change', loadPengajuan);
-
-    document.getElementById('filterSite').addEventListener('change',    () => renderTable(allLoanData));
-    document.getElementById('filterJabatan').addEventListener('change', () => renderTable(allLoanData));
-    document.getElementById('filterBank').addEventListener('change',    () => renderTable(allLoanData));
-
-    document.getElementById('btnExportExcel').addEventListener('click', exportExcel);
-
-    // Toggle form tanggal bayar di modal
-    document.getElementById('status_pinjaman').addEventListener('change', function () {
-        const formAcc  = document.getElementById('formAcc');
-        const ketAdmin = document.getElementById('keterangan_admin');
-        if (this.value === 'disetujui') {
-            formAcc.style.display = 'block';
-            ketAdmin.required = false;
-        } else if (this.value === 'ditolak') {
-            formAcc.style.display = 'none';
-            ketAdmin.required = true;
-        } else {
-            formAcc.style.display = 'none';
-            ketAdmin.required = false;
-        }
-    });
-
-    // Submit modal proses
-    document.getElementById('formProsesPengajuan').addEventListener('submit', e => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        fetch('app/controller/act-pengajuan-pinjaman.php', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(res => {
-                if (res.status === 'success') {
-                    alert(res.msg);
-                    bootstrap.Modal.getInstance(document.getElementById('modalProsesPengajuan')).hide();
-                    loadPengajuan();
-                } else {
-                    alert('Gagal: ' + res.msg);
+        $.ajax({
+            url: 'app/controller/get-data/get-pengajuan-pinjaman.php',
+            type: 'POST',
+            data: {
+                startDate,
+                endDate
+            },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status !== 'success') {
+                    tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger fw-bold">Gagal memuat data: ${res.message}</td></tr>`;
+                    return;
                 }
-            });
+                allLoanData = res.data;
+                populateFilters(allLoanData);
+                renderTable(allLoanData);
+            },
+            error: function() {
+                tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger fw-bold">Koneksi ke server terputus.</td></tr>`;
+            }
+        });
+    }
+
+    // ============================================================
+    // FUNGSI: Export Excel
+    // ============================================================
+    function exportExcel() {
+        const filterSite = document.getElementById('filterSite').value;
+        const filterJabatan = document.getElementById('filterJabatan').value;
+        const filterBank = document.getElementById('filterBank').value;
+        const filterStatus = document.getElementById('filterStatus').value; // Tambahan
+
+        const filteredData = allLoanData.filter(row => {
+            const siteMatch = !filterSite || row.site === filterSite;
+            const jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
+            const statusMatch = !filterStatus || row.status_pinjaman === filterStatus; // Tambahan
+            let bankMatch = true;
+            if (filterBank) bankMatch = normalizeBankName(row.nama_bank) === filterBank;
+
+            return siteMatch && jabatanMatch && bankMatch && statusMatch; // Tambahan
+        });
+
+        if (filteredData.length === 0) {
+            alert('Tidak ada data pengajuan pinjaman untuk di-export!');
+            return;
+        }
+
+        const excelData = filteredData.map((row, i) => ({
+            'No': i + 1,
+            'NIK Karyawan': row.nik_karyawan || '-',
+            'Nama Lengkap': row.nama_lengkap,
+            'Jabatan': row.jabatan,
+            'Site': row.site || '-',
+            'Tanggal Pengajuan': row.tgl_pengajuan,
+            'Nominal Pinjaman (Rp)': row.nominal_pinjaman,
+            'Alasan Pinjaman': row.alasan_pinjaman || '-',
+            'Atas Nama Rekening': row.atas_nama_rek || '-',
+            'Nomor Rekening': row.no_rek ? String(row.no_rek) : '-',
+            'Nama Bank': row.nama_bank || 'BELUM PUNYA REKENING',
+            'Status': row.status_pinjaman.toUpperCase()
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Pengajuan Pinjaman');
+
+        const start = document.getElementById('startDate').value || '0000-00-00';
+        const end = document.getElementById('endDate').value || '0000-00-00';
+        XLSX.writeFile(wb, `Data_Pengajuan_Pinjaman_${start}_sd_${end}.xlsx`);
+    }
+
+    // ============================================================
+    // FUNGSI: Update status & hapus
+    // ============================================================
+    window.updateStatusPengajuan = async function(id, newStatus) {
+        const confirmText = newStatus === 'pending' ?
+            'Kembalikan pengajuan ini ke status Pending? (Data akan ditarik dari Master Pinjaman jika sebelumnya sudah di-ACC)' :
+            'Tolak pengajuan pinjaman ini secara langsung?';
+
+        if (!confirm(confirmText)) return;
+
+        try {
+            const res = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=update-status&id=${id}&status=${newStatus}`);
+            const result = await res.json();
+            if (result.status === 'success') loadPengajuan();
+            else alert('Gagal: ' + result.msg);
+        } catch (e) {
+            alert('Terjadi kesalahan sistem.');
+        }
+    };
+
+    window.deletePengajuan = async function(id) {
+        if (!confirm('Hapus permanen data pengajuan pinjaman ini beserta buktinya?')) return;
+
+        try {
+            const res = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=delete&id=${id}`);
+            const result = await res.json();
+            if (result.status === 'success') loadPengajuan();
+            else alert('Gagal menghapus: ' + result.msg);
+        } catch (e) {
+            alert('Terjadi kesalahan saat menghapus data.');
+        }
+    };
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    function setDefaultDateRange() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        let prevMonth = month - 1;
+        let prevYear = year;
+        if (prevMonth < 0) {
+            prevMonth = 11;
+            prevYear = year - 1;
+        }
+
+        const f = (y, m, d) =>
+            `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+        document.getElementById('startDate').value = f(prevYear, prevMonth, 21);
+        document.getElementById('endDate').value = f(year, month, 20);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setDefaultDateRange();
+        loadPengajuan();
+
+        document.getElementById('startDate').addEventListener('change', loadPengajuan);
+        document.getElementById('endDate').addEventListener('change', loadPengajuan);
+
+        document.getElementById('filterSite').addEventListener('change', () => renderTable(allLoanData));
+        document.getElementById('filterJabatan').addEventListener('change', () => renderTable(allLoanData));
+        document.getElementById('filterBank').addEventListener('change', () => renderTable(allLoanData));
+        document.getElementById('filterStatus').addEventListener('change',  () => renderTable(allLoanData));
+
+        document.getElementById('btnExportExcel').addEventListener('click', exportExcel);
+
+        // Toggle form tanggal bayar di modal
+        document.getElementById('status_pinjaman').addEventListener('change', function() {
+            const formAcc = document.getElementById('formAcc');
+            const ketAdmin = document.getElementById('keterangan_admin');
+            if (this.value === 'disetujui') {
+                formAcc.style.display = 'block';
+                ketAdmin.required = false;
+            } else if (this.value === 'ditolak') {
+                formAcc.style.display = 'none';
+                ketAdmin.required = true;
+            } else {
+                formAcc.style.display = 'none';
+                ketAdmin.required = false;
+            }
+        });
+
+        // Submit modal proses
+        document.getElementById('formProsesPengajuan').addEventListener('submit', e => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            fetch('app/controller/act-pengajuan-pinjaman.php', {
+                    method: 'POST',
+                    body: fd
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        alert(res.msg);
+                        bootstrap.Modal.getInstance(document.getElementById('modalProsesPengajuan')).hide();
+                        loadPengajuan();
+                    } else {
+                        alert('Gagal: ' + res.msg);
+                    }
+                });
+        });
     });
-});
 </script>
