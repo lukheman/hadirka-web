@@ -295,11 +295,11 @@
             <div class="filter-header">Filter & Pencarian Data Pengajuan</div>
             <div class="row g-3">
                 <div class="col-lg-2 col-md-6">
-                    <label class="form-label icon-calendar">Dari Tanggal</label>
+                    <label class="form-label icon-calendar">Dari Tgl</label>
                     <input type="date" id="startDate" class="form-control">
                 </div>
                 <div class="col-lg-2 col-md-6">
-                    <label class="form-label icon-calendar">Sampai Tanggal</label>
+                    <label class="form-label icon-calendar">Sampai Tgl</label>
                     <input type="date" id="endDate" class="form-control">
                 </div>
                 <div class="col-lg-2 col-md-6">

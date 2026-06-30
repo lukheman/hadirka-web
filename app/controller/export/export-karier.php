@@ -120,7 +120,7 @@ if ($result && $result->num_rows > 0) {
             if ($nama_t === 'TUNJANGAN HIDUP') $t_hidup = $t['jumlah_tunjangan'];
             if ($nama_t === 'TUNJANGAN MAKAN') $t_makan = $t['jumlah_tunjangan'];
             if ($nama_t === 'TUNJANGAN SKILL') $t_skill = $t['jumlah_tunjangan'];
-            if ($nama_t === 'PERFORMANCE BONUS') $p_bonus = $t['jumlah_tunjangan'];
+            if ($nama_t === 'BONUS KEHADIRAN') $p_bonus = $t['jumlah_tunjangan']; // <--- SUDAH DIPERBAIKI
             if ($nama_t === 'TUNJANGAN POSISI') $t_posisi = $t['jumlah_tunjangan'];
         }
 
