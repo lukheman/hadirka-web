@@ -11,7 +11,7 @@
                     <select id="bbAkun" class="form-select form-select-sm" onchange="loadBukuBesar()">
                         <?php
                         $q = mysqli_query($koneksi, "SELECT * FROM tb_kategori_keuangan ORDER BY kode_akun ASC");
-                        while($r = mysqli_fetch_assoc($q)){
+                        while ($r = mysqli_fetch_assoc($q)) {
                             echo "<option value='{$r['id_kategori']}'>[{$r['kode_akun']}] - {$r['nama_akun']}</option>";
                         }
                         ?>
@@ -22,10 +22,17 @@
                     <select id="bbPeriode" class="form-select form-select-sm" onchange="loadBukuBesar()">
                         <option value="semua">-- Semua Periode --</option>
                         <?php
-                        $q = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC");
-                        while($r = mysqli_fetch_assoc($q)){
-                            $tgl = date('d/m/Y', strtotime($r['tgl_mulai'])) . " - " . date('d/m/Y', strtotime($r['tgl_selesai']));
-                            echo "<option value='{$r['id_priode']}'>{$tgl}</option>";
+                        $bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
+
+                        for ($i = 0; $i < 12; $i++) {
+                            $value = date('Y-m', strtotime("-$i months"));
+                            $bulanIdx = (int)date('m', strtotime("-$i months")) - 1;
+                            $tahun = date('Y', strtotime("-$i months"));
+
+                            $label = $bulanIndo[$bulanIdx] . " " . $tahun;
+                            $selected = ($i == 0) ? "selected" : "";
+
+                            echo "<option value='{$value}' $selected>{$label}</option>";
                         }
                         ?>
                     </select>
@@ -57,8 +64,8 @@
         const idKategori = document.getElementById('bbAkun').value;
         const idPeriode = document.getElementById('bbPeriode').value;
         const tbody = document.getElementById('tbodyBukuBesar');
-        
-        if(!idKategori) return;
+
+        if (!idKategori) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
 
         try {
@@ -75,7 +82,7 @@
                 // Kewajiban, Ekuitas, Pendapatan bertambah di Kredit (+)
                 const isNormalDebit = (kelompok === 'Aset' || kelompok === 'Beban');
 
-                if(result.data.length === 0) {
+                if (result.data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada data mutasi pada periode ini.</td></tr>';
                     return;
                 }
@@ -100,7 +107,7 @@
                     `;
                 });
             }
-        } catch(e) {
+        } catch (e) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data buku besar.</td></tr>';
         }
     }

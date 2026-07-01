@@ -17,10 +17,11 @@ $kelompok = mysqli_fetch_assoc($qCOA)['kelompok'] ?? 'Aset';
 
 $where = "WHERE t.id_kategori = '$id_kategori'";
 if (!empty($id_priode)) {
-    $qPriode = mysqli_query($koneksi, "SELECT tgl_mulai, tgl_selesai FROM tb_priode WHERE id_priode = '$id_priode'");
-    if ($dP = mysqli_fetch_assoc($qPriode)) {
-        $where .= " AND t.tanggal_transaksi BETWEEN '{$dP['tgl_mulai']}' AND '{$dP['tgl_selesai']}'";
-    }
+    $startDate = $id_priode . '-01'; 
+    $endDate = date('Y-m-t', strtotime($startDate)); 
+    
+    // Sesuaikan prefix tabel (t.) 
+    $where .= " AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'";
 }
 
 $sql = "SELECT * FROM tb_transaksi_keuangan t $where ORDER BY t.tanggal_transaksi ASC, t.id_transaksi ASC";

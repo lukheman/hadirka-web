@@ -4,14 +4,15 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../../config/koneksi.php';
 
 $id_priode = isset($_GET['id_priode']) && $_GET['id_priode'] !== 'semua' ? mysqli_real_escape_string($koneksi, $_GET['id_priode']) : '';
+
 $whereClause = "";
 
 if (!empty($id_priode)) {
-    $qPriode = mysqli_query($koneksi, "SELECT tgl_selesai FROM tb_priode WHERE id_priode = '$id_priode'");
-    if ($dP = mysqli_fetch_assoc($qPriode)) {
-        // Ambil data kumulatif dari awal waktu sampai batas akhir tanggal periode terpilih
-        $whereClause = "AND t.tanggal_transaksi <= '{$dP['tgl_selesai']}'";
-    }
+    $startDate = $id_priode . '-01'; 
+    $endDate = date('Y-m-t', strtotime($startDate)); 
+    
+    // Sesuaikan prefix tabel (t.)
+    $whereClause = "AND t.tanggal_transaksi <= '$endDate'";
 }
 
 // Group & Sum mutasi Debit/Kredit per Akun menggunakan Conditional Aggregation

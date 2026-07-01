@@ -9,14 +9,11 @@ $id_priode = isset($_GET['id_priode']) && $_GET['id_priode'] !== 'semua' ? mysql
 
 $whereClause = "";
 if (!empty($id_priode)) {
-    // Cari tanggal mulai dan selesai dari tabel tb_priode
-    $qPriode = mysqli_query($koneksi, "SELECT tgl_mulai, tgl_selesai FROM tb_priode WHERE id_priode = '$id_priode'");
-    if (mysqli_num_rows($qPriode) > 0) {
-        $dataPriode = mysqli_fetch_assoc($qPriode);
-        $startDate = $dataPriode['tgl_mulai'];
-        $endDate = $dataPriode['tgl_selesai'];
-        $whereClause = "WHERE t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'";
-    }
+    $startDate = $id_priode . '-01'; 
+    $endDate = date('Y-m-t', strtotime($startDate)); 
+    
+    // Sesuaikan prefix tabel (t.) 
+    $whereClause = "WHERE t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'";
 }
 
 // Siapkan wadah per kelompok

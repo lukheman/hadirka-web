@@ -7,28 +7,22 @@ require_once __DIR__ . '/../../config/koneksi.php';
 
 // Cek apakah ada filter id_priode yang dikirim
 $id_priode = isset($_GET['id_priode']) ? mysqli_real_escape_string($koneksi, $_GET['id_priode']) : '';
+$bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
 
-if (!empty($id_priode)) {
-    $qPriode = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE id_priode = '$id_priode'");
-    $dataPriode = mysqli_fetch_assoc($qPriode);
+if (!empty($id_priode) && $id_priode !== 'semua') {
+    $startDate = $id_priode . '-01';
+    $endDate = date('Y-m-t', strtotime($startDate));
     
-    $startDate = $dataPriode['tgl_mulai'];
-    $endDate = $dataPriode['tgl_selesai'];
-    $teks_periode = date('d/m/Y', strtotime($startDate)) . " - " . date('d/m/Y', strtotime($endDate));
+    $bulanIdx = (int)date('m', strtotime($startDate)) - 1;
+    $tahun = date('Y', strtotime($startDate));
+    $teks_periode = $bulanIndo[$bulanIdx] . " " . $tahun;
 } else {
-    $qPriode = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC LIMIT 1");
-    if(mysqli_num_rows($qPriode) > 0) {
-        $dataPriode = mysqli_fetch_assoc($qPriode);
-        $startDate = $dataPriode['tgl_mulai'];
-        $endDate = $dataPriode['tgl_selesai'];
-        $teks_periode = date('d/m/Y', strtotime($startDate)) . " - " . date('d/m/Y', strtotime($endDate));
-    } else {
-        $bulan_ini = date('m'); 
-        $tahun_ini = date('Y');
-        $startDate = date('Y-m-01', strtotime("$tahun_ini-$bulan_ini-01"));
-        $endDate   = date('Y-m-t', strtotime("$tahun_ini-$bulan_ini-01"));
-        $teks_periode = date('F Y', strtotime("$tahun_ini-$bulan_ini-01"));
-    }
+    $bulan_ini = date('m'); 
+    $tahun_ini = date('Y');
+    $startDate = date('Y-m-01', strtotime("$tahun_ini-$bulan_ini-01"));
+    $endDate   = date('Y-m-t', strtotime("$tahun_ini-$bulan_ini-01"));
+    
+    $teks_periode = $bulanIndo[(int)$bulan_ini - 1] . " " . $tahun_ini;
 }
 
 // =========================================================================================

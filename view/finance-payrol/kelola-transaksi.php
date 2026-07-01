@@ -10,22 +10,25 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 ?>
 
 <!-- Tambahkan CSS DataTables -->
- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
 <style>
     .dataTables_wrapper .row {
         margin-bottom: 0.5rem;
     }
-    
+
     /* Perbaikan UI Select2 untuk Bootstrap 5 */
-    .select2-container--bootstrap-5 .select2-selection { 
-        border: 1px solid #d9dee3 !important; /* Sesuaikan warna form bawaan template */
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 1px solid #d9dee3 !important;
+        /* Sesuaikan warna form bawaan template */
         min-height: 38px;
     }
+
     .select2-container--bootstrap-5 .select2-selection--single {
         padding: 0.375rem 0.75rem;
     }
+
     .select2-container--bootstrap-5.select2-container--focus .select2-selection {
         border-color: #696cff !important;
         box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.25) !important;
@@ -46,18 +49,17 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                 <select id="periodeDropdown" class="form-select form-select-sm fw-bold cursor-pointer bg-white" onchange="loadDataTransaksi()" style="width: auto; min-width: 200px;">
                     <option value="semua">-- Semua Periode --</option>
                     <?php
-                    $qPeriode = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC");
-                    if (mysqli_num_rows($qPeriode) > 0) {
-                        $isFirst = true; // Tambahkan penanda ini
-                        while ($rowP = mysqli_fetch_assoc($qPeriode)) {
-                            $tgl_str = date('d/m/Y', strtotime($rowP['tgl_mulai'])) . " - " . date('d/m/Y', strtotime($rowP['tgl_selesai']));
+                    $bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
 
-                            // Jika iterasi pertama (terbaru), beri atribut selected
-                            $selected = $isFirst ? "selected" : "";
+                    for ($i = 0; $i < 12; $i++) {
+                        $value = date('Y-m', strtotime("-$i months"));
+                        $bulanIdx = (int)date('m', strtotime("-$i months")) - 1;
+                        $tahun = date('Y', strtotime("-$i months"));
 
-                            echo "<option value='{$rowP['id_priode']}' $selected>{$tgl_str}</option>";
-                            $isFirst = false; // Matikan penanda setelah looping pertama
-                        }
+                        $label = $bulanIndo[$bulanIdx] . " " . $tahun;
+                        $selected = ($i == 0) ? "selected" : "";
+
+                        echo "<option value='{$value}' $selected>{$label}</option>";
                     }
                     ?>
                 </select>
@@ -605,7 +607,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                 this.reset();
 
                 $('#add_kategori').val('').trigger('change');
-                
+
                 processedFileAdd = null;
                 document.getElementById('preview_bukti_add').innerHTML = '';
                 bootstrap.Modal.getInstance(document.getElementById('modalTambahTransaksi')).hide();

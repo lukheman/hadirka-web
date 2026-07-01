@@ -9,10 +9,17 @@
             <select id="periodeNeraca" class="form-select d-inline-block w-auto bg-white shadow-sm" onchange="loadNeracaSaldo()">
                 <option value="semua">-- S.d Periode Saat Ini --</option>
                 <?php
-                $q = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC");
-                while ($r = mysqli_fetch_assoc($q)) {
-                    $tgl = date('d/m/Y', strtotime($r['tgl_mulai'])) . " - " . date('d/m/Y', strtotime($r['tgl_selesai']));
-                    echo "<option value='{$r['id_priode']}'>Paling lambat: " . date('d/m/Y', strtotime($r['tgl_selesai'])) . "</option>";
+                $bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
+
+                for ($i = 0; $i < 12; $i++) {
+                    $value = date('Y-m', strtotime("-$i months"));
+                    $bulanIdx = (int)date('m', strtotime("-$i months")) - 1;
+                    $tahun = date('Y', strtotime("-$i months"));
+
+                    $label = $bulanIndo[$bulanIdx] . " " . $tahun;
+                    $selected = ($i == 0) ? "selected" : "";
+
+                    echo "<option value='{$value}' $selected>{$label}</option>";
                 }
                 ?>
             </select>
@@ -22,7 +29,7 @@
     <div class="card shadow-sm border-0">
         <div class="card-body">
             <div id="alertBalance" class="alert d-none mb-3" role="alert"></div>
-            
+
             <table class="table table-bordered table-striped align-middle w-100">
                 <thead class="table-light text-center">
                     <tr>
@@ -57,13 +64,14 @@
 
             if (result.status === 'success') {
                 tbody.innerHTML = '';
-                let totalD = 0, totalK = 0;
+                let totalD = 0,
+                    totalK = 0;
 
                 result.data.forEach(row => {
                     totalD += row.debit;
                     totalK += row.kredit;
 
-                    if(row.debit > 0 || row.kredit > 0) { // Hanya tampilkan akun ber-saldo
+                    if (row.debit > 0 || row.kredit > 0) { // Hanya tampilkan akun ber-saldo
                         tbody.innerHTML += `
                             <tr>
                                 <td class="text-center"><code>${row.kode_akun}</code></td>
@@ -89,7 +97,7 @@
                     alertEl.innerHTML = `<i class="bx bx-error-circle me-1"></i> <strong>Peringatan!</strong> Terjadi selisih sebesar Rp ${Math.abs(totalD - totalK).toLocaleString('id-ID')}. Periksa kembali input Jurnal Umum Anda.`;
                 }
             }
-        } catch(e) {
+        } catch (e) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Gagal memuat neraca saldo.</td></tr>';
         }
     }

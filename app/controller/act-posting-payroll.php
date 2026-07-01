@@ -15,6 +15,8 @@ if (empty($startDate) || empty($endDate)) {
     exit;
 }
 
+$tgl_posting = date('Y-m-01', strtotime($startDate));
+
 try {
     // 1. Ambil ID Akun Keuangan (4001, 1301, 3004, 2003)
     $qBebanGaji = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '4001' LIMIT 1");
@@ -50,7 +52,7 @@ try {
         $slip = generateSlipGaji($karyawan['nik_karyawan'], $startDate, $endDate);
 
         if (!isset($slip['error']) && !isset($slip['skip'])) {
-            
+
             // [PERBAIKAN 1]: Jika gaji bersih minus, abaikan! Sama seperti di UI data-payrol.php
             $gaji_bersih_karyawan = round($slip['gaji_bersih'] ?? 0);
             if ($gaji_bersih_karyawan < 0) {
@@ -59,7 +61,7 @@ try {
 
             // TANGKAP REKAP GAJI BERSIH UNTUK POP UP
             $total_gaji_bersih_rekap += $gaji_bersih_karyawan;
-            
+
             $total_gaji_kotor += round($slip['total_pendapatan'] ?? 0);
             $total_potong_kasbon += round($slip['total_potongan_pinjaman'] ?? 0);
 
@@ -80,11 +82,11 @@ try {
             if (isset($slip['potongan_tunjangan']) && is_array($slip['potongan_tunjangan'])) {
                 foreach ($slip['potongan_tunjangan'] as $pt) {
                     $jenis = strtolower($pt['nama']);
-                    
+
                     if (strpos($jenis, 'bpjs') !== false || strpos($jenis, 'jht') !== false || strpos($jenis, 'pph') !== false) {
                         $total_potong_titipan += round($pt['jumlah']); // Masuk Kewajiban (2003)
                     } else {
-                        $total_potong_denda += round($pt['jumlah']); 
+                        $total_potong_denda += round($pt['jumlah']);
                     }
                 }
             }
@@ -102,30 +104,30 @@ try {
     $ket_posting = "Auto-Posting Payroll: " . date('d/m/y', strtotime($startDate)) . " - " . date('d/m/y', strtotime($endDate));
 
     // Bersihkan duplikat postingan jika admin reposting
-    mysqli_query($koneksi, "DELETE FROM tb_transaksi_keuangan WHERE keterangan LIKE 'Auto-Posting Payroll:%' AND tanggal_transaksi = '$endDate'");
+    mysqli_query($koneksi, "DELETE FROM tb_transaksi_keuangan WHERE keterangan LIKE 'Auto-Posting Payroll:%' AND tanggal_transaksi = '$tgl_posting'");
 
     mysqli_begin_transaction($koneksi);
 
-    // [1] Beban Gaji Kotor (Uang Keluar)
-    mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan) 
-                            VALUES ('$endDate', '$id_beban_gaji', '$total_gaji_kotor', 'Keluar', '$ket_posting - Beban Gaji')");
+    // [1] Beban Gaji Kotor (Uang Keluar) -> Beban bertambah = debit
+    mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
+                            VALUES ('$tgl_posting', '$id_beban_gaji', '$total_gaji_kotor', 'Keluar', 'debit', '$ket_posting - Beban Gaji')");
 
-    // [2] Pelunasan Kasbon (Uang Masuk)
+    // [2] Pelunasan Kasbon (Uang Masuk) -> Piutang (Aset) berkurang = kredit
     if ($total_potong_kasbon > 0) {
-        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan) 
-                                VALUES ('$endDate', '$id_piutang', '$total_potong_kasbon', 'Masuk', '$ket_posting - Pelunasan Pinjaman')");
+        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
+                                VALUES ('$tgl_posting', '$id_piutang', '$total_potong_kasbon', 'Masuk', 'kredit', '$ket_posting - Pelunasan Pinjaman')");
     }
 
-    // [3] Potongan Denda / Sanksi (Uang Masuk ke Akun Pendapatan 3004)
+    // [3] Potongan Denda / Sanksi (Uang Masuk ke Akun Pendapatan 3004) -> Pendapatan bertambah = kredit
     if ($total_potong_denda > 0) {
-        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan) 
-                                VALUES ('$endDate', '$id_pendapatan_lain', '$total_potong_denda', 'Masuk', '$ket_posting - Denda/Sanksi')");
+        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
+                                VALUES ('$tgl_posting', '$id_pendapatan_lain', '$total_potong_denda', 'Masuk', 'kredit', '$ket_posting - Denda/Sanksi')");
     }
 
-    // [4] Potongan Titipan / Sumbangan (Uang Masuk Sementara ke Kewajiban 2003)
+    // [4] Potongan Titipan / Sumbangan (Uang Masuk Sementara ke Kewajiban 2003) -> Kewajiban bertambah = kredit
     if ($total_potong_titipan > 0) {
-        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan) 
-                                VALUES ('$endDate', '$id_titipan', '$total_potong_titipan', 'Masuk', '$ket_posting - Sumbangan/Titipan')");
+        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
+                                VALUES ('$tgl_posting', '$id_titipan', '$total_potong_titipan', 'Masuk', 'kredit', '$ket_posting - Sumbangan/Titipan')");
     }
 
     mysqli_commit($koneksi);

@@ -11,10 +11,17 @@
             <select id="periodeJurnal" class="form-select d-inline-block w-auto bg-white shadow-sm" onchange="loadJurnalUmum()">
                 <option value="semua">-- Semua Periode --</option>
                 <?php
-                $q = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC");
-                while ($r = mysqli_fetch_assoc($q)) {
-                    $tgl = date('d/m/Y', strtotime($r['tgl_mulai'])) . " - " . date('d/m/Y', strtotime($r['tgl_selesai']));
-                    echo "<option value='{$r['id_priode']}'>{$tgl}</option>";
+                $bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
+
+                for ($i = 0; $i < 12; $i++) {
+                    $value = date('Y-m', strtotime("-$i months"));
+                    $bulanIdx = (int)date('m', strtotime("-$i months")) - 1;
+                    $tahun = date('Y', strtotime("-$i months"));
+
+                    $label = $bulanIndo[$bulanIdx] . " " . $tahun;
+                    $selected = ($i == 0) ? "selected" : "";
+
+                    echo "<option value='{$value}' $selected>{$label}</option>";
                 }
                 ?>
             </select>
@@ -58,7 +65,7 @@
         if ($.fn.DataTable.isDataTable('#tableJurnal')) {
             $('#tableJurnal').DataTable().destroy();
         }
-        
+
         const tbody = document.getElementById('tbodyJurnal');
         tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
 
@@ -68,7 +75,8 @@
 
             if (result.status === 'success') {
                 tbody.innerHTML = '';
-                let tDebit = 0, tKredit = 0;
+                let tDebit = 0,
+                    tKredit = 0;
 
                 result.data.forEach(row => {
                     tDebit += row.debit_raw;
@@ -76,7 +84,7 @@
 
                     // Estetika Akun: Jika posisi Kredit, teks akun agak menjorok ke dalam (indent)
                     const paddingClass = row.tipe_neraca === 'kredit' ? 'ps-4 text-muted' : 'fw-semibold text-dark';
-                    
+
                     tbody.innerHTML += `
                         <tr>
                             <td>${row.tanggal}</td>
@@ -98,7 +106,9 @@
                 $('#tableJurnal').DataTable({
                     pageLength: 25,
                     ordering: false,
-                    language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json' }
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
+                    }
                 });
             }
         } catch (e) {

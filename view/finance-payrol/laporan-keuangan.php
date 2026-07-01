@@ -1,6 +1,6 @@
 <?php
 // app/views/laporan-keuangan.php
-require_once __DIR__ . '/../../app/config/koneksi.php'; 
+require_once __DIR__ . '/../../app/config/koneksi.php';
 ?>
 
 <style>
@@ -51,24 +51,27 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
             <p class="text-muted mb-1">Project Manpower Supply (IPIP HBB)</p>
             <p class="text-muted mb-0">Periode: <span id="ui_periode" class="fw-bold text-primary">MEMUAT...</span></p>
         </div>
-        
+
         <div class="col-md-6 text-md-end">
             <div class="d-flex flex-column flex-sm-row justify-content-md-end align-items-sm-center gap-2">
                 <!-- Filter Dropdown AJAX -->
                 <select id="periodeDropdown" class="form-select form-select-sm fw-bold cursor-pointer bg-white shadow-sm" onchange="loadLaporan(this.value)" style="width: auto; min-width: 200px;">
                     <?php
-                    $qPeriode = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC");
-                    if (mysqli_num_rows($qPeriode) > 0) {
-                        while ($rowP = mysqli_fetch_assoc($qPeriode)) {
-                            $tgl_str = date('d/m/Y', strtotime($rowP['tgl_mulai'])) . " - " . date('d/m/Y', strtotime($rowP['tgl_selesai']));
-                            echo "<option value='{$rowP['id_priode']}'>{$tgl_str}</option>";
-                        }
-                    } else {
-                        echo "<option value=''>Belum Ada Periode</option>";
+                    $bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
+
+                    for ($i = 0; $i < 12; $i++) {
+                        $value = date('Y-m', strtotime("-$i months"));
+                        $bulanIdx = (int)date('m', strtotime("-$i months")) - 1;
+                        $tahun = date('Y', strtotime("-$i months"));
+
+                        $label = $bulanIndo[$bulanIdx] . " " . $tahun;
+                        $selected = ($i == 0) ? "selected" : "";
+
+                        echo "<option value='{$value}' $selected>{$label}</option>";
                     }
                     ?>
                 </select>
-                
+
                 <!-- Grup Tombol Aksi -->
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-outline-primary shadow-sm w-100 text-nowrap"><i class="bx bx-printer me-1"></i> Cetak</button>
@@ -363,8 +366,10 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
                 // RENDER GRAFIK PENDAPATAN (Doughnut Chart)
                 // ============================================
                 const ctxPendapatan = document.getElementById('chartPendapatan').getContext('2d');
-                if (chartPendapatanInstance) { chartPendapatanInstance.destroy(); }
-                
+                if (chartPendapatanInstance) {
+                    chartPendapatanInstance.destroy();
+                }
+
                 const labelPendapatan = data.chart_pendapatan.labels.length > 0 ? data.chart_pendapatan.labels : ['Belum Ada Pendapatan'];
                 const dataPendapatan = data.chart_pendapatan.data.length > 0 ? data.chart_pendapatan.data : [1];
 
@@ -386,12 +391,14 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
                                 callbacks: {
                                     label: function(context) {
                                         let value = context.raw;
-                                        if(data.chart_pendapatan.data.length === 0) return ' Rp 0';
+                                        if (data.chart_pendapatan.data.length === 0) return ' Rp 0';
                                         return ' Rp ' + value.toLocaleString('id-ID');
                                     }
                                 }
                             },
-                            legend: { position: 'right' }
+                            legend: {
+                                position: 'right'
+                            }
                         }
                     }
                 });
@@ -400,7 +407,9 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
                 // RENDER GRAFIK PENGELUARAN (Horizontal Bar)
                 // ============================================
                 const ctxBeban = document.getElementById('chartBeban').getContext('2d');
-                if (chartBebanInstance) { chartBebanInstance.destroy(); }
+                if (chartBebanInstance) {
+                    chartBebanInstance.destroy();
+                }
 
                 const labelBeban = data.chart_beban.labels.length > 0 ? data.chart_beban.labels : ['Belum Ada Pengeluaran'];
                 const dataBeban = data.chart_beban.data.length > 0 ? data.chart_beban.data : [0];
@@ -412,17 +421,19 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
                         datasets: [{
                             label: 'Total (Rp)',
                             data: dataBeban,
-                            backgroundColor: '#e74a3b', 
+                            backgroundColor: '#e74a3b',
                             borderRadius: 4,
                             minBarLength: 8 // <-- INI KUNCI SOLUSINYA. Bar sekecil apapun akan tetap tampil minimal 8 pixel
                         }]
                     },
                     options: {
-                        indexAxis: 'y', 
+                        indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false },
+                            legend: {
+                                display: false
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
@@ -434,12 +445,12 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
                         scales: {
                             x: {
                                 // Menambahkan sedikit padding di kanan agar bar panjang tidak menabrak batas
-                                grace: '5%', 
+                                grace: '5%',
                                 ticks: {
                                     callback: function(value) {
                                         if (value >= 1000000000) return 'Rp ' + (value / 1000000000) + 'M'; // Miliar
-                                        if (value >= 1000000) return 'Rp ' + (value / 1000000) + 'Jt';      // Juta
-                                        if (value >= 1000) return 'Rp ' + (value / 1000) + 'Rb';            // Ribu
+                                        if (value >= 1000000) return 'Rp ' + (value / 1000000) + 'Jt'; // Juta
+                                        if (value >= 1000) return 'Rp ' + (value / 1000) + 'Rb'; // Ribu
                                         return 'Rp ' + value;
                                     }
                                 }
@@ -447,7 +458,7 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
                         }
                     }
                 });
-                
+
             }
         } catch (error) {
             console.error("Gagal memuat laporan keuangan:", error);
