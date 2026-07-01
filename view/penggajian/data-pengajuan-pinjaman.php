@@ -358,7 +358,7 @@
                                 <th>Karyawan</th>
                                 <th>Jabatan</th>
                                 <th>Site</th>
-                                <th>Tanggal</th>
+                                <th>Tanggal & Waktu</th>
                                 <th>Nominal</th>
                                 <th>Alasan</th>
                                 <th>Bukti (Wajah & ID)</th>
@@ -620,15 +620,27 @@
 
             menusHtml += menuHtml;
 
-            // Format tanggal
+            // Format tanggal dan jam
             const dateObj = new Date(row.tgl_pengajuan);
-            const formattedDate = isNaN(dateObj) ?
-                row.tgl_pengajuan :
-                dateObj.toLocaleDateString('id-ID', {
+            let formattedDate = row.tgl_pengajuan;
+
+            if (!isNaN(dateObj)) {
+                // Ambil format tanggal
+                const tanggal = dateObj.toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric'
                 });
+
+                // Ambil format jam (HH:MM)
+                const jam = dateObj.toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).replace(/\./g, ':'); // JS id-ID kadang memakai titik (misal 14.30), kita standarkan jadi 14:30
+
+                // Gabungkan dengan HTML agar jam tampil rapi di bawah tanggal
+                formattedDate = `${tanggal}<br><small class="text-muted fw-bold"><i class="fa fa-clock me-1"></i>${jam}</small>`;
+            }
 
             rowsHtml += `
             <tr>
@@ -852,7 +864,7 @@
         document.getElementById('filterSite').addEventListener('change', () => renderTable(allLoanData));
         document.getElementById('filterJabatan').addEventListener('change', () => renderTable(allLoanData));
         document.getElementById('filterBank').addEventListener('change', () => renderTable(allLoanData));
-        document.getElementById('filterStatus').addEventListener('change',  () => renderTable(allLoanData));
+        document.getElementById('filterStatus').addEventListener('change', () => renderTable(allLoanData));
 
         document.getElementById('btnExportExcel').addEventListener('click', exportExcel);
 
