@@ -15,7 +15,7 @@ if (empty($startDate) || empty($endDate)) {
     exit;
 }
 
-$tgl_posting = date('Y-m-01', strtotime($startDate));
+$tgl_posting = date('Y-m-01', strtotime('+1 month', strtotime($endDate)));
 
 try {
     // 1. Ambil ID Akun Keuangan (4001, 1301, 3004, 2003)
