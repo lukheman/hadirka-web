@@ -32,15 +32,15 @@ if (mysqli_num_rows($result) == 0) {
     // Biarkan kosong, DataTables yang akan memunculkan pesan "Data tidak ditemukan"
     echo "";
 } else {
-    while($row = mysqli_fetch_assoc($result)){
+    while ($row = mysqli_fetch_assoc($result)) {
         echo "<tr>";
         echo "<td class='text-center'>{$no}</td>";
         echo "<td>{$row['nik_karyawan']}</td>";
         echo "<td>{$row['nama_lengkap']}</td>";
         echo "<td>{$row['nama_jabatan']}</td>";
-        echo "<td>{$row['tgl_pinjaman']}</td>";
-        echo "<td>{$row['tgl_bayar_pinjaman']}</td>";
-        echo "<td>Rp ".number_format($row['nominal_pinjaman'],0,",",".")."</td>"; // Saya tambahkan format 'Rp' agar lebih rapi
+        echo "<td>" . date('d/m/Y', strtotime($row['tgl_pinjaman'])) . "</td>";
+        echo "<td>" . date('d/m/Y', strtotime($row['tgl_bayar_pinjaman'])) . "</td>";
+        echo "<td>Rp " . number_format($row['nominal_pinjaman'], 0, ",", ".") . "</td>"; // Saya tambahkan format 'Rp' agar lebih rapi
         echo "<td>{$row['ket_pinjaman']}</td>";
         echo "<td class='text-center'>
                 <button class='btn btn-primary btn-sm btnEdit'
@@ -60,4 +60,3 @@ if (mysqli_num_rows($result) == 0) {
         $no++;
     }
 }
-?>

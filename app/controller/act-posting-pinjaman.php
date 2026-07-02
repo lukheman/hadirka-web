@@ -11,9 +11,12 @@ if (empty($bulan)) {
 }
 
 try {
-    // 1. Ambil ID Akun 1301 (Piutang Pinjaman Karyawan)
+    // 1. Ambil ID Akun 1301 dan 1001 (Piutang Pinjaman Karyawan & Kas)
     $qAkun = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1301' LIMIT 1");
     $id_piutang = mysqli_fetch_assoc($qAkun)['id_kategori'] ?? null;
+
+    $qKas = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
+    $id_kas = mysqli_fetch_assoc($qKas)['id_kategori'] ?? null;
 
     if (!$id_piutang) {
         throw new Exception("Akun Piutang Pinjaman Karyawan (1301) belum diatur di master kategori.");
@@ -21,12 +24,10 @@ try {
 
     mysqli_begin_transaction($koneksi);
 
-    // 2. Bersihkan data postingan pinjaman LAMA di bulan ini (Mencegah Duplikat saat Posting Ulang)
+    // 2. Bersihkan data postingan transaksi (Debit dan Kredit) LAMA di bulan ini (Mencegah Duplikat saat Posting Ulang)
     $delQuery = "DELETE FROM tb_transaksi_keuangan 
-                 WHERE id_kategori = '$id_piutang' 
-                 AND tipe_arus = 'Keluar' 
-                 AND keterangan LIKE 'Auto-Posting Pencairan Pinjaman:%' 
-                 AND DATE_FORMAT(tanggal_transaksi, '%Y-%m') = '$bulan'";
+             WHERE keterangan LIKE 'Auto-Posting Pencairan Pinjaman:%' 
+             AND DATE_FORMAT(tanggal_transaksi, '%Y-%m') = '$bulan'";
     mysqli_query($koneksi, $delQuery);
 
     // 3. Ambil total pinjaman per hari di bulan tersebut
@@ -46,11 +47,19 @@ try {
         if ($total_harian > 0) {
             $ket = "Auto-Posting Pencairan Pinjaman: Tanggal " . date('d/m/Y', strtotime($tgl));
 
-            // Insert sebagai Arus Keluar (Kas Berkurang, Piutang Bertambah)
-            $stmt = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan) VALUES (?, ?, ?, 'Keluar', ?)");
-            $stmt->bind_param("sids", $tgl, $id_piutang, $total_harian, $ket);
-            $stmt->execute();
-            $stmt->close();
+            // A. DEBIT: Piutang Pinjaman Karyawan Bertambah (1301)
+            $stmt1 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) VALUES (?, ?, ?, 'Keluar', 'debit', ?)");
+            $stmt1->bind_param("sids", $tgl, $id_piutang, $total_harian, $ket);
+            $stmt1->execute();
+            $stmt1->close();
+
+            // B. KREDIT: Kas Berkurang (1001)
+            if ($id_kas) {
+                $stmt2 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) VALUES (?, ?, ?, 'Keluar', 'kredit', ?)");
+                $stmt2->bind_param("sids", $tgl, $id_kas, $total_harian, $ket);
+                $stmt2->execute();
+                $stmt2->close();
+            }
 
             $total_terposting += $total_harian;
             $count_hari++;
@@ -70,9 +79,7 @@ try {
             'message' => 'Tidak ada data pencairan pinjaman di bulan ini.'
         ]);
     }
-
 } catch (Exception $e) {
     mysqli_rollback($koneksi);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-?>

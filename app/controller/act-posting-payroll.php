@@ -31,8 +31,12 @@ try {
     $qTitipan = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '2003' LIMIT 1");
     $id_titipan = mysqli_fetch_assoc($qTitipan)['id_kategori'] ?? null;
 
-    if (!$id_beban_gaji || !$id_piutang || !$id_pendapatan_lain || !$id_titipan) {
-        throw new Exception("Setup Akun (4001, 1301, 3004, 2003) belum lengkap di tb_kategori_keuangan.");
+    // Ambil akun Kas (1001)
+    $qKas = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
+    $id_kas = mysqli_fetch_assoc($qKas)['id_kategori'] ?? null;
+
+    if (!$id_beban_gaji || !$id_piutang || !$id_pendapatan_lain || !$id_titipan || !$id_kas) {
+        throw new Exception("Setup Akun (4001, 1301, 3004, 2003, 1001) belum lengkap di tb_kategori_keuangan.");
     }
 
     $total_gaji_kotor = 0;
@@ -128,6 +132,12 @@ try {
     if ($total_potong_titipan > 0) {
         mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
                                 VALUES ('$tgl_posting', '$id_titipan', '$total_potong_titipan', 'Masuk', 'kredit', '$ket_posting - Sumbangan/Titipan')");
+    }
+
+    // [5] PEMBAYARAN GAJI BERSIH (Uang Keluar dari Kas)
+    if ($total_gaji_bersih_rekap > 0) {
+        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
+            VALUES ('$tgl_posting', '$id_kas', '$total_gaji_bersih_rekap', 'Keluar', 'kredit', '$ket_posting - Pembayaran Gaji Bersih ke Karyawan')");
     }
 
     mysqli_commit($koneksi);
