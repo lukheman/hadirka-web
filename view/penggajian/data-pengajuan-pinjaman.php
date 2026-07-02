@@ -668,7 +668,7 @@
             scrollX: true,
             autoWidth: false,
             pageLength: 10,
-            lengthMenu: [10, 25, 50],
+            lengthMenu: [10, 25, 50, 100],
             ordering: false,
             language: {
                 lengthMenu: 'Tampilkan _MENU_ data',

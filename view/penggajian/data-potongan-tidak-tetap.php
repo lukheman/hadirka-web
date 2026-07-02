@@ -245,6 +245,7 @@
                     <option value="">Pilih Kategori...</option>
                     <option value="Denda">Denda</option>
                     <option value="Sumbangan">Sumbangan</option>
+                    <option value="Titipan">Titipan</option>
                     <option value="Potongan Lainnya">Potongan Lainnya</option>
                 </select>
 
@@ -288,6 +289,7 @@
                     <option value="">Pilih Kategori...</option>
                     <option value="Denda">Denda</option>
                     <option value="Sumbangan">Sumbangan</option>
+                    <option value="Titipan">Titipan</option>
                     <option value="Potongan Lainnya">Potongan Lainnya</option>
                 </select>
 
