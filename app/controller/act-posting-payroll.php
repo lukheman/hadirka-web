@@ -74,7 +74,12 @@ try {
                 foreach ($slip['potongan_lain'] as $pl) {
                     $jenis = strtolower($pl['nama']);
 
-                    if (strpos($jenis, 'sumbangan') !== false || strpos($jenis, 'titipan') !== false || strpos($jenis, 'bpjs') !== false) {
+                    if (
+                        strpos($jenis, 'sumbangan') !== false ||
+                        strpos($jenis, 'titipan') !== false ||
+                        strpos($jenis, 'bpjs') !== false ||
+                        strpos($jenis, 'kios') !== false
+                    ) {
                         $total_potong_titipan += round($pl['jumlah']);   // Ke Akun 2003 (Kewajiban Titipan)
                     } else {
                         $total_potong_denda += round($pl['jumlah']);   // Ke Akun 3004 (Pendapatan Lain-lain)
@@ -87,7 +92,8 @@ try {
                 foreach ($slip['potongan_tunjangan'] as $pt) {
                     $jenis = strtolower($pt['nama']);
 
-                    if (strpos($jenis, 'bpjs') !== false || strpos($jenis, 'jht') !== false || strpos($jenis, 'pph') !== false) {
+                    if (
+                        strpos($jenis, 'bpjs') !== false || strpos($jenis, 'jht') !== false || strpos($jenis, 'jp') !== false || strpos($jenis, 'pph') !== false) {
                         $total_potong_titipan += round($pt['jumlah']); // Masuk Kewajiban (2003)
                     } else {
                         $total_potong_denda += round($pt['jumlah']);
