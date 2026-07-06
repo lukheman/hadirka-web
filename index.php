@@ -37,6 +37,10 @@ $routes = [
     'data-calon-karyawan' => 'view/master-data/data-calon-karyawan.php',
     'data-loker' => 'view/master-data/data-loker.php',
 
+    // Internal
+    'karyawan-internal' => 'view/internal/data-karyawan-internal.php',
+    'bonus-internal'    => 'view/internal/data-bonus-internal.php',
+
     // Kehadiran
     'rekapan-absensi' => 'view/kehadiran/rekapan-absensi.php',
     'dayli-absen'     => 'view/kehadiran/dayli-absen.php',
@@ -55,11 +59,11 @@ $routes = [
 
     // --- ROUTE BARU AKUNTANSI ---
     'data-coa' => 'view/finance-payrol/data-coa.php',
-    'kelola-transaksi'=> 'view/finance-payrol/kelola-transaksi.php',
+    'kelola-transaksi' => 'view/finance-payrol/kelola-transaksi.php',
     'jurnal-umum'     => 'view/finance-payrol/jurnal-umum.php',
     'buku-besar'      => 'view/finance-payrol/buku-besar.php',
     'neraca-saldo'    => 'view/finance-payrol/neraca-saldo.php',
-    'laporan-keuangan'=> 'view/finance-payrol/laporan-keuangan.php',
+    'laporan-keuangan' => 'view/finance-payrol/laporan-keuangan.php',
 
     // APD
     'master-apd'      => 'view/k3/master-apd.php',
@@ -76,15 +80,31 @@ $routes = [
     'home'            => 'view/home.php'
 ];
 
-// ======= TAMBAHKAN KODE INI DI BAWAH ARRAY $ROUTES =======
+
 // Ambil level user dari session saat login. Jika tidak ada, anggap level 99 (tidak punya akses khusus)
 $user_level = $_SESSION['level'] ?? 99;
 
 // 1. Modul HRD Umum (Hanya Master, Direktur, HRD, Supervisor, Admin)
 $hrd_pages = [
-    'data-karyawan', 'data-site', 'data-tunjangan', 'data-potongan', 'data-departemen',
-    'karier', 'data-devisi', 'data-jabatan', 'import-karier', 'data-kontrak', 'data-bpjs-tk', 'data-calon-karyawan', 'data-loker',
-    'rekapan-absensi', 'dayli-absen', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks', 'pengumuman'
+    'data-karyawan',
+    'data-site',
+    'data-tunjangan',
+    'data-potongan',
+    'data-departemen',
+    'karier',
+    'data-devisi',
+    'data-jabatan',
+    'import-karier',
+    'data-kontrak',
+    'data-bpjs-tk',
+    'data-calon-karyawan',
+    'data-loker',
+    'rekapan-absensi',
+    'dayli-absen',
+    'pengajuan-izin',
+    'pengajuan-cuti',
+    'bukti-sks',
+    'pengumuman'
 ];
 
 if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
@@ -94,14 +114,33 @@ if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
 
 // 1.b Modul Finance & Payroll (Hanya Master, Direktur, HRD, Finance)
 $finance_pages = [
-    'data-periode', 'payroll', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-potongan-tidak-tetap', 'data-rapel', 'data-thr', 'slip-gaji',
-    'laporan-keuangan', 'kelola-transaksi', 'data-coa', 'jurnal-umum', 'buku-besar', 'neraca-saldo'
+    'data-periode',
+    'payroll',
+    'data-pengajuan-pinjaman',
+    'data-pinjaman',
+    'data-potongan-tidak-tetap',
+    'data-rapel',
+    'data-thr',
+    'slip-gaji',
+    'laporan-keuangan',
+    'kelola-transaksi',
+    'data-coa',
+    'jurnal-umum',
+    'buku-besar',
+    'neraca-saldo'
 ];
 
 if (!in_array($user_level, [0, 1, 2, 6]) && in_array($page, $finance_pages)) {
     echo "<script>alert('Akses Ditolak! Modul Keuangan khusus Master, Direktur, HRD, dan Finance.'); window.location.href='?page=home';</script>";
     exit;
 }
+
+// // 1.c Modul Data Internal (Hanya Master dan Direktur)
+// $internal_pages = ['karyawan-internal', 'bonus-internal'];
+// if (!in_array($user_level, [0, 1]) && in_array($page, $internal_pages)) {
+//     echo "<script>alert('Akses Ditolak! Modul Data Internal khusus Master dan Direktur.'); window.location.href='?page=home';</script>";
+//     exit;
+// }
 
 // 2. Modul K3 (Hanya Master, Direktur, Safety, Supervisor)
 $k3_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
@@ -385,31 +424,31 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             }
 
             // Live Sidebar Menu Search
-$('.navbar-nav input[placeholder="Search..."]').on('keyup', function() {
-    let filter = $(this).val().toLowerCase();
-    
-    if (filter === '') {
-        // Reset tampilan jika input kosong
-        $('.menu-inner .menu-item').show();
-        $('.menu-inner .menu-item').removeClass('open');
-        return;
-    }
+            $('.navbar-nav input[placeholder="Search..."]').on('keyup', function() {
+                let filter = $(this).val().toLowerCase();
 
-    $('.menu-inner .menu-item').each(function() {
-        let menuText = $(this).text().toLowerCase();
-        
-        if (menuText.includes(filter)) {
-            $(this).show();
-            // Pastikan parent dropdown tetap terbuka jika sub-menunya cocok
-            $(this).parents('.menu-item').show().addClass('open');
-        } else {
-            // Sembunyikan menu yang tidak cocok, kecuali ia memiliki child yang cocok
-            if ($(this).find('.menu-item:visible').length === 0) {
-                $(this).hide();
-            }
-        }
-    });
-});
+                if (filter === '') {
+                    // Reset tampilan jika input kosong
+                    $('.menu-inner .menu-item').show();
+                    $('.menu-inner .menu-item').removeClass('open');
+                    return;
+                }
+
+                $('.menu-inner .menu-item').each(function() {
+                    let menuText = $(this).text().toLowerCase();
+
+                    if (menuText.includes(filter)) {
+                        $(this).show();
+                        // Pastikan parent dropdown tetap terbuka jika sub-menunya cocok
+                        $(this).parents('.menu-item').show().addClass('open');
+                    } else {
+                        // Sembunyikan menu yang tidak cocok, kecuali ia memiliki child yang cocok
+                        if ($(this).find('.menu-item:visible').length === 0) {
+                            $(this).hide();
+                        }
+                    }
+                });
+            });
         });
 
         /**

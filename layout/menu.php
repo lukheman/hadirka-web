@@ -28,6 +28,34 @@ function isMenuOpen($pages_array, $current_page)
         </li>
     <?php endif; ?>
 
+    <!-- <?php if (in_array($user_level, [0, 1])): ?>
+        <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Data Internal</span>
+        </li>
+
+        <?php
+        $internal_pages = ['karyawan-internal', 'bonus-internal'];
+        ?>
+        <li class="menu-item <?= isMenuOpen($internal_pages, $current_page); ?>">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-lock-alt"></i>
+                <div data-i18n="Data Internal">Data Internal</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?= isActive('karyawan-internal', $current_page); ?>">
+                    <a class="menu-link" href="karyawan-internal">
+                        <div>Karyawan Internal</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('bonus-internal', $current_page); ?>">
+                    <a class="menu-link" href="bonus-internal">
+                        <div>Bonus Karyawan</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
+    <?php endif; ?> -->
+
     <!-- Hanya Tampil jika Master, Direktur, HRD, Supervisor, Admin -->
     <?php if (in_array($user_level, [0, 1, 2, 3, 5])): ?>
         <li class="menu-header small text-uppercase">
@@ -82,7 +110,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $master_pages = ['data-loker','data-calon-karyawan'];
+        $master_pages = ['data-loker', 'data-calon-karyawan'];
         ?>
         <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
