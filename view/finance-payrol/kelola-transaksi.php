@@ -1,15 +1,21 @@
 <?php
 require_once __DIR__ . '/../../app/config/koneksi.php';
 
-// Ambil data kategori untuk modal agar dinamis
+// Ambil data kategori utama untuk modal agar dinamis
 $qKategori = mysqli_query($koneksi, "SELECT * FROM tb_kategori_keuangan ORDER BY kelompok ASC, kode_akun ASC");
 $kategoriGroups = [];
 while ($row = mysqli_fetch_assoc($qKategori)) {
     $kategoriGroups[$row['kelompok']][] = $row;
 }
+
+// Ambil KHUSUS data Kas dan Bank untuk Dropdown Lawan Transaksi
+$qKasBank = mysqli_query($koneksi, "SELECT * FROM tb_kategori_keuangan WHERE kode_akun IN ('1001', '1002', '1003', '1004', '1005') ORDER BY kode_akun ASC");
+$kasBankList = [];
+while ($row = mysqli_fetch_assoc($qKasBank)) {
+    $kasBankList[] = $row;
+}
 ?>
 
-<!-- Tambahkan CSS DataTables -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
@@ -21,7 +27,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
     /* Perbaikan UI Select2 untuk Bootstrap 5 */
     .select2-container--bootstrap-5 .select2-selection {
         border: 1px solid #d9dee3 !important;
-        /* Sesuaikan warna form bawaan template */
         min-height: 38px;
     }
 
@@ -36,7 +41,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 </style>
 
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header & Action Buttons -->
     <div class="row align-items-center mb-4">
         <div class="col-md-6 mb-3 mb-md-0">
             <h4 class="mb-1 fw-bold">Kelola Transaksi Keuangan</h4>
@@ -45,7 +49,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 
         <div class="col-md-6 text-md-end">
             <div class="d-flex flex-column flex-sm-row justify-content-md-end align-items-sm-center gap-2">
-                <!-- Filter Dropdown AJAX -->
                 <select id="periodeDropdown" class="form-select form-select-sm fw-bold cursor-pointer bg-white" onchange="loadDataTransaksi()" style="width: auto; min-width: 200px;">
                     <option value="semua">-- Semua Periode --</option>
                     <?php
@@ -63,7 +66,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                     }
                     ?>
                 </select>
-                <!-- Tombol Tambah -->
                 <button type="button" class="btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahTransaksi">
                     <i class="bx bx-plus-circle me-1"></i> Tambah Transaksi
                 </button>
@@ -76,7 +78,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white border-bottom pt-3 pb-2">
-            <!-- Nav Tabs -->
             <ul class="nav nav-tabs card-header-tabs" id="transaksiTabs" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link active fw-semibold text-primary" data-bs-toggle="tab" href="#tab-pendapatan" role="tab"><i class="bx bx-wallet me-1"></i> Pendapatan</a>
@@ -99,7 +100,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         <div class="card-body mt-3">
             <div class="tab-content" id="nav-tabContent">
 
-                <!-- Tab Template (Diulang 5 kali oleh PHP) -->
                 <?php
                 $tabs = [
                     'pendapatan' => 'Pendapatan',
@@ -113,16 +113,13 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                 ?>
                     <div class="tab-pane fade <?= $isFirst ? 'show active' : '' ?>" id="tab-<?= $id ?>" role="tabpanel">
 
-                        <!-- REKAP TOTAL DI ATAS TABEL -->
                         <div class="mb-3 p-3 bg-light rounded d-flex justify-content-between align-items-center" id="summary-<?= $id ?>" style="display: none !important;">
                             <span class="fw-bold text-muted"><i class="bx bx-bar-chart-alt-2 me-1"></i> Rekapitulasi (Halaman Aktif)</span>
                             <div id="total-<?= $id ?>" class="d-flex gap-4 fw-bold">
-                                <!-- Rekap dimasukkan oleh JS -->
                             </div>
                         </div>
 
                         <div class="table-responsive">
-                            <!-- Tambahkan Class MyTable agar terdeteksi oleh DataTables -->
                             <table class="table table-hover align-middle w-100 MyTable" id="table-<?= $id ?>">
                                 <thead class="table-light">
                                     <tr>
@@ -156,13 +153,12 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
     </div>
 </div>
 
-<!-- Modal Tambah Transaksi -->
 <div class="modal fade" id="modalTambahTransaksi" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bx bx-plus-circle text-primary me-2"></i> Input Transaksi Baru</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title fw-bold text-white"><i class="bx bx-plus-circle me-2"></i> Input Transaksi (Auto Double-Entry)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formTambahTransaksi" enctype="multipart/form-data">
                 <div class="modal-body">
@@ -172,9 +168,9 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                             <input type="date" class="form-control" name="tanggal_transaksi" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Kategori Akun</label>
+                            <label class="form-label">Kategori Akun Utama (Beban/Pendapatan/Aset)</label>
                             <select class="form-select" name="id_kategori" id="add_kategori" required>
-                                <option value="">-- Pilih Kategori Akun --</option>
+                                <option value="">-- Pilih Akun Utama --</option>
                                 <?php foreach ($kategoriGroups as $kelompok => $kategoris): ?>
                                     <optgroup label="Kelompok: <?= strtoupper($kelompok) ?>">
                                         <?php foreach ($kategoris as $k): ?>
@@ -185,19 +181,22 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                             </select>
                         </div>
                     </div>
+
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <label class="form-label">Tipe Arus Kas</label>
-                            <select class="form-select" name="tipe_arus" required>
-                                <option value="Masuk">Uang Masuk (Kas Bertambah)</option>
-                                <option value="Keluar">Uang Keluar (Kas Berkurang)</option>
+                            <label class="form-label">Jenis Transaksi</label>
+                            <select class="form-select" name="jenis_transaksi" required>
+                                <option value="Pengeluaran">Uang Keluar (Beban/Beli Aset/Bayar Hutang)</option>
+                                <option value="Pemasukan">Uang Masuk (Pendapatan/Pinjaman Masuk)</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Posisi Neraca (D/K)</label>
-                            <select class="form-select" name="tipe_neraca" required>
-                                <option value="debit">Debit</option>
-                                <option value="kredit">Kredit</option>
+                            <label class="form-label">Dibayar/Diterima Melalui</label>
+                            <select class="form-select" name="id_lawan" id="add_lawan" required>
+                                <option value="">-- Pilih Kas/Bank --</option>
+                                <?php foreach ($kasBankList as $kb): ?>
+                                    <option value="<?= $kb['id_kategori'] ?>">[<?= $kb['kode_akun'] ?>] <?= $kb['nama_akun'] ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -205,6 +204,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                             <input type="text" class="form-control nominal-mask" name="nominal" placeholder="Contoh: 5.000.000" required>
                         </div>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Upload Bukti Transaksi <small class="text-muted">(Opsional, Max 1MB/Gambar otomatis dikompres)</small></label>
                         <input type="file" class="form-control file-bukti" id="input_bukti_add" name="bukti_transaksi" accept="image/*,application/pdf">
@@ -212,7 +212,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Keterangan Tambahan</label>
-                        <textarea class="form-control" name="keterangan" rows="2" placeholder="Contoh: Pembayaran Invoice INV001 (Opsional)"></textarea>
+                        <textarea class="form-control" name="keterangan" rows="2" placeholder="Contoh: Pembayaran Bensin Operasional (Opsional)"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -224,17 +224,19 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
     </div>
 </div>
 
-<!-- Modal Edit Transaksi -->
 <div class="modal fade" id="modalEditTransaksi" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bx bx-edit text-warning me-2"></i> Edit Transaksi</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title fw-bold text-white"><i class="bx bx-edit me-2"></i> Edit Baris Transaksi (Raw Mode)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formEditTransaksi" enctype="multipart/form-data">
                 <input type="hidden" name="id_transaksi" id="edit_id_transaksi">
                 <div class="modal-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="bx bx-info-circle me-1"></i> <strong>Penting:</strong> Mengedit data di sini hanya akan mengubah 1 baris jurnal. Pastikan untuk memperbarui sisi pasangannya secara manual jika ada perubahan nominal.
+                    </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Tanggal Transaksi</label>
@@ -258,8 +260,8 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                         <div class="col-md-4">
                             <label class="form-label">Tipe Arus Kas</label>
                             <select class="form-select" name="tipe_arus" id="edit_arus" required>
-                                <option value="Masuk">Uang Masuk (Kas Bertambah)</option>
-                                <option value="Keluar">Uang Keluar (Kas Berkurang)</option>
+                                <option value="Masuk">Masuk</option>
+                                <option value="Keluar">Keluar</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -286,14 +288,13 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning" id="btnUpdate"><i class="bx bx-check me-1"></i> Update Transaksi</button>
+                    <button type="submit" class="btn btn-warning" id="btnUpdate"><i class="bx bx-check me-1"></i> Update Baris Ini</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Sertakan jQuery dan DataTables JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
@@ -301,13 +302,20 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-    // --- TAMBAHAN SELECT 2 ---
     $(document).ready(function() {
-        // Inisialisasi Select2 di Modal Tambah
+        // Inisialisasi Select2 di Modal Tambah (Akun Utama)
         $('#add_kategori').select2({
             theme: 'bootstrap-5',
             dropdownParent: $('#modalTambahTransaksi'),
-            placeholder: '-- Pilih Kategori Akun --',
+            placeholder: '-- Pilih Akun Utama --',
+            width: '100%'
+        });
+
+        // Inisialisasi Select2 di Modal Tambah (Akun Lawan/Pembayaran)
+        $('#add_lawan').select2({
+            theme: 'bootstrap-5',
+            dropdownParent: $('#modalTambahTransaksi'),
+            placeholder: '-- Pilih Kas/Bank --',
             width: '100%'
         });
 
@@ -322,9 +330,9 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         // Reset dropdown saat modal tambah ditutup
         $('#modalTambahTransaksi').on('hidden.bs.modal', function() {
             $('#add_kategori').val('').trigger('change');
+            $('#add_lawan').val('').trigger('change');
         });
     });
-    // -------------------------
 
     // Inisialisasi variabel untuk menyimpan instance DataTables
     let dataTablesInstances = {};
@@ -451,7 +459,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                     const cellTotal = document.getElementById(`total-${idTab}`);
                     const tableId = `#table-${idTab}`;
 
-                    // Destroy DataTable jika sudah pernah diinisialisasi
                     if ($.fn.DataTable.isDataTable(tableId)) {
                         $(tableId).DataTable().destroy();
                     }
@@ -469,20 +476,12 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                             const iconArus = row.tipe_arus === 'Masuk' ? 'bx-down-arrow-circle' : 'bx-up-arrow-circle';
                             const btnBukti = row.bukti_transaksi ?
                                 `<button class="btn btn-sm btn-info me-1" onclick="lihatBukti('${row.bukti_transaksi}')" title="Lihat Bukti"><i class="bx bx-file"></i></button>` : '';
-                            // Tentukan warna badge secara aman
-                            let badgeNeraca = 'bg-label-secondary text-muted'; // Default jika NULL
-                            if (row.tipe_neraca === 'debit') {
-                                badgeNeraca = 'bg-label-primary';
-                            } else if (row.tipe_neraca === 'kredit') {
-                                badgeNeraca = 'bg-label-warning';
-                            }
-                            // Validasi aman: jika null/kosong, berikan string strip '-', jika ada isinya baru di-toUpperCase
+
+                            let badgeNeraca = 'bg-label-secondary text-muted';
+                            if (row.tipe_neraca === 'debit') badgeNeraca = 'bg-label-primary';
+                            else if (row.tipe_neraca === 'kredit') badgeNeraca = 'bg-label-warning';
+
                             const txtNeraca = row.tipe_neraca ? row.tipe_neraca.toUpperCase() : '-';
-
-
-
-                            // Penting: Gunakan tipe_arus dan nominal_raw dari Javascript objek langsung, 
-                            // jangan sembunyikan di attribute HTML yang rawan error
 
                             tbody.innerHTML += `
                                 <tr>
@@ -511,7 +510,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                             `;
                         });
 
-                        // Re-initialize DataTable dengan Callback Aman
                         dataTablesInstances[idTab] = $(tableId).DataTable({
                             pageLength: 10,
                             responsive: true,
@@ -522,7 +520,6 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                                 let totalMasuk = 0;
                                 let totalKeluar = 0;
 
-                                // Metode paling aman: Cari DOM span dengan class khusus
                                 let api = this.api();
                                 api.rows({
                                     page: 'current'
@@ -556,27 +553,22 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         }
     }
 
-    // =================== LISENER FORMAT OTOMATIS (MEMBERI TITIK) ===================
     document.addEventListener("input", e => {
         if (e.target.classList.contains("nominal-mask")) {
             let input = e.target;
             let cursorPos = input.selectionStart;
             let prevLength = input.value.length;
 
-            // Buang SEMUA karakter non-angka
             let val = input.value.replace(/\D/g, "");
-
-            // Format ulang dari angka bersih dengan titik
             let formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             input.value = formatted;
 
-            // Sesuaikan posisi kursor
             let diff = formatted.length - prevLength;
             input.setSelectionRange(cursorPos + diff, cursorPos + diff);
         }
     });
 
-    // --- UPDATE EVENT SUBMIT ADD ---
+    // --- UPDATE EVENT SUBMIT ADD (AUTO DOUBLE-ENTRY) ---
     document.getElementById('formTambahTransaksi').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnSimpan');
@@ -586,12 +578,9 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         const formData = new FormData(this);
         formData.append('action', 'add');
 
-        // --- PERBAIKAN: Bersihkan titik dari nominal ---
         let nominalCleanAdd = formData.get("nominal").replace(/\./g, "");
         formData.set("nominal", nominalCleanAdd);
-        // -----------------------------------------------
 
-        // Ganti file raw bawaan form dengan file yang sudah dikompres
         formData.delete('bukti_transaksi');
         if (processedFileAdd) {
             formData.append('bukti_transaksi', processedFileAdd);
@@ -605,8 +594,8 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
             const data = await res.json();
             if (data.status === 'success') {
                 this.reset();
-
                 $('#add_kategori').val('').trigger('change');
+                $('#add_lawan').val('').trigger('change');
 
                 processedFileAdd = null;
                 document.getElementById('preview_bukti_add').innerHTML = '';
@@ -623,9 +612,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         }
     });
 
-    // --- UPDATE FUNGSI BUKA MODAL EDIT ---
     function bukaModalEdit(btn) {
-        // Reset file input dan preview tiap kali modal dibuka
         document.getElementById('input_bukti_edit').value = '';
         processedFileEdit = null;
 
@@ -633,7 +620,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         document.getElementById('edit_tanggal').value = btn.getAttribute('data-tanggal');
         $('#edit_kategori').val(btn.getAttribute('data-kategori')).trigger('change');
         document.getElementById('edit_arus').value = btn.getAttribute('data-arus');
-        document.getElementById('edit_neraca').value = btn.getAttribute('data-neraca'); // Tambahkan baris ini
+        document.getElementById('edit_neraca').value = btn.getAttribute('data-neraca');
 
         let rawNominal = btn.getAttribute('data-nominal').toString();
         let angkaBulat = rawNominal.split(".")[0].replace(/\D/g, "");
@@ -658,14 +645,10 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         modal.show();
     }
 
-    // Fungsi Lihat Bukti (Buka tab baru, mendukung Gambar & PDF)
     function lihatBukti(fileName) {
-        if (fileName) {
-            window.open(`app/uploads/bukti_transaksi/${fileName}`, '_blank');
-        }
+        if (fileName) window.open(`app/uploads/bukti_transaksi/${fileName}`, '_blank');
     }
 
-    // --- UPDATE EVENT SUBMIT EDIT ---
     document.getElementById('formEditTransaksi').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnUpdate');
@@ -675,12 +658,9 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         const formData = new FormData(this);
         formData.append('action', 'edit');
 
-        // --- PERBAIKAN: Bersihkan titik dari nominal ---
         let nominalCleanEdit = formData.get("nominal").replace(/\./g, "");
         formData.set("nominal", nominalCleanEdit);
-        // -----------------------------------------------
 
-        // Ganti file raw bawaan form dengan file yang sudah dikompres
         formData.delete('bukti_transaksi');
         if (processedFileEdit) {
             formData.append('bukti_transaksi', processedFileEdit);
@@ -703,14 +683,13 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         } catch (error) {
             alert('Terjadi kesalahan sistem saat memperbarui data.');
         } finally {
-            btn.innerHTML = '<i class="bx bx-check me-1"></i> Update Transaksi';
+            btn.innerHTML = '<i class="bx bx-check me-1"></i> Update Baris Ini';
             btn.disabled = false;
         }
     });
 
-    // Aksi Hapus
     async function hapusTransaksi(id) {
-        if (confirm('Yakin ingin menghapus transaksi ini?')) {
+        if (confirm('Karena ini adalah sistem jurnal berpasangan, pastikan Anda juga menghapus sisi pasangannya secara manual jika perlu. Lanjutkan menghapus baris ini?')) {
             const formData = new FormData();
             formData.append('action', 'delete');
             formData.append('id', id);
@@ -723,7 +702,7 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    loadDataTransaksi(); // Refresh tabel otomatis
+                    loadDataTransaksi();
                 } else {
                     alert(data.msg);
                 }
@@ -733,6 +712,5 @@ while ($row = mysqli_fetch_assoc($qKategori)) {
         }
     }
 
-    // Auto Load
     document.addEventListener("DOMContentLoaded", loadDataTransaksi);
 </script>

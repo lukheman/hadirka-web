@@ -3,55 +3,58 @@ header("Content-Type: application/json; charset=utf-8");
 require_once __DIR__ . '/../config/koneksi.php';
 
 $action = $_POST['action'] ?? '';
-$id     = intval($_POST['id_karyawan_internal'] ?? 0);
-$response = ['status' => 'error', 'msg' => 'Aksi tidak valid'];
+$id     = intval($_POST['id'] ?? $_POST['id_karyawan_internal'] ?? 0);
 
 try {
-    if ($action === 'delete') {
-        if ($id <= 0) throw new Exception("ID tidak valid");
-        $stmt = $koneksi->prepare("DELETE FROM tb_karyawan_internal WHERE id_karyawan_internal = ?");
-        $stmt->bind_param("i", $id);
-        if ($stmt->execute()) $response = ['status' => 'success', 'msg' => 'Karyawan berhasil dihapus'];
-        else throw new Exception($stmt->error);
-        echo json_encode($response);
+    if ($action === 'get') {
+        $q = $koneksi->query("SELECT * FROM tb_karyawan_internal WHERE id_karyawan_internal=$id");
+        if ($q->num_rows > 0) echo json_encode(['status' => 'success', 'data' => $q->fetch_assoc()]);
+        else echo json_encode(['status' => 'error', 'msg' => 'Data tidak ditemukan']);
         exit;
     }
 
-    // Tangkap input & sanitasi
-    $nik     = strtoupper(trim($_POST['nik_karyawan_internal'] ?? ''));
-    $id_site = intval($_POST['id_site'] ?? 0);
-    $nama    = trim($_POST['nama_karyawan'] ?? '');
-    $jabatan = trim($_POST['jabatan'] ?? '');
-    $gaji    = preg_replace('/\D/', '', $_POST['gaji_pokok'] ?? '0');
-    $bank    = !empty($_POST['nama_bank']) ? strtoupper(trim($_POST['nama_bank'])) : null;
-    $rek     = !empty($_POST['no_rek']) ? trim($_POST['no_rek']) : null;
-    $an_rek  = !empty($_POST['atas_nama_rek']) ? strtoupper(trim($_POST['atas_nama_rek'])) : null;
-
-    if (empty($nik) || empty($nama) || empty($jabatan) || $id_site <= 0) {
-        throw new Exception("Kolom NIK, Site, Nama, dan Jabatan wajib diisi!");
+    if ($action === 'delete') {
+        $koneksi->query("DELETE FROM tb_karyawan_internal WHERE id_karyawan_internal=$id");
+        echo json_encode(['status' => 'success', 'msg' => 'Dihapus permanen']);
+        exit;
     }
+
+    if ($action === 'eliminasi') {
+        $status = $_POST['status_karyawan'];
+        $tgl_keluar = $_POST['tgl_keluar'];
+        $ket = trim($_POST['ket_keluar']);
+
+        $stmt = $koneksi->prepare("UPDATE tb_karyawan_internal SET status_karyawan=?, tgl_keluar=?, ket_keluar=? WHERE id_karyawan_internal=?");
+        $stmt->bind_param("sssi", $status, $tgl_keluar, $ket, $id);
+        if ($stmt->execute()) echo json_encode(['status' => 'success', 'msg' => 'Karyawan dieliminasi']);
+        else echo json_encode(['status' => 'error', 'msg' => $stmt->error]);
+        exit;
+    }
+
+    // ADD / EDIT
+    $nik = strtoupper(trim($_POST['nik_karyawan_internal']));
+    $id_site = intval($_POST['id_site']);
+    $nama = trim($_POST['nama_karyawan']);
+    $jk = trim($_POST['jenis_kelamin'] ?? '');
+    $jabatan = trim($_POST['jabatan']);
+    $gaji = preg_replace('/\D/', '', $_POST['gaji_pokok']);
+    $tgl_masuk = $_POST['tgl_masuk'];
+    $bank = strtoupper(trim($_POST['nama_bank'] ?? ''));
+    $rek = trim($_POST['no_rek'] ?? '');
+    $an = strtoupper(trim($_POST['atas_nama_rek'] ?? ''));
 
     if ($action === 'add') {
         $cek = $koneksi->query("SELECT id_karyawan_internal FROM tb_karyawan_internal WHERE nik_karyawan_internal='$nik'");
-        if ($cek->num_rows > 0) throw new Exception("Gagal: NIK '$nik' sudah digunakan karyawan lain!");
+        if ($cek->num_rows > 0) throw new Exception("NIK sudah ada!");
 
-        $stmt = $koneksi->prepare("INSERT INTO tb_karyawan_internal (nik_karyawan_internal, id_site, nama_karyawan, jabatan, gaji_pokok, nama_bank, no_rek, atas_nama_rek) VALUES (?,?,?,?,?,?,?,?)");
-        $stmt->bind_param("sissssss", $nik, $id_site, $nama, $jabatan, $gaji, $bank, $rek, $an_rek);
-        $msg = "Karyawan baru berhasil ditambahkan";
+        $stmt = $koneksi->prepare("INSERT INTO tb_karyawan_internal (nik_karyawan_internal, id_site, nama_karyawan, jenis_kelamin, jabatan, gaji_pokok, tgl_masuk, nama_bank, no_rek, atas_nama_rek) VALUES (?,?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param("sissssssss", $nik, $id_site, $nama, $jk, $jabatan, $gaji, $tgl_masuk, $bank, $rek, $an);
+        if ($stmt->execute()) echo json_encode(['status' => 'success', 'msg' => 'Berhasil ditambahkan']);
     } elseif ($action === 'edit') {
-        $cek = $koneksi->query("SELECT id_karyawan_internal FROM tb_karyawan_internal WHERE nik_karyawan_internal='$nik' AND id_karyawan_internal != $id");
-        if ($cek->num_rows > 0) throw new Exception("Gagal: NIK '$nik' sudah dimiliki oleh karyawan lain!");
-
-        $stmt = $koneksi->prepare("UPDATE tb_karyawan_internal SET nik_karyawan_internal=?, id_site=?, nama_karyawan=?, jabatan=?, gaji_pokok=?, nama_bank=?, no_rek=?, atas_nama_rek=? WHERE id_karyawan_internal=?");
-        $stmt->bind_param("sissssssi", $nik, $id_site, $nama, $jabatan, $gaji, $bank, $rek, $an_rek, $id);
-        $msg = "Data karyawan berhasil diupdate";
+        $stmt = $koneksi->prepare("UPDATE tb_karyawan_internal SET nik_karyawan_internal=?, id_site=?, nama_karyawan=?, jenis_kelamin=?, jabatan=?, gaji_pokok=?, tgl_masuk=?, nama_bank=?, no_rek=?, atas_nama_rek=? WHERE id_karyawan_internal=?");
+        $stmt->bind_param("sissssssssi", $nik, $id_site, $nama, $jk, $jabatan, $gaji, $tgl_masuk, $bank, $rek, $an, $id);
+        if ($stmt->execute()) echo json_encode(['status' => 'success', 'msg' => 'Berhasil diupdate']);
     }
-
-    if ($stmt->execute()) $response = ['status' => 'success', 'msg' => $msg];
-    else throw new Exception($stmt->error);
 } catch (Exception $e) {
-    $response = ['status' => 'error', 'msg' => $e->getMessage()];
+    echo json_encode(['status' => 'error', 'msg' => $e->getMessage()]);
 }
-
-echo json_encode($response);
-exit;

@@ -6,12 +6,12 @@
 
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="card-title text-white mb-0"><i class="fas fa-file-import"></i> Form Import Excel Karyawan</h5>
+                <h5 class="card-title text-white mb-0"><i class="fas fa-file-import"></i> Form Import Excel Karyawan Internal</h5>
             </div>
             <div class="card-body mt-3">
                 <form id="formImportKaryawan" enctype="multipart/form-data">
                     <p class="instruction-text mb-3">
-                        Format Excel/CSV: <strong>A</strong>=NIK | <strong>B</strong>=Nama | <strong>C</strong>=Jabatan | <strong>D</strong>=Gaji Pokok | <strong>E</strong>=Bank | <strong>F</strong>=No Rek | <strong>G</strong>=Atas Nama | <strong>H</strong>=Nama Site
+                        Format Excel/CSV: <strong>A</strong>=No | <strong>B</strong>=No. Induk Karyawan (INT-Nomor) | <strong>C</strong>=Nama | <strong>D</strong>=L/P | <strong>E</strong>=Site | <strong>F</strong>=Jabatan | <strong>G</strong>=Gaji | <strong>H</strong>=Bank | <strong>I</strong>=No Rek | <strong>J</strong>=Atas Nama | <strong>K</strong>=Status | <strong>L</strong>=Tgl Masuk | <strong>M</strong>=Tgl Keluar | <strong>N</strong>=Ket Keluar
                     </p>
                     <div class="row align-items-end">
                         <div class="col-md-7">
@@ -19,8 +19,12 @@
                             <input type="file" name="file_excel" class="form-control" accept=".xls,.xlsx" required>
                         </div>
                         <div class="col-md-5 mt-2">
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Import Data</button>
-                            <a href="/assets/template-csv/Format_Karyawan_Internal.xlsx" class="btn btn-outline-secondary ml-2"><i class="fas fa-download"></i> Download Template</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Import Data
+                            </button>
+                            <a href="assets/template-csv/Format_Karyawan_Internal.xlsx" class="btn btn-outline-secondary ms-2" download>
+                                <i class="fas fa-download"></i> Download Template
+                            </a>
                         </div>
                     </div>
                 </form>
@@ -30,33 +34,50 @@
 
         <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
-                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFormKaryawan" onclick="tambahKarierManual()"><i class="fa fa-plus"></i> Tambah Karyawan Manual</button>
-                <button class="btn btn-info btn-sm" onclick="exportKaryawanExcel()"><i class="fa fa-file-export"></i> Export Master Karyawan</button>
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFormKaryawan" onclick="tambahKaryawan()"><i class="fa fa-plus"></i> Tambah Karyawan</button>
+                <button class="btn btn-info btn-sm" onclick="exportKaryawan()"><i class="fa fa-file-export"></i> Export Master Karyawan</button>
             </div>
 
-            <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modalExportGaji">
-                <i class="fa fa-money-check-alt"></i> Export Gaji Bersih (Pokok + Bonus)
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <select id="filterSite" class="form-select form-select-sm">
+                    <option value="">-- Semua Site --</option>
+                    <?php
+                    $sites = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
+                    while ($s = $sites->fetch_assoc()) {
+                        echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
+                    }
+                    ?>
+                </select>
+
+                <select id="filterStatus" class="form-select form-select-sm">
+                    <option value="Semua">-- Semua Status --</option>
+                    <option value="Aktif" selected>Aktif</option>
+                    <option value="Resign">Resign</option>
+                    <option value="PHK">PHK</option>
+                    <option value="Habis Kontrak">Habis Kontrak</option>
+                </select>
+            </div>
         </div>
 
         <div class="card">
-            <h5 class="card-header">Data Master Karyawan Internal</h5>
+            <h5 class="card-header"><i class="fa fa-users"></i> Database Karyawan Internal</h5>
             <div class="card-body">
                 <div class="table-responsive text-nowrap">
-                    <table class="table table-bordered table-hover MyTableKaryawan" id="tableKaryawan" style="width:100%">
+                    <table class="table table-bordered table-hover" id="tableKaryawan" style="width:100%">
                         <thead class="table-info">
                             <tr class="text-center">
                                 <th>No</th>
                                 <th>NIK</th>
                                 <th>Nama Karyawan</th>
-                                <th>Site (Lokasi)</th>
+                                <th>L/P</th>
+                                <th>Site</th>
                                 <th>Jabatan</th>
                                 <th>Gaji Pokok</th>
-                                <th>Rekening Bank</th>
+                                <th>Status</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="tbodyKaryawan"></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -71,78 +92,109 @@
             <input type="hidden" name="id_karyawan_internal" id="idKaryawan">
 
             <div class="modal-header bg-success text-white" id="modalHeaderBg">
-                <h5 class="modal-title text-white" id="modalTitle"><i class="fa fa-user"></i> Form Karyawan Internal</h5>
+                <h5 class="modal-title text-white" id="modalTitle"><i class="fa fa-user"></i> Form Karyawan</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body row g-3">
                 <div class="col-md-4">
                     <label class="form-label">NIK Karyawan</label>
-                    <input type="text" name="nik_karyawan_internal" id="nik_karyawan_internal" class="form-control" required>
+                    <input type="text" name="nik_karyawan_internal" id="nik" class="form-control" required>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Nama Karyawan</label>
-                    <input type="text" name="nama_karyawan" id="nama_karyawan" class="form-control" required>
+                    <input type="text" name="nama_karyawan" id="nama" class="form-control" required>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Pilih Site (Lokasi)</label>
-                    <select name="id_site" id="id_site" class="form-select" required>
+                    <label class="form-label">Jenis Kelamin</label>
+                    <select name="jenis_kelamin" id="jk" class="form-select" required>
+                        <option value="">-- Pilih --</option>
+                        <option value="L">Laki-laki</option>
+                        <option value="P">Perempuan</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Site (Lokasi)</label>
+                    <select name="id_site" id="site" class="form-select" required>
                         <option value="">-- Pilih Site --</option>
                         <?php
-                        $sites = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
+                        $sites->data_seek(0);
                         while ($s = $sites->fetch_assoc()) {
                             echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
                         }
                         ?>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Jabatan</label>
                     <input type="text" name="jabatan" id="jabatan" class="form-control" required>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal Masuk</label>
+                    <input type="date" name="tgl_masuk" id="tgl_masuk" class="form-control" required>
+                </div>
+
+                <div class="col-md-4">
                     <label class="form-label">Gaji Pokok</label>
                     <div class="input-group">
                         <span class="input-group-text">Rp</span>
-                        <input type="text" name="gaji_pokok" id="gaji_pokok" class="form-control nominal-mask" required>
+                        <input type="text" name="gaji_pokok" id="gaji" class="form-control nominal-mask" required>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Nama Bank</label>
-                    <input type="text" name="nama_bank" id="nama_bank" class="form-control" placeholder="Contoh: MANDIRI, BCA, BNI">
+                    <input type="text" name="nama_bank" id="bank" class="form-control">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Nomor Rekening</label>
-                    <input type="text" name="no_rek" id="no_rek" class="form-control">
+                    <input type="text" name="no_rek" id="rek" class="form-control">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-12">
                     <label class="form-label">Atas Nama Rekening</label>
-                    <input type="text" name="space" id="atas_nama_rek" class="form-control">
+                    <input type="text" name="atas_nama_rek" id="an" class="form-control">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-success" id="btnSubmitForm"><i class="fa fa-save"></i> Simpan Data</button>
+                <button type="submit" class="btn btn-success" id="btnSubmitForm">Simpan</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
             </div>
         </form>
     </div>
 </div>
 
-<div class="modal fade" id="modalExportGaji" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-md">
-        <form id="formExport" method="GET" action="app/controller/export/export-gaji-internal.php" class="modal-content">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title text-white"><i class="fa fa-file-excel"></i> Export Gaji Bersih Periode</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="modalEliminasi" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="formEliminasi" class="modal-content">
+            <input type="hidden" name="action" value="eliminasi">
+            <input type="hidden" name="id_karyawan_internal" id="elim_id">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title text-white"><i class="fa fa-user-slash"></i> Eliminasi Karyawan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div class="alert alert-warning">Proses ini akan mengubah status karyawan menjadi tidak aktif.</div>
                 <div class="mb-3">
-                    <label class="form-label">Pilih Bulan & Tahun Gaji</label>
-                    <input type="month" name="bulan_tahun" class="form-control" required>
+                    <label>Nama Karyawan</label>
+                    <input type="text" id="elim_nama" class="form-control" readonly>
+                </div>
+                <div class="mb-3">
+                    <label>Jenis Keluar (Status)</label>
+                    <select name="status_karyawan" class="form-select" required>
+                        <option value="Resign">Resign</option>
+                        <option value="PHK">PHK</option>
+                        <option value="Habis Kontrak">Habis Kontrak</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label>Tanggal Keluar</label>
+                    <input type="date" name="tgl_keluar" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                </div>
+                <div class="mb-3">
+                    <label>Keterangan (Opsional)</label>
+                    <textarea name="ket_keluar" class="form-control" rows="2"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-success"><i class="fa fa-download"></i> Download Excel (.xlsx)</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="submit" class="btn btn-danger">Simpan & Eliminasi</button>
             </div>
         </form>
     </div>
@@ -150,133 +202,174 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const tbody = document.getElementById("tbodyKaryawan");
-
+        // Masking
         document.addEventListener("input", e => {
             if (e.target.classList.contains("nominal-mask")) {
-                let input = e.target;
-                let val = input.value.replace(/\D/g, "");
-                input.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                e.target.value = e.target.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             }
         });
 
-        window.tambahKarierManual = function() {
-            document.getElementById("formKaryawan").reset();
-            document.getElementById("formAction").value = "add";
-            document.getElementById("modalTitle").innerHTML = '<i class="fa fa-plus"></i> Tambah Karyawan Internal';
-            document.getElementById("modalHeaderBg").className = "modal-header bg-success text-white";
-            document.getElementById("btnSubmitForm").className = "btn btn-success";
-        }
-
-        function loadKaryawan() {
-            fetch("app/controller/get-data/get-karyawan-internal.php")
-                .then(res => res.text())
-                .then(html => {
-                    if ($.fn.DataTable.isDataTable("#tableKaryawan")) {
-                        $("#tableKaryawan").DataTable().destroy();
-                    }
-                    tbody.innerHTML = html;
-                    $("#tableKaryawan").DataTable({
-                        responsive: true,
-                        pageLength: 10
-                    });
-                });
-        }
-        loadKaryawan();
-
-        document.addEventListener("click", e => {
-            let btn = e.target.closest(".btnEditKaryawan");
-            if (!btn) return;
-            let d = btn.dataset;
-
-            document.getElementById("formAction").value = "edit";
-            document.getElementById("idKaryawan").value = d.id;
-            document.getElementById("nik_karyawan_internal").value = d.nik;
-            document.getElementById("id_site").value = d.site; // Isi otomatis data site terpilih
-            document.getElementById("nama_karyawan").value = d.nama;
-            document.getElementById("jabatan").value = d.jabatan;
-            document.getElementById("gaji_pokok").value = d.gaji.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            document.getElementById("nama_bank").value = d.bank;
-            document.getElementById("no_rek").value = d.rek;
-            document.getElementById("atas_nama_rek").value = d.atasnama;
-
-            document.getElementById("modalTitle").innerHTML = '<i class="fa fa-edit"></i> Edit Karyawan Internal';
-            document.getElementById("modalHeaderBg").className = "modal-header bg-primary text-white";
-            document.getElementById("btnSubmitForm").className = "btn btn-primary";
-
-            let modal = new bootstrap.Modal(document.getElementById("modalFormKaryawan"));
-            modal.show();
+        let dtKaryawan = $('#tableKaryawan').DataTable({
+            processing: true,
+            serverSide: false,
+            ajax: {
+                url: "app/controller/get-data/get-karyawan-internal.php",
+                type: "POST",
+                data: function(d) {
+                    d.site = $("#filterSite").val();
+                    d.status = $("#filterStatus").val();
+                },
+                dataSrc: "data"
+            },
+            columns: [{
+                    data: "no",
+                    className: "text-center"
+                },
+                {
+                    data: "nik"
+                },
+                {
+                    data: "nama"
+                },
+                {
+                    data: "jk",
+                    className: "text-center"
+                },
+                {
+                    data: "site"
+                },
+                {
+                    data: "jabatan"
+                },
+                {
+                    data: "gaji",
+                    className: "text-end fw-bold text-success"
+                },
+                {
+                    data: "status",
+                    className: "text-center"
+                },
+                {
+                    data: "aksi",
+                    className: "text-center",
+                    orderable: false
+                }
+            ]
         });
 
-        document.getElementById("formKaryawan").addEventListener("submit", function(e) {
+        $("#filterSite, #filterStatus").on("change", () => dtKaryawan.ajax.reload());
+
+        window.tambahKaryawan = function() {
+            document.getElementById("formKaryawan").reset();
+            document.getElementById("formAction").value = "add";
+            document.getElementById("modalTitle").innerHTML = '<i class="fa fa-plus"></i> Tambah Karyawan';
+            document.getElementById("modalHeaderBg").className = "modal-header bg-success text-white";
+        }
+
+        // Modal Edit & Eliminasi
+        $(document).on("click", ".btnEdit", function() {
+            $.post("app/controller/act-karyawan-internal.php", {
+                action: "get",
+                id: $(this).data("id")
+            }, function(res) {
+                if (res.status == 'success') {
+                    let d = res.data;
+                    $("#formAction").val("edit");
+                    $("#idKaryawan").val(d.id_karyawan_internal);
+                    $("#nik").val(d.nik_karyawan_internal);
+                    $("#nama").val(d.nama_karyawan);
+                    $("#jk").val(d.jenis_kelamin);
+                    $("#site").val(d.id_site);
+                    $("#jabatan").val(d.jabatan);
+                    $("#tgl_masuk").val(d.tgl_masuk);
+                    $("#gaji").val(d.gaji_pokok.replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+                    $("#bank").val(d.nama_bank);
+                    $("#rek").val(d.no_rek);
+                    $("#an").val(d.atas_nama_rek);
+
+                    $("#modalHeaderBg").attr('class', 'modal-header bg-primary text-white');
+                    $("#modalFormKaryawan").modal("show");
+                }
+            }, "json");
+        });
+
+        $(document).on("click", ".btnEliminasi", function() {
+            $("#elim_id").val($(this).data("id"));
+            $("#elim_nama").val($(this).data("nama"));
+            $("#formEliminasi")[0].reset();
+            $("#modalEliminasi").modal("show");
+        });
+
+        // Hapus
+        $(document).on("click", ".btnDelete", function() {
+            if (confirm("Yakin hapus karyawan ini? Log bonus juga akan terhapus!")) {
+                $.post("app/controller/act-karyawan-internal.php", {
+                    action: "delete",
+                    id: $(this).data("id")
+                }, function(res) {
+                    showToast(res.msg, res.status);
+                    if (res.status == 'success') dtKaryawan.ajax.reload();
+                }, "json");
+            }
+        });
+
+        // Submit Add/Edit
+        $("#formKaryawan").on("submit", function(e) {
             e.preventDefault();
             let fd = new FormData(this);
             fd.set("gaji_pokok", fd.get("gaji_pokok").replace(/\./g, ""));
-
-            fetch("app/controller/act-karyawan-internal.php", {
-                    method: "POST",
-                    body: fd
-                })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.status === "success") {
-                        showToast(res.msg, "success");
-                        bootstrap.Modal.getInstance(document.getElementById("modalFormKaryawan")).hide();
-                        loadKaryawan();
-                    } else {
-                        showToast(res.msg, "error");
+            $.ajax({
+                url: "app/controller/act-karyawan-internal.php",
+                type: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    showToast(res.msg, res.status);
+                    if (res.status == 'success') {
+                        $("#modalFormKaryawan").modal("hide");
+                        dtKaryawan.ajax.reload();
                     }
-                });
+                }
+            });
         });
 
-        document.addEventListener("click", e => {
-            let btn = e.target.closest(".btnDeleteKaryawan");
-            if (btn && confirm("Yakin ingin menghapus karyawan internal ini?\nSemua log bonus karyawan ini juga akan dihapus permanen.")) {
-                let fd = new FormData();
-                fd.append("action", "delete");
-                fd.append("id_karyawan_internal", btn.dataset.id);
-
-                fetch("app/controller/act-karyawan-internal.php", {
-                        method: "POST",
-                        body: fd
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.status === "success") {
-                            showToast(res.msg, "success");
-                            loadKaryawan();
-                        } else {
-                            showToast(res.msg, "error");
-                        }
-                    });
-            }
-        });
-
-        document.getElementById("formImportKaryawan").addEventListener("submit", function(e) {
+        // Submit Eliminasi
+        $("#formEliminasi").on("submit", function(e) {
             e.preventDefault();
-            let fd = new FormData(this);
-            let resultDiv = document.getElementById("importResult");
-            resultDiv.innerHTML = `<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Sedang mengimport data file Excel, mohon tunggu...</div>`;
-
-            fetch("app/controller/csv-control/csv-karyawan-internal.php", {
-                    method: "POST",
-                    body: fd
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast("Proses import selesai!", "success");
-                        resultDiv.innerHTML = `<div class="alert alert-success"><i class="fa fa-check-circle"></i> Berhasil diimport: ${data.berhasil} data. Gagal: ${data.gagal} data.</div>`;
-                        loadKaryawan();
-                        this.reset();
-                    } else {
-                        resultDiv.innerHTML = `<div class="alert alert-danger"><i class="fa fa-times-circle"></i> Error: ${data.error}</div>`;
-                    }
-                });
+            $.post("app/controller/act-karyawan-internal.php", $(this).serialize(), function(res) {
+                showToast(res.msg, res.status);
+                if (res.status == 'success') {
+                    $("#modalEliminasi").modal("hide");
+                    dtKaryawan.ajax.reload();
+                }
+            }, "json");
         });
 
-        window.exportKaryawanExcel = function() {
-            window.location.href = "app/controller/export/export-karyawan-internal.php";
-        };
+        // Import Excel
+        $("#formImportKaryawan").on("submit", function(e) {
+            e.preventDefault();
+            $("#importResult").html('<div class="alert alert-info"><i class="fa fa-spin fa-spinner"></i> Memproses...</div>');
+            $.ajax({
+                url: "app/controller/csv-control/csv-karyawan-internal.php",
+                type: "POST",
+                data: new FormData(this),
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if (res.success) {
+                        showToast("Import Sukses", "success");
+                        dtKaryawan.ajax.reload();
+                        $("#importResult").html(`<div class="alert alert-success">Berhasil: ${res.berhasil}, Gagal: ${res.gagal}</div>`);
+                    } else $("#importResult").html(`<div class="alert alert-danger">${res.error}</div>`);
+                }
+            });
+        });
+
+        window.exportKaryawan = function() {
+            let site = $("#filterSite").val();
+            let status = $("#filterStatus").val();
+            window.location.href = `app/controller/export/export-karyawan-internal.php?site=${site}&status=${status}`;
+        }
     });
 </script>
