@@ -51,6 +51,11 @@ $sql = "SELECT *
 $result = mysqli_query($koneksi, $sql);
 $data_pinjaman = [];
 
+// Tambahkan query ini di bagian atas atau sebelum meng-echo json_encode
+$q_status = mysqli_query($koneksi, "SELECT nilai FROM tb_pengaturan WHERE nama_pengaturan = 'buka_pinjaman'");
+$row_status = mysqli_fetch_assoc($q_status);
+$is_open = $row_status ? (int)$row_status['nilai'] : 1;
+
 if ($result) {
     while ($row = mysqli_fetch_assoc($result)) {
         $data_pinjaman[] = $row;
@@ -61,7 +66,8 @@ if ($result) {
         'message' => 'Data riwayat pinjaman berhasil dimuat',
         'limit_maksimal' => $limit_maksimal,
         'total_terpakai' => $total_terpakai,
-        'sisa_pinjaman_bulan_ini' => $sisa_pinjaman, // Elemen baru untuk dibaca oleh Flutter/Mobile App
+        'sisa_pinjaman_bulan_ini' => $sisa_pinjaman,
+        'is_open' => $is_open, // <-- TAMBAHKAN PARAMETER INI UNTUK DIBACA FLUTTER (1 = Buka, 0 = Tutup)
         'data' => $data_pinjaman
     ]);
 } else {

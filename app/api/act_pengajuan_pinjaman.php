@@ -3,7 +3,7 @@
 // DEBUGGING MODE & HEADERS
 // ============================================
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0); // Ubah 1 menjadi 0 untuk Production
 ini_set('log_errors', 1);
 
 header('Content-Type: application/json');
@@ -58,6 +58,15 @@ switch ($action) {
     // AKSI 1: AJUKAN PINJAMAN BARU
     // ---------------------------------------------------------
     case 'ajukan':
+        // --- NEW: CEK APAKAH AKSES PENGAJUAN SEDANG DIBUKA/DITUTUP ---
+        $q_status = mysqli_query($koneksi, "SELECT nilai FROM tb_pengaturan WHERE nama_pengaturan = 'buka_pinjaman'");
+        $row_status = mysqli_fetch_assoc($q_status);
+        $is_open = $row_status ? $row_status['nilai'] : '1';
+
+        if ($is_open == '0') {
+            sendResponse('error', 'Maaf, pengajuan pinjaman saat ini sedang ditutup atau belum dibuka. Silakan cek kembali nanti.', null, 400);
+        }
+
         $id_karyawan      = isset($_POST['id_karyawan']) ? trim($_POST['id_karyawan']) : '';
         $tgl_pengajuan    = isset($_POST['tgl_pengajuan']) ? trim($_POST['tgl_pengajuan']) : '';
         $nominal_pinjaman = isset($_POST['nominal_pinjaman']) ? trim($_POST['nominal_pinjaman']) : '';

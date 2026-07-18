@@ -207,6 +207,9 @@
                 </div>
 
                 <div class="col-lg-12 d-flex justify-content-end gap-2 mt-3">
+                    <button id="btnToggleAkses" class="btn btn-secondary shadow-sm px-4">
+                        <i class="fa fa-spinner fa-spin me-1"></i> Cek Status...
+                    </button>
                     <button id="btnOpenBatchModal" class="btn btn-primary shadow-sm px-4">
                         <i class="fa fa-check-double me-1"></i> Batch ACC Terpilih
                     </button>
@@ -781,9 +784,65 @@
         });
     }
 
-    // ============================================================
+    // FUNGSI: Buka / Tutup Akses Pengajuan Pinjaman
+    let statusBukaPinjaman = '1'; // Default
+
+    function loadStatusAkses() {
+        fetch('app/controller/act-pengajuan-pinjaman.php?action=get-status-akses')
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    statusBukaPinjaman = res.nilai;
+                    updateBtnAksesUI();
+                }
+            }).catch(e => console.error("Gagal load status akses", e));
+    }
+
+    function updateBtnAksesUI() {
+        const btn = document.getElementById('btnToggleAkses');
+        if (statusBukaPinjaman === '1') {
+            btn.className = 'btn btn-danger shadow-sm px-4';
+            btn.innerHTML = '<i class="fa fa-lock me-1"></i> Tutup Akses Pengajuan';
+        } else {
+            btn.className = 'btn btn-info text-white shadow-sm px-4';
+            btn.innerHTML = '<i class="fa fa-unlock me-1"></i> Buka Akses Pengajuan';
+        }
+    }
+
+    document.getElementById('btnToggleAkses').addEventListener('click', () => {
+        const actionText = statusBukaPinjaman === '1' ? 'MENUTUP' : 'MEMBUKA';
+        if (!confirm(`Anda yakin ingin ${actionText} akses pengajuan pinjaman untuk seluruh karyawan?`)) return;
+
+        const newStatus = statusBukaPinjaman === '1' ? '0' : '1';
+        let fd = new FormData();
+        fd.append('action', 'toggle-akses');
+        fd.append('nilai', newStatus);
+
+        const btn = document.getElementById('btnToggleAkses');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Memproses...';
+
+        fetch('app/controller/act-pengajuan-pinjaman.php', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(res => {
+                btn.disabled = false;
+                if (res.status === 'success') {
+                    notify(res.msg, 'success');
+                    statusBukaPinjaman = newStatus;
+                    updateBtnAksesUI();
+                } else {
+                    notify(res.msg, 'error');
+                    updateBtnAksesUI();
+                }
+            }).catch(() => {
+                btn.disabled = false;
+                notify('Terjadi kesalahan koneksi.', 'error');
+                updateBtnAksesUI();
+            });
+    });
+
+    
     // INIT DOM
-    // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
         const year = today.getFullYear();
@@ -800,6 +859,7 @@
         document.getElementById('endDate').value = f(year, month, 20);
 
         loadPengajuan();
+        loadStatusAkses();
 
         document.getElementById('startDate').addEventListener('change', loadPengajuan);
         document.getElementById('endDate').addEventListener('change', loadPengajuan);

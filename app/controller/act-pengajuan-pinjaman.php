@@ -4,6 +4,31 @@ require_once __DIR__ . '/../config/koneksi.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
+// --- GET STATUS AKSES PENGAJUAN ---
+if ($action == 'get-status-akses') {
+    $q = mysqli_query($koneksi, "SELECT nilai FROM tb_pengaturan WHERE nama_pengaturan = 'buka_pinjaman'");
+    $data = mysqli_fetch_assoc($q);
+    $nilai = $data ? $data['nilai'] : '1';
+    echo json_encode(['status' => 'success', 'nilai' => $nilai]);
+    exit;
+}
+
+// --- TOGGLE BUKA / TUTUP AKSES ---
+elseif ($action == 'toggle-akses') {
+    $nilai = $_POST['nilai'] ?? '0';
+    $stmt = $koneksi->prepare("UPDATE tb_pengaturan SET nilai = ? WHERE nama_pengaturan = 'buka_pinjaman'");
+    $stmt->bind_param("s", $nilai);
+    
+    if ($stmt->execute()) {
+        $msg = $nilai == '1' ? 'Akses pengajuan pinjaman berhasil DIBUKA.' : 'Akses pengajuan pinjaman berhasil DITUTUP.';
+        echo json_encode(['status' => 'success', 'msg' => $msg]);
+    } else {
+        echo json_encode(['status' => 'error', 'msg' => 'Gagal mengubah status akses.']);
+    }
+    $stmt->close();
+    exit;
+}
+
 // --- PROSES SATUAN (ACC / TOLAK DARI MODAL) ---
 if ($action == 'proses') {
     $id_pengajuan = (int)($_POST['id_pengajuan'] ?? 0); // Keamanan: Paksa jadi integer
