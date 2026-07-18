@@ -124,18 +124,19 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                                 <thead class="table-light">
                                     <tr>
                                         <th width="5%">No</th>
-                                        <th width="15%">Tanggal</th>
-                                        <th width="20%">Kategori Akun</th>
-                                        <th width="20%">Keterangan</th>
+                                        <th width="12%">Kode Ref</th> <!-- Tambahan Baru -->
+                                        <th width="12%">Tanggal</th>
+                                        <th width="16%">Kategori Akun</th>
+                                        <th width="15%">Keterangan</th>
                                         <th width="10%">Arus Kas</th>
                                         <th width="10%">Posisi</th>
-                                        <th width="15%">Nominal</th>
-                                        <th width="5%" class="text-center">Aksi</th>
+                                        <th width="12%">Nominal</th>
+                                        <th width="8%" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tbody-<?= $id ?>">
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted py-4">
+                                        <td colspan="9" class="text-center text-muted py-4">
                                             <div class="spinner-border spinner-border-sm text-primary"></div> Memuat data...
                                         </td>
                                     </tr>
@@ -467,7 +468,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                     const rows = dataJSON.data[kelompok] || [];
 
                     if (rows.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Belum ada transaksi di kelompok ${kelompok}.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">Belum ada transaksi di kelompok ${kelompok}.</td></tr>`;
                         divSummary.style.setProperty("display", "none", "important");
                     } else {
                         let no = 1;
@@ -486,6 +487,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                             tbody.innerHTML += `
                                 <tr>
                                     <td>${no++}</td>
+                                    <td><code>${row.kode_referensi}</code></td> <!-- Tambahan Baru -->
                                     <td>${row.tanggal}</td>
                                     <td><span class="text-primary fw-semibold">${row.kode_akun}</span> - ${row.nama_akun}</td>
                                     <td>${row.keterangan}</td>

@@ -42,6 +42,7 @@ if ($query) {
         if (isset($data[$kelompok])) {
             $data[$kelompok][] = [
                 'id_transaksi'    => $row['id_transaksi'],
+                'kode_referensi'  => $row['kode_referensi'] ? $row['kode_referensi'] : '-',
                 'id_kategori'     => $row['id_kategori'],
                 'tanggal'         => date('d M Y', strtotime($row['tanggal_transaksi'])),
                 'tanggal_raw'     => $row['tanggal_transaksi'],
