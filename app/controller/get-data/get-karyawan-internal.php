@@ -24,6 +24,8 @@ while ($r = $q->fetch_assoc()) {
     $badge = ($st == 'Aktif') ? "<span class='badge bg-success'>$st</span>" : "<span class='badge bg-danger'>$st</span>";
 
     if ($st == 'Aktif') {
+        $nama_aman = htmlspecialchars($r['nama_karyawan'], ENT_QUOTES); // Tambahkan ini
+        
         $btn = "
             <button class='btn btn-sm btn-primary btnEdit' data-id='{$r['id_karyawan_internal']}'><i class='fa fa-edit'></i></button>
             <button class='btn btn-sm btn-warning btnEliminasi' data-id='{$r['id_karyawan_internal']}' data-nama='{$r['nama_karyawan']}'><i class='fa fa-user-slash'></i></button>

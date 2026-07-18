@@ -24,12 +24,15 @@ if (!isset($koneksi) || !$koneksi) {
 }
 
 $bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';
-$whereClause = "";
+$site = isset($_GET['site']) ? trim($_GET['site']) : '';
+$jabatan = isset($_GET['jabatan']) ? trim($_GET['jabatan']) : '';
 
-if (!empty($bulan)) {
-    $bulan_safe = $koneksi->real_escape_string($bulan);
-    $whereClause = " WHERE DATE_FORMAT(r.tgl_rapel, '%Y-%m') = '$bulan_safe' ";
-}
+$where = ["1=1"];
+if (!empty($bulan))   $where[] = "DATE_FORMAT(r.tgl_rapel, '%Y-%m') = '" . $koneksi->real_escape_string($bulan) . "'";
+if (!empty($site))    $where[] = "kr.id_site = '" . $koneksi->real_escape_string($site) . "'";
+if (!empty($jabatan)) $where[] = "kr.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+
+$whereClause = " WHERE " . implode(" AND ", $where);
 
 $sql = "SELECT 
             r.id_rapel,
@@ -40,8 +43,10 @@ $sql = "SELECT
             r.nominal_rapel,
             r.ket_rapel
         FROM tb_rapel r
-        INNER JOIN tb_karyawan k ON r.id_karyawan = k.id_karyawan
+        JOIN tb_karyawan k ON r.id_karyawan = k.id_karyawan
+        JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
         $whereClause
+        GROUP BY r.id_rapel
         ORDER BY r.tgl_rapel DESC, r.id_rapel DESC";
 
 $result = $koneksi->query($sql);

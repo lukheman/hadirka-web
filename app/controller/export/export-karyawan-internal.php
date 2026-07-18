@@ -1,70 +1,86 @@
 <?php
-header("Content-Type: application/json; charset=utf-8");
+error_reporting(0);
+ini_set('display_errors', 0);
+if (ob_get_length()) ob_end_clean(); // Mencegah file excel corrupt
+
 require __DIR__ . '/../../config/koneksi.php';
 require '../../../vendor/autoload.php';
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
-$response = ["success" => false, "berhasil" => 0, "gagal" => 0, "error" => ""];
-if (!isset($_FILES['file_excel'])) {
-    echo json_encode(["success" => false, "error" => "File kosong"]);
-    exit;
+// 1. TANGKAP FILTER
+$site = $_GET['site'] ?? '';
+$status = $_GET['status'] ?? 'Semua';
+
+// 2. BUILD WHERE CLAUSE
+$where = ["1=1"];
+if (!empty($site)) $where[] = "k.id_site = '" . $koneksi->real_escape_string($site) . "'";
+if ($status !== 'Semua') $where[] = "k.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+$where_sql = implode(" AND ", $where);
+
+// 3. EKSEKUSI QUERY
+$sql = "SELECT k.*, s.nama_site 
+        FROM tb_karyawan_internal k 
+        LEFT JOIN tb_site s ON k.id_site = s.id_site 
+        WHERE $where_sql 
+        ORDER BY k.nik_karyawan_internal ASC";
+$result = $koneksi->query($sql);
+
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+$sheet->setTitle('Master Karyawan Internal');
+
+$headers = ['A1' => 'No', 'B1' => 'NIK', 'C1' => 'Nama Karyawan', 'D1' => 'L/P', 'E1' => 'Site', 'F1' => 'Jabatan', 'G1' => 'Gaji Pokok', 'H1' => 'Bank', 'I1' => 'No Rekening', 'J1' => 'Atas Nama', 'K1' => 'Status', 'L1' => 'Tgl Masuk', 'M1' => 'Tgl Keluar', 'N1' => 'Ket Keluar'];
+foreach ($headers as $cell => $val) {
+    $sheet->setCellValue($cell, $val);
+    $sheet->getStyle($cell)->getFont()->setBold(true);
 }
 
-function formatTgl($val)
-{
-    if (empty($val)) return null;
-    if (is_numeric($val)) return Date::excelToDateTimeObject($val)->format('Y-m-d');
-    return date('Y-m-d', strtotime(str_replace(['/', '.'], '-', $val)));
+$rowNum = 2;
+$no = 1;
+while ($d = $result->fetch_assoc()) {
+    $sheet->setCellValue('A' . $rowNum, $no++);
+    $sheet->setCellValueExplicit('B' . $rowNum, $d['nik_karyawan_internal'], DataType::TYPE_STRING);
+    $sheet->setCellValue('C' . $rowNum, $d['nama_karyawan']);
+    $sheet->setCellValue('D' . $rowNum, $d['jenis_kelamin']);
+    $sheet->setCellValue('E' . $rowNum, $d['nama_site'] ?? '-');
+    $sheet->setCellValue('F' . $rowNum, $d['jabatan']);
+    $sheet->setCellValue('G' . $rowNum, floatval($d['gaji_pokok']));
+    $sheet->setCellValue('H' . $rowNum, $d['nama_bank']);
+    $sheet->setCellValueExplicit('I' . $rowNum, $d['no_rek'], DataType::TYPE_STRING);
+    $sheet->setCellValue('J' . $rowNum, $d['atas_nama_rek']);
+    $sheet->setCellValue('K' . $rowNum, $d['status_karyawan']);
+    $sheet->setCellValue('L' . $rowNum, $d['tgl_masuk']);
+    $sheet->setCellValue('M' . $rowNum, $d['tgl_keluar']);
+    $sheet->setCellValue('N' . $rowNum, $d['ket_keluar']);
+    $sheet->getStyle('G' . $rowNum)->getNumberFormat()->setFormatCode('#,##0');
+    $rowNum++;
 }
 
-try {
-    $spreadsheet = IOFactory::load($_FILES['file_excel']['tmp_name']);
-    // Urutan: A=No, B=NIK, C=Nama, D=L/P, E=Site, F=Jabatan, G=Gaji, H=Bank, I=No Rek, J=Atas Nama, K=Status, L=Tgl Masuk, M=Tgl Keluar, N=Ket Keluar
-    $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, false, true);
+foreach (range('A', 'N') as $col) {
+    $sheet->getColumnDimension($col)->setAutoSize(true);
+}
 
-    foreach ($sheet as $i => $row) {
-        if ($i == 1) continue;
-        $nik = strtoupper(trim($row['B'] ?? ''));
-        $nama = trim($row['C'] ?? '');
-        $jk = trim($row['D'] ?? '');
-        $nama_site = trim($row['E'] ?? '');
-
-        if (empty($nik) || empty($nama)) continue;
-
-        $id_site = null;
-        if (!empty($nama_site)) {
-            $cekSite = $koneksi->query("SELECT id_site FROM tb_site WHERE LOWER(TRIM(nama_site)) = '" . strtolower($nama_site) . "' LIMIT 1");
-            if ($cekSite->num_rows > 0) $id_site = $cekSite->fetch_assoc()['id_site'];
-        }
-
-        $jabatan = trim($row['F'] ?? '');
-        $gaji = preg_replace('/\D/', '', $row['G'] ?? '0');
-        $bank = strtoupper(trim($row['H'] ?? ''));
-        $rek = trim($row['I'] ?? '');
-        $an = strtoupper(trim($row['J'] ?? ''));
-        $status = trim($row['K'] ?? '') ?: 'Aktif';
-        $tgl_masuk = formatTgl($row['L'] ?? '');
-        $tgl_keluar = formatTgl($row['M'] ?? '');
-        $ket_keluar = trim($row['N'] ?? '');
-
-        $cek = $koneksi->query("SELECT id_karyawan_internal FROM tb_karyawan_internal WHERE nik_karyawan_internal='$nik'");
-        if ($cek->num_rows > 0) {
-            $stmt = $koneksi->prepare("UPDATE tb_karyawan_internal SET id_site=?, nama_karyawan=?, jenis_kelamin=?, jabatan=?, gaji_pokok=?, nama_bank=?, no_rek=?, atas_nama_rek=?, status_karyawan=?, tgl_masuk=?, tgl_keluar=?, ket_keluar=? WHERE nik_karyawan_internal=?");
-            // 1 int + 12 strings = issssssssssss (13 vars)
-            $stmt->bind_param("issssssssssss", $id_site, $nama, $jk, $jabatan, $gaji, $bank, $rek, $an, $status, $tgl_masuk, $tgl_keluar, $ket_keluar, $nik);
-        } else {
-            $stmt = $koneksi->prepare("INSERT INTO tb_karyawan_internal (nik_karyawan_internal, id_site, nama_karyawan, jenis_kelamin, jabatan, gaji_pokok, nama_bank, no_rek, atas_nama_rek, status_karyawan, tgl_masuk, tgl_keluar, ket_keluar) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            // 1 string + 1 int + 11 strings = sisssssssssss (13 vars)
-            $stmt->bind_param("sisssssssssss", $nik, $id_site, $nama, $jk, $jabatan, $gaji, $bank, $rek, $an, $status, $tgl_masuk, $tgl_keluar, $ket_keluar);
-        }
-        if ($stmt->execute()) $response["berhasil"]++;
-        else $response["gagal"]++;
+// 4. LOGIKA NAMA FILE DINAMIS
+$nama_site_file = "SEMUA_SITE";
+if (!empty($site)) {
+    $q_site = $koneksi->query("SELECT nama_site FROM tb_site WHERE id_site = '" . $koneksi->real_escape_string($site) . "'");
+    if ($q_site && $q_site->num_rows > 0) {
+        $site_data = $q_site->fetch_assoc();
+        $nama_site_file = str_replace(' ', '_', strtoupper(trim($site_data['nama_site'])));
     }
-    $response["success"] = true;
-} catch (Exception $e) {
-    $response["error"] = $e->getMessage();
 }
 
-echo json_encode($response);
+$status_file = str_replace(' ', '_', strtoupper($status));
+$filename = "Export_Karyawan_Internal_" . $nama_site_file . "_" . $status_file . "_" . date('Ymd_His') . ".xlsx";
+
+// 5. DOWNLOAD FILE
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment;filename="' . $filename . '"');
+header('Cache-Control: max-age=0');
+
+$writer = new Xlsx($spreadsheet);
+$writer->save('php://output');
+exit;

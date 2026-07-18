@@ -6,13 +6,23 @@ $action = $_POST['action'] ?? '';
 $response = ['status' => 'error', 'msg' => 'Terjadi kesalahan sistem'];
 
 try {
+    // === PERBAIKAN DI BLOK DELETE INI ===
     if ($action === 'delete') {
         $id_bonus = intval($_POST['id_bonus'] ?? 0);
         $stmt = $koneksi->prepare("DELETE FROM tb_bonus_internal WHERE id_bonus = ?");
         $stmt->bind_param("i", $id_bonus);
-        if($stmt->execute()) $response = ['status' => 'success', 'msg' => 'Bonus telah dihapus'];
+        
+        if ($stmt->execute()) {
+            $response = ['status' => 'success', 'msg' => 'Bonus telah berhasil dihapus'];
+        } else {
+            $response = ['status' => 'error', 'msg' => 'Gagal menghapus bonus: ' . $stmt->error];
+        }
+        
+        // PENTING: Cetak JSON sebelum exit
+        echo json_encode($response);
         exit;
     }
+    // ===================================
 
     if (in_array($action, ['add', 'edit'])) {
         $id_bonus   = intval($_POST['id_bonus'] ?? 0);

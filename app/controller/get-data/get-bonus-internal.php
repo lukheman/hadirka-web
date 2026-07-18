@@ -2,12 +2,13 @@
 header("Content-Type: application/json");
 require_once __DIR__ . '/../../config/koneksi.php';
 
-$bulan = $_POST['bulan'] ?? '';
+$tgl_awal = $_POST['tgl_awal'] ?? '';
+$tgl_akhir = $_POST['tgl_akhir'] ?? '';
 $where = "1=1";
 
-if (!empty($bulan)) {
-    // Format $bulan adalah YYYY-MM
-    $where .= " AND DATE_FORMAT(b.tgl_bonus, '%Y-%m') = '" . $koneksi->real_escape_string($bulan) . "'";
+if (!empty($tgl_awal) && !empty($tgl_akhir)) {
+    // GUNAKAN BETWEEN
+    $where .= " AND b.tgl_bonus BETWEEN '" . $koneksi->real_escape_string($tgl_awal) . "' AND '" . $koneksi->real_escape_string($tgl_akhir) . "'";
 }
 
 $sql = "SELECT b.*, k.nik_karyawan_internal, k.nama_karyawan 

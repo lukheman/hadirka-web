@@ -87,7 +87,7 @@
             <!-- Kelompok Kanan: Tombol -->
             <div class="d-flex gap-2">
                 <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTambahPinjaman">
-                    <i class="fa fa-plus me-2"></i> Tambah Pinjaman Baru
+                    <i class="fa fa-plus me-2"></i> Tambah Pinjaman
                 </button>
                 <button class="btn btn-warning shadow-sm" onclick="postingPinjaman()">
                     <i class="fa fa-send me-2"></i> Posting ke Keuangan
@@ -95,6 +95,7 @@
             </div>
         </div>
 
+        <!-- Panel Statistik -->
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="card bg-success text-white shadow-sm hover-lift">
@@ -252,9 +253,9 @@
                 <input type="date" name="tgl_pinjaman" class="form-control mb-3" required>
 
                 <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-md-8 mb-3">
                         <label>Total Pinjaman (Rp)</label>
-                        <input type="number" name="nominal_pinjaman" id="inputPlafon" class="form-control mb-1" required>
+                        <input type="text" name="nominal_pinjaman" id="inputPlafon" class="form-control mb-1 nominal-mask" required>
                     </div>
                     <div class="col-md-4">
                         <label>Cicil (Bulan)</label>
@@ -307,7 +308,7 @@
                 <input type="date" name="tgl_bayar_pinjaman" class="form-control mb-3">
 
                 <label>Total Pinjaman</label>
-                <input type="number" name="nominal_pinjaman" class="form-control mb-3" required>
+                <input type="text" name="nominal_pinjaman" class="form-control mb-3 nominal-mask" required>
 
                 <label>Keterangan</label>
                 <input type="text" name="ket_pinjaman" class="form-control">
@@ -332,9 +333,28 @@
         const formEdit = document.getElementById("formEditPinjaman");
         const formImport = document.getElementById("formImportPinjaman");
 
+        // === EVENT LISTENER MASKING NOMINAL (VERSI ANTI-LOMPAT) ===
+        document.addEventListener("input", e => {
+            if (e.target.classList.contains("nominal-mask")) {
+                let input = e.target;
+                
+                // Simpan posisi kursor saat ini
+                let cursorPos = input.selectionStart;
+                let prevLength = input.value.length;
+
+                // Bersihkan dan format ulang angkanya
+                let val = input.value.replace(/\D/g, "");
+                let formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                input.value = formatted;
+
+                // Kembalikan posisi kursor ke tempat semula (disesuaikan dengan penambahan titik)
+                let diff = formatted.length - prevLength;
+                input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            }
+        });
+
         // === INISIALISASI SELECT2 ===
         function initSelect2() {
-            // Select2 untuk modal tambah
             $('#selectKaryawanTambah').select2({
                 dropdownParent: $('#modalTambahPinjaman'),
                 placeholder: 'Pilih Karyawan',
@@ -342,7 +362,6 @@
                 width: '100%'
             });
 
-            // Select2 untuk modal edit
             $('#selectKaryawanEdit').select2({
                 dropdownParent: $('#modalEditPinjaman'),
                 placeholder: 'Pilih Karyawan',
@@ -394,7 +413,6 @@
                 .then(data => {
                     document.getElementById("totalPinjaman").textContent = data.total || 0;
                     document.getElementById("totalNominal").textContent = "Rp " + (data.nominal || 0);
-                    // Update Teks Label Nominal
                     document.getElementById("labelNominal").textContent = data.teks_bulan;
                 })
                 .catch(error => {
@@ -411,13 +429,11 @@
 
             let fd = new FormData(formImport);
 
-            // Gunakan path absolut dari domain jika ragu
             fetch("app/controller/csv-control/csv-pinjaman.php", {
                     method: "POST",
                     body: fd
                 })
                 .then(res => {
-                    // Cek apakah response oke (bukan 404/500)
                     if (!res.ok) throw new Error("File PHP tidak ditemukan atau Server Error (404/500)");
                     return res.json();
                 })
@@ -445,6 +461,9 @@
         formTambah.addEventListener("submit", e => {
             e.preventDefault();
             let fd = new FormData(formTambah);
+            
+            // PERBAIKAN: Bersihkan titik pada nominal sebelum dikirim
+            fd.set("nominal_pinjaman", fd.get("nominal_pinjaman").replace(/\./g, ""));
             fd.append("action", "add");
 
             fetch("app/controller/act-pinjaman.php", {
@@ -467,6 +486,9 @@
         formEdit.addEventListener("submit", e => {
             e.preventDefault();
             let fd = new FormData(formEdit);
+            
+            // PERBAIKAN: Bersihkan titik pada nominal sebelum dikirim
+            fd.set("nominal_pinjaman", fd.get("nominal_pinjaman").replace(/\./g, ""));
             fd.append("action", "edit");
 
             fetch("app/controller/act-pinjaman.php", {
@@ -494,7 +516,12 @@
                 $('#selectKaryawanEdit').val(btnEdit.dataset.idkaryawan).trigger('change');
                 formEdit.querySelector("input[name=tgl_pinjaman]").value = btnEdit.dataset.tglpinjaman;
                 formEdit.querySelector("input[name=tgl_bayar_pinjaman]").value = btnEdit.dataset.tglbayar;
-                formEdit.querySelector("input[name=nominal_pinjaman]").value = btnEdit.dataset.pinjaman;
+                
+                // PERBAIKAN: Format nominal dengan titik saat modal edit ditarik datanya
+                let rawNominal = btnEdit.dataset.pinjaman.toString();
+                let angkaBulat = rawNominal.split(".")[0].replace(/\D/g, "");
+                formEdit.querySelector("input[name=nominal_pinjaman]").value = angkaBulat.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                
                 formEdit.querySelector("input[name=ket_pinjaman]").value = btnEdit.dataset.ket;
 
                 new bootstrap.Modal(document.getElementById("modalEditPinjaman")).show();
@@ -522,7 +549,6 @@
             }
         });
 
-        // UBAH BAGIAN INI AGAR BISA DIPANGGIL DARI TOMBOL HTML
         window.postingPinjaman = function() {
             const bulan = document.getElementById("filterBulan").value;
             if (!bulan) return alert("Pilih bulan terlebih dahulu!");
@@ -542,34 +568,31 @@
                         else alert("Gagal: " + res.message);
                     });
             }
-        }; // Akhir dari window.postingPinjaman
+        }; 
 
-        // Inisialisasi Select2 saat halaman dimuat
         initSelect2();
         loadPinjaman();
     });
 
-    // Hitung estimasi cicilan otomatis (Hanya muncul jika dicicil)
     const inputPlafon = document.getElementById("inputPlafon");
     const inputTenor = document.getElementById("inputTenor");
     const infoCicilan = document.getElementById("infoCicilan");
     const textCicilan = document.getElementById("textCicilan");
-    const labelTglBayar = document.getElementById("labelTglBayar"); // Tangkap elemen label
+    const labelTglBayar = document.getElementById("labelTglBayar"); 
 
     function hitungCicilan() {
-        let plafon = parseFloat(inputPlafon.value) || 0;
+        // PERBAIKAN: Bersihkan titik saat memproses hitung cicilan
+        let plafonStr = inputPlafon.value.replace(/\./g, "");
+        let plafon = parseFloat(plafonStr) || 0;
         let tenor = parseInt(inputTenor.value) || 1;
 
-        // Logika Mengubah Teks Label Tanggal
         if (tenor > 1) {
             labelTglBayar.innerText = "Tanggal Mulai Pembayaran";
         } else {
             labelTglBayar.innerText = "Tanggal Pembayaran";
         }
 
-        // Info cicilan hanya muncul jika tenor lebih dari 1 bulan (dicicil)
         if (plafon > 0 && tenor > 1) {
-            // Menyamakan logika dengan PHP (Gunakan pembulatan ke bawah agar sisa dibebankan di akhir)
             let cicilanDasar = Math.floor(plafon / tenor);
             let sisaBagi = plafon - (cicilanDasar * tenor);
             let cicilanTerakhir = cicilanDasar + sisaBagi;

@@ -32,7 +32,16 @@ try {
     }
 
     // ADD / EDIT
-    $nik = strtoupper(trim($_POST['nik_karyawan_internal']));
+    // Ambil input dan bersihkan awalan 'INT-' jika user kebetulan mengetiknya manual
+    $nik_input = trim($_POST['nik_karyawan_internal']);
+
+    // Hapus awalan 'INT', 'INT-', 'INT ', 'int', 'int-' (case-insensitive) di awal string
+    // Regex /^INT[\s-]?/i akan mendeteksi kata INT yang diikuti spasi/strip (opsional) di awal text
+    $nik_input = preg_replace('/^INT[\s-]?/i', '', $nik_input);
+
+    // Ubah sisa angkanya/hurufnya menjadi uppercase dan gabungkan dengan INT-
+    $nik = 'INT-' . strtoupper(trim($nik_input));
+
     $id_site = intval($_POST['id_site']);
     $nama = trim($_POST['nama_karyawan']);
     $jk = trim($_POST['jenis_kelamin'] ?? '');

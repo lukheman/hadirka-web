@@ -10,7 +10,7 @@ switch($action){
         $id_karyawan = $_POST['id_karyawan'] ?? '';
         $tgl_pinjaman = $_POST['tgl_pinjaman'] ?? '';
         $tgl_bayar_awal = $_POST['tgl_bayar_pinjaman'] ?? '';
-        $nominal_total = (float) ($_POST['nominal_pinjaman'] ?? 0);
+        $nominal_total = (float) preg_replace('/\D/', '', $_POST['nominal_pinjaman'] ?? '0');
         $tenor = (int) ($_POST['tenor'] ?? 1);
         $ket = $_POST['ket_pinjaman'] ?? '';
 
@@ -63,7 +63,7 @@ switch($action){
         $id_karyawan = $_POST['id_karyawan'] ?? '';
         $tgl_pinjaman = $_POST['tgl_pinjaman'] ?? '';
         $tgl_bayar = $_POST['tgl_bayar_pinjaman'] ?? null;
-        $nominal = $_POST['nominal_pinjaman'] ?? 0;
+        $nominal = (float) preg_replace('/\D/', '', $_POST['nominal_pinjaman'] ?? '0');
         $ket = $_POST['ket_pinjaman'] ?? '';
 
         if(!$id || !$id_karyawan || !$tgl_pinjaman || !$nominal){

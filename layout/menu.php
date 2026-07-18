@@ -34,7 +34,8 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $internal_pages = ['karyawan-internal', 'bonus-internal'];
+        // PERBAIKAN: Penambahan array untuk accordion menu internal
+        $internal_pages = ['karyawan-internal', 'bonus-internal', 'potongan-internal', 'rapel-internal', 'pinjaman-internal', 'gaji-internal', 'slip-internal'];
         ?>
         <li class="menu-item <?= isMenuOpen($internal_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -51,6 +52,27 @@ function isMenuOpen($pages_array, $current_page)
                     <a class="menu-link" href="bonus-internal">
                         <div>Bonus Karyawan</div>
                     </a>
+                </li>
+                <li class="menu-item <?= isActive('potongan-internal', $current_page); ?>">
+                    <a class="menu-link" href="potongan-internal">
+                        <div>Potongan Internal</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('rapel-internal', $current_page); ?>">
+                    <a class="menu-link" href="rapel-internal">
+                        <div>Rapel Internal</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('pinjaman-internal', $current_page); ?>">
+                    <a class="menu-link" href="pinjaman-internal">
+                        <div>Pinjaman Internal</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('gaji-internal', $current_page); ?>">
+                    <a class="menu-link" href="gaji-internal"><div>Penggajian Internal</div></a>
+                </li>
+                <li class="menu-item <?= isActive('slip-internal', $current_page); ?>">
+                    <a class="menu-link" href="slip-internal"><div>Slip Gaji Internal</div></a>
                 </li>
             </ul>
         </li>

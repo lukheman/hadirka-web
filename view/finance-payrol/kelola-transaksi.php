@@ -689,7 +689,8 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
     });
 
     async function hapusTransaksi(id) {
-        if (confirm('Karena ini adalah sistem jurnal berpasangan, pastikan Anda juga menghapus sisi pasangannya secara manual jika perlu. Lanjutkan menghapus baris ini?')) {
+        // Pesan peringatan diperbarui
+        if (confirm('Hapus transaksi ini? Sistem akan otomatis menghapus jurnal pasangannya (Kas/Bank) agar neraca tetap seimbang.')) {
             const formData = new FormData();
             formData.append('action', 'delete');
             formData.append('id', id);
@@ -702,7 +703,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    loadDataTransaksi();
+                    loadDataTransaksi(); // Refresh tabel
                 } else {
                     alert(data.msg);
                 }

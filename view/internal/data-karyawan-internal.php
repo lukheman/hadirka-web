@@ -22,7 +22,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-upload"></i> Import Data
                             </button>
-                            <a href="assets/template-csv/Format_Karyawan_Internal.xlsx" class="btn btn-outline-secondary ms-2" download>
+                            <a href="assets/template-csv/Format_Impor_Karyawan_Internal.xlsx" class="btn btn-outline-secondary ms-2" download>
                                 <i class="fas fa-download"></i> Download Template
                             </a>
                         </div>
@@ -35,7 +35,7 @@
         <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFormKaryawan" onclick="tambahKaryawan()"><i class="fa fa-plus"></i> Tambah Karyawan</button>
-                <button class="btn btn-info btn-sm" onclick="exportKaryawan()"><i class="fa fa-file-export"></i> Export Master Karyawan</button>
+                <button class="btn btn-info btn-sm" onclick="exportKaryawan()"><i class="fa fa-file-export"></i> Export Karyawan</button>
             </div>
 
             <div class="d-flex align-items-center gap-2">
@@ -93,12 +93,15 @@
 
             <div class="modal-header bg-success text-white" id="modalHeaderBg">
                 <h5 class="modal-title text-white" id="modalTitle"><i class="fa fa-user"></i> Form Karyawan</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body row g-3">
                 <div class="col-md-4">
                     <label class="form-label">NIK Karyawan</label>
-                    <input type="text" name="nik_karyawan_internal" id="nik" class="form-control" required>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">INT-</span>
+                        <input type="text" name="nik_karyawan_internal" id="nik" class="form-control" placeholder="Contoh: 003" required>
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Nama Karyawan</label>
@@ -204,8 +207,14 @@
     document.addEventListener("DOMContentLoaded", () => {
         // Masking
         document.addEventListener("input", e => {
+            // Masking Uang
             if (e.target.classList.contains("nominal-mask")) {
                 e.target.value = e.target.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            }
+
+            // Auto-remove tulisan "INT" di form NIK jika admin iseng mengetiknya
+            if (e.target.id === "nik") {
+                e.target.value = e.target.value.replace(/^int[\s-]?/ig, "");
             }
         });
 
@@ -276,7 +285,9 @@
                     let d = res.data;
                     $("#formAction").val("edit");
                     $("#idKaryawan").val(d.id_karyawan_internal);
-                    $("#nik").val(d.nik_karyawan_internal);
+                    // Hilangkan awalan INT- jika ada saat ditampilkan di form edit
+                    let nikBersih = d.nik_karyawan_internal.replace(/^INT-/, '');
+                    $("#nik").val(nikBersih);
                     $("#nama").val(d.nama_karyawan);
                     $("#jk").val(d.jenis_kelamin);
                     $("#site").val(d.id_site);
@@ -294,9 +305,14 @@
         });
 
         $(document).on("click", ".btnEliminasi", function() {
+            // 1. Reset form terlebih dahulu
+            $("#formEliminasi")[0].reset();
+
+            // 2. Baru isi data ID dan Nama dari tombol yang diklik
             $("#elim_id").val($(this).data("id"));
             $("#elim_nama").val($(this).data("nama"));
-            $("#formEliminasi")[0].reset();
+
+            // 3. Tampilkan modal
             $("#modalEliminasi").modal("show");
         });
 

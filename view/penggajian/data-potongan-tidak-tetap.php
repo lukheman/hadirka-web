@@ -164,33 +164,41 @@
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold"><i class="fa fa-list me-2 text-primary"></i> Database Potongan Tidak Tetap</h5>
+                        <h5 class="mb-0 fw-bold"><i class="fa fa-list me-2 text-primary"></i> Data Potongan Tidak Tetap</h5>
 
-                        <select id="filterBulan" class="form-select form-select-sm" style="width: 170px; cursor: pointer;">
-                            <option value="">Semua Bulan</option>
-                            <?php
-                            $bulanArr = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="filterSite" class="form-select form-select-sm" style="width: 150px; cursor: pointer;">
+                                <option value="">Semua Site</option>
+                            </select>
+                            <select id="filterJabatan" class="form-select form-select-sm" style="width: 150px; cursor: pointer;">
+                                <option value="">Semua Jabatan</option>
+                            </select>
+                            <select id="filterBulan" class="form-select form-select-sm" style="width: 170px; cursor: pointer;">
+                                <option value="">Semua Bulan</option>
+                                <?php
+                                $bulanArr = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
 
-                            $sqlBulan = "SELECT DISTINCT DATE_FORMAT(tgl_potongan, '%Y-%m') AS val_bulan FROM tb_potongan_tidak_tetap ORDER BY val_bulan DESC";
-                            $resBulan = $koneksi->query($sqlBulan);
+                                $sqlBulan = "SELECT DISTINCT DATE_FORMAT(tgl_potongan, '%Y-%m') AS val_bulan FROM tb_potongan_tidak_tetap ORDER BY val_bulan DESC";
+                                $resBulan = $koneksi->query($sqlBulan);
 
-                            if ($resBulan && $resBulan->num_rows > 0) {
-                                $isFirst = true;
-                                while ($b = $resBulan->fetch_assoc()) {
-                                    $val = $b['val_bulan'];
-                                    $parts = explode('-', $val);
-                                    $label = $bulanArr[$parts[1]] . " " . $parts[0];
-                                    $selected = $isFirst ? "selected" : "";
-                                    echo "<option value='$val' $selected>$label</option>";
-                                    $isFirst = false;
+                                if ($resBulan && $resBulan->num_rows > 0) {
+                                    $isFirst = true;
+                                    while ($b = $resBulan->fetch_assoc()) {
+                                        $val = $b['val_bulan'];
+                                        $parts = explode('-', $val);
+                                        $label = $bulanArr[$parts[1]] . " " . $parts[0];
+                                        $selected = $isFirst ? "selected" : "";
+                                        echo "<option value='$val' $selected>$label</option>";
+                                        $isFirst = false;
+                                    }
+                                } else {
+                                    $valNow = date('Y-m');
+                                    $labelNow = $bulanArr[date('m')] . " " . date('Y');
+                                    echo "<option value='$valNow' selected>$labelNow</option>";
                                 }
-                            } else {
-                                $valNow = date('Y-m');
-                                $labelNow = $bulanArr[date('m')] . " " . date('Y');
-                                echo "<option value='$valNow' selected>$labelNow</option>";
-                            }
-                            ?>
-                        </select>
+                                ?>
+                            </select>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive text-nowrap">
@@ -344,9 +352,12 @@
         // === LOAD DATA ===
         function loadPotongan() {
             const bulan = document.getElementById("filterBulan").value;
+            const site = document.getElementById("filterSite").value;
+            const jabatan = document.getElementById("filterJabatan").value;
+
             tbody.innerHTML = '<tr><td colspan="9" class="text-center">Memuat data...</td></tr>';
 
-            fetch("app/controller/get-data/get-potongan-tidak-tetap.php?bulan=" + bulan)
+            fetch(`app/controller/get-data/get-potongan-tidak-tetap.php?bulan=${bulan}&site=${site}&jabatan=${jabatan}`)
                 .then(res => res.text())
                 .then(html => {
                     if ($.fn.DataTable.isDataTable(".MyTable")) {
@@ -371,7 +382,10 @@
         // === UPDATE STATS ===
         function updateStats() {
             const bulan = document.getElementById("filterBulan").value;
-            fetch("app/controller/get-data/get-potongan-tidak-tetap-stats.php?bulan=" + bulan)
+            const site = document.getElementById("filterSite").value;
+            const jabatan = document.getElementById("filterJabatan").value;
+
+            fetch(`app/controller/get-data/get-potongan-tidak-tetap-stats.php?bulan=${bulan}&site=${site}&jabatan=${jabatan}`)
                 .then(res => {
                     if (!res.ok) throw new Error('Network response was not ok');
                     return res.json();

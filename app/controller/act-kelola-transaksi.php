@@ -73,15 +73,18 @@ if ($action == 'add') {
         $arus_lawan   = 'Keluar';
     }
 
+    // GENERATE KODE REFERENSI UNTUK MENGIKAT 2 BARIS TRANSAKSI
+    $kode_referensi = 'REF-' . time() . '-' . rand(100, 999);
+
     // Matikan auto-commit agar tersimpan bersamaan atau batal dua-duanya (Transaction Safety)
     mysqli_autocommit($koneksi, false);
     $status_ok = true;
 
     // 1. QUERY INSERT UNTUK AKUN UTAMA
     $query_utama = "INSERT INTO tb_transaksi_keuangan 
-                    (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan, bukti_transaksi, tipe_neraca) 
+                    (kode_referensi, tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan, bukti_transaksi, tipe_neraca) 
                     VALUES 
-                    ('$tanggal_transaksi', '$id_kategori', '$nominal', '$arus_utama', '$keterangan', '$bukti_name', '$neraca_utama')";
+                    ('$kode_referensi', '$tanggal_transaksi', '$id_kategori', '$nominal', '$arus_utama', '$keterangan', '$bukti_name', '$neraca_utama')";
 
     if (!mysqli_query($koneksi, $query_utama)) $status_ok = false;
 
@@ -89,9 +92,9 @@ if ($action == 'add') {
     // Berikan flag [Auto] agar di tabel terlihat ini adalah baris pasangan
     $ket_lawan = "[Auto] " . $keterangan;
     $query_lawan = "INSERT INTO tb_transaksi_keuangan 
-                    (tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan, bukti_transaksi, tipe_neraca) 
+                    (kode_referensi, tanggal_transaksi, id_kategori, nominal, tipe_arus, keterangan, bukti_transaksi, tipe_neraca) 
                     VALUES 
-                    ('$tanggal_transaksi', '$id_lawan', '$nominal', '$arus_lawan', '$ket_lawan', '$bukti_name', '$neraca_lawan')";
+                    ('$kode_referensi', '$tanggal_transaksi', '$id_lawan', '$nominal', '$arus_lawan', '$ket_lawan', '$bukti_name', '$neraca_lawan')";
 
     if (!mysqli_query($koneksi, $query_lawan)) $status_ok = false;
 
@@ -180,23 +183,37 @@ if ($action == 'edit') {
 }
 
 // =====================================================================
-// AKSI HAPUS DATA (RAW MODE)
+// AKSI HAPUS DATA (AUTO-DELETE PASANGAN)
 // =====================================================================
 if ($action == 'delete') {
     $id = mysqli_real_escape_string($koneksi, $_POST['id']);
 
-    $q_old = mysqli_query($koneksi, "SELECT bukti_transaksi FROM tb_transaksi_keuangan WHERE id_transaksi = '$id'");
-    if ($r_old = mysqli_fetch_assoc($q_old)) {
-        if (!empty($r_old['bukti_transaksi']) && file_exists($target_dir . $r_old['bukti_transaksi'])) {
-            @unlink($target_dir . $r_old['bukti_transaksi']);
-        }
-    }
+    // Cek data transaksi beserta kode referensinya
+    $q_cek = mysqli_query($koneksi, "SELECT kode_referensi, bukti_transaksi FROM tb_transaksi_keuangan WHERE id_transaksi = '$id'");
+    
+    if ($row = mysqli_fetch_assoc($q_cek)) {
+        $kode_ref = $row['kode_referensi'];
 
-    $query = "DELETE FROM tb_transaksi_keuangan WHERE id_transaksi = '$id'";
-    if (mysqli_query($koneksi, $query)) {
-        echo json_encode(['status' => 'success', 'msg' => 'Data berhasil dihapus']);
+        // Hapus file fisik jika ada
+        if (!empty($row['bukti_transaksi']) && file_exists($target_dir . $row['bukti_transaksi'])) {
+            @unlink($target_dir . $row['bukti_transaksi']);
+        }
+
+        // Jika transaksi ini punya kode_referensi, hapus keduanya (utama & pasangan). 
+        // Jika null (misal: data lama sebelum sistem ini diterapkan), hapus by id saja.
+        if (!empty($kode_ref)) {
+            $query = "DELETE FROM tb_transaksi_keuangan WHERE kode_referensi = '$kode_ref'";
+        } else {
+            $query = "DELETE FROM tb_transaksi_keuangan WHERE id_transaksi = '$id'";
+        }
+
+        if (mysqli_query($koneksi, $query)) {
+            echo json_encode(['status' => 'success', 'msg' => 'Transaksi beserta pasangannya berhasil dihapus']);
+        } else {
+            echo json_encode(['status' => 'error', 'msg' => 'Gagal menghapus data di database']);
+        }
     } else {
-        echo json_encode(['status' => 'error', 'msg' => 'Gagal menghapus data']);
+        echo json_encode(['status' => 'error', 'msg' => 'Data tidak ditemukan']);
     }
     exit;
 }

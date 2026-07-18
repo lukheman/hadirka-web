@@ -19,8 +19,6 @@
         border-radius: var(--border-radius);
         box-shadow: var(--shadow-md);
         border: none;
-        /* PENTING: hapus overflow:hidden agar tidak clip dropdown */
-        /* overflow: hidden; <-- DIHAPUS */
         transition: box-shadow 0.3s ease, transform 0.3s ease;
     }
 
@@ -66,27 +64,13 @@
 
     .btn {
         border-radius: 8px;
-        padding: 10px 20px;
         font-weight: 600;
-        border: none;
         transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        box-shadow: var(--shadow-sm);
     }
 
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, var(--success-color) 0%, #13b879 100%);
-    }
-
-    .btn-success:hover {
-        background: linear-gradient(135deg, var(--success-hover) 0%, #12a06a 100%);
+    .btn-action {
+        padding: 4px 10px;
+        font-size: 0.8rem;
     }
 
     .form-label {
@@ -104,14 +88,7 @@
         border: 2px solid #e3e6f0;
         border-radius: 8px;
         padding: 0.65rem 1rem;
-        transition: all 0.3s ease;
         font-size: 0.95rem;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.15);
     }
 
     table thead th {
@@ -120,24 +97,7 @@
         color: var(--text-dark);
         text-transform: uppercase;
         font-size: 0.8rem;
-        letter-spacing: 0.5px;
         padding: 1rem 0.75rem;
-    }
-
-    tbody tr {
-        transition: all 0.2s ease;
-    }
-
-    tbody tr:hover {
-        background: linear-gradient(90deg, #f8f9fc 0%, #eef3ff 100%);
-    }
-
-    .table-responsive {
-        overflow: visible !important;
-    }
-
-    .dataTables_wrapper .dataTables_scroll .dataTables_scrollBody {
-        overflow: auto !important;
     }
 
     .badge-count {
@@ -160,31 +120,6 @@
         box-shadow: var(--shadow-sm);
     }
 
-    .icon-calendar::before {
-        content: "📅";
-        margin-right: 0.3rem;
-    }
-
-    .icon-building::before {
-        content: "🏢";
-        margin-right: 0.3rem;
-    }
-
-    .icon-briefcase::before {
-        content: "💼";
-        margin-right: 0.3rem;
-    }
-
-    .icon-bank::before {
-        content: "🏦";
-        margin-right: 0.3rem;
-    }
-
-    .icon-status::before {
-        content: "📊";
-        margin-right: 0.3rem;
-    }
-
     .empty-state {
         text-align: center;
         padding: 3rem 1rem;
@@ -204,80 +139,15 @@
 
     #loanTable th,
     #loanTable td {
-        white-space: nowrap;
         vertical-align: middle;
+        white-space: nowrap;
     }
 
-    #loanTable td:nth-child(7) {
+    #loanTable td:nth-child(8) {
         white-space: normal;
         min-width: 150px;
     }
-
-    .dataTables_scrollBody::-webkit-scrollbar {
-        height: 8px;
-    }
-
-    .dataTables_scrollBody::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-    }
-
-    .dataTables_scrollBody::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 4px;
-    }
-
-    .dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
-
-    /* ======================================================
-       CUSTOM DROPDOWN — Di-render ke <body>, bukan ke tabel
-       Gunakan position:fixed dengan !important agar tidak
-       diblokir oleh transform/will-change dari template
-    ====================================================== */
-    #loan-dropdown-portal .custom-dropdown-menu {
-        display: none;
-        position: fixed !important;
-        z-index: 99999 !important;
-        background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 10px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-        min-width: 230px;
-        padding: 0.4rem 0;
-        /* Paksa browser tidak memakai stacking context baru */
-        transform: none !important;
-        will-change: auto !important;
-        filter: none !important;
-    }
-
-    #loan-dropdown-portal .custom-dropdown-menu.show {
-        display: block;
-    }
-
-    #loan-dropdown-portal .dropdown-item {
-        padding: 0.6rem 1rem;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: background 0.15s;
-    }
-
-    #loan-dropdown-portal .dropdown-item:hover {
-        background-color: #f0f4ff;
-    }
-
-    #loan-dropdown-portal .dropdown-header {
-        font-size: 0.72rem;
-        padding: 0.4rem 1rem 0.2rem;
-        color: #aaa;
-        letter-spacing: 0.5px;
-    }
 </style>
-
-<!-- Portal khusus untuk dropdown — langsung child dari content wrapper,
-     terpisah dari tabel dan card agar tidak kena clip/overflow -->
-<div id="loan-dropdown-portal"></div>
 
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
@@ -326,7 +196,6 @@
                         <option value="LAINNYA">LAINNYA</option>
                     </select>
                 </div>
-                <!-- TAMBAHAN: Filter Status -->
                 <div class="col-lg-2 col-md-6">
                     <label class="form-label icon-status">Status</label>
                     <select id="filterStatus" class="form-select">
@@ -336,8 +205,12 @@
                         <option value="ditolak">Ditolak</option>
                     </select>
                 </div>
-                <div class="col-lg-12 text-end mt-3">
-                    <button id="btnExportExcel" class="btn btn-success shadow-sm">
+
+                <div class="col-lg-12 d-flex justify-content-end gap-2 mt-3">
+                    <button id="btnOpenBatchModal" class="btn btn-primary shadow-sm px-4">
+                        <i class="fa fa-check-double me-1"></i> Batch ACC Terpilih
+                    </button>
+                    <button id="btnExportExcel" class="btn btn-success shadow-sm px-4">
                         <i class="fa fa-file-excel me-1"></i> Export ke Excel
                     </button>
                 </div>
@@ -354,6 +227,9 @@
                     <table id="loanTable" class="table table-hover table-bordered w-100">
                         <thead class="table-light">
                             <tr>
+                                <th class="text-center" style="width: 40px;">
+                                    <input type="checkbox" id="checkAllPinjaman">
+                                </th>
                                 <th class="text-center" style="width: 50px;">No</th>
                                 <th>Karyawan</th>
                                 <th>Jabatan</th>
@@ -361,10 +237,10 @@
                                 <th>Tanggal & Waktu</th>
                                 <th>Nominal</th>
                                 <th>Alasan</th>
-                                <th>Bukti (Wajah & ID)</th>
+                                <th>Bukti</th>
                                 <th>Info Rekening</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-center" style="width: 100px;">Aksi</th>
+                                <th class="text-center" style="width: 150px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyPengajuan"></tbody>
@@ -372,39 +248,66 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- Modal Proses Pengajuan -->
+<!-- ==============================================
+     MODAL PROSES SATUAN (ACC / TOLAK)
+     ============================================== -->
 <div class="modal fade" id="modalProsesPengajuan" tabindex="-1">
     <div class="modal-dialog">
         <form id="formProsesPengajuan" class="modal-content">
             <input type="hidden" name="action" value="proses">
             <input type="hidden" name="id_pengajuan" id="id_pengajuan">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title text-white">Proses Pengajuan Pinjaman</h5>
+            <input type="hidden" name="status_pinjaman" id="status_pinjaman">
+
+            <div class="modal-header" id="modalHeader">
+                <h5 class="modal-title text-white" id="modalTitle">Proses Pengajuan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info" id="infoPengajuan"></div>
-                <label class="fw-bold mb-1">Keputusan <span class="text-danger">*</span></label>
-                <select name="status_pinjaman" id="status_pinjaman" class="form-select mb-3" required>
-                    <option value="">-- Pilih Keputusan --</option>
-                    <option value="disetujui">ACC (Disetujui)</option>
-                    <option value="ditolak">Tolak</option>
-                </select>
+
                 <div id="formAcc" style="display: none;">
-                    <label class="fw-bold mb-1">Tanggal Rencana Bayar</label>
+                    <label class="fw-bold mb-1">Tanggal Rencana Bayar <span class="text-danger">*</span></label>
                     <input type="date" name="tgl_bayar_pinjaman" class="form-control mb-3">
-                    <small class="text-success d-block mb-3">*Jika di-ACC, data otomatis masuk ke Master Data Pinjaman.</small>
+                    <small class="text-success d-block mb-3">*Jika di-ACC, data otomatis masuk ke Menu Data Pinjaman Dana.</small>
                 </div>
-                <label class="fw-bold mb-1">Pesan / Keterangan untuk Karyawan</label>
-                <textarea name="keterangan_admin" id="keterangan_admin" class="form-control mb-3" rows="3" placeholder="Wajib diisi jika ditolak..."></textarea>
+
+                <div id="formKetAdmin">
+                    <label class="fw-bold mb-1">Pesan / Keterangan untuk Karyawan <span id="starKetAdmin" class="text-danger">*</span></label>
+                    <textarea name="keterangan_admin" id="keterangan_admin" class="form-control mb-3" rows="3" placeholder="Masukkan pesan atau alasan penolakan..."></textarea>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Keputusan</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitModal">Simpan Keputusan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================
+     MODAL BATCH ACC (BARU)
+     ============================================== -->
+<div class="modal fade" id="modalBatchAcc" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <form id="formBatchAcc" class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white"><i class="fa fa-check-double"></i> Batch ACC</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2">
+                    Menyetujui <b id="batchCountInfo" class="fs-5">0</b> pengajuan sekaligus.
+                </div>
+                <label class="fw-bold mb-1">Tanggal Rencana Bayar <span class="text-danger">*</span></label>
+                <input type="date" name="tgl_bayar_pinjaman_batch" id="tgl_bayar_pinjaman_batch" class="form-control mb-1" required>
+                <small class="text-success d-block mb-3">*Data akan masuk ke Menu Data Pinjaman Dana.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitBatch">Proses ACC Massal</button>
             </div>
         </form>
     </div>
@@ -417,96 +320,19 @@
 
 <script>
     let allLoanData = [];
+    let selectedBatchIds = []; // Simpan ID massal secara global
 
-    // Referensi portal dropdown — elemen ini langsung child body/wrapper,
-    // bebas dari transform/overflow apapun yang ada di dalam card/tabel
-    const dropdownPortal = document.getElementById('loan-dropdown-portal');
-
-    // ============================================================
-    // HELPER: Bersihkan semua menu lama di portal
-    // ============================================================
-    function clearDropdownPortal() {
-        dropdownPortal.innerHTML = '';
+    // Wrapper pintar untuk showToast agar kebal error (jika function belum terload di halaman)
+    function notify(msg, type = "success") {
+        if (typeof showToast === "function") {
+            showToast(msg, type);
+        } else {
+            alert((type.toUpperCase()) + ": " + msg);
+        }
     }
 
     // ============================================================
-    // HELPER: Tutup semua dropdown yang sedang terbuka
-    // ============================================================
-    window.closeAllDropdowns = function() {
-        dropdownPortal.querySelectorAll('.custom-dropdown-menu.show').forEach(m => {
-            m.classList.remove('show');
-        });
-    };
-
-    // ============================================================
-    // EVENT: Klik tombol titik tiga & item menu
-    // (satu listener terpusat, event delegation)
-    // ============================================================
-    document.addEventListener('click', function(e) {
-
-        // 1. Klik tombol titik tiga (btnDropdownAksi)
-        const btn = e.target.closest('.btnDropdownAksi');
-        if (btn) {
-            e.stopPropagation();
-            const idx = btn.dataset.index;
-            const menu = document.getElementById('dropdownMenu_' + idx);
-            if (!menu) return;
-
-            const isOpen = menu.classList.contains('show');
-            closeAllDropdowns();
-
-            if (!isOpen) {
-                // Ukur dimensi menu sebelum ditampilkan
-                menu.style.visibility = 'hidden';
-                menu.style.display = 'block';
-                const mW = menu.offsetWidth;
-                const mH = menu.offsetHeight;
-                menu.style.display = '';
-                menu.style.visibility = '';
-
-                const r = btn.getBoundingClientRect();
-                let top = r.bottom + 4;
-                let left = r.right - mW;
-
-                // Jangan keluar dari tepi layar
-                if (left < 8) left = 8;
-                if (left + mW > window.innerWidth - 8) left = window.innerWidth - mW - 8;
-                if (top + mH > window.innerHeight - 8) top = r.top - mH - 4;
-                if (top < 8) top = 8;
-
-                menu.style.top = top + 'px';
-                menu.style.left = left + 'px';
-                menu.classList.add('show');
-            }
-            return;
-        }
-
-        // 2. Klik item "Proses (ACC/Tolak)" di dalam menu
-        const btnProses = e.target.closest('.btnProses');
-        if (btnProses) {
-            closeAllDropdowns();
-            document.getElementById('id_pengajuan').value = btnProses.dataset.id;
-            document.getElementById('infoPengajuan').innerHTML =
-                `<strong>Karyawan:</strong> ${btnProses.dataset.nama}<br>
-             <strong>Nominal:</strong> Rp ${parseInt(btnProses.dataset.nominal).toLocaleString('id-ID')}`;
-            document.getElementById('status_pinjaman').value = '';
-            document.getElementById('keterangan_admin').value = '';
-            document.getElementById('formAcc').style.display = 'none';
-            new bootstrap.Modal(document.getElementById('modalProsesPengajuan')).show();
-            return;
-        }
-
-        // 3. Klik di luar menu → tutup semua
-        if (!e.target.closest('#loan-dropdown-portal .custom-dropdown-menu')) {
-            closeAllDropdowns();
-        }
-    });
-
-    // Tutup saat scroll (capture phase agar menangkap scroll di dalam tabel juga)
-    window.addEventListener('scroll', closeAllDropdowns, true);
-
-    // ============================================================
-    // FUNGSI: Render baris tabel + inject menu ke portal
+    // FUNGSI: Render baris tabel
     // ============================================================
     function renderTable(data) {
         const tbody = document.getElementById('tbodyPengajuan');
@@ -516,22 +342,19 @@
         }
 
         tbody.innerHTML = '';
-        clearDropdownPortal(); // <-- Bersihkan menu lama di portal
+        document.getElementById('checkAllPinjaman').checked = false;
 
         const filterSite = document.getElementById('filterSite').value;
         const filterJabatan = document.getElementById('filterJabatan').value;
         const filterBank = document.getElementById('filterBank').value;
-        const filterStatus = document.getElementById('filterStatus').value; // Tambahan
+        const filterStatus = document.getElementById('filterStatus').value;
 
         const filteredData = data.filter(row => {
             const siteMatch = !filterSite || row.site === filterSite;
             const jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-            const statusMatch = !filterStatus || row.status_pinjaman === filterStatus; // Tambahan
+            const statusMatch = !filterStatus || row.status_pinjaman === filterStatus;
             let bankMatch = true;
-            if (filterBank) {
-                bankMatch = normalizeBankName(row.nama_bank) === filterBank;
-            }
-            // Tambahkan statusMatch ke return
+            if (filterBank) bankMatch = normalizeBankName(row.nama_bank) === filterBank;
             return siteMatch && jabatanMatch && bankMatch && statusMatch;
         });
 
@@ -539,7 +362,7 @@
 
         if (filteredData.length === 0) {
             tbody.innerHTML = `
-            <tr><td colspan="11">
+            <tr><td colspan="12">
                 <div class="empty-state">
                     <div class="empty-state-icon">📋</div>
                     <div class="empty-state-text">Tidak ada data pengajuan yang sesuai dengan filter</div>
@@ -549,101 +372,58 @@
         }
 
         let rowsHtml = '';
-        let menusHtml = '';
 
         filteredData.forEach((row, index) => {
-            // Badge status
             let statusBadge = '';
-            if (row.status_pinjaman === 'pending') statusBadge = '<span class="badge bg-warning text-dark">Pending</span>';
+            if (row.status_pinjaman === 'pending') statusBadge = '<span class="badge bg-warning">Pending</span>';
             else if (row.status_pinjaman === 'disetujui') statusBadge = '<span class="badge bg-success">Disetujui</span>';
             else if (row.status_pinjaman === 'ditolak') statusBadge = '<span class="badge bg-danger">Ditolak</span>';
 
-            // Foto
             const baseUrl = 'http://api-hris.triputrajayasultra.com/';
-            const fotoWajah = row.foto_wajah ? `<a href='${baseUrl}${row.foto_wajah}'    target='_blank' class='btn btn-xs btn-outline-info    mb-1 py-1 px-2' style='font-size:0.75rem'>Cek Wajah</a><br>` : '';
-            const fotoId = row.foto_id_card ? `<a href='${baseUrl}${row.foto_id_card}'  target='_blank' class='btn btn-xs btn-outline-primary       py-1 px-2' style='font-size:0.75rem'>Cek ID</a>` : '';
+            const fotoWajah = row.foto_wajah ? `<a href='${baseUrl}${row.foto_wajah}' target='_blank' class='btn btn-xs btn-outline-info mb-1 py-1 px-2' style='font-size:0.75rem'>Cek Wajah</a><br>` : '';
+            const fotoId = row.foto_id_card ? `<a href='${baseUrl}${row.foto_id_card}' target='_blank' class='btn btn-xs btn-outline-primary py-1 px-2' style='font-size:0.75rem'>Cek ID</a>` : '';
 
-            // Info rekening
             let infoRekening = `<span class='text-muted'><small>Belum disetting</small></span>`;
             if (row.nama_bank && row.no_rek) {
                 infoRekening = `<b>${row.nama_bank}</b><br>${row.no_rek}<br><small class='text-muted'>a.n ${row.atas_nama_rek || '-'}</small>`;
             }
 
-            // Tombol aksi (hanya tombol, menu ada di portal)
-            const btnAksi = `
-            <button type='button'
-                class='btn btn-sm btn-outline-secondary rounded-pill btnDropdownAksi'
-                data-index='${index}'
-                title='Aksi'>
-                <i class='fa fa-ellipsis-v'></i>
-            </button>`;
+            const checkbox = row.status_pinjaman === 'pending' ?
+                `<input type="checkbox" class="chk-pinjaman" value="${row.id_pengajuan_pinjaman}">` :
+                `<input type="checkbox" disabled>`;
 
-            // Menu dropdown untuk portal
-            let menuHtml = `
-            <div class='custom-dropdown-menu' id='dropdownMenu_${index}'>
-                <div class='dropdown-header'>AKSI PENGAJUAN</div>`;
+            let btnAcc = '';
+            let btnTolak = '';
+            let btnPending = '';
+            let btnHapus = `<button class="btn btn-danger btn-action btnHapusPinjaman" data-id="${row.id_pengajuan_pinjaman}">Hapus</button>`;
 
-            if (row.status_pinjaman !== 'disetujui') {
-                menuHtml += `
-                <a class='dropdown-item d-flex align-items-center btnProses'
-                    href='javascript:void(0)'
-                    data-id='${row.id_pengajuan_pinjaman}'
-                    data-nama='${(row.nama_lengkap || '').replace(/'/g, "&#39;")}'
-                    data-nominal='${row.nominal_pinjaman}'>
-                    <i class='fa fa-check-square me-2 text-primary'></i> Proses (ACC/Tolak + Ket)
-                </a>`;
+            if (row.status_pinjaman === 'pending') {
+                btnAcc = `<button class="btn btn-success btn-action btnProsesAcc" data-id="${row.id_pengajuan_pinjaman}" data-nama="${(row.nama_lengkap || '').replace(/'/g, "&#39;")}" data-nominal="${row.nominal_pinjaman}">ACC</button>`;
+                btnTolak = `<button class="btn btn-warning btn-action text-white btnProsesTolak" data-id="${row.id_pengajuan_pinjaman}" data-nama="${(row.nama_lengkap || '').replace(/'/g, "&#39;")}" data-nominal="${row.nominal_pinjaman}">Tolak</button>`;
+            } else {
+                btnPending = `<button class="btn btn-secondary btn-action text-white btnSetPending" data-id="${row.id_pengajuan_pinjaman}" title="Kembalikan ke Pending">Batal Proses</button>`;
             }
 
-            if (row.status_pinjaman !== 'pending') {
-                menuHtml += `
-                <a class='dropdown-item d-flex align-items-center' href='javascript:void(0)'
-                    onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "pending"); closeAllDropdowns();'>
-                    <i class='fa fa-clock me-2 text-warning'></i> Set Pending
-                </a>`;
-            }
+            const aksiButtons = `<div class="d-flex flex-wrap gap-1 justify-content-center">${btnAcc}${btnTolak}${btnPending}${btnHapus}</div>`;
 
-            if (row.status_pinjaman !== 'ditolak') {
-                menuHtml += `
-                <a class='dropdown-item d-flex align-items-center' href='javascript:void(0)'
-                    onclick='updateStatusPengajuan(${row.id_pengajuan_pinjaman}, "ditolak"); closeAllDropdowns();'>
-                    <i class='fa fa-times-circle me-2 text-danger'></i> Set Ditolak Cepat
-                </a>`;
-            }
-
-            menuHtml += `
-                <div class='dropdown-divider'></div>
-                <a class='dropdown-item d-flex align-items-center text-danger' href='javascript:void(0)'
-                    onclick='deletePengajuan(${row.id_pengajuan_pinjaman}); closeAllDropdowns();'>
-                    <i class='fa fa-trash me-2'></i> Hapus Permanen
-                </a>
-            </div>`;
-
-            menusHtml += menuHtml;
-
-            // Format tanggal dan jam
             const dateObj = new Date(row.tgl_pengajuan);
             let formattedDate = row.tgl_pengajuan;
-
             if (!isNaN(dateObj)) {
-                // Ambil format tanggal
                 const tanggal = dateObj.toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric'
                 });
-
-                // Ambil format jam (HH:MM)
                 const jam = dateObj.toLocaleTimeString('id-ID', {
                     hour: '2-digit',
                     minute: '2-digit'
-                }).replace(/\./g, ':'); // JS id-ID kadang memakai titik (misal 14.30), kita standarkan jadi 14:30
-
-                // Gabungkan dengan HTML agar jam tampil rapi di bawah tanggal
+                }).replace(/\./g, ':');
                 formattedDate = `${tanggal}<br><small class="text-muted fw-bold"><i class="fa fa-clock me-1"></i>${jam}</small>`;
             }
 
             rowsHtml += `
             <tr>
+                <td class='text-center'>${checkbox}</td>
                 <td class='text-center fw-bold'>${index + 1}</td>
                 <td>${row.nik_karyawan || ''}<br><b>${row.nama_lengkap || ''}</b></td>
                 <td><span class="badge bg-primary">${row.jabatan || ''}</span></td>
@@ -654,22 +434,22 @@
                 <td>${fotoWajah}${fotoId}</td>
                 <td>${infoRekening}</td>
                 <td class='text-center'>${statusBadge}</td>
-                <td class='text-center'>${btnAksi}</td>
+                <td class='text-center'>${aksiButtons}</td>
             </tr>`;
         });
 
         tbody.innerHTML = rowsHtml;
 
-        // Inject semua menu ke portal (bukan ke tabel)
-        dropdownPortal.innerHTML = menusHtml;
-
-        // Init DataTables
         $('#loanTable').DataTable({
             scrollX: true,
             autoWidth: false,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
+            columnDefs: [{
+                orderable: false,
+                targets: 0
+            }],
             language: {
                 lengthMenu: 'Tampilkan _MENU_ data',
                 search: 'Cari Cepat:',
@@ -686,71 +466,121 @@
     }
 
     // ============================================================
-    // FUNGSI: Filter helper
+    // FUNGSI: Helper Buka Modal Satuan
     // ============================================================
-    function normalizeBankName(bankName) {
-        if (!bankName) return 'BELUM_PUNYA';
-        const bank = bankName.toUpperCase().trim();
-        if (bank === 'BELUM PUNYA REKENING' || bank === 'BELUM_PUNYA' || bank === '') return 'BELUM_PUNYA';
-        if (bank.includes('MANDIRI')) return 'MANDIRI';
-        if (bank.includes('BRI')) return 'BRI';
-        if (bank.includes('BNI')) return 'BNI';
-        if (bank.includes('BCA')) return 'BCA';
-        return 'LAINNYA';
-    }
+    function openProsesModal(btn, status) {
+        document.getElementById('id_pengajuan').value = btn.dataset.id;
+        document.getElementById('infoPengajuan').innerHTML =
+            `<strong>Karyawan:</strong> ${btn.dataset.nama}<br>
+             <strong>Nominal:</strong> Rp ${parseInt(btn.dataset.nominal).toLocaleString('id-ID')}`;
 
-    function populateFilters(data) {
-        const sites = [...new Set(data.map(r => r.site).filter(Boolean))].sort();
-        const siteEl = document.getElementById('filterSite');
-        siteEl.innerHTML = '<option value="">Semua Site</option>';
-        sites.forEach(s => siteEl.innerHTML += `<option value="${s}">${s}</option>`);
+        document.getElementById('status_pinjaman').value = status;
 
-        const jabatans = [...new Set(data.map(r => r.jabatan).filter(j => j && j !== '-'))].sort();
-        const jabEl = document.getElementById('filterJabatan');
-        jabEl.innerHTML = '<option value="">Semua Jabatan</option>';
-        jabatans.forEach(j => jabEl.innerHTML += `<option value="${j}">${j}</option>`);
-    }
+        const modalHeader = document.getElementById('modalHeader');
+        const modalTitle = document.getElementById('modalTitle');
+        const formAcc = document.getElementById('formAcc');
+        const ketAdmin = document.getElementById('keterangan_admin');
+        const tglBayarInput = document.querySelector('input[name="tgl_bayar_pinjaman"]');
+        const starKetAdmin = document.getElementById('starKetAdmin');
+        const btnSubmitModal = document.getElementById('btnSubmitModal');
 
-    // ============================================================
-    // FUNGSI: Load data dari server
-    // ============================================================
-    function loadPengajuan() {
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
+        // Reset form agar bersih setiap modal dibuka
+        ketAdmin.value = '';
+        tglBayarInput.value = '';
 
-        if ($.fn.DataTable.isDataTable('#loanTable')) {
-            $('#loanTable').DataTable().destroy();
+        if (status === 'disetujui') {
+            modalHeader.className = "modal-header bg-success text-white";
+            modalTitle.innerHTML = '<i class="fa fa-check-circle"></i> Setujui Pengajuan Pinjaman';
+            formAcc.style.display = 'block';
+            tglBayarInput.required = true;
+            ketAdmin.required = false;
+            starKetAdmin.style.display = 'none';
+            btnSubmitModal.className = "btn btn-success";
+            btnSubmitModal.innerText = "ACC Pinjaman Sekarang";
+        } else if (status === 'ditolak') {
+            modalHeader.className = "modal-header bg-warning text-dark";
+            modalTitle.innerHTML = '<i class="fa fa-times-circle"></i> Tolak Pengajuan Pinjaman';
+            formAcc.style.display = 'none';
+            tglBayarInput.required = false;
+            ketAdmin.required = true;
+            starKetAdmin.style.display = 'inline';
+            btnSubmitModal.className = "btn btn-warning text-white";
+            btnSubmitModal.innerText = "Tolak Pinjaman";
         }
 
-        const tbody = document.getElementById('tbodyPengajuan');
-        tbody.innerHTML = `
-        <tr><td colspan="11" class="text-center py-4">
-            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-            <span class="text-muted fw-bold ms-2">Memperbarui data tabel pengajuan...</span>
-        </td></tr>`;
-
-        $.ajax({
-            url: 'app/controller/get-data/get-pengajuan-pinjaman.php',
-            type: 'POST',
-            data: {
-                startDate,
-                endDate
-            },
-            dataType: 'json',
-            success: function(res) {
-                if (res.status !== 'success') {
-                    tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger fw-bold">Gagal memuat data: ${res.message}</td></tr>`;
-                    return;
-                }
-                allLoanData = res.data;
-                populateFilters(allLoanData);
-                renderTable(allLoanData);
-            },
-            error: function() {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger fw-bold">Koneksi ke server terputus.</td></tr>`;
-            }
-        });
+        new bootstrap.Modal(document.getElementById('modalProsesPengajuan')).show();
     }
+
+    // ============================================================
+    // FUNGSI: Buka Modal BATCH ACC
+    // ============================================================
+    document.getElementById("btnOpenBatchModal").addEventListener("click", () => {
+        let table = $("#loanTable").DataTable();
+        selectedBatchIds = []; // Reset Array Global
+
+        table.$(".chk-pinjaman:checked").each(function() {
+            selectedBatchIds.push($(this).val());
+        });
+
+        if (selectedBatchIds.length === 0) {
+            notify("Pilih minimal satu pengajuan pinjaman (berstatus Pending) untuk di-ACC massal!", "error");
+            return;
+        }
+
+        // Tampilkan info jumlah di modal
+        document.getElementById('batchCountInfo').innerText = selectedBatchIds.length;
+
+        // Reset & Set Default Tanggal Hari Ini
+        let d = new Date();
+        let defaultDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        document.getElementById('tgl_bayar_pinjaman_batch').value = defaultDate;
+
+        new bootstrap.Modal(document.getElementById('modalBatchAcc')).show();
+    });
+
+    // ============================================================
+    // FUNGSI: Eksekusi Submit Form BATCH ACC
+    // ============================================================
+    document.getElementById("formBatchAcc").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        let tglBayar = document.getElementById('tgl_bayar_pinjaman_batch').value;
+        let fd = new FormData();
+        fd.append("action", "acc_batch");
+        fd.append("tgl_bayar_pinjaman", tglBayar);
+
+        selectedBatchIds.forEach(id => fd.append("id_pengajuan[]", id));
+
+        // Animasi loading pada tombol
+        let btnSubmit = document.getElementById('btnSubmitBatch');
+        let originalText = btnSubmit.innerHTML;
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sedang Memproses...';
+
+        fetch("app/controller/act-pengajuan-pinjaman.php", {
+                method: "POST",
+                body: fd
+            })
+            .then(res => res.json())
+            .then(res => {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = originalText;
+
+                if (res.status === "success") {
+                    notify(res.msg, "success"); // Notifikasi ala menu karier
+                    document.getElementById("checkAllPinjaman").checked = false;
+                    bootstrap.Modal.getInstance(document.getElementById('modalBatchAcc')).hide();
+                    loadPengajuan();
+                } else {
+                    notify(res.msg, "error");
+                }
+            })
+            .catch(err => {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = originalText;
+                notify("Terjadi kesalahan sistem saat memproses.", "error");
+            });
+    });
 
     // ============================================================
     // FUNGSI: Export Excel
@@ -759,20 +589,19 @@
         const filterSite = document.getElementById('filterSite').value;
         const filterJabatan = document.getElementById('filterJabatan').value;
         const filterBank = document.getElementById('filterBank').value;
-        const filterStatus = document.getElementById('filterStatus').value; // Tambahan
+        const filterStatus = document.getElementById('filterStatus').value;
 
         const filteredData = allLoanData.filter(row => {
             const siteMatch = !filterSite || row.site === filterSite;
             const jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-            const statusMatch = !filterStatus || row.status_pinjaman === filterStatus; // Tambahan
+            const statusMatch = !filterStatus || row.status_pinjaman === filterStatus;
             let bankMatch = true;
             if (filterBank) bankMatch = normalizeBankName(row.nama_bank) === filterBank;
-
-            return siteMatch && jabatanMatch && bankMatch && statusMatch; // Tambahan
+            return siteMatch && jabatanMatch && bankMatch && statusMatch;
         });
 
         if (filteredData.length === 0) {
-            alert('Tidak ada data pengajuan pinjaman untuk di-export!');
+            notify('Tidak ada data pengajuan pinjaman untuk di-export!', 'warning');
             return;
         }
 
@@ -801,11 +630,11 @@
     }
 
     // ============================================================
-    // FUNGSI: Update status & hapus
+    // FUNGSI: Update Status Cepat & Hapus
     // ============================================================
     window.updateStatusPengajuan = async function(id, newStatus) {
         const confirmText = newStatus === 'pending' ?
-            'Kembalikan pengajuan ini ke status Pending? (Data akan ditarik dari Master Pinjaman jika sebelumnya sudah di-ACC)' :
+            'Batalkan proses ini dan kembalikan ke status Pending?\n(Data akan ditarik dari Master Pinjaman)' :
             'Tolak pengajuan pinjaman ini secara langsung?';
 
         if (!confirm(confirmText)) return;
@@ -813,95 +642,171 @@
         try {
             const res = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=update-status&id=${id}&status=${newStatus}`);
             const result = await res.json();
-            if (result.status === 'success') loadPengajuan();
-            else alert('Gagal: ' + result.msg);
+            if (result.status === 'success') {
+                notify(result.msg, "success");
+                loadPengajuan();
+            } else {
+                notify(result.msg, "error");
+            }
         } catch (e) {
-            alert('Terjadi kesalahan sistem.');
+            notify('Terjadi kesalahan sistem saat update status.', 'error');
         }
     };
 
     window.deletePengajuan = async function(id) {
         if (!confirm('Hapus permanen data pengajuan pinjaman ini beserta buktinya?')) return;
-
         try {
             const res = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=delete&id=${id}`);
             const result = await res.json();
-            if (result.status === 'success') loadPengajuan();
-            else alert('Gagal menghapus: ' + result.msg);
+            if (result.status === 'success') {
+                notify(result.msg, "success");
+                loadPengajuan();
+            } else {
+                notify(result.msg, "error");
+            }
         } catch (e) {
-            alert('Terjadi kesalahan saat menghapus data.');
+            notify('Terjadi kesalahan sistem saat menghapus data.', 'error');
         }
     };
 
     // ============================================================
-    // INIT
+    // EVENT LISTENER: Tombol Aksi & Checkbox All
     // ============================================================
-    function setDefaultDateRange() {
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btnProsesAcc')) {
+            openProsesModal(e.target.closest('.btnProsesAcc'), 'disetujui');
+        }
+        if (e.target.closest('.btnProsesTolak')) {
+            openProsesModal(e.target.closest('.btnProsesTolak'), 'ditolak');
+        }
+        if (e.target.closest('.btnSetPending')) {
+            updateStatusPengajuan(e.target.closest('.btnSetPending').dataset.id, 'pending');
+        }
+        if (e.target.closest('.btnHapusPinjaman')) {
+            deletePengajuan(e.target.closest('.btnHapusPinjaman').dataset.id);
+        }
+    });
+
+    document.addEventListener("change", e => {
+        if (e.target.id === "checkAllPinjaman") {
+            let isChecked = e.target.checked;
+            let table = $("#loanTable").DataTable();
+            table.$(".chk-pinjaman").prop("checked", isChecked);
+        }
+    });
+
+    // ============================================================
+    // FUNGSI: Form Submit (Satuan)
+    // ============================================================
+    document.getElementById('formProsesPengajuan').addEventListener('submit', e => {
+        e.preventDefault();
+
+        let btnSubmit = document.getElementById('btnSubmitModal');
+        let originalText = btnSubmit.innerHTML;
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menyimpan...';
+
+        fetch('app/controller/act-pengajuan-pinjaman.php', {
+                method: 'POST',
+                body: new FormData(e.target)
+            })
+            .then(r => r.json())
+            .then(res => {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = originalText;
+
+                if (res.status === 'success') {
+                    notify(res.msg, "success");
+                    bootstrap.Modal.getInstance(document.getElementById('modalProsesPengajuan')).hide();
+                    loadPengajuan();
+                } else {
+                    notify(res.msg, "error");
+                }
+            })
+            .catch(err => {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = originalText;
+                notify("Koneksi bermasalah. Gagal menyimpan.", "error");
+            });
+    });
+
+    // ============================================================
+    // FUNGSI: Filter Helper & Load API
+    // ============================================================
+    function normalizeBankName(bankName) {
+        if (!bankName) return 'BELUM_PUNYA';
+        const bank = bankName.toUpperCase().trim();
+        if (bank === 'BELUM PUNYA REKENING' || bank === 'BELUM_PUNYA' || bank === '') return 'BELUM_PUNYA';
+        if (bank.includes('MANDIRI')) return 'MANDIRI';
+        if (bank.includes('BRI')) return 'BRI';
+        if (bank.includes('BNI')) return 'BNI';
+        if (bank.includes('BCA')) return 'BCA';
+        return 'LAINNYA';
+    }
+
+    function populateFilters(data) {
+        const sites = [...new Set(data.map(r => r.site).filter(Boolean))].sort();
+        const siteEl = document.getElementById('filterSite');
+        siteEl.innerHTML = '<option value="">Semua Site</option>';
+        sites.forEach(s => siteEl.innerHTML += `<option value="${s}">${s}</option>`);
+
+        const jabatans = [...new Set(data.map(r => r.jabatan).filter(j => j && j !== '-'))].sort();
+        const jabEl = document.getElementById('filterJabatan');
+        jabEl.innerHTML = '<option value="">Semua Jabatan</option>';
+        jabatans.forEach(j => jabEl.innerHTML += `<option value="${j}">${j}</option>`);
+    }
+
+    function loadPengajuan() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        const tbody = document.getElementById('tbodyPengajuan');
+        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>`;
+
+        $.ajax({
+            url: 'app/controller/get-data/get-pengajuan-pinjaman.php',
+            type: 'POST',
+            data: {
+                startDate,
+                endDate
+            },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status === 'success') {
+                    allLoanData = res.data;
+                    populateFilters(allLoanData);
+                    renderTable(allLoanData);
+                }
+            }
+        });
+    }
+
+    // ============================================================
+    // INIT DOM
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
         const year = today.getFullYear();
         const month = today.getMonth();
-        let prevMonth = month - 1;
-        let prevYear = year;
+        let prevMonth = month - 1,
+            prevYear = year;
         if (prevMonth < 0) {
             prevMonth = 11;
             prevYear = year - 1;
         }
 
-        const f = (y, m, d) =>
-            `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
+        const f = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         document.getElementById('startDate').value = f(prevYear, prevMonth, 21);
         document.getElementById('endDate').value = f(year, month, 20);
-    }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        setDefaultDateRange();
         loadPengajuan();
 
         document.getElementById('startDate').addEventListener('change', loadPengajuan);
         document.getElementById('endDate').addEventListener('change', loadPengajuan);
-
-        document.getElementById('filterSite').addEventListener('change', () => renderTable(allLoanData));
-        document.getElementById('filterJabatan').addEventListener('change', () => renderTable(allLoanData));
-        document.getElementById('filterBank').addEventListener('change', () => renderTable(allLoanData));
-        document.getElementById('filterStatus').addEventListener('change', () => renderTable(allLoanData));
+        ['filterSite', 'filterJabatan', 'filterBank', 'filterStatus'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => renderTable(allLoanData));
+        });
 
         document.getElementById('btnExportExcel').addEventListener('click', exportExcel);
-
-        // Toggle form tanggal bayar di modal
-        document.getElementById('status_pinjaman').addEventListener('change', function() {
-            const formAcc = document.getElementById('formAcc');
-            const ketAdmin = document.getElementById('keterangan_admin');
-            if (this.value === 'disetujui') {
-                formAcc.style.display = 'block';
-                ketAdmin.required = false;
-            } else if (this.value === 'ditolak') {
-                formAcc.style.display = 'none';
-                ketAdmin.required = true;
-            } else {
-                formAcc.style.display = 'none';
-                ketAdmin.required = false;
-            }
-        });
-
-        // Submit modal proses
-        document.getElementById('formProsesPengajuan').addEventListener('submit', e => {
-            e.preventDefault();
-            const fd = new FormData(e.target);
-            fetch('app/controller/act-pengajuan-pinjaman.php', {
-                    method: 'POST',
-                    body: fd
-                })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.status === 'success') {
-                        alert(res.msg);
-                        bootstrap.Modal.getInstance(document.getElementById('modalProsesPengajuan')).hide();
-                        loadPengajuan();
-                    } else {
-                        alert('Gagal: ' + res.msg);
-                    }
-                });
-        });
     });
 </script>

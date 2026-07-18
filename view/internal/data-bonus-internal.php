@@ -1,3 +1,29 @@
+<style>
+    /* Pastikan ini ada di dalam tag <style> kamu */
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 1px solid #d9dee3 !important;
+        height: 38px !important;
+        /* Menyamakan tinggi dengan input form-control */
+        padding: 0.375rem 0.75rem !important;
+        /* Menyamakan padding */
+        display: flex !important;
+        align-items: center;
+
+        /* KODE BARU: MENGATUR KELENGKUNGAN SUDUT (BORDER RADIUS) */
+        border-radius: 0.375rem !important;
+    }
+
+    /* Memastikan Select2 mengisi lebar penuh */
+    .select2-container--bootstrap-5 {
+        width: 100% !important;
+    }
+
+    /* Memperbaiki posisi arrow dropdown agar tidak berantakan */
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        padding-left: 0 !important;
+        margin-top: -2px;
+    }
+</style>
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
         <h4 class="fw-bold mb-3"><span class="text-muted fw-light">Sistem Keuangan /</span> Kelola Bonus Internal</h4>
@@ -20,7 +46,7 @@
                             <button type="submit" class="btn btn-success">
                                 <i class="fas fa-upload"></i> Import Bonus
                             </button>
-                            <a href="assets/template-csv/Format_Bonus_Internal.xlsx" class="btn btn-outline-secondary ms-2" download>
+                            <a href="assets/template-csv/Format_Impor_Bonus_Internal.xlsx" class="btn btn-outline-secondary ms-2" download>
                                 <i class="fas fa-download"></i> Download Template
                             </a>
                         </div>
@@ -35,8 +61,10 @@
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalBonus" onclick="tambahBonus()"><i class="fa fa-plus"></i> Tambah Bonus Manual</button>
                 <button class="btn btn-info btn-sm" onclick="exportBonus()"><i class="fa fa-file-export"></i> Export Log Bonus</button>
             </div>
-            <div class="d-flex align-items-center">
-                <input type="month" id="filterBulan" class="form-control form-control-sm" data-bs-toggle="tooltip" title="Filter Berdasarkan Bulan">
+            <div class="d-flex align-items-center gap-2">
+                <input type="date" id="tglAwal" class="form-control form-control-sm" title="Mulai Tanggal">
+                <span>-</span>
+                <input type="date" id="tglAkhir" class="form-control form-control-sm" title="Sampai Tanggal">
             </div>
         </div>
 
@@ -75,7 +103,7 @@
             <div class="modal-body row g-3">
                 <div class="col-12">
                     <label>Karyawan Internal</label>
-                    <select name="id_karyawan_internal" id="b_karyawan" class="form-select select2-init" required>
+                    <select name="id_karyawan_internal" id="b_karyawan" class="select2-init" required>
                         <option value="">-- Pilih --</option>
                         <?php
                         $k = $koneksi->query("SELECT id_karyawan_internal, nik_karyawan_internal, nama_karyawan FROM tb_karyawan_internal WHERE status_karyawan='Aktif'");
@@ -105,6 +133,30 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        // 1. SET DEFAULT FILTER (Misal: Tanggal 6 bulan lalu s/d Tanggal 5 bulan ini)
+        let today = new Date();
+        let y = today.getFullYear();
+        let m = today.getMonth(); // Bulan ini (0-11)
+        let d = today.getDate();
+
+        // Format YYYY-MM-DD
+        let formatTgl = (year, month, day) => {
+            let dateObj = new Date(year, month, day);
+            return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
+        };
+
+        // Logika Cut-Off Dinamis:
+        // Jika tanggal hari ini lebih dari tanggal 5, masuk periode baru (Tgl 6 bulan ini s/d Tgl 5 bulan depan)
+        // Jika belum lewat tanggal 5, masih periode lama (Tgl 6 bulan lalu s/d Tgl 5 bulan ini)
+        if (d > 5) {
+            $("#tglAwal").val(formatTgl(y, m, 6)); 
+            $("#tglAkhir").val(formatTgl(y, m + 1, 5)); 
+        } else {
+            $("#tglAwal").val(formatTgl(y, m - 1, 6)); 
+            $("#tglAkhir").val(formatTgl(y, m, 5)); 
+        }
+
+        // 2. INISIALISASI PLUGIN & EVENT LISTENER
         $('.select2-init').select2({
             theme: 'bootstrap-5',
             dropdownParent: $('#modalBonus'),
@@ -117,13 +169,15 @@
             }
         });
 
+        // 3. DATATABLES CONFIGURATION
         let dtBonus = $('#tableBonus').DataTable({
             ajax: {
                 url: "app/controller/get-data/get-bonus-internal.php",
                 type: "POST",
                 data: function(d) {
-                    // Kirim data filter bulan ke backend
-                    d.bulan = $("#filterBulan").val();
+                    // KIRIM TANGGAL AWAL DAN AKHIR
+                    d.tgl_awal = $("#tglAwal").val();
+                    d.tgl_akhir = $("#tglAkhir").val();
                 },
                 dataSrc: "data"
             },
@@ -158,8 +212,8 @@
             ]
         });
 
-        // Trigger reload tabel saat bulan diubah
-        $("#filterBulan").on("change", () => dtBonus.ajax.reload());
+        // 4. TRIGGER RELOAD TABEL SAAT BULAN DIUBAH
+        $("#tglAwal, #tglAkhir").on("change", () => dtBonus.ajax.reload());
 
         window.tambahBonus = function() {
             $("#formBonus")[0].reset();
@@ -180,13 +234,25 @@
 
         $(document).on("click", ".btnDelete", function() {
             if (confirm("Hapus bonus ini?")) {
-                $.post("app/controller/act-bonus-internal.php", {
-                    action: "delete",
-                    id_bonus: $(this).data("id")
-                }, function(res) {
-                    showToast(res.msg, res.status);
-                    dtBonus.ajax.reload();
-                }, "json");
+                $.ajax({
+                    url: "app/controller/act-bonus-internal.php",
+                    type: "POST",
+                    data: {
+                        action: "delete",
+                        id_bonus: $(this).data("id")
+                    },
+                    dataType: "json",
+                    success: function(res) {
+                        showToast(res.msg, res.status);
+                        if (res.status === 'success') {
+                            dtBonus.ajax.reload(null, false); // false agar tidak kembali ke halaman 1
+                        }
+                    },
+                    error: function(xhr) {
+                        showToast("Terjadi kesalahan pada server saat menghapus data", "error");
+                        console.error(xhr.responseText);
+                    }
+                });
             }
         });
 
@@ -229,10 +295,11 @@
             });
         });
 
-        // Bawa param bulan_tahun ke file export agar data yang didownload sesuai filter
+        // 5. BAWA PARAMETER BULAN SAAT EXPORT KE EXCEL
         window.exportBonus = () => {
-            let bulan_tahun = $("#filterBulan").val();
-            window.location.href = `app/controller/export/export-bonus-internal.php?bulan_tahun=${bulan_tahun}`;
+            let tgl_awal = $("#tglAwal").val();
+            let tgl_akhir = $("#tglAkhir").val();
+            window.location.href = `app/controller/export/export-bonus-internal.php?tgl_awal=${tgl_awal}&tgl_akhir=${tgl_akhir}`;
         };
     });
 </script>
