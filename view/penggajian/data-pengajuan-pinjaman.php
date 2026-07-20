@@ -201,7 +201,8 @@
                     <select id="filterStatus" class="form-select">
                         <option value="">Semua Status</option>
                         <option value="pending">Pending</option>
-                        <option value="disetujui">Disetujui</option>
+                        <option value="disetujui">Disetujui (Belum TF)</option>
+                        <option value="dicairkan">Sudah Cair / TF</option>
                         <option value="ditolak">Ditolak</option>
                     </select>
                 </div>
@@ -212,6 +213,9 @@
                     </button>
                     <button id="btnOpenBatchModal" class="btn btn-primary shadow-sm px-4">
                         <i class="fa fa-check-double me-1"></i> Batch ACC Terpilih
+                    </button>
+                    <button id="btnBatchCair" class="btn btn-info text-white shadow-sm px-4">
+                        <i class="fa fa-money-bill-wave me-1"></i> Tandai TF/Cair Terpilih
                     </button>
                     <button id="btnExportExcel" class="btn btn-success shadow-sm px-4">
                         <i class="fa fa-file-excel me-1"></i> Export ke Excel
@@ -270,13 +274,7 @@
             </div>
             <div class="modal-body">
                 <div class="alert alert-info" id="infoPengajuan"></div>
-
-                <div id="formAcc" style="display: none;">
-                    <label class="fw-bold mb-1">Tanggal Rencana Bayar <span class="text-danger">*</span></label>
-                    <input type="date" name="tgl_bayar_pinjaman" class="form-control mb-3">
-                    <small class="text-success d-block mb-3">*Jika di-ACC, data otomatis masuk ke Menu Data Pinjaman Dana.</small>
-                </div>
-
+                <!-- Tanggal Bayar Dihapus dari sini karena pindah ke tahap pencairan -->
                 <div id="formKetAdmin">
                     <label class="fw-bold mb-1">Pesan / Keterangan untuk Karyawan <span id="starKetAdmin" class="text-danger">*</span></label>
                     <textarea name="keterangan_admin" id="keterangan_admin" class="form-control mb-3" rows="3" placeholder="Masukkan pesan atau alasan penolakan..."></textarea>
@@ -291,7 +289,7 @@
 </div>
 
 <!-- ==============================================
-     MODAL BATCH ACC (BARU)
+     MODAL BATCH ACC (Tanpa Tanggal Bayar)
      ============================================== -->
 <div class="modal fade" id="modalBatchAcc" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -300,17 +298,42 @@
                 <h5 class="modal-title text-white"><i class="fa fa-check-double"></i> Batch ACC</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body text-center">
                 <div class="alert alert-info py-2">
                     Menyetujui <b id="batchCountInfo" class="fs-5">0</b> pengajuan sekaligus.
                 </div>
-                <label class="fw-bold mb-1">Tanggal Rencana Bayar <span class="text-danger">*</span></label>
-                <input type="date" name="tgl_bayar_pinjaman_batch" id="tgl_bayar_pinjaman_batch" class="form-control mb-1" required>
-                <small class="text-success d-block mb-3">*Data akan masuk ke Menu Data Pinjaman Dana.</small>
+                <p class="mb-0 text-muted small">Pengajuan yang di-ACC akan berstatus "Disetujui" dan siap untuk diexport ke Excel.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitBatch">Proses ACC Massal</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================
+     MODAL PROSES PENGCAIRAN (SATUAN & MASSAL)
+     ============================================== -->
+<div class="modal fade" id="modalProsesCair" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <form id="formProsesCair" class="modal-content">
+            <input type="hidden" name="cair_tipe" id="cair_tipe"> <!-- isinya: 'single' atau 'batch' -->
+            <input type="hidden" name="cair_id_single" id="cair_id_single">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title text-white"><i class="fa fa-money-bill-wave"></i> Proses Pencairan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning py-2 small">
+                    Data akan dipindahkan ke <b>Master Data Pinjaman</b> dan mulai memotong gaji karyawan.
+                </div>
+                <label class="fw-bold mb-1">Mulai Potong Gaji (Tgl Bayar) <span class="text-danger">*</span></label>
+                <input type="date" name="tgl_bayar_pinjaman" id="tgl_bayar_cair" class="form-control mb-1" required>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitBatch">Proses ACC Massal</button>
+                <button type="submit" class="btn btn-info text-white btn-sm" id="btnSubmitCair">Tandai Cair</button>
             </div>
         </form>
     </div>
@@ -379,7 +402,8 @@
         filteredData.forEach((row, index) => {
             let statusBadge = '';
             if (row.status_pinjaman === 'pending') statusBadge = '<span class="badge bg-warning">Pending</span>';
-            else if (row.status_pinjaman === 'disetujui') statusBadge = '<span class="badge bg-success">Disetujui</span>';
+            else if (row.status_pinjaman === 'disetujui') statusBadge = '<span class="badge bg-primary">Disetujui (Belum TF)</span>';
+            else if (row.status_pinjaman === 'dicairkan') statusBadge = '<span class="badge bg-success">Sudah Cair/TF</span>';
             else if (row.status_pinjaman === 'ditolak') statusBadge = '<span class="badge bg-danger">Ditolak</span>';
 
             const baseUrl = 'http://api-hris.triputrajayasultra.com/';
@@ -391,23 +415,36 @@
                 infoRekening = `<b>${row.nama_bank}</b><br>${row.no_rek}<br><small class='text-muted'>a.n ${row.atas_nama_rek || '-'}</small>`;
             }
 
-            const checkbox = row.status_pinjaman === 'pending' ?
-                `<input type="checkbox" class="chk-pinjaman" value="${row.id_pengajuan_pinjaman}">` :
+            const checkbox = (row.status_pinjaman === 'pending' || row.status_pinjaman === 'disetujui') ?
+                `<input type="checkbox" class="chk-pinjaman" value="${row.id_pengajuan_pinjaman}" data-status="${row.status_pinjaman}">` :
                 `<input type="checkbox" disabled>`;
 
             let btnAcc = '';
             let btnTolak = '';
             let btnPending = '';
-            let btnHapus = `<button class="btn btn-danger btn-action btnHapusPinjaman" data-id="${row.id_pengajuan_pinjaman}">Hapus</button>`;
+            let btnCair = '';
+            let btnHapus = '';
 
             if (row.status_pinjaman === 'pending') {
                 btnAcc = `<button class="btn btn-success btn-action btnProsesAcc" data-id="${row.id_pengajuan_pinjaman}" data-nama="${(row.nama_lengkap || '').replace(/'/g, "&#39;")}" data-nominal="${row.nominal_pinjaman}">ACC</button>`;
                 btnTolak = `<button class="btn btn-warning btn-action text-white btnProsesTolak" data-id="${row.id_pengajuan_pinjaman}" data-nama="${(row.nama_lengkap || '').replace(/'/g, "&#39;")}" data-nominal="${row.nominal_pinjaman}">Tolak</button>`;
-            } else {
-                btnPending = `<button class="btn btn-secondary btn-action text-white btnSetPending" data-id="${row.id_pengajuan_pinjaman}" title="Kembalikan ke Pending">Batal Proses</button>`;
+                btnHapus = `<button class="btn btn-danger btn-action btnHapusPinjaman" data-id="${row.id_pengajuan_pinjaman}">Hapus</button>`;
+            
+            } else if (row.status_pinjaman === 'disetujui') {
+                btnCair = `<button class="btn btn-info btn-action text-white btnTandaiCair" data-id="${row.id_pengajuan_pinjaman}" title="Tandai Sudah Ditransfer">Tandai TF</button>`;
+                // Batal ACC (masih aman karena uang belum keluar)
+                btnPending = `<button class="btn btn-secondary btn-action text-white btnSetPending" data-id="${row.id_pengajuan_pinjaman}" data-current="disetujui" title="Kembalikan ke Pending">Batal ACC</button>`;
+            } else if (row.status_pinjaman === 'dicairkan') {
+                // KUNCI PERMANEN: Tidak ada tombol klik apa pun di sini
+                // Mengganti tombol batal dengan badge informasi terkunci
+                btnPending = `<span class="badge bg-light text-muted border border-secondary" title="Data yang sudah cair terkunci dan tidak bisa dibatalkan sembarangan"><i class="fa fa-lock me-1"></i> Terkunci</span>`;
+            } else if (row.status_pinjaman === 'ditolak') {
+                // Batal Tolak
+                btnPending = `<button class="btn btn-secondary btn-action text-white btnSetPending" data-id="${row.id_pengajuan_pinjaman}" data-current="ditolak" title="Kembalikan ke Pending">Batal Tolak</button>`;
+                btnHapus = `<button class="btn btn-danger btn-action btnHapusPinjaman" data-id="${row.id_pengajuan_pinjaman}">Hapus</button>`;
             }
 
-            const aksiButtons = `<div class="d-flex flex-wrap gap-1 justify-content-center">${btnAcc}${btnTolak}${btnPending}${btnHapus}</div>`;
+            const aksiButtons = `<div class="d-flex flex-wrap gap-1 justify-content-center">${btnAcc}${btnTolak}${btnCair}${btnPending}${btnHapus}</div>`;
 
             const dateObj = new Date(row.tgl_pengajuan);
             let formattedDate = row.tgl_pengajuan;
@@ -471,94 +508,66 @@
     // ============================================================
     // FUNGSI: Helper Buka Modal Satuan
     // ============================================================
+    // === BUKA MODAL PROSES SATUAN (ACC/TOLAK) ===
     function openProsesModal(btn, status) {
         document.getElementById('id_pengajuan').value = btn.dataset.id;
-        document.getElementById('infoPengajuan').innerHTML =
-            `<strong>Karyawan:</strong> ${btn.dataset.nama}<br>
-             <strong>Nominal:</strong> Rp ${parseInt(btn.dataset.nominal).toLocaleString('id-ID')}`;
-
+        document.getElementById('infoPengajuan').innerHTML = `<strong>Karyawan:</strong> ${btn.dataset.nama}<br><strong>Nominal:</strong> Rp ${parseInt(btn.dataset.nominal).toLocaleString('id-ID')}`;
         document.getElementById('status_pinjaman').value = status;
 
         const modalHeader = document.getElementById('modalHeader');
         const modalTitle = document.getElementById('modalTitle');
-        const formAcc = document.getElementById('formAcc');
         const ketAdmin = document.getElementById('keterangan_admin');
-        const tglBayarInput = document.querySelector('input[name="tgl_bayar_pinjaman"]');
         const starKetAdmin = document.getElementById('starKetAdmin');
         const btnSubmitModal = document.getElementById('btnSubmitModal');
 
-        // Reset form agar bersih setiap modal dibuka
         ketAdmin.value = '';
-        tglBayarInput.value = '';
 
         if (status === 'disetujui') {
             modalHeader.className = "modal-header bg-success text-white";
             modalTitle.innerHTML = '<i class="fa fa-check-circle"></i> Setujui Pengajuan Pinjaman';
-            formAcc.style.display = 'block';
-            tglBayarInput.required = true;
             ketAdmin.required = false;
             starKetAdmin.style.display = 'none';
             btnSubmitModal.className = "btn btn-success";
-            btnSubmitModal.innerText = "ACC Pinjaman Sekarang";
+            btnSubmitModal.innerText = "ACC Pinjaman";
         } else if (status === 'ditolak') {
             modalHeader.className = "modal-header bg-warning text-dark";
             modalTitle.innerHTML = '<i class="fa fa-times-circle"></i> Tolak Pengajuan Pinjaman';
-            formAcc.style.display = 'none';
-            tglBayarInput.required = false;
             ketAdmin.required = true;
             starKetAdmin.style.display = 'inline';
             btnSubmitModal.className = "btn btn-warning text-white";
             btnSubmitModal.innerText = "Tolak Pinjaman";
         }
-
         new bootstrap.Modal(document.getElementById('modalProsesPengajuan')).show();
     }
 
-    // ============================================================
-    // FUNGSI: Buka Modal BATCH ACC
-    // ============================================================
+    // === BUKA MODAL BATCH ACC ===
     document.getElementById("btnOpenBatchModal").addEventListener("click", () => {
         let table = $("#loanTable").DataTable();
-        selectedBatchIds = []; // Reset Array Global
-
+        selectedBatchIds = [];
         table.$(".chk-pinjaman:checked").each(function() {
-            selectedBatchIds.push($(this).val());
+            if ($(this).data('status') === 'pending') {
+                selectedBatchIds.push($(this).val());
+            }
         });
 
         if (selectedBatchIds.length === 0) {
-            notify("Pilih minimal satu pengajuan pinjaman (berstatus Pending) untuk di-ACC massal!", "error");
-            return;
+            return notify("Pilih minimal satu pengajuan berstatus PENDING untuk di-ACC massal!", "error");
         }
-
-        // Tampilkan info jumlah di modal
         document.getElementById('batchCountInfo').innerText = selectedBatchIds.length;
-
-        // Reset & Set Default Tanggal Hari Ini
-        let d = new Date();
-        let defaultDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        document.getElementById('tgl_bayar_pinjaman_batch').value = defaultDate;
-
         new bootstrap.Modal(document.getElementById('modalBatchAcc')).show();
     });
 
-    // ============================================================
-    // FUNGSI: Eksekusi Submit Form BATCH ACC
-    // ============================================================
+    // === SUBMIT BATCH ACC ===
     document.getElementById("formBatchAcc").addEventListener("submit", function(e) {
         e.preventDefault();
-
-        let tglBayar = document.getElementById('tgl_bayar_pinjaman_batch').value;
         let fd = new FormData();
         fd.append("action", "acc_batch");
-        fd.append("tgl_bayar_pinjaman", tglBayar);
-
         selectedBatchIds.forEach(id => fd.append("id_pengajuan[]", id));
 
-        // Animasi loading pada tombol
         let btnSubmit = document.getElementById('btnSubmitBatch');
         let originalText = btnSubmit.innerHTML;
         btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sedang Memproses...';
+        btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
 
         fetch("app/controller/act-pengajuan-pinjaman.php", {
                 method: "POST",
@@ -568,26 +577,91 @@
             .then(res => {
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = originalText;
-
                 if (res.status === "success") {
-                    notify(res.msg, "success"); // Notifikasi ala menu karier
+                    notify(res.msg, "success");
                     document.getElementById("checkAllPinjaman").checked = false;
                     bootstrap.Modal.getInstance(document.getElementById('modalBatchAcc')).hide();
                     loadPengajuan();
-                } else {
-                    notify(res.msg, "error");
-                }
-            })
-            .catch(err => {
+                } else notify(res.msg, "error");
+            }).catch(err => {
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = originalText;
-                notify("Terjadi kesalahan sistem saat memproses.", "error");
+                notify("Terjadi kesalahan.", "error");
             });
     });
 
-    // ============================================================
+    // === BUKA MODAL TANDAI CAIR (SATUAN & BATCH) ===
+    function openModalCair(tipe, id = null) {
+        let d = new Date();
+        let defaultDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        document.getElementById('tgl_bayar_cair').value = defaultDate;
+
+        document.getElementById('cair_tipe').value = tipe;
+        if (tipe === 'single') document.getElementById('cair_id_single').value = id;
+
+        new bootstrap.Modal(document.getElementById('modalProsesCair')).show();
+    }
+
+
+    // Trigger Cair Batch (Tombol atas)
+    document.getElementById("btnBatchCair").addEventListener("click", () => {
+        let selectedIds = [];
+        let table = $("#loanTable").DataTable();
+        table.$(".chk-pinjaman:checked").each(function() {
+            if ($(this).data('status') === 'disetujui') {
+                selectedIds.push($(this).val());
+            }
+        });
+
+        if (selectedIds.length === 0) {
+            return notify("Pilih minimal satu pengajuan berstatus 'Disetujui' untuk dicairkan!", "error");
+        }
+        openModalCair('batch');
+    });
+
+    // === EKSEKUSI SUBMIT CAIR (MEMASUKKAN KE TB_PINJAMAN) ===
+    document.getElementById("formProsesCair").addEventListener("submit", function(e) {
+        e.preventDefault();
+        let tipe = document.getElementById('cair_tipe').value;
+        let tgl_bayar = document.getElementById('tgl_bayar_cair').value;
+
+        let fd = new FormData();
+        fd.append("tgl_bayar_pinjaman", tgl_bayar);
+
+        if (tipe === 'single') {
+            fd.append("action", "cair_single");
+            fd.append("id", document.getElementById('cair_id_single').value);
+        } else {
+            fd.append("action", "cair_batch");
+            let table = $("#loanTable").DataTable();
+            table.$(".chk-pinjaman:checked").each(function() {
+                if ($(this).data('status') === 'disetujui') fd.append("id_pengajuan[]", $(this).val());
+            });
+        }
+
+        let btn = document.getElementById('btnSubmitCair');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+
+        fetch("app/controller/act-pengajuan-pinjaman.php", {
+                method: "POST",
+                body: fd
+            })
+            .then(r => r.json())
+            .then(res => {
+                btn.disabled = false;
+                btn.innerHTML = 'Tandai Cair';
+                if (res.status === 'success') {
+                    notify(res.msg, "success");
+                    document.getElementById("checkAllPinjaman").checked = false;
+                    bootstrap.Modal.getInstance(document.getElementById('modalProsesCair')).hide();
+                    loadPengajuan();
+                } else notify(res.msg, "error");
+            });
+    });
+
+
     // FUNGSI: Export Excel
-    // ============================================================
     function exportExcel() {
         const filterSite = document.getElementById('filterSite').value;
         const filterJabatan = document.getElementById('filterJabatan').value;
@@ -635,10 +709,16 @@
     // ============================================================
     // FUNGSI: Update Status Cepat & Hapus
     // ============================================================
-    window.updateStatusPengajuan = async function(id, newStatus) {
-        const confirmText = newStatus === 'pending' ?
-            'Batalkan proses ini dan kembalikan ke status Pending?\n(Data akan ditarik dari Master Pinjaman)' :
-            'Tolak pengajuan pinjaman ini secara langsung?';
+    window.updateStatusPengajuan = async function(id, newStatus, currentStatus) {
+        let confirmText = 'Batalkan proses ini dan kembalikan ke status Pending?';
+
+        if (currentStatus === 'dicairkan') {
+            confirmText = 'AWAS FATAL! ⚠️\n\nData ini berstatus SUDAH CAIR (Uang sudah ditransfer ke karyawan).\nJika Anda membatalkan ini, data akan kembali ke PENDING dan HUTANG/POTONGAN GAJI KARYAWAN INI AKAN TERHAPUS DARI SISTEM.\n\nLanjutkan pembatalan pencairan?';
+        } else if (currentStatus === 'disetujui') {
+            confirmText = 'Batalkan status persetujuan (ACC) dan kembalikan ke Pending?';
+        } else if (currentStatus === 'ditolak') {
+            confirmText = 'Batalkan status penolakan dan kembalikan ke Pending?';
+        }
 
         if (!confirm(confirmText)) return;
 
@@ -683,10 +763,14 @@
             openProsesModal(e.target.closest('.btnProsesTolak'), 'ditolak');
         }
         if (e.target.closest('.btnSetPending')) {
-            updateStatusPengajuan(e.target.closest('.btnSetPending').dataset.id, 'pending');
+            const btn = e.target.closest('.btnSetPending');
+            updateStatusPengajuan(btn.dataset.id, 'pending', btn.dataset.current);
         }
         if (e.target.closest('.btnHapusPinjaman')) {
             deletePengajuan(e.target.closest('.btnHapusPinjaman').dataset.id);
+        }
+        if (e.target.closest('.btnTandaiCair')) {
+            openModalCair('single', e.target.closest('.btnTandaiCair').dataset.id);
         }
     });
 
@@ -822,7 +906,10 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Memproses...';
 
-        fetch('app/controller/act-pengajuan-pinjaman.php', { method: 'POST', body: fd })
+        fetch('app/controller/act-pengajuan-pinjaman.php', {
+                method: 'POST',
+                body: fd
+            })
             .then(r => r.json())
             .then(res => {
                 btn.disabled = false;
@@ -841,7 +928,7 @@
             });
     });
 
-    
+
     // INIT DOM
     document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();

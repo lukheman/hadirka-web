@@ -18,7 +18,7 @@ elseif ($action == 'toggle-akses') {
     $nilai = $_POST['nilai'] ?? '0';
     $stmt = $koneksi->prepare("UPDATE tb_pengaturan SET nilai = ? WHERE nama_pengaturan = 'buka_pinjaman'");
     $stmt->bind_param("s", $nilai);
-    
+
     if ($stmt->execute()) {
         $msg = $nilai == '1' ? 'Akses pengajuan pinjaman berhasil DIBUKA.' : 'Akses pengajuan pinjaman berhasil DITUTUP.';
         echo json_encode(['status' => 'success', 'msg' => $msg]);
@@ -31,19 +31,13 @@ elseif ($action == 'toggle-akses') {
 
 // --- PROSES SATUAN (ACC / TOLAK DARI MODAL) ---
 if ($action == 'proses') {
-    $id_pengajuan = (int)($_POST['id_pengajuan'] ?? 0); // Keamanan: Paksa jadi integer
+    $id_pengajuan = (int)($_POST['id_pengajuan'] ?? 0);
     $status = $_POST['status_pinjaman'] ?? '';
     $keterangan_admin = $_POST['keterangan_admin'] ?? '';
-    
-    $tgl_bayar = !empty($_POST['tgl_bayar_pinjaman']) ? $_POST['tgl_bayar_pinjaman'] : date('Y-m-d');
 
     if ($status == 'disetujui') {
-        $pesan_otomatis = "Pinjaman akan diproses pada hari sabtu.";
-        if (empty(trim($keterangan_admin))) {
-            $keterangan_admin = $pesan_otomatis;
-        } else {
-            $keterangan_admin = trim($keterangan_admin) . "\n\nCatatan Sistem: " . $pesan_otomatis;
-        }
+        $pesan_otomatis = "Pengajuan disetujui dan masuk daftar antrean transfer/pencairan.";
+        $keterangan_admin = empty(trim($keterangan_admin)) ? $pesan_otomatis : trim($keterangan_admin) . "\n\nCatatan Sistem: " . $pesan_otomatis;
     }
 
     if (!$id_pengajuan || !$status) {
@@ -51,60 +45,20 @@ if ($action == 'proses') {
         exit;
     }
 
-    $stmt = $koneksi->prepare("SELECT * FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = ?");
-    $stmt->bind_param("i", $id_pengajuan);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $data = $res->fetch_assoc();
-    $stmt->close();
+    $stmtUpdate = $koneksi->prepare("UPDATE tb_pengajuan_pinjaman SET status_pinjaman = ?, keterangan_admin = ? WHERE id_pengajuan_pinjaman = ?");
+    $stmtUpdate->bind_param("ssi", $status, $keterangan_admin, $id_pengajuan);
 
-    if (!$data) {
-        echo json_encode(['status' => 'error', 'msg' => 'Data pengajuan tidak ditemukan']);
-        exit;
-    }
-
-    $koneksi->begin_transaction();
-    try {
-        $stmtUpdate = $koneksi->prepare("UPDATE tb_pengajuan_pinjaman SET status_pinjaman = ?, keterangan_admin = ? WHERE id_pengajuan_pinjaman = ?");
-        $stmtUpdate->bind_param("ssi", $status, $keterangan_admin, $id_pengajuan);
-        $stmtUpdate->execute();
-        $stmtUpdate->close();
-
-        $id_karyawan = $data['id_karyawan'];
-        $tgl_pinjaman = date('Y-m-d', strtotime($data['tgl_pengajuan']));
-        $nominal = $data['nominal_pinjaman'];
-        $alasan = "Peminjaman Dana";
-
-        if ($status == 'disetujui') {
-            $stmtDel = $koneksi->prepare("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = ?");
-            $stmtDel->bind_param("i", $id_pengajuan);
-            $stmtDel->execute();
-            $stmtDel->close();
-
-            $stmtInsert = $koneksi->prepare("INSERT INTO tb_pinjaman (id_pengajuan_pinjaman, id_karyawan, tgl_pinjaman, tgl_bayar_pinjaman, nominal_pinjaman, ket_pinjaman) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtInsert->bind_param("iissds", $id_pengajuan, $id_karyawan, $tgl_pinjaman, $tgl_bayar, $nominal, $alasan);
-            $stmtInsert->execute();
-            $stmtInsert->close();
-            
-            // Pesan khusus untuk ACC
-            $pesan_sukses = "Pengajuan berhasil disetujui.";
-            
-        } else if ($status == 'ditolak' || $status == 'pending') {
-            $stmtDel = $koneksi->prepare("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = ?");
-            $stmtDel->bind_param("i", $id_pengajuan);
-            $stmtDel->execute();
-            $stmtDel->close();
-            
-            // Pesan khusus untuk Penolakan
-            $pesan_sukses = "Pengajuan berhasil ditolak.";
+    if ($stmtUpdate->execute()) {
+        // Jika ditolak/pending, pastikan terhapus dari tb_pinjaman jika sebelumnya nyangkut
+        if ($status == 'ditolak' || $status == 'pending') {
+            $koneksi->query("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = $id_pengajuan");
         }
-
-        $koneksi->commit();
-        echo json_encode(['status' => 'success', 'msg' => $pesan_sukses]);
-    } catch (Exception $e) {
-        $koneksi->rollback();
-        echo json_encode(['status' => 'error', 'msg' => 'Terjadi kesalahan sistem: ' . $e->getMessage()]);
+        $pesan = $status == 'disetujui' ? "Pengajuan berhasil disetujui (Menunggu TF)." : "Pengajuan berhasil ditolak.";
+        echo json_encode(['status' => 'success', 'msg' => $pesan]);
+    } else {
+        echo json_encode(['status' => 'error', 'msg' => 'Gagal mengubah status.']);
     }
+    $stmtUpdate->close();
     exit;
 }
 
@@ -142,9 +96,6 @@ elseif ($action == 'update-status') {
 // --- PROSES ACC BATCH / MASSAL ---
 elseif ($action == 'acc_batch') {
     $ids = $_POST['id_pengajuan'] ?? [];
-    
-    $tgl_bayar = !empty($_POST['tgl_bayar_pinjaman']) ? $_POST['tgl_bayar_pinjaman'] : date('Y-m-d');
-    
     if (empty($ids) || !is_array($ids)) {
         echo json_encode(['status' => 'error', 'msg' => 'Tidak ada pengajuan yang dipilih']);
         exit;
@@ -152,45 +103,116 @@ elseif ($action == 'acc_batch') {
 
     $ids = array_map('intval', $ids);
     $ids_str = implode(',', $ids);
-    $pesan_otomatis = "Pinjaman telah disetujui (ACC Massal). Pinjaman akan diproses pada hari sabtu.";
+    $pesan_otomatis = "Pinjaman telah disetujui (ACC Massal). Menunggu proses pencairan.";
+
+    $sqlUpdate = "UPDATE tb_pengajuan_pinjaman 
+                  SET status_pinjaman = 'disetujui', keterangan_admin = '$pesan_otomatis' 
+                  WHERE id_pengajuan_pinjaman IN ($ids_str) AND status_pinjaman = 'pending'";
+    $koneksi->query($sqlUpdate);
+    $affected = $koneksi->affected_rows;
+
+    if ($affected > 0) {
+        echo json_encode(['status' => 'success', 'msg' => "$affected pengajuan berhasil di-ACC massal."]);
+    } else {
+        echo json_encode(['status' => 'error', 'msg' => 'Tidak ada data valid yang diproses.']);
+    }
+    exit;
+}
+
+// --- TANDAI CAIR / TF (SATUAN) ---
+elseif ($action == 'cair_single') {
+    $id = (int)($_POST['id'] ?? 0);
+    $tgl_bayar = $_POST['tgl_bayar_pinjaman'] ?? date('Y-m-d');
+    $pesan_tambahan = "Dana pinjaman telah berhasil ditransfer ke rekening Anda.";
 
     $koneksi->begin_transaction();
     try {
-        // PERBAIKAN LOGIKA BATCH: Hanya ambil yang benar-benar berstatus "pending". 
-        // Mengamankan dari aksi usil user yang mengirimkan ID yang sudah ditolak.
-        $sqlData = "SELECT * FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman IN ($ids_str) AND status_pinjaman = 'pending'";
-        $res = $koneksi->query($sqlData);
-        
-        while ($data = $res->fetch_assoc()) {
-            $id_pengajuan = $data['id_pengajuan_pinjaman'];
-            $id_karyawan = $data['id_karyawan'];
-            $tgl_pinjaman = date('Y-m-d', strtotime($data['tgl_pengajuan']));
-            $nominal = $data['nominal_pinjaman'];
-            $alasan = "Peminjaman Dana";
+        // 1. Ambil data pengajuan
+        $res = $koneksi->query("SELECT * FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = $id AND status_pinjaman = 'disetujui'");
+        $data = $res->fetch_assoc();
 
-            $stmtDel = $koneksi->prepare("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = ?");
-            $stmtDel->bind_param("i", $id_pengajuan);
-            $stmtDel->execute();
-            $stmtDel->close();
+        if (!$data) throw new Exception("Data tidak ditemukan atau status bukan disetujui.");
 
-            $stmtInsert = $koneksi->prepare("INSERT INTO tb_pinjaman (id_pengajuan_pinjaman, id_karyawan, tgl_pinjaman, tgl_bayar_pinjaman, nominal_pinjaman, ket_pinjaman) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtInsert->bind_param("iissds", $id_pengajuan, $id_karyawan, $tgl_pinjaman, $tgl_bayar, $nominal, $alasan);
-            $stmtInsert->execute();
-            $stmtInsert->close();
-        }
+        $tgl_pinjaman = date('Y-m-d', strtotime($data['tgl_pengajuan']));
+        $nominal = $data['nominal_pinjaman'];
+        $alasan = "Peminjaman Dana (App)";
 
-        $sqlUpdate = "UPDATE tb_pengajuan_pinjaman 
-                      SET status_pinjaman = 'disetujui', keterangan_admin = '$pesan_otomatis' 
-                      WHERE id_pengajuan_pinjaman IN ($ids_str) AND status_pinjaman = 'pending'";
-        $koneksi->query($sqlUpdate);
-        
-        $affected = $koneksi->affected_rows;
+        // 2. Insert ke tb_pinjaman
+        $koneksi->query("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = $id"); // Safety clear
+        $stmtIns = $koneksi->prepare("INSERT INTO tb_pinjaman (id_pengajuan_pinjaman, id_karyawan, tgl_pinjaman, tgl_bayar_pinjaman, nominal_pinjaman, ket_pinjaman) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmtIns->bind_param("iissds", $id, $data['id_karyawan'], $tgl_pinjaman, $tgl_bayar, $nominal, $alasan);
+        $stmtIns->execute();
+        $stmtIns->close();
+
+        // 3. Update status ke dicairkan
+        $stmtUpd = $koneksi->prepare("UPDATE tb_pengajuan_pinjaman SET status_pinjaman = 'dicairkan', keterangan_admin = CONCAT(IFNULL(keterangan_admin, ''), '\n\nUpdate: ', ?) WHERE id_pengajuan_pinjaman = ?");
+        $stmtUpd->bind_param("si", $pesan_tambahan, $id);
+        $stmtUpd->execute();
+        $stmtUpd->close();
+
         $koneksi->commit();
-        
+        echo json_encode(['status' => 'success', 'msg' => 'Pencairan berhasil. Potongan gaji ditambahkan.']);
+    } catch (Exception $e) {
+        $koneksi->rollback();
+        echo json_encode(['status' => 'error', 'msg' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// --- TANDAI CAIR / TF (BATCH / MASSAL) ---
+elseif ($action == 'cair_batch') {
+    $ids = $_POST['id_pengajuan'] ?? [];
+    $tgl_bayar = $_POST['tgl_bayar_pinjaman'] ?? date('Y-m-d');
+
+    if (empty($ids) || !is_array($ids)) {
+        echo json_encode(['status' => 'error', 'msg' => 'Tidak ada pengajuan yang dipilih']);
+        exit;
+    }
+
+    $ids = array_map('intval', $ids);
+    $ids_str = implode(',', $ids);
+    $pesan_tambahan = "Dana pinjaman telah berhasil ditransfer ke rekening Anda.";
+
+    $koneksi->begin_transaction();
+    try {
+        $sqlData = "SELECT * FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman IN ($ids_str) AND status_pinjaman = 'disetujui'";
+        $res = $koneksi->query($sqlData);
+
+        $affected = 0;
+
+        // PREPARE STATEMENT DI LUAR LOOP AGAR LEBIH RINGAN
+        $stmtInsert = $koneksi->prepare("INSERT INTO tb_pinjaman (id_pengajuan_pinjaman, id_karyawan, tgl_pinjaman, tgl_bayar_pinjaman, nominal_pinjaman, ket_pinjaman) VALUES (?, ?, ?, ?, ?, ?)");
+
+        // Bind param di luar loop (variabel referensi)
+        $id_p = $id_k = 0;
+        $tgl_p = $tgl_b = $alasan = "";
+        $nom = 0;
+        $stmtInsert->bind_param("iissds", $id_p, $id_k, $tgl_p, $tgl_b, $nom, $alasan);
+
+        while ($data = $res->fetch_assoc()) {
+            $id_p = $data['id_pengajuan_pinjaman'];
+            $id_k = $data['id_karyawan'];
+            $tgl_p = date('Y-m-d', strtotime($data['tgl_pengajuan']));
+            $nom = $data['nominal_pinjaman'];
+            $alasan = "Peminjaman Dana (App)";
+            $tgl_b = $tgl_bayar; // Dari input modal
+
+            // Safety delete
+            $koneksi->query("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = $id_p");
+
+            // EXECUTE SAJA DI DALAM LOOP
+            $stmtInsert->execute();
+
+            $koneksi->query("UPDATE tb_pengajuan_pinjaman SET status_pinjaman = 'dicairkan', keterangan_admin = CONCAT(IFNULL(keterangan_admin, ''), '\n\nUpdate: $pesan_tambahan') WHERE id_pengajuan_pinjaman = $id_p");
+            $affected++;
+        }
+        $stmtInsert->close();
+        $koneksi->commit();
+
         if ($affected > 0) {
-            echo json_encode(['status' => 'success', 'msg' => "$affected pengajuan berhasil di-ACC massal."]);
+            echo json_encode(['status' => 'success', 'msg' => "$affected data berhasil dicairkan dan masuk ke potongan gaji."]);
         } else {
-            echo json_encode(['status' => 'error', 'msg' => 'Tidak ada data valid yang diproses. Data mungkin sudah bukan berstatus Pending.']);
+            echo json_encode(['status' => 'error', 'msg' => 'Tidak ada data valid yang diproses.']);
         }
     } catch (Exception $e) {
         $koneksi->rollback();
@@ -203,11 +225,19 @@ elseif ($action == 'acc_batch') {
 elseif ($action == 'delete') {
     $id = (int)($_GET['id'] ?? 0); // Keamanan: Paksa jadi integer mencegah SQL Injection
 
-    // Query tanpa prepared statement aman jika $id dipastikan integer
-    $query_cari = mysqli_query($koneksi, "SELECT id_karyawan, tgl_pengajuan, nominal_pinjaman, foto_wajah, foto_id_card FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = '$id'");
+    // Tambahkan pengambilan 'status_pinjaman' pada query
+    $query_cari = mysqli_query($koneksi, "SELECT status_pinjaman, id_karyawan, tgl_pengajuan, nominal_pinjaman, foto_wajah, foto_id_card FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = '$id'");
     $data = mysqli_fetch_assoc($query_cari);
 
     if ($data) {
+        // --- BACKING PENGAMANAN SERVER ---
+        // Jika sudah dicairkan, tolak proses hapus secara paksa!
+        if ($data['status_pinjaman'] === 'dicairkan') {
+            echo json_encode(['status' => 'error', 'msg' => 'AKSES DITOLAK! Data yang sudah dicairkan tidak dapat dihapus dari menu pengajuan.']);
+            exit;
+        }
+
+        // Lanjut proses hapus bukti gambar dan relasi di tb_pinjaman...
         $stmtDel = $koneksi->prepare("DELETE FROM tb_pinjaman WHERE id_pengajuan_pinjaman = ?");
         $stmtDel->bind_param("i", $id);
         $stmtDel->execute();
@@ -229,9 +259,7 @@ elseif ($action == 'delete') {
     }
     $stmt->close();
     exit;
-}
-
-else {
+} else {
     echo json_encode(['status' => 'error', 'msg' => 'Action tidak valid']);
     exit;
 }
