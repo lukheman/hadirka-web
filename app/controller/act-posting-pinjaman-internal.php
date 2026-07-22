@@ -13,15 +13,15 @@ if (empty($tgl_awal) || empty($tgl_akhir)) {
 }
 
 try {
-    // 1. Ambil ID Akun 1301 dan 1001 (Piutang Pinjaman Karyawan & Kas)
-    $qAkun = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1301' LIMIT 1");
+    // 1. Ambil ID Akun 1304 dan 1001 (Piutang Pinjaman Karyawan & Kas)
+    $qAkun = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1304' LIMIT 1");
     $id_piutang = mysqli_fetch_assoc($qAkun)['id_kategori'] ?? null;
 
     $qKas = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
     $id_kas = mysqli_fetch_assoc($qKas)['id_kategori'] ?? null;
 
     if (!$id_piutang || !$id_kas) {
-        throw new Exception("Akun Piutang Pinjaman Karyawan (1301) atau Kas (1001) belum diatur di master kategori.");
+        throw new Exception("Akun Piutang Pinjaman Karyawan Internal (1304) atau Kas (1001) belum diatur di master kategori.");
     }
 
     mysqli_begin_transaction($koneksi);

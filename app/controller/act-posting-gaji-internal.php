@@ -22,12 +22,12 @@ try {
     $qKas = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
     $id_kas = mysqli_fetch_assoc($qKas)['id_kategori'] ?? null;
 
-    $qPiutang = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1301' LIMIT 1");
+    $qPiutang = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1304' LIMIT 1");
     $id_piutang = mysqli_fetch_assoc($qPiutang)['id_kategori'] ?? null;
 
     // ---> PERUBAHAN DI SINI: Update pesan error untuk akun 4000
     if (!$id_beban_gaji || !$id_kas || !$id_piutang) {
-        throw new Exception("Setup Akun (4000/1001/1301) belum lengkap di tb_kategori_keuangan.");
+        throw new Exception("Setup Akun (4000/1001/1304) belum lengkap di tb_kategori_keuangan.");
     }
 
     // 2. Hitung Semua Komponen Menggunakan Sub-Query

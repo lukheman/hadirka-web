@@ -140,12 +140,12 @@ if (!in_array($user_level, [0, 1, 2, 6]) && in_array($page, $finance_pages)) {
     exit;
 }
 
-// // 1.c Modul Data Internal (Hanya Master dan Direktur)
-// $internal_pages = ['karyawan-internal', 'bonus-internal', 'potongan-internal', 'rapel-internal', 'pinjaman-internal', 'gaji-internal', 'slip-internal'];
-// if (!in_array($user_level, [0, 1]) && in_array($page, $internal_pages)) {
-//     echo "<script>alert('Akses Ditolak! Modul Data Internal khusus Master dan Direktur.'); window.location.href='?page=home';</script>";
-//     exit;
-// }
+// 1.c Modul Data Internal (Hanya Master dan Direktur)
+$internal_pages = ['karyawan-internal', 'bonus-internal', 'potongan-internal', 'rapel-internal', 'pinjaman-internal', 'gaji-internal', 'slip-internal'];
+if (!in_array($user_level, [0, 1]) && in_array($page, $internal_pages)) {
+    echo "<script>alert('Akses Ditolak! Modul Data Internal khusus Master dan Direktur.'); window.location.href='?page=home';</script>";
+    exit;
+}
 
 // 2. Modul K3 (Hanya Master, Direktur, Safety, Supervisor)
 $k3_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];

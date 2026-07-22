@@ -28,7 +28,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
     <?php endif; ?>
 
-    <!-- <?php if (in_array($user_level, [0, 1])): ?>
+    <?php if (in_array($user_level, [0, 1])): ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Data Internal</span>
         </li>
@@ -76,7 +76,7 @@ function isMenuOpen($pages_array, $current_page)
                 </li>
             </ul>
         </li>
-    <?php endif; ?> -->
+    <?php endif; ?>
 
     <!-- Hanya Tampil jika Master, Direktur, HRD, Supervisor, Admin -->
     <?php if (in_array($user_level, [0, 1, 2, 3, 5])): ?>
