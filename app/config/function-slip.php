@@ -423,9 +423,23 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 6) Logika Baru: Kalkulasi Tunjangan Dinamis =================
         $tunjanganRows = [];
         $total_tunjangan = 0;
+        
+        // --- LOGIKA KHUSUS OPERATOR CRANE LOGISTIK ---
+        $nik_khusus = ['TJS-00168', 'TJS-00169', 'TJS-00245', 'TJS-00275'];
+        $is_khusus = in_array($nik, $nik_khusus);
 
-        // Total Ketidakhadiran dalam sebulan selain OFF (Sakit, Izin, Cuti, Mangkir, New, Resign)
-        $total_ketidakhadiran = $sakit_days + $izin_days + $cuti_days + $mangkir_count + $new_count + $resign_count;
+        // Menghitung total ketidakhadiran sebagai acuan bonus
+        if ($is_khusus) {
+            // Cuti tidak dihitung sebagai ketidakhadiran penghangus bonus
+            $total_ketidakhadiran = $sakit_days + $izin_days + $mangkir_count + $new_count + $resign_count;
+            $batas_absen = 5; // Maksimal absen 5 hari
+        } else {
+            // Reguler: Cuti dihitung
+            $total_ketidakhadiran = $sakit_days + $izin_days + $cuti_days + $mangkir_count + $new_count + $resign_count;
+            $batas_absen = 3; // Maksimal absen 3 hari
+        }
+
+        $potongan_cuti_khusus = 0; // Inisialisasi potongan cuti
 
         foreach ($tunjanganRawRows as $tr) {
             $nama_t = $tr['nama_tunjangan'];
@@ -436,12 +450,21 @@ if (!function_exists('generateSlipGaji')) {
                 $jumlah_t = $jumlah_t * $hari_kerja_count;
             }
 
-            // B. Logika Bonus Kehadiran (Ubah nama dari performance bonus & cek batasan absen > 3)
+            // B. Logika Bonus Kehadiran
             if (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false) {
                 $nama_t = "Bonus Kehadiran";
-                if ($total_ketidakhadiran > 3) {
+                $original_bonus = $jumlah_t; // Simpan nilai asli sebelum dihanguskan
+                
+                // Hitung Potongan Cuti Khusus (Hanya jika NIK Khusus dan ada hari cuti)
+                if ($is_khusus && $cuti_days > 0) {
+                    $satuan_potongan_cuti = $original_bonus / 12;
+                    $potongan_cuti_khusus = $satuan_potongan_cuti * $cuti_days;
+                }
+
+                // Terapkan batas absen
+                if ($total_ketidakhadiran > $batas_absen) {
                     $jumlah_t = 0;
-                    $nama_t .= " (Hangus: Absen > 3 Hari)";
+                    $nama_t .= " (Hangus: Absen > $batas_absen Hari)";
                 }
             }
 
@@ -476,7 +499,8 @@ if (!function_exists('generateSlipGaji')) {
             $total_pot_izin +
             $total_pot_mangkir +
             $total_potongan_perjam +
-            $total_potongan_pkwt;
+            $total_potongan_pkwt +
+            $potongan_cuti_khusus;
 
         // ===== Perhitungan kelebihan hari kerja (jika hari kerja > 25) =====
         // $kelebihan_hari = 0;
@@ -555,6 +579,7 @@ if (!function_exists('generateSlipGaji')) {
             'mangkir' => $mangkir_count,
             'total_jam_kurang' => $total_jam_kurang,
             'potongan_perjam' => $total_potongan_perjam,
+            'potongan_cuti_khusus' => $potongan_cuti_khusus,
             'absen' => $absenForUI
         ];
     }

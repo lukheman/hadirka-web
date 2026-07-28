@@ -568,14 +568,21 @@ require_once 'app/controller/read.php';
                 {
                     key: "potongan_perjam",
                     label: "KE-KURANGAN JAM NORMAL"
+                },
+                {
+                    key: "potongan_cuti_khusus", // <--- TAMBAHKAN KEY BARU
+                    label: "POTONGAN CUTI HARIAN"
                 }
             ];
 
             potTetap.forEach(p => {
                 let val = data[p.key] || 0;
-                potBody.innerHTML += `
-            <tr><td>${p.label}</td><td class="right">${fmt(val)}</td></tr>
-        `;
+                // Logika: Tampilkan jika bukan potongan_cuti_khusus, ATAU jika potongan_cuti_khusus ada nilainya (> 0)
+                if (p.key !== "potongan_cuti_khusus" || val > 0) {
+                    potBody.innerHTML += `
+                    <tr><td>${p.label}</td><td class="right">${fmt(val)}</td></tr>
+                    `;
+                }
             });
 
 

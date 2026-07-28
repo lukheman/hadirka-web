@@ -365,7 +365,21 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 6) Kalkulasi Tunjangan Dinamis API =================
         $tunjanganRows = [];
         $total_tunjangan_db = 0;
-        $total_ketidakhadiran = $sakit_days + $izin_days + $cuti_days + $mangkir_count + $new_count + $resign_count;
+        
+        // --- LOGIKA KHUSUS OPERATOR CRANE LOGISTIK ---
+        $nik_karyawan_aktif = $k['nik_karyawan'];
+        $nik_khusus = ['TJS-00168', 'TJS-00169', 'TJS-00245', 'TJS-00275'];
+        $is_khusus = in_array($nik_karyawan_aktif, $nik_khusus);
+
+        if ($is_khusus) {
+            $total_ketidakhadiran = $sakit_days + $izin_days + $mangkir_count + $new_count + $resign_count;
+            $batas_absen = 5;
+        } else {
+            $total_ketidakhadiran = $sakit_days + $izin_days + $cuti_days + $mangkir_count + $new_count + $resign_count;
+            $batas_absen = 3;
+        }
+
+        $potongan_cuti_khusus = 0;
 
         foreach ($tunjanganRawRows as $tr) {
             $nama_t = $tr['nama_tunjangan'];
@@ -377,9 +391,16 @@ if (!function_exists('generateSlipGaji')) {
 
             if (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false) {
                 $nama_t = "Bonus Kehadiran";
-                if ($total_ketidakhadiran > 3) {
+                $original_bonus = $jumlah_t;
+                
+                if ($is_khusus && $cuti_days > 0) {
+                    $satuan_potongan_cuti = $original_bonus / 12;
+                    $potongan_cuti_khusus = $satuan_potongan_cuti * $cuti_days;
+                }
+
+                if ($total_ketidakhadiran > $batas_absen) {
                     $jumlah_t = 0;
-                    $nama_t .= " (Hangus: Absen > 3 Hari)";
+                    $nama_t .= " (Hangus: Absen > $batas_absen Hari)";
                 }
             }
 
@@ -418,7 +439,7 @@ if (!function_exists('generateSlipGaji')) {
 
         $total_potongan = $total_potongan_db + $total_potongan_pinjaman + $total_potongan_lainnya +
             $total_pot_izin  + $total_pot_mangkir +
-            $total_potongan_perjam + $total_pot_pkwt;
+            $total_potongan_perjam + $total_pot_pkwt + $potongan_cuti_khusus;
 
         $gaji_bersih = $total_pendapatan - $total_potongan;
 
@@ -442,6 +463,7 @@ if (!function_exists('generateSlipGaji')) {
         if ($total_pot_mangkir > 0) $listPotongan[] = ['nama' => 'Potongan Mangkir', 'jumlah' => $total_pot_mangkir];
         if ($total_potongan_perjam > 0) $listPotongan[] = ['nama' => 'Potongan Kurang Jam', 'jumlah' => $total_potongan_perjam];
         if ($total_pot_pkwt > 0) $listPotongan[] = ['nama' => 'Potongan PKWT (NEW/RESIGN)', 'jumlah' => $total_pot_pkwt];
+        if ($potongan_cuti_khusus > 0) $listPotongan[] = ['nama' => 'Potongan Cuti Harian', 'jumlah' => $potongan_cuti_khusus];
 
         return [
             'nik' => $k['nik_karyawan'],
