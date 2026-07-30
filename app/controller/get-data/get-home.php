@@ -2,6 +2,7 @@
 error_reporting(0);
 header('Content-Type: application/json');
 // FIX: Tambahkan ini agar perhitungan massal tidak timeout
+header('X-LiteSpeed-No-Timeout: 1');
 set_time_limit(0);
 
 include __DIR__ . "/../../config/koneksi.php";

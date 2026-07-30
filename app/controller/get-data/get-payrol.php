@@ -5,6 +5,7 @@ ini_set('display_errors', 0); // Don't display errors in output
 ini_set('log_errors', 1);
 
 // Bypass batasan waktu eksekusi agar tidak timeout saat melooping ratusan karyawan
+header('X-LiteSpeed-No-Timeout: 1');
 set_time_limit(0);
 
 // Set header first

@@ -382,14 +382,17 @@ if (!function_exists('generateSlipGaji')) {
         $potongan_cuti_khusus = 0;
 
         foreach ($tunjanganRawRows as $tr) {
-            $nama_t = $tr['nama_tunjangan'];
+            $nama_t = (string)$tr['nama_tunjangan'];
             $jumlah_t = floatval($tr['jumlah_tunjangan']);
 
-            if (stripos($nama_t, 'makan') !== false) {
+            // A. Logika Tunjangan Makan: Hanya per masuk kerja hari biasa
+            if (!empty($nama_t) && stripos($nama_t, 'makan') !== false) {
                 $jumlah_t = $jumlah_t * $hari_kerja_count;
             }
 
-            if (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false) {
+            // B. Logika Bonus Kehadiran
+            // FIX: Tambahkan !empty($nama_t) di depan agar aman
+            if (!empty($nama_t) && (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false)) {
                 $nama_t = "Bonus Kehadiran";
                 $original_bonus = $jumlah_t;
                 
