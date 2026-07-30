@@ -4,13 +4,16 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0); // Don't display errors in output
 ini_set('log_errors', 1);
 
+// Bypass batasan waktu eksekusi agar tidak timeout saat melooping ratusan karyawan
+set_time_limit(0);
+
 // Set header first
 header("Content-Type: application/json");
 
 try {
     include __DIR__ . '/../../config/koneksi.php';
-    include '../../config/function.php';
-    include '../../config/function-slip.php';
+    include __DIR__ . '/../../config/function.php';
+    include __DIR__ . '/../../config/function-slip.php';
 
     // Check database connection
     if (!$koneksi) {
@@ -23,7 +26,8 @@ try {
 
     // Ambil semua karyawan dengan data identitas (rekening dan site)
     // HANYA yang kariernya aktif pada periode yang dipilih
-    $sql = "SELECT 
+    // FIX 2: Hapus GROUP BY dan gunakan DISTINCT untuk mencegah ONLY_FULL_GROUP_BY error MySQL
+    $sql = "SELECT DISTINCT
                 k.id_karyawan, 
                 k.nik_karyawan, 
                 k.nama_lengkap,
@@ -37,7 +41,6 @@ try {
             LEFT JOIN tb_site s ON kr.id_site = s.id_site
             WHERE kr.tgl_mulai <= '$endDate' 
               AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= '$startDate')
-            GROUP BY k.id_karyawan  -- FIX BUG: TAMBAHKAN INI DISINI
             ORDER BY k.nama_lengkap ASC";
 
     $q = mysqli_query($koneksi, $sql);
@@ -90,14 +93,16 @@ try {
         ];
     }
 
-    // Output JSON
+    // FIX 3: Bersihkan buffer sebelum output agar JSON tidak rusak
+    ob_clean(); 
     echo json_encode([
         "status" => "success",
         "data" => $data,
         "count" => count($data)
     ]);
-} catch (Exception $e) {
-    // Return error as JSON
+} catch (Throwable $e) { 
+    // FIX 4: Gunakan Throwable (bukan Exception) untuk menangkap PHP Fatal Error
+    ob_clean();
     http_response_code(500);
     echo json_encode([
         "status" => "error",

@@ -1,6 +1,8 @@
 <?php
 error_reporting(0);
 header('Content-Type: application/json');
+// FIX: Tambahkan ini agar perhitungan massal tidak timeout
+set_time_limit(0);
 
 include __DIR__ . "/../../config/koneksi.php";
 include __DIR__ . "/../../config/function.php";
@@ -133,6 +135,7 @@ $total_keseluruhan_prev = $data_prev['gaji'] + $data_prev['pinjaman'];
 $perc_total = hitungPersentase($total_keseluruhan_cur, $total_keseluruhan_prev);
 
 // 5. OUTPUT KE JSON KESELURUHAN
+ob_clean(); // FIX: Pastikan tidak ada spasi kosong yang merusak JSON
 echo json_encode([
     "status" => "success",
     "periode" => $periode_text,
