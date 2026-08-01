@@ -12,16 +12,15 @@ if (!empty($bulan)) {
     $whereClause = " WHERE p.tgl_pinjaman LIKE '$bulan%' ";
 }
 
-// 3. Sisipkan $whereClause ke dalam query utama (DAN FIX BUG RELASI GANDA)
-$query = "SELECT p.id_pinjaman, k.id_karyawan, k.nik_karyawan, k.nama_lengkap, p.nominal_pinjaman, p.tgl_pinjaman, p.tgl_bayar_pinjaman, p.ket_pinjaman, j.nama_jabatan
+// 3. Sisipkan $whereClause ke dalam query utama (DAN FIX BUG RELASI GANDA & DATA HILANG)
+$query = "SELECT p.id_pinjaman, k.id_karyawan, k.nik_karyawan, k.nama_lengkap, p.nominal_pinjaman, p.tgl_pinjaman, p.tgl_bayar_pinjaman, p.ket_pinjaman, COALESCE(j.nama_jabatan, '-') AS nama_jabatan
           FROM tb_pinjaman p
           JOIN tb_karyawan k ON p.id_karyawan = k.id_karyawan
-          JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan 
-               AND kr.tgl_mulai <= p.tgl_pinjaman 
-               AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= p.tgl_pinjaman)
-          JOIN tb_jabatan j ON j.id_jabatan = kr.id_jabatan
-          JOIN tb_site s ON s.id_site = kr.id_site
+          LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan 
+          LEFT JOIN tb_jabatan j ON j.id_jabatan = kr.id_jabatan
+          LEFT JOIN tb_site s ON s.id_site = kr.id_site
           $whereClause
+          GROUP BY p.id_pinjaman
           ORDER BY p.tgl_pinjaman DESC, p.tgl_bayar_pinjaman ASC";
 
 $result = mysqli_query($koneksi, $query);

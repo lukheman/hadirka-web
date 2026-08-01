@@ -28,16 +28,19 @@ $whereClause = " WHERE " . implode(" AND ", $where);
 // 3. Hitung Total Rapel (Sesuai filter)
 $sqlTotal = "SELECT COUNT(DISTINCT r.id_rapel) as total 
              FROM tb_rapel r
-             JOIN tb_karier kr ON r.id_karyawan = kr.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
+             LEFT JOIN tb_karier kr ON r.id_karyawan = kr.id_karyawan
              $whereClause";
 $resultTotal = $koneksi->query($sqlTotal);
 $total = $resultTotal->fetch_assoc()['total'];
 
-// 4. Hitung Total Nominal (Sesuai filter)
-$sqlNominal = "SELECT SUM(r.nominal_rapel) as total_nominal 
-               FROM tb_rapel r
-               JOIN tb_karier kr ON r.id_karyawan = kr.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
-               $whereClause";
+// 4. Hitung Total Nominal (Sesuai filter dengan Subquery agar aman dari duplikasi riwayat jabatan)
+$sqlNominal = "SELECT SUM(nominal_rapel) as total_nominal FROM (
+                   SELECT r.id_rapel, r.nominal_rapel 
+                   FROM tb_rapel r
+                   LEFT JOIN tb_karier kr ON r.id_karyawan = kr.id_karyawan
+                   $whereClause
+                   GROUP BY r.id_rapel
+               ) as sub";
 $resultNominal = $koneksi->query($sqlNominal);
 $totalNominal = $resultNominal->fetch_assoc()['total_nominal'] ?: 0;
 

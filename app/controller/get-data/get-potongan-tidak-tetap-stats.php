@@ -29,16 +29,19 @@ $whereClause = " WHERE " . implode(" AND ", $where);
 // 3. Hitung Total Pinjaman (Sesuai filter)
 $sqlTotal = "SELECT COUNT(DISTINCT p.id_potongan_tidak_tetap) as total 
              FROM tb_potongan_tidak_tetap p
-             JOIN tb_karier kr ON p.id_karyawan = kr.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
+             LEFT JOIN tb_karier kr ON p.id_karyawan = kr.id_karyawan
              $whereClause";
 $resultTotal = $koneksi->query($sqlTotal);
 $total = $resultTotal->fetch_assoc()['total'];
 
 // 4. Hitung Total Nominal (Sesuai filter)
-$sqlNominal = "SELECT SUM(p.nominal_potongan) as total_nominal 
-               FROM tb_potongan_tidak_tetap p
-               JOIN tb_karier kr ON p.id_karyawan = kr.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
-               $whereClause";
+$sqlNominal = "SELECT SUM(nominal_potongan) as total_nominal FROM (
+                   SELECT p.id_potongan_tidak_tetap, p.nominal_potongan 
+                   FROM tb_potongan_tidak_tetap p
+                   LEFT JOIN tb_karier kr ON p.id_karyawan = kr.id_karyawan
+                   $whereClause
+                   GROUP BY p.id_potongan_tidak_tetap
+               ) as sub";
 $resultNominal = $koneksi->query($sqlNominal);
 $totalNominal = $resultNominal->fetch_assoc()['total_nominal'] ?: 0;
 

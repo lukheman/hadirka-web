@@ -88,9 +88,12 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
 
     <!-- Tabel Absensi -->
     <div class="card">
-        <h5 class="card-header">
-            <i class="fa fa-table fa-lg"></i> Data Absensi
-        </h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5><i class="fa fa-table fa-lg"></i> Data Absensi</h5>
+            <button type="button" class="btn btn-warning btn-sm" id="btnExportExcel">
+                <i class="fa fa-file-excel"></i> Export Excel
+            </button>
+        </div>
         <div class="card-body">
             <!-- Spinner Loading -->
             <div class="text-center" id="loadingSpinner" style="display: none;">
@@ -320,6 +323,22 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                     // 🔵 HILANGKAN EFEK BLUR
                     container.classList.remove("blur-loading");
                 });
+        });
+
+        // Event Export Excel
+        document.getElementById("btnExportExcel").addEventListener("click", function() {
+            const site = filterSite.value;
+            const jabatan = filterJabatan.value;
+            const tgl_a = tglAwalInput.value;
+            const tgl_b = tglAkhirInput.value;
+
+            if (!site) return showToast("Pilih Site terlebih dahulu sebelum export!", "info");
+            if (!tgl_a || !tgl_b) return showToast("Tanggal tidak boleh kosong!", "info");
+            if (new Date(tgl_a) > new Date(tgl_b)) return showToast("Tanggal awal tidak boleh lebih besar dari tanggal akhir!", "info");
+
+            // Arahkan ke file export dengan membawa parameter filter
+            const exportUrl = `app/controller/export/export-absensi.php?site=${site}&jabatan=${jabatan}&tgl_a=${tgl_a}&tgl_b=${tgl_b}`;
+            window.open(exportUrl, '_blank');
         });
 
         // Auto reload filter

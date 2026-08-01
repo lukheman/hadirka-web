@@ -44,7 +44,7 @@ $sql = "SELECT
             r.ket_rapel
         FROM tb_rapel r
         JOIN tb_karyawan k ON r.id_karyawan = k.id_karyawan
-        JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
+        LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
         $whereClause
         GROUP BY r.id_rapel
         ORDER BY r.tgl_rapel DESC, r.id_rapel DESC";

@@ -69,10 +69,14 @@ function isMenuOpen($pages_array, $current_page)
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('gaji-internal', $current_page); ?>">
-                    <a class="menu-link" href="gaji-internal"><div>Penggajian Internal</div></a>
+                    <a class="menu-link" href="gaji-internal">
+                        <div>Penggajian Internal</div>
+                    </a>
                 </li>
                 <li class="menu-item <?= isActive('slip-internal', $current_page); ?>">
-                    <a class="menu-link" href="slip-internal"><div>Slip Gaji Internal</div></a>
+                    <a class="menu-link" href="slip-internal">
+                        <div>Slip Gaji Internal</div>
+                    </a>
                 </li>
             </ul>
         </li>
@@ -152,6 +156,31 @@ function isMenuOpen($pages_array, $current_page)
                 </li>
             </ul>
         </li>
+
+        <!-- <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Manajemen Indisipliner</span>
+        </li>
+
+        <?php $indisipliner_pages = ['master-pelanggaran', 'surat-peringatan']; ?>
+        <li class="menu-item <?= isMenuOpen($indisipliner_pages, $current_page); ?>">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-error-alt"></i>
+                <div data-i18n="Indisipliner">Sanksi & Indisipliner</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?= isActive('master-pelanggaran', $current_page); ?>">
+                    <a class="menu-link" href="master-pelanggaran">
+                        <div>Master Pelanggaran</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('surat-peringatan', $current_page); ?>">
+                    <a class="menu-link" href="surat-peringatan">
+                        <div>Kelola Surat Peringatan</div>
+                    </a>
+                </li>
+            </ul>
+        </li> -->
+
 
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Presensi & Izin</span>

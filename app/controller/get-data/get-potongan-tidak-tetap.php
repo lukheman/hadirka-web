@@ -22,11 +22,11 @@ if (!empty($jabatan)) {
 $whereClause = " WHERE " . implode(" AND ", $where);
 
 // 3. Sisipkan $whereClause ke dalam query utama
-$query = "SELECT p.id_potongan_tidak_tetap, k.id_karyawan, k.nik_karyawan, k.nama_lengkap, p.nominal_potongan, p.tgl_potongan, p.jenis_potongan, p.ket_potongan, j.nama_jabatan
+$query = "SELECT p.id_potongan_tidak_tetap, k.id_karyawan, k.nik_karyawan, k.nama_lengkap, p.nominal_potongan, p.tgl_potongan, p.jenis_potongan, p.ket_potongan, COALESCE(j.nama_jabatan, '-') AS nama_jabatan
           FROM tb_potongan_tidak_tetap p
           JOIN tb_karyawan k ON p.id_karyawan = k.id_karyawan
-          JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= CURDATE())
-          JOIN tb_jabatan j ON j.id_jabatan = kr.id_jabatan
+          LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
+          LEFT JOIN tb_jabatan j ON j.id_jabatan = kr.id_jabatan
           $whereClause
           GROUP BY p.id_potongan_tidak_tetap
           ORDER BY p.tgl_potongan DESC";
