@@ -248,7 +248,7 @@ for ($i = 1; $i < $colIndex; $i++) {
 // -------------------------
 // Output / Download File Excel
 // -------------------------
-$namaFile = "Format_Impor_Rekapitulasi_Absensi_{$tgl_a}_sd_{$tgl_b}.xlsx";
+$namaFile = "Export_Rekapitulasi_Absensi_{$tgl_a}_sd_{$tgl_b}.xlsx";
 
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment;filename="' . $namaFile . '"');
