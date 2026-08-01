@@ -339,7 +339,6 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
@@ -661,49 +660,20 @@
     });
 
 
-    // FUNGSI: Export Excel
+    // FUNGSI: Export Excel (Server-Side)
     function exportExcel() {
-        const filterSite = document.getElementById('filterSite').value;
-        const filterJabatan = document.getElementById('filterJabatan').value;
-        const filterBank = document.getElementById('filterBank').value;
-        const filterStatus = document.getElementById('filterStatus').value;
+        const startDate = document.getElementById('startDate').value || '';
+        const endDate = document.getElementById('endDate').value || '';
+        const site = document.getElementById('filterSite').value || '';
+        const jabatan = document.getElementById('filterJabatan').value || '';
+        const bank = document.getElementById('filterBank').value || '';
+        const status = document.getElementById('filterStatus').value || '';
 
-        const filteredData = allLoanData.filter(row => {
-            const siteMatch = !filterSite || row.site === filterSite;
-            const jabatanMatch = !filterJabatan || row.jabatan === filterJabatan;
-            const statusMatch = !filterStatus || row.status_pinjaman === filterStatus;
-            let bankMatch = true;
-            if (filterBank) bankMatch = normalizeBankName(row.nama_bank) === filterBank;
-            return siteMatch && jabatanMatch && bankMatch && statusMatch;
-        });
-
-        if (filteredData.length === 0) {
-            notify('Tidak ada data pengajuan pinjaman untuk di-export!', 'warning');
-            return;
-        }
-
-        const excelData = filteredData.map((row, i) => ({
-            'No': i + 1,
-            'NIK Karyawan': row.nik_karyawan || '-',
-            'Nama Lengkap': row.nama_lengkap,
-            'Jabatan': row.jabatan,
-            'Site': row.site || '-',
-            'Tanggal Pengajuan': row.tgl_pengajuan,
-            'Nominal Pinjaman (Rp)': row.nominal_pinjaman,
-            'Alasan Pinjaman': row.alasan_pinjaman || '-',
-            'Atas Nama Rekening': row.atas_nama_rek || '-',
-            'Nomor Rekening': row.no_rek ? String(row.no_rek) : '-',
-            'Nama Bank': row.nama_bank || 'BELUM PUNYA REKENING',
-            'Status': row.status_pinjaman.toUpperCase()
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(excelData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Pengajuan Pinjaman');
-
-        const start = document.getElementById('startDate').value || '0000-00-00';
-        const end = document.getElementById('endDate').value || '0000-00-00';
-        XLSX.writeFile(wb, `Data_Pengajuan_Pinjaman_${start}_sd_${end}.xlsx`);
+        // Mengarahkan window ke file export-pengajuan-pinjaman.php dengan mengirim parameter filter GET
+        const exportUrl = `app/controller/export/export-pengajuan-pinjaman.php?startDate=${startDate}&endDate=${endDate}&site=${site}&jabatan=${jabatan}&bank=${bank}&status=${status}`;
+        
+        // Buka proses unduhan
+        window.location.href = exportUrl;
     }
 
     // ============================================================

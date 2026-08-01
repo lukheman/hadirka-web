@@ -27,18 +27,16 @@ try {
 
     // Ambil data pengajuan pinjaman dan join dengan detail profil serta data karier aktif karyawan
     $query = "SELECT p.*, k.nama_lengkap, k.nik_karyawan,
-                     i.nama_bank, i.no_rek, i.atas_nama_rek,
-                     s.nama_site
-              FROM tb_pengajuan_pinjaman p
-              JOIN tb_karyawan k ON p.id_karyawan = k.id_karyawan
-              LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
-              LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan 
-                AND kr.tgl_mulai <= DATE(p.tgl_pengajuan)
-                AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= DATE(p.tgl_pengajuan))
-              LEFT JOIN tb_site s ON kr.id_site = s.id_site
-              WHERE DATE(p.tgl_pengajuan) BETWEEN '$startDate' AND '$endDate'
-              GROUP BY p.id_pengajuan_pinjaman
-              ORDER BY p.tgl_pengajuan DESC";
+                    i.nama_bank, i.no_rek, i.atas_nama_rek,
+                    COALESCE(s.nama_site, '-') AS nama_site
+            FROM tb_pengajuan_pinjaman p
+            JOIN tb_karyawan k ON p.id_karyawan = k.id_karyawan
+            LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
+            LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan 
+            LEFT JOIN tb_site s ON kr.id_site = s.id_site
+            WHERE DATE(p.tgl_pengajuan) BETWEEN '$startDate' AND '$endDate'
+            GROUP BY p.id_pengajuan_pinjaman
+            ORDER BY p.tgl_pengajuan DESC";
 
     $result = mysqli_query($koneksi, $query);
     if (!$result) {
