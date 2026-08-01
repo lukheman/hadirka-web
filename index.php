@@ -37,6 +37,10 @@ $routes = [
     'data-calon-karyawan' => 'view/master-data/data-calon-karyawan.php',
     'data-loker' => 'view/master-data/data-loker.php',
 
+    // Surat Peringatan
+    'master-pelanggaran' => 'view/surat/master-pelanggaran.php',
+    'surat-peringatan'   => 'view/surat/surat-peringatan.php',
+
     // Internal
     'karyawan-internal' => 'view/internal/data-karyawan-internal.php',
     'bonus-internal'    => 'view/internal/data-bonus-internal.php',
@@ -109,7 +113,9 @@ $hrd_pages = [
     'pengajuan-izin',
     'pengajuan-cuti',
     'bukti-sks',
-    'pengumuman'
+    'pengumuman',
+    'master-pelanggaran',
+    'surat-peringatan'
 ];
 
 if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
