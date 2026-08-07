@@ -157,7 +157,7 @@ function isMenuOpen($pages_array, $current_page)
             </ul>
         </li>
 
-        <!-- <li class="menu-header small text-uppercase">
+        <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Manajemen Indisipliner</span>
         </li>
 
@@ -179,7 +179,7 @@ function isMenuOpen($pages_array, $current_page)
                     </a>
                 </li>
             </ul>
-        </li> -->
+        </li>
 
 
         <li class="menu-header small text-uppercase">

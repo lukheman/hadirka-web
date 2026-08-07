@@ -9,9 +9,11 @@
         align-items: center;
         border-radius: 0.375rem !important;
     }
+
     .select2-container--bootstrap-5 {
         width: 100% !important;
     }
+
     .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
         padding-left: 0 !important;
         margin-top: -2px;
@@ -24,6 +26,7 @@
         box-sizing: border-box;
         height: 100%;
     }
+
     .slip-box h6 {
         margin: 0 0 6px 0;
         font-size: 14px;
@@ -32,17 +35,24 @@
         padding-bottom: 6px;
         color: #000;
     }
+
     .slip-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
         color: #000;
     }
-    .slip-table th, .slip-table td {
+
+    .slip-table th,
+    .slip-table td {
         padding: 4px 6px;
         border: 1px solid #e6e6e6;
     }
-    .slip-table th { background: #f5f5f5; text-align: left; }
+
+    .slip-table th {
+        background: #f5f5f5;
+        text-align: left;
+    }
 </style>
 
 <div class="content-wrapper">
@@ -51,13 +61,17 @@
 
         <div class="card mb-4">
             <div class="card-body row g-3">
-                <div class="col-md-2">
+                <!-- <div class="col-md-2">
                     <label>Tanggal Awal</label>
                     <input type="date" id="slipTglAwal" class="form-control">
                 </div>
                 <div class="col-md-2">
                     <label>Tanggal Akhir</label>
                     <input type="date" id="slipTglAkhir" class="form-control">
+                </div> -->
+                <div class="col-md-4">
+                    <label>Periode Bulan</label>
+                    <input type="month" id="filterBulan" class="form-control">
                 </div>
                 <div class="col-md-4">
                     <label>Pilih Karyawan Internal</label>
@@ -138,34 +152,79 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        let today = new Date();
-        let y = today.getFullYear();
-        let m = today.getMonth();
-        let d = today.getDate();
-
-        let formatTgl = (year, month, day) => {
-            let dateObj = new Date(year, month, day);
-            return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
+    // 1. Fungsi getPeriodeBulan() diletakkan di LUAR agar bisa dibaca oleh semua fungsi
+    function getPeriodeBulan() {
+        let val = $("#filterBulan").val();
+        if (!val) return { awal: '', akhir: '' };
+        let [year, month] = val.split('-');
+        let lastDay = new Date(year, month, 0).getDate();
+        return {
+            awal: `${year}-${month}-01`,
+            akhir: `${year}-${month}-${lastDay}`
         };
+    }
+    
+    document.addEventListener("DOMContentLoaded", () => {
+        // let today = new Date();
+        // let y = today.getFullYear();
+        // let m = today.getMonth();
+        // let d = today.getDate();
 
-        if (d > 5) {
-            $("#slipTglAwal").val(formatTgl(y, m, 6));
-            $("#slipTglAkhir").val(formatTgl(y, m + 1, 5));
-        } else {
-            $("#slipTglAwal").val(formatTgl(y, m - 1, 6));
-            $("#slipTglAkhir").val(formatTgl(y, m, 5));
+        // let formatTgl = (year, month, day) => {
+        //     let dateObj = new Date(year, month, day);
+        //     return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
+        // };
+
+        // if (d > 5) {
+        //     $("#slipTglAwal").val(formatTgl(y, m, 6));
+        //     $("#slipTglAkhir").val(formatTgl(y, m + 1, 5));
+        // } else {
+        //     $("#slipTglAwal").val(formatTgl(y, m - 1, 6));
+        //     $("#slipTglAkhir").val(formatTgl(y, m, 5));
+        // }
+
+        // Logika Otomatis: Tgl 1-5 tampilkan bulan lalu, Tgl 6 ke atas tampilkan bulan berjalan
+        let today = new Date();
+        let tglHariIni = today.getDate(); // Ambil tanggal hari ini (1 s/d 31)
+
+        let targetDate = new Date();
+        targetDate.setDate(1); // Set ke tgl 1 dulu untuk menghindari bug rollover jika hari ini tgl 31
+
+        // Jika hari ini masih tanggal 1, 2, 3, 4, atau 5
+        if (tglHariIni <= 5) {
+            targetDate.setMonth(targetDate.getMonth() - 1); // Mundur ke bulan lalu
         }
+        // Jika hari ini tanggal 6 ke atas, targetDate dibiarkan (tetap bulan berjalan saat ini)
 
-        $('.select2').select2({ theme: 'bootstrap-5' });
+        let y = targetDate.getFullYear();
+        let m = String(targetDate.getMonth() + 1).padStart(2, '0');
+
+        $("#filterBulan").val(`${y}-${m}`);
+
+        $('.select2').select2({
+            theme: 'bootstrap-5'
+        });
     });
 
     function generateSlipInternal() {
-        let tgl_awal = $("#slipTglAwal").val();
-        let tgl_akhir = $("#slipTglAkhir").val();
+        // let tgl_awal = $("#slipTglAwal").val();
+        // let tgl_akhir = $("#slipTglAkhir").val();
+        // let nik = $("#slipKaryawan").val();
+
+        // if (!tgl_awal || !tgl_akhir) return alert("Pilih tanggal cut-off!");
+
+        // $.post("app/controller/get-slip/get-slip-internal.php", {
+        //     tgl_awal: tgl_awal,
+        //     tgl_akhir: tgl_akhir,
+        //     nik: nik
+        // }, function(res) {
+
+        let p = getPeriodeBulan();
+        let tgl_awal = p.awal;
+        let tgl_akhir = p.akhir;
         let nik = $("#slipKaryawan").val();
 
-        if (!tgl_awal || !tgl_akhir) return alert("Pilih tanggal cut-off!");
+        if (!tgl_awal || !tgl_akhir) return alert("Pilih bulan terlebih dahulu!");
 
         $.post("app/controller/get-slip/get-slip-internal.php", {
             tgl_awal: tgl_awal,
@@ -186,7 +245,7 @@
 
             // ================= PENDAPATAN =================
             let htmlPend = `<tr><td>Gaji Pokok</td><td class="text-end">Rp ${d.gapok.toLocaleString('id-ID')}</td></tr>`;
-            
+
             d.bonus.forEach(b => {
                 let kt = b.ket ? `(${b.ket})` : '';
                 htmlPend += `<tr><td>Bonus ${kt}</td><td class="text-end">Rp ${parseInt(b.nominal).toLocaleString('id-ID')}</td></tr>`;
@@ -195,7 +254,7 @@
                 let kt = r.ket ? `(${r.ket})` : '';
                 htmlPend += `<tr><td>Rapel ${kt}</td><td class="text-end">Rp ${parseInt(r.nominal).toLocaleString('id-ID')}</td></tr>`;
             });
-            
+
             htmlPend += `<tr style="border-top: 2px solid #000; font-weight:bold;"><td>TOTAL PENDAPATAN</td><td class="text-end">Rp ${parseInt(d.total_pendapatan).toLocaleString('id-ID')}</td></tr>`;
             $("#pendapatanBody").html(htmlPend);
 
@@ -228,9 +287,18 @@
         let opt = {
             margin: 0.4,
             filename: `Slip_Internal_${$("#txtNama").text()}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            image: {
+                type: 'jpeg',
+                quality: 0.98
+            },
+            html2canvas: {
+                scale: 2
+            },
+            jsPDF: {
+                unit: 'in',
+                format: 'a4',
+                orientation: 'portrait'
+            }
         };
         html2pdf().set(opt).from(document.getElementById('slipInternal')).save();
     }

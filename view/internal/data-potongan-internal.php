@@ -7,9 +7,14 @@
         align-items: center;
         border-radius: 0.375rem !important;
     }
-    .select2-container--bootstrap-5 { width: 100% !important; }
+
+    .select2-container--bootstrap-5 {
+        width: 100% !important;
+    }
+
     .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-        padding-left: 0 !important; margin-top: -2px;
+        padding-left: 0 !important;
+        margin-top: -2px;
     }
 </style>
 
@@ -52,10 +57,14 @@
                 <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalPotongan" onclick="tambahPotongan()"><i class="fa fa-plus"></i> Tambah Potongan Manual</button>
                 <button class="btn btn-info btn-sm" onclick="exportPotongan()"><i class="fa fa-file-export"></i> Export Log Potongan</button>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <!-- <div class="d-flex align-items-center gap-2">
                 <input type="date" id="tglAwal" class="form-control form-control-sm" title="Mulai Tanggal">
                 <span>-</span>
                 <input type="date" id="tglAkhir" class="form-control form-control-sm" title="Sampai Tanggal">
+            </div> -->
+            <div class="d-flex align-items-center gap-2">
+                <label class="mb-0 fw-bold">Periode:</label>
+                <input type="month" id="filterBulan" class="form-control form-control-sm" title="Pilih Bulan">
             </div>
         </div>
 
@@ -126,25 +135,58 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        // let today = new Date();
+        // let y = today.getFullYear();
+        // let m = today.getMonth();
+        // let d = today.getDate(); // Ambil tanggal hari ini
+
+        // let formatTgl = (year, month, day) => {
+        //     let dateObj = new Date(year, month, day);
+        //     return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
+        // }; 
+
+        // // Logika Cut-Off Dinamis:
+        // // Jika tanggal hari ini lebih dari tanggal 5, masuk periode baru (Tgl 6 bulan ini s/d Tgl 5 bulan depan)
+        // // Jika belum lewat tanggal 5, masih periode lama (Tgl 6 bulan lalu s/d Tgl 5 bulan ini)
+        // if (d > 5) {
+        //     $("#tglAwal").val(formatTgl(y, m, 6)); 
+        //     $("#tglAkhir").val(formatTgl(y, m + 1, 5)); 
+        // } else {
+        //     $("#tglAwal").val(formatTgl(y, m - 1, 6)); 
+        //     $("#tglAkhir").val(formatTgl(y, m, 5)); 
+        // }
+
+        // Logika Otomatis: Tgl 1-5 tampilkan bulan lalu, Tgl 6 ke atas tampilkan bulan berjalan
         let today = new Date();
-        let y = today.getFullYear();
-        let m = today.getMonth();
-        let d = today.getDate(); // Ambil tanggal hari ini
+        let tglHariIni = today.getDate(); // Ambil tanggal hari ini (1 s/d 31)
 
-        let formatTgl = (year, month, day) => {
-            let dateObj = new Date(year, month, day);
-            return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
-        }; 
+        let targetDate = new Date();
+        targetDate.setDate(1); // Set ke tgl 1 dulu untuk menghindari bug rollover jika hari ini tgl 31
 
-        // Logika Cut-Off Dinamis:
-        // Jika tanggal hari ini lebih dari tanggal 5, masuk periode baru (Tgl 6 bulan ini s/d Tgl 5 bulan depan)
-        // Jika belum lewat tanggal 5, masih periode lama (Tgl 6 bulan lalu s/d Tgl 5 bulan ini)
-        if (d > 5) {
-            $("#tglAwal").val(formatTgl(y, m, 6)); 
-            $("#tglAkhir").val(formatTgl(y, m + 1, 5)); 
-        } else {
-            $("#tglAwal").val(formatTgl(y, m - 1, 6)); 
-            $("#tglAkhir").val(formatTgl(y, m, 5)); 
+        // Jika hari ini masih tanggal 1, 2, 3, 4, atau 5
+        if (tglHariIni <= 5) {
+            targetDate.setMonth(targetDate.getMonth() - 1); // Mundur ke bulan lalu
+        }
+        // Jika hari ini tanggal 6 ke atas, targetDate dibiarkan (tetap bulan berjalan saat ini)
+
+        let y = targetDate.getFullYear();
+        let m = String(targetDate.getMonth() + 1).padStart(2, '0');
+
+        $("#filterBulan").val(`${y}-${m}`);
+
+        // Fungsi helper kalkulasi tgl 1 s/d tgl akhir bulan
+        function getPeriodeBulan() {
+            let val = $("#filterBulan").val();
+            if (!val) return {
+                awal: '',
+                akhir: ''
+            };
+            let [year, month] = val.split('-');
+            let lastDay = new Date(year, month, 0).getDate();
+            return {
+                awal: `${year}-${month}-01`,
+                akhir: `${year}-${month}-${lastDay}`
+            };
         }
 
         $('.select2-init').select2({
@@ -164,24 +206,47 @@
                 url: "app/controller/get-data/get-potongan-internal.php",
                 type: "POST",
                 data: function(d) {
-                    d.tgl_awal = $("#tglAwal").val();
-                    d.tgl_akhir = $("#tglAkhir").val();
+                    // d.tgl_awal = $("#tglAwal").val();
+                    // d.tgl_akhir = $("#tglAkhir").val();
+                    let p = getPeriodeBulan();
+                    d.tgl_awal = p.awal;
+                    d.tgl_akhir = p.akhir;
                 },
                 dataSrc: "data"
             },
-            columns: [
-                { data: "no", className: "text-center" },
-                { data: "nik" },
-                { data: "nama" },
-                { data: "tgl", className: "text-center" },
-                { data: "nominal", className: "text-end fw-bold text-danger" },
-                { data: "ket" },
-                { data: "aksi", className: "text-center" }
+            columns: [{
+                    data: "no",
+                    className: "text-center"
+                },
+                {
+                    data: "nik"
+                },
+                {
+                    data: "nama"
+                },
+                {
+                    data: "tgl",
+                    className: "text-center"
+                },
+                {
+                    data: "nominal",
+                    className: "text-end fw-bold text-danger"
+                },
+                {
+                    data: "ket"
+                },
+                {
+                    data: "aksi",
+                    className: "text-center"
+                }
             ],
-            order: [[3, 'desc']]
+            order: [
+                [3, 'desc']
+            ]
         });
 
-        $("#tglAwal, #tglAkhir").on("change", () => dtPotongan.ajax.reload());
+        // $("#tglAwal, #tglAkhir").on("change", () => dtPotongan.ajax.reload());
+        $("#filterBulan").on("change", () => dtPotongan.ajax.reload());
 
         window.tambahPotongan = function() {
             $("#formPotongan")[0].reset();
@@ -205,7 +270,10 @@
                 $.ajax({
                     url: "app/controller/act-potongan-internal.php",
                     type: "POST",
-                    data: { action: "delete", id_potongan: $(this).data("id") },
+                    data: {
+                        action: "delete",
+                        id_potongan: $(this).data("id")
+                    },
                     dataType: "json",
                     success: function(res) {
                         showToast(res.msg, res.status);
@@ -239,7 +307,7 @@
         $("#formImportPotongan").on("submit", function(e) {
             e.preventDefault();
             $("#importPotonganResult").html('<div class="alert alert-info"><i class="fa fa-spinner fa-spin"></i> Memproses...</div>');
-            
+
             $.ajax({
                 url: "app/controller/csv-control/csv-potongan-internal.php",
                 type: "POST",
@@ -262,12 +330,14 @@
                 }
             });
         });
-        
+
         // Export Logic
         window.exportPotongan = () => {
-            let tgl_awal = $("#tglAwal").val();
-            let tgl_akhir = $("#tglAkhir").val();
-            window.location.href = `app/controller/export/export-potongan-internal.php?tgl_awal=${tgl_awal}&tgl_akhir=${tgl_akhir}`;
+            // let tgl_awal = $("#tglAwal").val();
+            // let tgl_akhir = $("#tglAkhir").val();
+            // window.location.href = `app/controller/export/export-potongan-internal.php?tgl_awal=${tgl_awal}&tgl_akhir=${tgl_akhir}`;
+            let p = getPeriodeBulan();
+            window.location.href = `app/controller/export/export-potongan-internal.php?tgl_awal=${p.awal}&tgl_akhir=${p.akhir}`;
         };
     });
 </script>

@@ -7,10 +7,16 @@
         align-items: center;
         border-radius: 0.375rem !important;
     }
-    .select2-container--bootstrap-5 { width: 100% !important; }
-    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
-        padding-left: 0 !important; margin-top: -2px;
+
+    .select2-container--bootstrap-5 {
+        width: 100% !important;
     }
+
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        padding-left: 0 !important;
+        margin-top: -2px;
+    }
+
     .format-badge {
         background: #e9ecef;
         color: #495057;
@@ -33,7 +39,7 @@
             <div class="card-body mt-3">
                 <form id="formImportPinjaman" enctype="multipart/form-data">
                     <p class="instruction-text mb-2">
-                        Format Import: 
+                        Format Import:
                         <span class="format-badge">A: No</span>
                         <span class="format-badge">B: NIK</span>
                         <span class="format-badge">C: Nama</span>
@@ -70,13 +76,17 @@
                 </button>
                 <button class="btn btn-info btn-sm" onclick="exportPinjaman()"><i class="fa fa-file-export"></i> Export Pinjaman</button>
                 <button class="btn btn-dark btn-sm ms-1" onclick="postingPinjamanInternal()">
-        <i class="fa fa-paper-plane"></i> Posting ke Keuangan
-    </button>
+                    <i class="fa fa-paper-plane"></i> Posting ke Keuangan
+                </button>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <!-- <div class="d-flex align-items-center gap-2">
                 <input type="date" id="tglAwal" class="form-control form-control-sm" title="Mulai Tanggal">
                 <span>-</span>
                 <input type="date" id="tglAkhir" class="form-control form-control-sm" title="Sampai Tanggal">
+            </div> -->
+            <div class="d-flex align-items-center gap-2">
+                <label class="mb-0 fw-bold">Periode:</label>
+                <input type="month" id="filterBulan" class="form-control form-control-sm" title="Pilih Bulan">
             </div>
         </div>
 
@@ -126,7 +136,7 @@
                         ?>
                     </select>
                 </div>
-                
+
                 <div class="col-12 mb-3">
                     <label>Tanggal Pencairan Pinjaman</label>
                     <input type="date" name="tgl_pinjaman" id="pinj_tgl_cair" class="form-control" required>
@@ -173,22 +183,55 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        // let today = new Date();
+        // let y = today.getFullYear();
+        // let m = today.getMonth();
+        // let d = today.getDate();
+
+        // let formatTgl = (year, month, day) => {
+        //     let dateObj = new Date(year, month, day);
+        //     return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
+        // };
+
+        // if (d > 5) {
+        //     $("#tglAwal").val(formatTgl(y, m, 6));
+        //     $("#tglAkhir").val(formatTgl(y, m + 1, 5));
+        // } else {
+        //     $("#tglAwal").val(formatTgl(y, m - 1, 6));
+        //     $("#tglAkhir").val(formatTgl(y, m, 5));
+        // }
+
+        // Logika Otomatis: Tgl 1-5 tampilkan bulan lalu, Tgl 6 ke atas tampilkan bulan berjalan
         let today = new Date();
-        let y = today.getFullYear();
-        let m = today.getMonth(); 
-        let d = today.getDate();
+        let tglHariIni = today.getDate(); // Ambil tanggal hari ini (1 s/d 31)
 
-        let formatTgl = (year, month, day) => {
-            let dateObj = new Date(year, month, day);
-            return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
-        };
+        let targetDate = new Date();
+        targetDate.setDate(1); // Set ke tgl 1 dulu untuk menghindari bug rollover jika hari ini tgl 31
 
-        if (d > 5) {
-            $("#tglAwal").val(formatTgl(y, m, 6)); 
-            $("#tglAkhir").val(formatTgl(y, m + 1, 5)); 
-        } else {
-            $("#tglAwal").val(formatTgl(y, m - 1, 6)); 
-            $("#tglAkhir").val(formatTgl(y, m, 5)); 
+        // Jika hari ini masih tanggal 1, 2, 3, 4, atau 5
+        if (tglHariIni <= 5) {
+            targetDate.setMonth(targetDate.getMonth() - 1); // Mundur ke bulan lalu
+        }
+        // Jika hari ini tanggal 6 ke atas, targetDate dibiarkan (tetap bulan berjalan saat ini)
+
+        let y = targetDate.getFullYear();
+        let m = String(targetDate.getMonth() + 1).padStart(2, '0');
+
+        $("#filterBulan").val(`${y}-${m}`);
+
+        // Fungsi helper kalkulasi tgl 1 s/d tgl akhir bulan
+        function getPeriodeBulan() {
+            let val = $("#filterBulan").val();
+            if (!val) return {
+                awal: '',
+                akhir: ''
+            };
+            let [year, month] = val.split('-');
+            let lastDay = new Date(year, month, 0).getDate();
+            return {
+                awal: `${year}-${month}-01`,
+                akhir: `${year}-${month}-${lastDay}`
+            };
         }
 
         $('.select2-init').select2({
@@ -201,7 +244,7 @@
         document.addEventListener("input", e => {
             if (e.target.classList.contains("nominal-mask")) {
                 let input = e.target;
-                
+
                 // Simpan posisi kursor saat ini
                 let cursorPos = input.selectionStart;
                 let prevLength = input.value.length;
@@ -222,25 +265,51 @@
                 url: "app/controller/get-data/get-pinjaman-internal.php",
                 type: "POST",
                 data: function(d) {
-                    d.tgl_awal = $("#tglAwal").val();
-                    d.tgl_akhir = $("#tglAkhir").val();
+                    // d.tgl_awal = $("#tglAwal").val();
+                    // d.tgl_akhir = $("#tglAkhir").val();
+                    let p = getPeriodeBulan();
+                    d.tgl_awal = p.awal;
+                    d.tgl_akhir = p.akhir;
                 },
                 dataSrc: "data"
             },
-            columns: [
-                { data: "no", className: "text-center" },
-                { data: "nik" },
-                { data: "nama" },
-                { data: "tgl_cair", className: "text-center" },
-                { data: "tgl_bayar", className: "text-center" },
-                { data: "nominal", className: "text-end fw-bold text-danger" },
-                { data: "ket" },
-                { data: "aksi", className: "text-center" }
+            columns: [{
+                    data: "no",
+                    className: "text-center"
+                },
+                {
+                    data: "nik"
+                },
+                {
+                    data: "nama"
+                },
+                {
+                    data: "tgl_cair",
+                    className: "text-center"
+                },
+                {
+                    data: "tgl_bayar",
+                    className: "text-center"
+                },
+                {
+                    data: "nominal",
+                    className: "text-end fw-bold text-danger"
+                },
+                {
+                    data: "ket"
+                },
+                {
+                    data: "aksi",
+                    className: "text-center"
+                }
             ],
-            order: [[4, 'desc']] // Sort berdasarkan tanggal bayar
+            order: [
+                [4, 'desc']
+            ] // Sort berdasarkan tanggal bayar
         });
 
-        $("#tglAwal, #tglAkhir").on("change", () => dtPinjaman.ajax.reload());
+        // $("#tglAwal, #tglAkhir").on("change", () => dtPinjaman.ajax.reload());
+        $("#filterBulan").on("change", () => dtPinjaman.ajax.reload());
 
         // Logika Hitung Cicilan
         const inputPlafon = document.getElementById("pinj_plafon");
@@ -291,12 +360,12 @@
             $("#formPinjaman")[0].reset();
             $("#pinj_karyawan").val("").trigger("change");
             $("#pinj_action").val("add");
-            
+
             // Kembalikan tampilan ke mode Tambah (Munculkan Tenor)
             $("#areaTenor").show();
             $("#areaKetTenor").show();
             $("#labelInputNominal").text("Total Pinjaman (Rp)"); // Kembalikan label asli
-            
+
             hitungCicilan();
         }
 
@@ -308,15 +377,15 @@
             $("#pinj_tgl_cair").val(d.tglcair);
             $("#pinj_tgl_bayar").val(d.tglbayar);
             $("#pinj_ket").val(d.ket);
-            
+
             // Masukkan nominal ke input form
             $("#pinj_plafon").val(d.nominal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."));
-            
+
             // Mode Edit: Sembunyikan Tenor, ubah label Nominal
-            $("#areaTenor").hide(); 
+            $("#areaTenor").hide();
             $("#areaKetTenor").hide();
             $("#labelInputNominal").text("Nominal Cicilan Ini (Rp)"); // Ubah label agar relevan
-            
+
             infoCicilan.style.display = "none";
             labelTglBayar.innerText = "Tanggal Pembayaran (Cicilan Ini)";
 
@@ -328,7 +397,10 @@
                 $.ajax({
                     url: "app/controller/act-pinjaman-internal.php",
                     type: "POST",
-                    data: { action: "delete", id_pinjaman: $(this).data("id") },
+                    data: {
+                        action: "delete",
+                        id_pinjaman: $(this).data("id")
+                    },
                     dataType: "json",
                     success: function(res) {
                         showToast(res.msg, res.status);
@@ -362,7 +434,7 @@
         $("#formImportPinjaman").on("submit", function(e) {
             e.preventDefault();
             $("#importPinjamanResult").html('<div class="alert alert-info"><i class="fa fa-spinner fa-spin"></i> Memproses file...</div>');
-            
+
             $.ajax({
                 url: "app/controller/csv-control/csv-pinjaman-internal.php",
                 type: "POST",
@@ -375,7 +447,7 @@
                         dtPinjaman.ajax.reload();
 
                         $("#importPinjamanResult").html(`<div class="alert alert-success fw-bold"><i class="fa fa-check-circle"></i> ${res.message}</div>`);
-                        
+
                         $("#formImportPinjaman")[0].reset();
                     } else {
                         $("#importPinjamanResult").html(`<div class="alert alert-danger">${res.error || res.message}</div>`);
@@ -386,23 +458,27 @@
                 }
             });
         });
-        
+
         // Export Logic
         window.exportPinjaman = () => {
-            let tgl_awal = $("#tglAwal").val();
-            let tgl_akhir = $("#tglAkhir").val();
-            window.location.href = `app/controller/export/export-pinjaman-internal.php?tgl_awal=${tgl_awal}&tgl_akhir=${tgl_akhir}`;
+            // let tgl_awal = $("#tglAwal").val();
+            // let tgl_akhir = $("#tglAkhir").val();
+            // window.location.href = `app/controller/export/export-pinjaman-internal.php?tgl_awal=${tgl_awal}&tgl_akhir=${tgl_akhir}`;
+            let p = getPeriodeBulan();
+            window.location.href = `app/controller/export/export-pinjaman-internal.php?tgl_awal=${p.awal}&tgl_akhir=${p.akhir}`;
         };
 
         // Fungsi Posting Pinjaman Internal ke Laporan Keuangan
         window.postingPinjamanInternal = function() {
-            let tgl_awal = $("#tglAwal").val();
-            let tgl_akhir = $("#tglAkhir").val();
+            let p = getPeriodeBulan();
+            let tgl_awal = p.awal;
+            let tgl_akhir = p.akhir;
+            let bln = $("#filterBulan").val();
 
-            if (!tgl_awal || !tgl_akhir) return alert("Rentang tanggal tidak boleh kosong!");
+            if (!tgl_awal || !tgl_akhir) return alert("Pilih bulan terlebih dahulu!");
 
-            if (confirm(`Posting total pencairan pinjaman periode (${tgl_awal} s/d ${tgl_akhir}) ke Laporan Keuangan?\n\n(Data posting lama di rentang tanggal ini akan ditimpa/direplace otomatis)`)) {
-                
+            if (confirm(`Posting total pencairan pinjaman periode Bulan ${bln} (${tgl_awal} s/d ${tgl_akhir}) ke Laporan Keuangan?\n\n(Data posting lama di rentang tanggal ini akan ditimpa/direplace otomatis)`)) {
+
                 const btn = event.currentTarget;
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';

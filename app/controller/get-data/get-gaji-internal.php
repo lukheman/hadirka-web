@@ -42,8 +42,8 @@ while ($r = $q->fetch_assoc()) {
         "gapok" => "Rp " . number_format($gapok, 0, ',', '.'),
         "bonus" => "Rp " . number_format($bonus, 0, ',', '.'),
         "rapel" => "Rp " . number_format($rapel, 0, ',', '.'),
-        "potongan" => "- Rp " . number_format($potongan, 0, ',', '.'),
-        "pinjaman" => "- Rp " . number_format($pinjaman, 0, ',', '.'),
+        "potongan" => "Rp " . number_format($potongan, 0, ',', '.'),
+        "pinjaman" => "Rp " . number_format($pinjaman, 0, ',', '.'),
         "gaji_bersih" => "Rp " . number_format($bersih, 0, ',', '.')
     ];
 }

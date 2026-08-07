@@ -61,10 +61,14 @@
                 <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalBonus" onclick="tambahBonus()"><i class="fa fa-plus"></i> Tambah Bonus Manual</button>
                 <button class="btn btn-info btn-sm" onclick="exportBonus()"><i class="fa fa-file-export"></i> Export Log Bonus</button>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <!-- <div class="d-flex align-items-center gap-2">
                 <input type="date" id="tglAwal" class="form-control form-control-sm" title="Mulai Tanggal">
                 <span>-</span>
                 <input type="date" id="tglAkhir" class="form-control form-control-sm" title="Sampai Tanggal">
+            </div> -->
+            <div class="d-flex align-items-center gap-2">
+                <label class="mb-0 fw-bold">Periode:</label>
+                <input type="month" id="filterBulan" class="form-control form-control-sm" title="Pilih Bulan">
             </div>
         </div>
 
@@ -133,27 +137,60 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // 1. SET DEFAULT FILTER (Misal: Tanggal 6 bulan lalu s/d Tanggal 5 bulan ini)
+        // // 1. SET DEFAULT FILTER (Misal: Tanggal 6 bulan lalu s/d Tanggal 5 bulan ini)
+        // let today = new Date();
+        // let y = today.getFullYear();
+        // let m = today.getMonth(); // Bulan ini (0-11)
+        // let d = today.getDate();
+
+        // // Format YYYY-MM-DD
+        // let formatTgl = (year, month, day) => {
+        //     let dateObj = new Date(year, month, day);
+        //     return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
+        // };
+
+        // // Logika Cut-Off Dinamis:
+        // // Jika tanggal hari ini lebih dari tanggal 5, masuk periode baru (Tgl 6 bulan ini s/d Tgl 5 bulan depan)
+        // // Jika belum lewat tanggal 5, masih periode lama (Tgl 6 bulan lalu s/d Tgl 5 bulan ini)
+        // if (d > 5) {
+        //     $("#tglAwal").val(formatTgl(y, m, 6));
+        //     $("#tglAkhir").val(formatTgl(y, m + 1, 5));
+        // } else {
+        //     $("#tglAwal").val(formatTgl(y, m - 1, 6));
+        //     $("#tglAkhir").val(formatTgl(y, m, 5));
+        // }
+
+        // Logika Otomatis: Tgl 1-5 tampilkan bulan lalu, Tgl 6 ke atas tampilkan bulan berjalan
         let today = new Date();
-        let y = today.getFullYear();
-        let m = today.getMonth(); // Bulan ini (0-11)
-        let d = today.getDate();
+        let tglHariIni = today.getDate(); // Ambil tanggal hari ini (1 s/d 31)
 
-        // Format YYYY-MM-DD
-        let formatTgl = (year, month, day) => {
-            let dateObj = new Date(year, month, day);
-            return dateObj.getFullYear() + "-" + String(dateObj.getMonth() + 1).padStart(2, '0') + "-" + String(dateObj.getDate()).padStart(2, '0');
-        };
+        let targetDate = new Date();
+        targetDate.setDate(1); // Set ke tgl 1 dulu untuk menghindari bug rollover jika hari ini tgl 31
 
-        // Logika Cut-Off Dinamis:
-        // Jika tanggal hari ini lebih dari tanggal 5, masuk periode baru (Tgl 6 bulan ini s/d Tgl 5 bulan depan)
-        // Jika belum lewat tanggal 5, masih periode lama (Tgl 6 bulan lalu s/d Tgl 5 bulan ini)
-        if (d > 5) {
-            $("#tglAwal").val(formatTgl(y, m, 6)); 
-            $("#tglAkhir").val(formatTgl(y, m + 1, 5)); 
-        } else {
-            $("#tglAwal").val(formatTgl(y, m - 1, 6)); 
-            $("#tglAkhir").val(formatTgl(y, m, 5)); 
+        // Jika hari ini masih tanggal 1, 2, 3, 4, atau 5
+        if (tglHariIni <= 5) {
+            targetDate.setMonth(targetDate.getMonth() - 1); // Mundur ke bulan lalu
+        }
+        // Jika hari ini tanggal 6 ke atas, targetDate dibiarkan (tetap bulan berjalan saat ini)
+
+        let y = targetDate.getFullYear();
+        let m = String(targetDate.getMonth() + 1).padStart(2, '0');
+
+        $("#filterBulan").val(`${y}-${m}`);
+
+        // Fungsi helper kalkulasi tgl 1 s/d tgl akhir bulan
+        function getPeriodeBulan() {
+            let val = $("#filterBulan").val();
+            if (!val) return {
+                awal: '',
+                akhir: ''
+            };
+            let [year, month] = val.split('-');
+            let lastDay = new Date(year, month, 0).getDate();
+            return {
+                awal: `${year}-${month}-01`,
+                akhir: `${year}-${month}-${lastDay}`
+            };
         }
 
         // 2. INISIALISASI PLUGIN & EVENT LISTENER
@@ -176,8 +213,11 @@
                 type: "POST",
                 data: function(d) {
                     // KIRIM TANGGAL AWAL DAN AKHIR
-                    d.tgl_awal = $("#tglAwal").val();
-                    d.tgl_akhir = $("#tglAkhir").val();
+                    // d.tgl_awal = $("#tglAwal").val();
+                    // d.tgl_akhir = $("#tglAkhir").val();
+                    let p = getPeriodeBulan();
+                    d.tgl_awal = p.awal;
+                    d.tgl_akhir = p.akhir;
                 },
                 dataSrc: "data"
             },
@@ -213,7 +253,8 @@
         });
 
         // 4. TRIGGER RELOAD TABEL SAAT BULAN DIUBAH
-        $("#tglAwal, #tglAkhir").on("change", () => dtBonus.ajax.reload());
+        // $("#tglAwal, #tglAkhir").on("change", () => dtBonus.ajax.reload());
+        $("#filterBulan").on("change", () => dtBonus.ajax.reload());
 
         window.tambahBonus = function() {
             $("#formBonus")[0].reset();
@@ -297,9 +338,11 @@
 
         // 5. BAWA PARAMETER BULAN SAAT EXPORT KE EXCEL
         window.exportBonus = () => {
-            let tgl_awal = $("#tglAwal").val();
-            let tgl_akhir = $("#tglAkhir").val();
-            window.location.href = `app/controller/export/export-bonus-internal.php?tgl_awal=${tgl_awal}&tgl_akhir=${tgl_akhir}`;
+            // let tgl_awal = $("#tglAwal").val();
+            // let tgl_akhir = $("#tglAkhir").val();
+            // window.location.href = `app/controller/export/export-bonus-internal.php?tgl_awal=${tgl_awal}&tgl_akhir=${tgl_akhir}`;
+            let p = getPeriodeBulan();
+            window.location.href = `app/controller/export/export-bonus-internal.php?tgl_awal=${p.awal}&tgl_akhir=${p.akhir}`;
         };
     });
 </script>
