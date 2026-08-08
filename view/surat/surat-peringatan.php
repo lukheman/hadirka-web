@@ -45,10 +45,21 @@
 
                 <!-- TAB 2: HISTORI -->
                 <div class="tab-pane fade" id="navs-histori" role="tabpanel">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <button class="btn btn-primary btn-sm me-2" id="btnBatchDownloadPDF">
+                                <i class="fa fa-download"></i> Download PDF (Batch)
+                            </button>
+                            <button class="btn btn-danger btn-sm" id="btnBatchDeleteHistory">
+                                <i class="fa fa-trash"></i> Hapus (Batch)
+                            </button>
+                        </div>
+                    </div>
                     <div class="table-responsive text-nowrap">
                         <table class="table table-bordered table-hover" id="tableHistoriSP" style="width:100%">
                             <thead class="table-info">
                                 <tr>
+                                    <th class="text-center"><input type="checkbox" id="checkAllHistory"></th>
                                     <th>No Surat</th>
                                     <th>Nama Karyawan</th>
                                     <th>Jenis Sanksi</th>
@@ -127,6 +138,25 @@
             </form>
         </div>
     </div>
+
+    <!-- Modal Preview Surat -->
+    <div class="modal fade" id="modalPreviewSurat">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title text-white">Preview Surat Peringatan</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body d-flex justify-content-center" style="background: #f5f5f9; padding: 20px;">
+                    <!-- Area untuk menampung clone dari template PDF -->
+                    <div id="previewArea" class="shadow bg-white"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- HIDDEN TEMPLATE PDF -->
@@ -191,9 +221,9 @@
             </div>
             <div style="text-align: center; width: 250px;">
                 <p style="margin: 0;">Pomalaa, <span id="pdfTanggal"></span></p>
-                <p style="margin: 0; margin-bottom: 80px;">Hormat Kami,</p>
+                <p style="margin: 0; margin-bottom: 10px;">Hormat Kami,</p>
                 <!-- Lokasi gambar TTD -->
-                <img src="assets/img/ttd/hrd.png" alt="TTD HRD" style="height: 70px; margin-bottom: 5px;">
+                <img src="assets/img/ttd/hrd.png" alt="TTD HRD" style="height: 120px; margin-bottom: 5px; mix-blend-mode: multiply;">
                 <p style="margin: 0;">HRD PT. Triputra Jaya Sultra.</p>
             </div>
         </div>
@@ -220,19 +250,166 @@
                     });
                 });
 
-            // Load Histori
+            // Load Histori (Update susunan kolom DataTable karena ada Checkbox baru di kolom 0)
             fetch("app/controller/surat/get-history-sp.php")
                 .then(res => res.text())
                 .then(html => {
                     if ($.fn.DataTable.isDataTable("#tableHistoriSP")) $("#tableHistoriSP").DataTable().destroy();
                     tbodyHistori.innerHTML = html;
                     $("#tableHistoriSP").DataTable({
+                        columnDefs: [{
+                            orderable: false,
+                            targets: 0
+                        }],
                         order: [
-                            [3, 'desc']
-                        ]
+                            [4, 'desc']
+                        ] // Urutkan berdasarkan Tgl Terbit (indeks bergeser dari 3 ke 4)
                     });
                 });
         }
+
+        // --- FITUR BATCH HISTORI ---
+
+        // Check All History
+        document.getElementById("checkAllHistory").addEventListener("change", e => {
+            let table = $("#tableHistoriSP").DataTable();
+            table.$(".chk-history").prop("checked", e.target.checked);
+        });
+
+        // Aksi Hapus Batch Histori
+        document.getElementById("btnBatchDeleteHistory").addEventListener("click", () => {
+            let table = $("#tableHistoriSP").DataTable();
+            let selected = [];
+            table.$(".chk-history:checked").each(function() {
+                selected.push($(this).val());
+            });
+
+            if (selected.length === 0) {
+                showToast("Pilih data histori yang akan dihapus!", "error");
+                return;
+            }
+
+            if (confirm(`Yakin ingin menghapus ${selected.length} riwayat surat peringatan?`)) {
+                let fd = new FormData();
+                fd.append("action", "delete_sp_batch");
+                selected.forEach(id => fd.append("id_sp[]", id)); // Push array ke form
+
+                fetch("app/controller/surat/act-surat.php", {
+                        method: "POST",
+                        body: fd
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === "success") {
+                            showToast(res.msg, "success");
+                            document.getElementById("checkAllHistory").checked = false; // reset check all
+                            loadTables();
+                        } else {
+                            showToast(res.msg, "error");
+                        }
+                    });
+            }
+        });
+
+        // Aksi Download PDF Batch
+        document.getElementById("btnBatchDownloadPDF").addEventListener("click", async () => {
+            let table = $("#tableHistoriSP").DataTable();
+            let selected = [];
+            table.$(".chk-history:checked").each(function() {
+                selected.push($(this).val());
+            });
+
+            if (selected.length === 0) {
+                showToast("Pilih data histori yang akan didownload!", "error");
+                return;
+            }
+
+            let btn = document.getElementById("btnBatchDownloadPDF");
+            let originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mendownload...';
+
+            // Loop download secara berurutan menggunakan "for..of" dan "await" 
+            // agar template PDF ter-generate satu persatu tanpa tabrakan.
+            for (let idSp of selected) {
+                let fd = new FormData();
+                fd.append("action", "get_print_data");
+                fd.append("id_sp", idSp);
+
+                try {
+                    const res = await fetch("app/controller/surat/act-surat.php", {
+                        method: "POST",
+                        body: fd
+                    });
+                    const data = await res.json();
+
+                    if (data.status === "success") {
+                        const d = data.data;
+
+                        // Inject ke Template
+                        document.getElementById("pdfTitle").innerText = d.jenis_sanksi.toUpperCase();
+                        document.getElementById("pdfNoSurat").innerText = d.no_surat;
+                        document.getElementById("pdfNama").innerText = d.nama_lengkap;
+                        document.getElementById("pdfJabatan").innerText = d.nama_jabatan;
+                        document.getElementById("pdfNik").innerText = d.nik_karyawan;
+                        document.getElementById("pdfKeterangan").innerText = d.keterangan_tambahan;
+                        document.getElementById("pdfSanksi").innerText = d.jenis_sanksi;
+                        document.getElementById("pdfMasa").innerText = d.masa_berlaku_bulan;
+                        document.getElementById("pdfMasa2").innerText = d.masa_berlaku_bulan;
+
+                        const tgl = new Date(d.tgl_surat).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                        document.getElementById("pdfTanggal").innerText = tgl;
+
+                        if (d.jenis_sanksi.includes("Terakhir")) {
+                            document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut atau melakukan tindakan perilaku pelanggaran prosedur operasi dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat pemutusan hubungan kerja (PHK).`;
+                            document.getElementById("boxPenerima").innerHTML = `<p style="margin: 0; margin-bottom: 80px;">Penerima SPPT</p><p style="margin: 0;">${d.nama_lengkap.toUpperCase()}</p>`;
+                        } else {
+                            document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat peringatan sesuai aturan yang berlaku.`;
+                            document.getElementById("boxPenerima").innerHTML = "";
+                        }
+
+                        // Eksekusi PDF
+                        const slipElem = document.getElementById("pdfTemplate");
+                        slipElem.parentElement.style.display = "block";
+
+                        const filename = `${d.jenis_sanksi.toUpperCase()} - ${d.nama_lengkap}.pdf`;
+                        await html2pdf().set({
+                            margin: 0.5,
+                            filename: filename,
+                            image: {
+                                type: "jpeg",
+                                quality: 1
+                            },
+                            html2canvas: {
+                                scale: 2
+                            },
+                            jsPDF: {
+                                unit: "in",
+                                format: "a4",
+                                orientation: "portrait"
+                            }
+                        }).from(slipElem).save();
+
+                        slipElem.parentElement.style.display = "none";
+
+                        // Beri jeda 800ms per file supaya browser tidak freeze / error block popup
+                        await new Promise(r => setTimeout(r, 800));
+                    }
+                } catch (err) {
+                    console.error("Gagal cetak surat ID: " + idSp);
+                }
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            document.getElementById("checkAllHistory").checked = false;
+            table.$(".chk-history").prop("checked", false); // Uncheck all setelah selesai
+            showToast("Download batch selesai!", "success");
+        });
 
         // Auto-fill Keterangan Default
         document.getElementById("pelanggaranSelect").addEventListener("change", function() {
@@ -297,13 +474,19 @@
                 });
         });
 
-        // Trigger Print PDF dari Histori
-        document.addEventListener("click", async e => {
-            let btnPrint = e.target.closest(".btnPrintPDF");
-            if (btnPrint) {
-                const idSp = btnPrint.dataset.id;
+        // Membersihkan area preview agar elemen ID tidak bentrok / duplikat
+        document.getElementById('modalPreviewSurat').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('previewArea').innerHTML = '';
+        });
 
-                // 1. Fetch data surat
+        // Delegation Event Klik untuk Print, Hapus, dan Preview
+        document.addEventListener("click", async e => {
+
+            // --- 1. Trigger Preview Surat dari Histori ---
+            let btnPreview = e.target.closest(".btnPreviewPDF");
+            if (btnPreview) {
+                const idSp = btnPreview.dataset.id;
+
                 let fd = new FormData();
                 fd.append("action", "get_print_data");
                 fd.append("id_sp", idSp);
@@ -317,7 +500,6 @@
                 if (data.status === "success") {
                     const d = data.data;
 
-                    // 2. Inject ke Template
                     document.getElementById("pdfTitle").innerText = d.jenis_sanksi.toUpperCase();
                     document.getElementById("pdfNoSurat").innerText = d.no_surat;
                     document.getElementById("pdfNama").innerText = d.nama_lengkap;
@@ -328,7 +510,6 @@
                     document.getElementById("pdfMasa").innerText = d.masa_berlaku_bulan;
                     document.getElementById("pdfMasa2").innerText = d.masa_berlaku_bulan;
 
-                    // Format Tanggal (Contoh: 20 Mei 2026)
                     const tgl = new Date(d.tgl_surat).toLocaleDateString('id-ID', {
                         day: 'numeric',
                         month: 'long',
@@ -336,7 +517,6 @@
                     });
                     document.getElementById("pdfTanggal").innerText = tgl;
 
-                    // Penyesuaian teks SPPT
                     if (d.jenis_sanksi.includes("Terakhir")) {
                         document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut atau melakukan tindakan perilaku pelanggaran prosedur operasi dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat pemutusan hubungan kerja (PHK).`;
                         document.getElementById("boxPenerima").innerHTML = `<p style="margin: 0; margin-bottom: 80px;">Penerima SPPT</p><p style="margin: 0;">${d.nama_lengkap.toUpperCase()}</p>`;
@@ -345,9 +525,58 @@
                         document.getElementById("boxPenerima").innerHTML = "";
                     }
 
-                    // 3. Eksekusi PDF
+                    const templateHtml = document.getElementById("pdfTemplate").outerHTML;
+                    document.getElementById("previewArea").innerHTML = templateHtml;
+
+                    new bootstrap.Modal(document.getElementById("modalPreviewSurat")).show();
+                }
+            }
+
+            // --- 2. Trigger Print PDF dari Histori ---
+            let btnPrint = e.target.closest(".btnPrintPDF");
+            if (btnPrint) {
+                const idSp = btnPrint.dataset.id;
+
+                let fd = new FormData();
+                fd.append("action", "get_print_data");
+                fd.append("id_sp", idSp);
+
+                const res = await fetch("app/controller/surat/act-surat.php", {
+                    method: "POST",
+                    body: fd
+                });
+                const data = await res.json();
+
+                if (data.status === "success") {
+                    const d = data.data;
+
+                    document.getElementById("pdfTitle").innerText = d.jenis_sanksi.toUpperCase();
+                    document.getElementById("pdfNoSurat").innerText = d.no_surat;
+                    document.getElementById("pdfNama").innerText = d.nama_lengkap;
+                    document.getElementById("pdfJabatan").innerText = d.nama_jabatan;
+                    document.getElementById("pdfNik").innerText = d.nik_karyawan;
+                    document.getElementById("pdfKeterangan").innerText = d.keterangan_tambahan;
+                    document.getElementById("pdfSanksi").innerText = d.jenis_sanksi;
+                    document.getElementById("pdfMasa").innerText = d.masa_berlaku_bulan;
+                    document.getElementById("pdfMasa2").innerText = d.masa_berlaku_bulan;
+
+                    const tgl = new Date(d.tgl_surat).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    document.getElementById("pdfTanggal").innerText = tgl;
+
+                    if (d.jenis_sanksi.includes("Terakhir")) {
+                        document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut atau melakukan tindakan perilaku pelanggaran prosedur operasi dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat pemutusan hubungan kerja (PHK).`;
+                        document.getElementById("boxPenerima").innerHTML = `<p style="margin: 0; margin-bottom: 80px;">Penerima SPPT</p><p style="margin: 0;">${d.nama_lengkap.toUpperCase()}</p>`;
+                    } else {
+                        document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat peringatan sesuai aturan yang berlaku.`;
+                        document.getElementById("boxPenerima").innerHTML = "";
+                    }
+
                     const slipElem = document.getElementById("pdfTemplate");
-                    slipElem.parentElement.style.display = "block"; // Munculkan sebentar
+                    slipElem.parentElement.style.display = "block";
 
                     const filename = `${d.jenis_sanksi.toUpperCase()} - ${d.nama_lengkap}.pdf`;
                     await html2pdf().set({
@@ -367,11 +596,11 @@
                         }
                     }).from(slipElem).save();
 
-                    slipElem.parentElement.style.display = "none"; // Sembunyikan lagi
+                    slipElem.parentElement.style.display = "none";
                 }
             }
 
-            // Hapus Surat
+            // --- 3. Hapus Surat ---
             let btnDel = e.target.closest(".btnDeleteSP");
             if (btnDel && confirm("Hapus riwayat surat peringatan ini?")) {
                 let fd = new FormData();

@@ -47,9 +47,33 @@ if ($action === 'generate_batch') {
         WHERE sp.id_sp = $id_sp 
         ORDER BY k.id_karier DESC LIMIT 1");
 
-    echo json_encode(["status" => "success", "data" => $q->fetch_assoc()]);
+    $data = $q->fetch_assoc();
+    if ($data) {
+        echo json_encode(["status" => "success", "data" => $data]);
+    } else {
+        echo json_encode(["status" => "error", "msg" => "Data detail surat tidak ditemukan."]);
+    }
 } elseif ($action === 'delete_sp') {
     $stmt = $koneksi->prepare("DELETE FROM tb_surat_peringatan WHERE id_sp=?");
     $stmt->bind_param("i", $_POST['id_sp']);
     echo json_encode(["status" => $stmt->execute() ? "success" : "error"]);
+} elseif ($action === 'delete_sp_batch') {
+    $ids = $_POST['id_sp'] ?? [];
+    if (!empty($ids)) {
+        // Sanitasi/bersihkan array ID agar aman dari SQL Injection (ubah semua jadi Integer)
+        $ids = array_map('intval', $ids);
+
+        // Gabungkan array menjadi string "id1, id2, id3" untuk dimasukkan ke query IN (...)
+        $ids_string = implode(',', $ids);
+
+        $sql = "DELETE FROM tb_surat_peringatan WHERE id_sp IN ($ids_string)";
+
+        if ($koneksi->query($sql)) {
+            echo json_encode(["status" => "success", "msg" => count($ids) . " data histori berhasil dihapus."]);
+        } else {
+            echo json_encode(["status" => "error", "msg" => "Error: " . $koneksi->error]);
+        }
+    } else {
+        echo json_encode(["status" => "error", "msg" => "Tidak ada data yang dipilih."]);
+    }
 }

@@ -15,6 +15,7 @@ while ($r = $q->fetch_assoc()) {
     $sanksi = htmlspecialchars($r['jenis_sanksi']);
 
     echo "<tr>
+        <td class='text-center'><input type='checkbox' class='chk-history' value='{$r['id_sp']}'></td>
         <td>{$no_surat}</td>
         <td>{$nama}</td>
         <td><strong>{$sanksi}</strong></td>
@@ -22,6 +23,7 @@ while ($r = $q->fetch_assoc()) {
         <td>" . date('d-m-Y', $tgl_berakhir) . " ({$r['masa_berlaku_bulan']} Bln)</td>
         <td>{$status_badge}</td>
         <td>
+            <button class='btn btn-info btn-sm btnPreviewPDF' data-id='{$r['id_sp']}' title='Preview Surat'><i class='fa fa-eye'></i></button>
             <button class='btn btn-primary btn-sm btnPrintPDF' data-id='{$r['id_sp']}' title='Print PDF'><i class='fa fa-print'></i></button>
             <button class='btn btn-danger btn-sm btnDeleteSP' data-id='{$r['id_sp']}' title='Hapus'><i class='fa fa-trash'></i></button>
         </td>

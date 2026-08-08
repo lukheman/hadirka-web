@@ -61,8 +61,7 @@ try {
             $slip = generateSlipGaji($r['nik_karyawan'], $startDate, $endDate);
 
             if (isset($slip['error'])) {
-                $jabatan = "-";
-                $gaji_bersih = 0;
+                continue;
             } else {
                 $jabatan = $slip['jabatan'] ?? "-";
                 // UBAH DARI (int) MENJADI round()

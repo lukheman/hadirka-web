@@ -12,11 +12,16 @@ $q = $koneksi->query("SELECT kr.id_karyawan, kr.nik_karyawan, kr.nama_lengkap, j
     ORDER BY kr.nama_lengkap ASC");
 
 while ($r = $q->fetch_assoc()) {
+    $nik = htmlspecialchars($r['nik_karyawan'] ?? '');
+    $nama = htmlspecialchars($r['nama_lengkap'] ?? '');
+    $jabatan = htmlspecialchars($r['nama_jabatan'] ?? '-');
+    $site = htmlspecialchars($r['nama_site'] ?? '-');
+    
     echo "<tr>
         <td class='text-center'><input type='checkbox' class='chk-sp' value='{$r['id_karyawan']}'></td>
-        <td>{$r['nik_karyawan']}</td>
-        <td>{$r['nama_lengkap']}</td>
-        <td>" . ($r['nama_jabatan'] ?? '-') . "</td>
-        <td>" . ($r['nama_site'] ?? '-') . "</td>
+        <td>{$nik}</td>
+        <td>{$nama}</td>
+        <td>{$jabatan}</td>
+        <td>{$site}</td>
     </tr>";
 }
