@@ -19,8 +19,6 @@
                             <tr>
                                 <th class="text-center" style="width: 5%;">No</th>
                                 <th>Kategori Pelanggaran</th>
-                                <th class="text-center">Jenis Sanksi</th>
-                                <th class="text-center">Masa Berlaku</th>
                                 <th>Keterangan Default</th>
                                 <th class="text-center" style="width: 15%;">Aksi</th>
                             </tr>
@@ -44,24 +42,6 @@
                     <div class="mb-3">
                         <label>Kategori Pelanggaran</label>
                         <input type="text" name="nama_pelanggaran" class="form-control" placeholder="Contoh: Terlambat, Tidak pakai APD" required>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label>Jenis Sanksi</label>
-                            <select name="jenis_sanksi" class="form-select" required>
-                                <option value="">-- Pilih Sanksi --</option>
-                                <option value="Surat Teguran">Surat Teguran (ST)</option>
-                                <option value="Surat Peringatan I">Surat Peringatan I (SP1)</option>
-                                <option value="Surat Peringatan II">Surat Peringatan II (SP2)</option>
-                                <option value="Surat Peringatan III">Surat Peringatan III (SP3)</option>
-                                <option value="Surat Peringatan Pertama & Terakhir">SP Pertama & Terakhir (SPPT)</option>
-                                <option value="PHK">PHK</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label>Masa Berlaku (Bulan)</label>
-                            <input type="number" name="masa_berlaku_bulan" class="form-control" placeholder="Ex: 3 atau 6" required>
-                        </div>
                     </div>
                     <div class="mb-3">
                         <label>Keterangan Surat (Default)</label>
@@ -89,24 +69,6 @@
                         <label>Kategori Pelanggaran</label>
                         <input type="text" name="nama_pelanggaran" id="edit_nama_pelanggaran" class="form-control" required>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label>Jenis Sanksi</label>
-                            <select name="jenis_sanksi" id="edit_jenis_sanksi" class="form-select" required>
-                                <option value="">-- Pilih Sanksi --</option>
-                                <option value="Surat Teguran">Surat Teguran (ST)</option>
-                                <option value="Surat Peringatan I">Surat Peringatan I (SP1)</option>
-                                <option value="Surat Peringatan II">Surat Peringatan II (SP2)</option>
-                                <option value="Surat Peringatan III">Surat Peringatan III (SP3)</option>
-                                <option value="Surat Peringatan Pertama & Terakhir">SP Pertama & Terakhir (SPPT)</option>
-                                <option value="PHK">PHK</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label>Masa Berlaku (Bulan)</label>
-                            <input type="number" name="masa_berlaku_bulan" id="edit_masa_berlaku" class="form-control" required>
-                        </div>
-                    </div>
                     <div class="mb-3">
                         <label>Keterangan Surat (Default)</label>
                         <textarea name="keterangan_default" id="edit_keterangan_default" class="form-control" rows="3"></textarea>
@@ -122,97 +84,104 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    const tbody = document.getElementById("tbodyPelanggaran");
-    const formTambah = document.getElementById("formTambahPelanggaran");
-    const formEdit = document.getElementById("formEditPelanggaran"); // Form Edit
+    document.addEventListener("DOMContentLoaded", () => {
+        const tbody = document.getElementById("tbodyPelanggaran");
+        const formTambah = document.getElementById("formTambahPelanggaran");
+        const formEdit = document.getElementById("formEditPelanggaran"); // Form Edit
 
-    function loadData() {
-        fetch("app/controller/surat/get-pelanggaran.php")
-            .then(res => res.text())
-            .then(html => {
-                if ($.fn.DataTable.isDataTable("#tablePelanggaran")) {
-                    $("#tablePelanggaran").DataTable().destroy();
-                }
-                tbody.innerHTML = html;
-                $("#tablePelanggaran").DataTable({ responsive: true });
-            });
-    }
-
-    // Aksi Tambah Data
-    formTambah.addEventListener("submit", e => {
-        e.preventDefault();
-        let fd = new FormData(formTambah);
-        fd.append("action", "add");
-        fetch("app/controller/surat/act-pelanggaran.php", { method: "POST", body: fd })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === "success") {
-                    showToast("Pelanggaran berhasil ditambah!", "success");
-                    bootstrap.Modal.getInstance(document.getElementById('modalTambahPelanggaran')).hide();
-                    formTambah.reset();
-                    loadData();
-                } else {
-                    showToast(res.msg, "error");
-                }
-            });
-    });
-
-    // --- Aksi Edit Data (Update) ---
-    formEdit.addEventListener("submit", e => {
-        e.preventDefault();
-        let fd = new FormData(formEdit);
-        fd.append("action", "edit");
-        fetch("app/controller/surat/act-pelanggaran.php", { method: "POST", body: fd })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === "success") {
-                    showToast("Pelanggaran berhasil diperbarui!", "success");
-                    bootstrap.Modal.getInstance(document.getElementById('modalEditPelanggaran')).hide();
-                    loadData();
-                } else {
-                    showToast(res.msg, "error");
-                }
-            });
-    });
-
-    // Delegation Event Klik untuk Edit dan Hapus
-    document.addEventListener("click", e => {
-        // Logika Klik Edit
-        let btnEdit = e.target.closest(".btnEditPel");
-        if (btnEdit) {
-            // Tarik data dari atribut button ke input modal
-            document.getElementById("edit_id_pelanggaran").value = btnEdit.dataset.id;
-            document.getElementById("edit_nama_pelanggaran").value = btnEdit.dataset.nama;
-            document.getElementById("edit_jenis_sanksi").value = btnEdit.dataset.sanksi;
-            document.getElementById("edit_masa_berlaku").value = btnEdit.dataset.masa;
-            document.getElementById("edit_keterangan_default").value = btnEdit.dataset.ket;
-            
-            // Tampilkan Modal
-            new bootstrap.Modal(document.getElementById("modalEditPelanggaran")).show();
-        }
-
-        // Logika Klik Hapus
-        let btnDel = e.target.closest(".btnDeletePel");
-        if (btnDel) {
-            if (confirm("Hapus master pelanggaran ini?")) {
-                let fd = new FormData();
-                fd.append("action", "delete");
-                fd.append("id_pelanggaran", btnDel.dataset.id);
-                fetch("app/controller/surat/act-pelanggaran.php", { method: "POST", body: fd })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.status === "success") {
-                            showToast("Data dihapus!", "success");
-                            loadData();
-                        } else {
-                            showToast(res.msg, "error");
-                        }
+        function loadData() {
+            fetch("app/controller/surat/get-pelanggaran.php")
+                .then(res => res.text())
+                .then(html => {
+                    if ($.fn.DataTable.isDataTable("#tablePelanggaran")) {
+                        $("#tablePelanggaran").DataTable().destroy();
+                    }
+                    tbody.innerHTML = html;
+                    $("#tablePelanggaran").DataTable({
+                        responsive: true
                     });
-            }
+                });
         }
-    });
 
-    loadData();
-});
+        // Aksi Tambah Data
+        formTambah.addEventListener("submit", e => {
+            e.preventDefault();
+            let fd = new FormData(formTambah);
+            fd.append("action", "add");
+            fetch("app/controller/surat/act-pelanggaran.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        showToast("Pelanggaran berhasil ditambah!", "success");
+                        bootstrap.Modal.getInstance(document.getElementById('modalTambahPelanggaran')).hide();
+                        formTambah.reset();
+                        loadData();
+                    } else {
+                        showToast(res.msg, "error");
+                    }
+                });
+        });
+
+        // --- Aksi Edit Data (Update) ---
+        formEdit.addEventListener("submit", e => {
+            e.preventDefault();
+            let fd = new FormData(formEdit);
+            fd.append("action", "edit");
+            fetch("app/controller/surat/act-pelanggaran.php", {
+                    method: "POST",
+                    body: fd
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        showToast("Pelanggaran berhasil diperbarui!", "success");
+                        bootstrap.Modal.getInstance(document.getElementById('modalEditPelanggaran')).hide();
+                        loadData();
+                    } else {
+                        showToast(res.msg, "error");
+                    }
+                });
+        });
+
+        // Delegation Event Klik untuk Edit dan Hapus
+        document.addEventListener("click", e => {
+            // Logika Klik Edit
+            let btnEdit = e.target.closest(".btnEditPel");
+            if (btnEdit) {
+                document.getElementById("edit_id_pelanggaran").value = btnEdit.dataset.id;
+                document.getElementById("edit_nama_pelanggaran").value = btnEdit.dataset.nama;
+                document.getElementById("edit_keterangan_default").value = btnEdit.dataset.ket;
+
+                new bootstrap.Modal(document.getElementById("modalEditPelanggaran")).show();
+            }
+
+            // Logika Klik Hapus
+            let btnDel = e.target.closest(".btnDeletePel");
+            if (btnDel) {
+                if (confirm("Hapus master pelanggaran ini?")) {
+                    let fd = new FormData();
+                    fd.append("action", "delete");
+                    fd.append("id_pelanggaran", btnDel.dataset.id);
+                    fetch("app/controller/surat/act-pelanggaran.php", {
+                            method: "POST",
+                            body: fd
+                        })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.status === "success") {
+                                showToast("Data dihapus!", "success");
+                                loadData();
+                            } else {
+                                showToast(res.msg, "error");
+                            }
+                        });
+                }
+            }
+        });
+
+        loadData();
+    });
 </script>

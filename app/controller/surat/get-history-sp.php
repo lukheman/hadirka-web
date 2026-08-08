@@ -1,10 +1,9 @@
 <?php
 require_once __DIR__ . '/../../config/koneksi.php';
 
-$q = $koneksi->query("SELECT sp.*, kr.nama_lengkap, mp.jenis_sanksi, mp.masa_berlaku_bulan 
+$q = $koneksi->query("SELECT sp.*, kr.nama_lengkap 
     FROM tb_surat_peringatan sp
     INNER JOIN tb_karyawan kr ON sp.id_karyawan = kr.id_karyawan
-    INNER JOIN m_jenis_pelanggaran mp ON sp.id_pelanggaran = mp.id_pelanggaran
     ORDER BY sp.id_sp DESC");
 
 while ($r = $q->fetch_assoc()) {
