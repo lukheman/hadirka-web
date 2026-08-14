@@ -1,4 +1,8 @@
 <?php
+// Tambahkan 2 baris ini agar PHP tidak crash saat membaca Excel
+ini_set('memory_limit', '1024M'); 
+ini_set('max_execution_time', '300'); 
+
 header("Content-Type: application/json");
 
 require __DIR__ . '/../../config/koneksi.php';
@@ -388,11 +392,13 @@ try {
                     " . ($tgl_selesai_kontrak ? "'$tgl_selesai_kontrak'" : "NULL") . "
                 )";
             }
-            if ($sqlKarier !== null) {
-                if (!$koneksi->query($sqlKarier)) {
-                    throw new Exception("Error tb_karier: " . $koneksi->error);
-                }
-            }
+            // HAPUS ATAU JADIKAN KOMENTAR BLOK INI
+            // Karena $sqlKarier sudah di-query di dalam blok if-else di atasnya
+            // if ($sqlKarier !== null) {
+            //     if (!$koneksi->query($sqlKarier)) {
+            //         throw new Exception("Error tb_karier: " . $koneksi->error);
+            //     }
+            // }
 
 
             // Update/Insert ke tb_tereliminasi
@@ -467,7 +473,8 @@ try {
     if (isset($koneksi)) {
         $koneksi->rollback();
     }
-    $response["error"] = "Gagal membaca file Excel: " . $koneksi->error;
+    // UBAH baris ini agar mencetak error yang sebenarnya dari Exception
+    $response["error"] = "Gagal membaca file Excel: " . $e->getMessage();
 }
 
 echo json_encode($response);
