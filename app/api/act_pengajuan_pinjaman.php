@@ -90,23 +90,6 @@ switch ($action) {
         $nominal_pinjaman_safe = mysqli_real_escape_string($koneksi, $nominal_pinjaman);
         $alasan_pinjaman_safe  = mysqli_real_escape_string($koneksi, $alasan_pinjaman);
 
-        // --- NEW: CEK STATUS KARYAWAN (HANYA AKTIF YANG BISA MENGAJUKAN) ---
-        $query_cek_karyawan = mysqli_query($koneksi, "SELECT nik_karyawan, status_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan_safe'");
-        $data_karyawan = mysqli_fetch_assoc($query_cek_karyawan);
-
-        if (!$data_karyawan) {
-            sendResponse('error', 'Data karyawan tidak ditemukan.', null, 404);
-        }
-
-        // Jika statusnya bukan 'Aktif', tolak pengajuan
-        if (strtolower($data_karyawan['status_karyawan']) !== 'aktif') {
-            sendResponse('error', 'Maaf, pengajuan pinjaman hanya diperbolehkan untuk karyawan yang masih AKTIF.', null, 403);
-        }
-
-        // Simpan NIK untuk dipakai buat nama file foto nanti
-        $nik_karyawan = $data_karyawan['nik_karyawan'];
-        // ------------------------------------------------------------------
-
         // --- NEW: VALIDASI AKUMULASI LIMIT PINJAMAN 1 JUTA PER BULAN ---
         $tahun_target = date('Y', strtotime($tgl_pengajuan_safe));
         $bulan_target = date('m', strtotime($tgl_pengajuan_safe));
@@ -134,6 +117,11 @@ switch ($action) {
             sendResponse('error', 'Nominal melebihi sisa kuota bulan ini. Sisa kuota yang bisa Anda ajukan: Rp ' . number_format($sisa_kuota, 0, ',', '.'), null, 400);
         }
         // ----------------------------------------------------------
+
+        // Ambil NIK
+        $nik_karyawan = 'UNKNOWN';
+        $query_nik = mysqli_query($koneksi, "SELECT nik_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan_safe'");
+        if ($row_nik = mysqli_fetch_assoc($query_nik)) $nik_karyawan = $row_nik['nik_karyawan'];
 
         $tgl_format_file = date('Ymd', strtotime($tgl_pengajuan_safe));
 
