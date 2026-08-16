@@ -10,12 +10,18 @@ if ($action === 'generate_batch') {
         $ids_karyawan = $_POST['id_karyawan'] ?? [];
         $id_pelanggaran = intval($_POST['id_pelanggaran']);
         $jenis_sanksi = $koneksi->real_escape_string($_POST['jenis_sanksi']);
-        $masa = intval($_POST['masa_berlaku_bulan']);
         $tgl_surat = $_POST['tgl_surat'];
         $input_no_surat = $koneksi->real_escape_string($_POST['no_surat']);
         $ket = $koneksi->real_escape_string($_POST['keterangan_tambahan']);
 
-        $tgl_berakhir = date('Y-m-d', strtotime("+$masa months", strtotime($tgl_surat)));
+        // Mengakomodasi jika masa berlaku diset kosong untuk PHK/End Contract
+        $masa = (isset($_POST['masa_berlaku_bulan']) && $_POST['masa_berlaku_bulan'] !== '') ? intval($_POST['masa_berlaku_bulan']) : 0;
+        
+        if ($masa > 0) {
+            $tgl_berakhir = date('Y-m-d', strtotime("+$masa months", strtotime($tgl_surat)));
+        } else {
+            $tgl_berakhir = NULL; // Dikosongkan agar DB tahu ini sanksi permanen (PHK/End Contract)
+        }
 
         $stmt = $koneksi->prepare("INSERT INTO tb_surat_peringatan (no_surat, id_karyawan, id_pelanggaran, jenis_sanksi, masa_berlaku_bulan, tgl_surat, tgl_berakhir, keterangan_tambahan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
@@ -60,10 +66,7 @@ if ($action === 'generate_batch') {
 } elseif ($action === 'delete_sp_batch') {
     $ids = $_POST['id_sp'] ?? [];
     if (!empty($ids)) {
-        // Sanitasi/bersihkan array ID agar aman dari SQL Injection (ubah semua jadi Integer)
         $ids = array_map('intval', $ids);
-
-        // Gabungkan array menjadi string "id1, id2, id3" untuk dimasukkan ke query IN (...)
         $ids_string = implode(',', $ids);
 
         $sql = "DELETE FROM tb_surat_peringatan WHERE id_sp IN ($ids_string)";

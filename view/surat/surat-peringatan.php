@@ -111,6 +111,7 @@
                                 <option value="Surat Peringatan III">Surat Peringatan III (SP3)</option>
                                 <option value="Surat Peringatan Pertama & Terakhir">SP Pertama & Terakhir (SPPT)</option>
                                 <option value="PHK">PHK</option>
+                                <option value="End Contract">End Contract</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -148,7 +149,6 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body d-flex justify-content-center" style="background: #f5f5f9; padding: 20px;">
-                    <!-- Area untuk menampung clone dari template PDF -->
                     <div id="previewArea" class="shadow bg-white"></div>
                 </div>
                 <div class="modal-footer">
@@ -164,15 +164,12 @@
     <div id="pdfTemplate" style="max-width: 680px; box-sizing: border-box; padding: 40px; background: #fff; font-family: 'Times New Roman', Times, serif; color: #000; position: relative;">
         <!-- Header Kop Surat -->
         <div style="position: relative; text-align: center; padding-bottom: 10px;">
-            <!-- Logo menggunakan absolute positioning agar teks header presisi di tengah -->
             <img src="assets/img/logo/tjs-done.png" style="position: absolute; left: 0; top: 0; height: 85px;">
-
             <h4 style="margin: 0; color: #000000; font-weight: bold; font-size: 26px; letter-spacing: 0.5px;">PT. TRIPUTRA JAYA SULTRA</h4>
             <p style="margin: 3px 0; font-size: 15px; font-weight: bold;">KONTRAKTOR DAN PERDAGANGAN UMUM PUSAT POMALAA</p>
             <p style="margin: 0; font-size: 14px;">Jl. Nusantara No.82 Pomalaa, 93562, Kolaka - Sulawesi Tenggara</p>
             <p style="margin: 0; font-size: 14px;">Telp: (0405) 2310860</p>
         </div>
-        <!-- Garis Ganda Kop Surat standar -->
         <div style="border-bottom: 3px solid #000; margin-bottom: 2px;"></div>
         <div style="border-bottom: 1px solid #000; margin-bottom: 30px;"></div>
 
@@ -202,30 +199,16 @@
             </tr>
         </table>
 
-        <!-- Isi Surat -->
-        <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5;">Dengan hormat,</p>
-        <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
-            Kami sampaikan kepada Saudara, bahwa anda telah melakukan Tindakan atau perilaku pelanggaran prosedur operasi yaitu <span id="pdfKeterangan"></span>, yang Dimana perilaku atau Tindakan tersebut bertentangan dengan peraturan Perusahaan pihak pertama tempat anda bekerja. Akibat tindakan tersebut kami berikan sanksi kepada saudara berupa <span id="pdfSanksi"></span> yang berlaku <span id="pdfMasa"></span> bulan kedepan.
-        </p>
-        <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;" id="pdfParagraf2">
-            Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut dalam jangka waktu <span id="pdfMasa2"></span> bulan kedepan maka saudara akan kami berikan surat peringatan sesuai aturan yang berlaku.
-        </p>
-        <p style="margin-bottom: 40px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
-            Demikian kami sampaikan untuk di taati atas perhatian saudara, kami ucapkan terima kasih.
-        </p>
+        <!-- Isi Surat Dinamis -->
+        <div id="pdfKontenSurat">
+            <!-- Konten di-inject melalui JS agar menyesuaikan tipe sanksinya -->
+        </div>
 
         <!-- TTD -->
-        <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 15px;">
-            <div style="text-align: center; width: 250px;" id="boxPenerima">
-                <!-- Muncul khusus SPPT -->
-            </div>
-            <div style="text-align: center; width: 250px;">
-                <p style="margin: 0;">Pomalaa, <span id="pdfTanggal"></span></p>
-                <p style="margin: 0; margin-bottom: 10px;">Hormat Kami,</p>
-                <!-- Lokasi gambar TTD -->
-                <img src="assets/img/ttd/hrd.png" alt="TTD HRD" style="height: 120px; margin-bottom: 5px; mix-blend-mode: multiply;">
-                <p style="margin: 0;">HRD PT. Triputra Jaya Sultra.</p>
-            </div>
+        <!-- Menambahkan align-items: flex-end; memastikan bagian paling bawah blok (nama terang) selalu rata/sejajar -->
+        <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 15px; align-items: flex-end;">
+            <div style="text-align: center; width: 250px;" id="ttdKiri"></div>
+            <div style="text-align: center; width: 250px;" id="ttdKanan"></div>
         </div>
     </div>
 </div>
@@ -235,8 +218,126 @@
         const tbodyKaryawan = document.getElementById("tbodyKaryawanSP");
         const tbodyHistori = document.getElementById("tbodyHistoriSP");
 
+        // Logika menonaktifkan Masa Berlaku untuk PHK dan End Contract
+        document.querySelector('select[name="jenis_sanksi"]').addEventListener('change', function() {
+            const masaInput = document.querySelector('input[name="masa_berlaku_bulan"]');
+            if (this.value === 'PHK' || this.value === 'End Contract') {
+                masaInput.value = '';
+                masaInput.removeAttribute('required');
+                masaInput.setAttribute('readonly', 'true');
+            } else {
+                masaInput.removeAttribute('readonly');
+                masaInput.setAttribute('required', 'true');
+            }
+        });
+
+        // Helper function untuk generate data ke dalam template HTML
+        function siapkanTemplatePDF(d) {
+            // 1. Set Judul Surat
+            let titleText = d.jenis_sanksi.toUpperCase();
+            if (d.jenis_sanksi === "PHK") {
+                titleText = "SURAT PEMUTUSAN HUBUNGAN KERJA";
+            } else if (d.jenis_sanksi === "End Contract") {
+                titleText = "SURAT PEMBERITAHUAN BERAKHIRNYA MASA KONTRAK";
+            }
+
+            document.getElementById("pdfTitle").innerText = titleText;
+            document.getElementById("pdfNoSurat").innerText = d.no_surat;
+            document.getElementById("pdfNama").innerText = d.nama_lengkap;
+            document.getElementById("pdfJabatan").innerText = d.nama_jabatan;
+            document.getElementById("pdfNik").innerText = d.nik_karyawan;
+
+            // 2. Setup Variable TTD dengan Struktur HTML Identik agar Sejajar
+            const tgl = new Date(d.tgl_surat).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            let ttdPenerima = `
+                <p style="margin: 0; visibility: hidden;">Pomalaa, ${tgl}</p>
+                <p style="margin: 0; margin-bottom: -10px;">Penerima,</p>
+                <div style="height: 120px; margin-bottom: 5px;"></div>
+                <p style="margin: 0; margin-top: -25px; text-decoration: underline; font-weight: bold;">${d.nama_lengkap.toUpperCase()}</p>
+            `;
+
+            let ttdHrd = `
+                <p style="margin: 0;">Pomalaa, ${tgl}</p>
+                <p style="margin: 0; margin-bottom: -10px;">Hormat Kami,</p>
+                <div style="height: 120px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center;">
+                    <img src="assets/img/ttd/hrd.png" alt="TTD HRD" style="max-height: 120px; max-width: 100%; mix-blend-mode: multiply;">
+                </div>
+                <p style="margin: 0; margin-top: -25px;">HRD PT Triputra Jaya Sultra.</p>
+            `;
+
+            let kontenSurat = "";
+            let ttdKiri = "";
+            let ttdKanan = "";
+
+            // 3. Logika Paragraf dan Posisi TTD
+            if (d.jenis_sanksi === "PHK") {
+                kontenSurat = `
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5;">Dengan hormat,</p>
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Kami sampaikan kepada Saudara, bahwa anda telah melakukan tindakan atau perilaku pelanggaran berat prosedur operasi yaitu <strong>${d.keterangan_tambahan}</strong>, yang bertentangan dengan peraturan Perusahaan tempat anda bekerja. Berdasarkan hal tersebut, maka Perusahaan memutuskan untuk melakukan Pemutusan Hubungan Kerja (PHK) dengan Saudara.
+                    </p>
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Perusahaan mengucapkan terima kasih atas dedikasi dan kinerja Saudara selama bergabung di PT. Triputra Jaya Sultra. Segala hak dan kewajiban terkait pemutusan hubungan kerja ini akan diselesaikan sesuai dengan ketentuan yang berlaku.
+                    </p>
+                    <p style="margin-bottom: 40px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Demikian surat ini kami sampaikan agar dapat dimaklumi.
+                    </p>
+                `;
+                ttdKiri = ttdPenerima;
+                ttdKanan = ttdHrd;
+            } else if (d.jenis_sanksi === "End Contract") {
+                kontenSurat = `
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5;">Dengan hormat,</p>
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Melalui surat ini, kami memberitahukan kepada Saudara bahwa masa perjanjian kerja Saudara telah berakhir sesuai dengan ketentuan <strong>${d.keterangan_tambahan}</strong>. Oleh karena itu, hubungan kerja Saudara dengan PT. Triputra Jaya Sultra resmi berakhir dan Perusahaan memutuskan untuk tidak memperpanjang masa kontrak kerja Saudara.
+                    </p>
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Kami mengucapkan terima kasih atas kerja keras dan kontribusi yang telah Saudara berikan selama menjadi bagian dari Perusahaan. Kami berharap kesuksesan untuk Saudara di masa mendatang.
+                    </p>
+                    <p style="margin-bottom: 40px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Demikian surat pemberitahuan ini kami sampaikan atas perhatiannya kami ucapkan terima kasih.
+                    </p>
+                `;
+                ttdKiri = ttdPenerima;
+                ttdKanan = ttdHrd;
+            } else {
+                let p2 = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut dalam jangka waktu <strong>${d.masa_berlaku_bulan}</strong> bulan kedepan maka saudara akan kami berikan surat peringatan sesuai aturan yang berlaku.`;
+
+                if (d.jenis_sanksi.includes("Terakhir")) {
+                    p2 = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut atau melakukan tindakan perilaku pelanggaran prosedur operasi dalam jangka waktu <strong>${d.masa_berlaku_bulan}</strong> bulan kedepan maka saudara akan kami berikan surat pemutusan hubungan kerja (PHK).`;
+                    ttdKiri = ttdPenerima;
+                    ttdKanan = ttdHrd;
+                } else {
+                    ttdKiri = "";
+                    ttdKanan = ttdHrd;
+                }
+
+                kontenSurat = `
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5;">Dengan hormat,</p>
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Kami sampaikan kepada Saudara, bahwa anda telah melakukan Tindakan atau perilaku pelanggaran prosedur operasi yaitu <strong>${d.keterangan_tambahan}</strong>, yang Dimana perilaku atau Tindakan tersebut bertentangan dengan peraturan Perusahaan pihak pertama tempat anda bekerja. Akibat tindakan tersebut kami berikan sanksi kepada saudara berupa <strong>${d.jenis_sanksi}</strong> yang berlaku <strong>${d.masa_berlaku_bulan}</strong> bulan kedepan.
+                    </p>
+                    <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        ${p2}
+                    </p>
+                    <p style="margin-bottom: 40px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
+                        Demikian kami sampaikan untuk di taati atas perhatian saudara, kami ucapkan terima kasih.
+                    </p>
+                `;
+            }
+
+            // Inject konten dan TTD
+            document.getElementById("pdfKontenSurat").innerHTML = kontenSurat;
+            document.getElementById("ttdKiri").innerHTML = ttdKiri;
+            document.getElementById("ttdKanan").innerHTML = ttdKanan;
+        }
+
         function loadTables() {
-            // Load Karyawan Aktif
             fetch("app/controller/surat/get-karyawan-sp.php")
                 .then(res => res.text())
                 .then(html => {
@@ -250,7 +351,6 @@
                     });
                 });
 
-            // Load Histori (Update susunan kolom DataTable karena ada Checkbox baru di kolom 0)
             fetch("app/controller/surat/get-history-sp.php")
                 .then(res => res.text())
                 .then(html => {
@@ -263,20 +363,17 @@
                         }],
                         order: [
                             [4, 'desc']
-                        ] // Urutkan berdasarkan Tgl Terbit (indeks bergeser dari 3 ke 4)
+                        ]
                     });
                 });
         }
 
         // --- FITUR BATCH HISTORI ---
-
-        // Check All History
         document.getElementById("checkAllHistory").addEventListener("change", e => {
             let table = $("#tableHistoriSP").DataTable();
             table.$(".chk-history").prop("checked", e.target.checked);
         });
 
-        // Aksi Hapus Batch Histori
         document.getElementById("btnBatchDeleteHistory").addEventListener("click", () => {
             let table = $("#tableHistoriSP").DataTable();
             let selected = [];
@@ -292,7 +389,7 @@
             if (confirm(`Yakin ingin menghapus ${selected.length} riwayat surat peringatan?`)) {
                 let fd = new FormData();
                 fd.append("action", "delete_sp_batch");
-                selected.forEach(id => fd.append("id_sp[]", id)); // Push array ke form
+                selected.forEach(id => fd.append("id_sp[]", id));
 
                 fetch("app/controller/surat/act-surat.php", {
                         method: "POST",
@@ -302,7 +399,7 @@
                     .then(res => {
                         if (res.status === "success") {
                             showToast(res.msg, "success");
-                            document.getElementById("checkAllHistory").checked = false; // reset check all
+                            document.getElementById("checkAllHistory").checked = false;
                             loadTables();
                         } else {
                             showToast(res.msg, "error");
@@ -311,7 +408,6 @@
             }
         });
 
-        // Aksi Download PDF Batch
         document.getElementById("btnBatchDownloadPDF").addEventListener("click", async () => {
             let table = $("#tableHistoriSP").DataTable();
             let selected = [];
@@ -329,8 +425,6 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mendownload...';
 
-            // Loop download secara berurutan menggunakan "for..of" dan "await" 
-            // agar template PDF ter-generate satu persatu tanpa tabrakan.
             for (let idSp of selected) {
                 let fd = new FormData();
                 fd.append("action", "get_print_data");
@@ -344,39 +438,11 @@
                     const data = await res.json();
 
                     if (data.status === "success") {
-                        const d = data.data;
+                        siapkanTemplatePDF(data.data);
 
-                        // Inject ke Template
-                        document.getElementById("pdfTitle").innerText = d.jenis_sanksi.toUpperCase();
-                        document.getElementById("pdfNoSurat").innerText = d.no_surat;
-                        document.getElementById("pdfNama").innerText = d.nama_lengkap;
-                        document.getElementById("pdfJabatan").innerText = d.nama_jabatan;
-                        document.getElementById("pdfNik").innerText = d.nik_karyawan;
-                        document.getElementById("pdfKeterangan").innerText = d.keterangan_tambahan;
-                        document.getElementById("pdfSanksi").innerText = d.jenis_sanksi;
-                        document.getElementById("pdfMasa").innerText = d.masa_berlaku_bulan;
-                        document.getElementById("pdfMasa2").innerText = d.masa_berlaku_bulan;
-
-                        const tgl = new Date(d.tgl_surat).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                        });
-                        document.getElementById("pdfTanggal").innerText = tgl;
-
-                        if (d.jenis_sanksi.includes("Terakhir")) {
-                            document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut atau melakukan tindakan perilaku pelanggaran prosedur operasi dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat pemutusan hubungan kerja (PHK).`;
-                            document.getElementById("boxPenerima").innerHTML = `<p style="margin: 0; margin-bottom: 80px;">Penerima SPPT</p><p style="margin: 0;">${d.nama_lengkap.toUpperCase()}</p>`;
-                        } else {
-                            document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat peringatan sesuai aturan yang berlaku.`;
-                            document.getElementById("boxPenerima").innerHTML = "";
-                        }
-
-                        // Eksekusi PDF
                         const slipElem = document.getElementById("pdfTemplate");
                         slipElem.parentElement.style.display = "block";
-
-                        const filename = `${d.jenis_sanksi.toUpperCase()} - ${d.nama_lengkap}.pdf`;
+                        const filename = `${data.data.jenis_sanksi.toUpperCase()} - ${data.data.nama_lengkap}.pdf`;
                         await html2pdf().set({
                             margin: 0.5,
                             filename: filename,
@@ -395,8 +461,6 @@
                         }).from(slipElem).save();
 
                         slipElem.parentElement.style.display = "none";
-
-                        // Beri jeda 800ms per file supaya browser tidak freeze / error block popup
                         await new Promise(r => setTimeout(r, 800));
                     }
                 } catch (err) {
@@ -407,23 +471,20 @@
             btn.disabled = false;
             btn.innerHTML = originalText;
             document.getElementById("checkAllHistory").checked = false;
-            table.$(".chk-history").prop("checked", false); // Uncheck all setelah selesai
+            table.$(".chk-history").prop("checked", false);
             showToast("Download batch selesai!", "success");
         });
 
-        // Auto-fill Keterangan Default
         document.getElementById("pelanggaranSelect").addEventListener("change", function() {
             const option = this.options[this.selectedIndex];
             document.getElementById("keteranganInput").value = option.getAttribute("data-ket") || '';
         });
 
-        // Check All Checkboxes
         document.getElementById("checkAllSP").addEventListener("change", e => {
             let table = $("#tableKaryawanSP").DataTable();
             table.$(".chk-sp").prop("checked", e.target.checked);
         });
 
-        // Buka Modal Batch
         document.getElementById("btnBatchSurat").addEventListener("click", () => {
             let table = $("#tableKaryawanSP").DataTable();
             let selected = [];
@@ -441,7 +502,6 @@
             new bootstrap.Modal(document.getElementById("modalGenerateSurat")).show();
         });
 
-        // Proses Simpan Database
         document.getElementById("formGenerateSurat").addEventListener("submit", e => {
             e.preventDefault();
             let btn = document.getElementById("btnSubmitGenerate");
@@ -474,22 +534,18 @@
                 });
         });
 
-        // Membersihkan area preview agar elemen ID tidak bentrok / duplikat
         document.getElementById('modalPreviewSurat').addEventListener('hidden.bs.modal', function() {
             document.getElementById('previewArea').innerHTML = '';
         });
 
-        // Delegation Event Klik untuk Print, Hapus, dan Preview
+        // Delegation Event Klik
         document.addEventListener("click", async e => {
-
-            // --- 1. Trigger Preview Surat dari Histori ---
+            // Preview Surat dari Histori
             let btnPreview = e.target.closest(".btnPreviewPDF");
             if (btnPreview) {
-                const idSp = btnPreview.dataset.id;
-
                 let fd = new FormData();
                 fd.append("action", "get_print_data");
-                fd.append("id_sp", idSp);
+                fd.append("id_sp", btnPreview.dataset.id);
 
                 const res = await fetch("app/controller/surat/act-surat.php", {
                     method: "POST",
@@ -498,48 +554,19 @@
                 const data = await res.json();
 
                 if (data.status === "success") {
-                    const d = data.data;
-
-                    document.getElementById("pdfTitle").innerText = d.jenis_sanksi.toUpperCase();
-                    document.getElementById("pdfNoSurat").innerText = d.no_surat;
-                    document.getElementById("pdfNama").innerText = d.nama_lengkap;
-                    document.getElementById("pdfJabatan").innerText = d.nama_jabatan;
-                    document.getElementById("pdfNik").innerText = d.nik_karyawan;
-                    document.getElementById("pdfKeterangan").innerText = d.keterangan_tambahan;
-                    document.getElementById("pdfSanksi").innerText = d.jenis_sanksi;
-                    document.getElementById("pdfMasa").innerText = d.masa_berlaku_bulan;
-                    document.getElementById("pdfMasa2").innerText = d.masa_berlaku_bulan;
-
-                    const tgl = new Date(d.tgl_surat).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                    });
-                    document.getElementById("pdfTanggal").innerText = tgl;
-
-                    if (d.jenis_sanksi.includes("Terakhir")) {
-                        document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut atau melakukan tindakan perilaku pelanggaran prosedur operasi dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat pemutusan hubungan kerja (PHK).`;
-                        document.getElementById("boxPenerima").innerHTML = `<p style="margin: 0; margin-bottom: 80px;">Penerima SPPT</p><p style="margin: 0;">${d.nama_lengkap.toUpperCase()}</p>`;
-                    } else {
-                        document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat peringatan sesuai aturan yang berlaku.`;
-                        document.getElementById("boxPenerima").innerHTML = "";
-                    }
-
+                    siapkanTemplatePDF(data.data);
                     const templateHtml = document.getElementById("pdfTemplate").outerHTML;
                     document.getElementById("previewArea").innerHTML = templateHtml;
-
                     new bootstrap.Modal(document.getElementById("modalPreviewSurat")).show();
                 }
             }
 
-            // --- 2. Trigger Print PDF dari Histori ---
+            // Print PDF dari Histori
             let btnPrint = e.target.closest(".btnPrintPDF");
             if (btnPrint) {
-                const idSp = btnPrint.dataset.id;
-
                 let fd = new FormData();
                 fd.append("action", "get_print_data");
-                fd.append("id_sp", idSp);
+                fd.append("id_sp", btnPrint.dataset.id);
 
                 const res = await fetch("app/controller/surat/act-surat.php", {
                     method: "POST",
@@ -548,37 +575,11 @@
                 const data = await res.json();
 
                 if (data.status === "success") {
-                    const d = data.data;
-
-                    document.getElementById("pdfTitle").innerText = d.jenis_sanksi.toUpperCase();
-                    document.getElementById("pdfNoSurat").innerText = d.no_surat;
-                    document.getElementById("pdfNama").innerText = d.nama_lengkap;
-                    document.getElementById("pdfJabatan").innerText = d.nama_jabatan;
-                    document.getElementById("pdfNik").innerText = d.nik_karyawan;
-                    document.getElementById("pdfKeterangan").innerText = d.keterangan_tambahan;
-                    document.getElementById("pdfSanksi").innerText = d.jenis_sanksi;
-                    document.getElementById("pdfMasa").innerText = d.masa_berlaku_bulan;
-                    document.getElementById("pdfMasa2").innerText = d.masa_berlaku_bulan;
-
-                    const tgl = new Date(d.tgl_surat).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                    });
-                    document.getElementById("pdfTanggal").innerText = tgl;
-
-                    if (d.jenis_sanksi.includes("Terakhir")) {
-                        document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut atau melakukan tindakan perilaku pelanggaran prosedur operasi dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat pemutusan hubungan kerja (PHK).`;
-                        document.getElementById("boxPenerima").innerHTML = `<p style="margin: 0; margin-bottom: 80px;">Penerima SPPT</p><p style="margin: 0;">${d.nama_lengkap.toUpperCase()}</p>`;
-                    } else {
-                        document.getElementById("pdfParagraf2").innerText = `Mohon diperhatikan agar Tindakan atau perilaku yang bertentangan dengan peraturan Perusahaan pihak pertama tidak dilanggar, dan apabila masih mengulangi perbuatan tersebut dalam jangka waktu ${d.masa_berlaku_bulan} bulan kedepan maka saudara akan kami berikan surat peringatan sesuai aturan yang berlaku.`;
-                        document.getElementById("boxPenerima").innerHTML = "";
-                    }
+                    siapkanTemplatePDF(data.data);
 
                     const slipElem = document.getElementById("pdfTemplate");
                     slipElem.parentElement.style.display = "block";
-
-                    const filename = `${d.jenis_sanksi.toUpperCase()} - ${d.nama_lengkap}.pdf`;
+                    const filename = `${data.data.jenis_sanksi.toUpperCase()} - ${data.data.nama_lengkap}.pdf`;
                     await html2pdf().set({
                         margin: 0.5,
                         filename: filename,
@@ -600,7 +601,7 @@
                 }
             }
 
-            // --- 3. Hapus Surat ---
+            // Hapus Surat
             let btnDel = e.target.closest(".btnDeleteSP");
             if (btnDel && confirm("Hapus riwayat surat peringatan ini?")) {
                 let fd = new FormData();

@@ -7,8 +7,16 @@ $q = $koneksi->query("SELECT sp.*, kr.nama_lengkap
     ORDER BY sp.id_sp DESC");
 
 while ($r = $q->fetch_assoc()) {
-    $tgl_berakhir = strtotime($r['tgl_berakhir']);
-    $status_badge = (time() > $tgl_berakhir) ? "<span class='badge bg-success'>Expired (Selesai)</span>" : "<span class='badge bg-danger'>Aktif</span>";
+    
+    // Logika handling jika masa berlaku kosong (PHK/End Contract)
+    if (empty($r['masa_berlaku_bulan']) || $r['masa_berlaku_bulan'] == 0) {
+        $status_badge = "<span class='badge bg-dark'>Permanent</span>";
+        $teks_berakhir = "N/A";
+    } else {
+        $tgl_berakhir = strtotime($r['tgl_berakhir']);
+        $status_badge = (time() > $tgl_berakhir) ? "<span class='badge bg-success'>Expired (Selesai)</span>" : "<span class='badge bg-danger'>Aktif</span>";
+        $teks_berakhir = date('d-m-Y', $tgl_berakhir) . " ({$r['masa_berlaku_bulan']} Bln)";
+    }
 
     $no_surat = htmlspecialchars($r['no_surat']);
     $nama = htmlspecialchars($r['nama_lengkap']);
@@ -20,7 +28,7 @@ while ($r = $q->fetch_assoc()) {
         <td>{$nama}</td>
         <td><strong>{$sanksi}</strong></td>
         <td>" . date('d-m-Y', strtotime($r['tgl_surat'])) . "</td>
-        <td>" . date('d-m-Y', $tgl_berakhir) . " ({$r['masa_berlaku_bulan']} Bln)</td>
+        <td>{$teks_berakhir}</td>
         <td>{$status_badge}</td>
         <td>
             <button class='btn btn-info btn-sm btnPreviewPDF' data-id='{$r['id_sp']}' title='Preview Surat'><i class='fa fa-eye'></i></button>
