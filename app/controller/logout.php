@@ -23,5 +23,5 @@ $_SESSION = [];
 session_destroy();
 
 // SASARAN REDIRECT DISAMAKAN: Menggunakan 'login' (tanpa .php) sesuai auth.php
-header("Location: login");
+header('Location: login.php');
 exit;

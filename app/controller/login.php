@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'expires' => time() + (6*30*24*60*60),
                     'path' => '/',
                     'httponly' => true,
-                    'secure' => true // ganti true jika pakai HTTPS
+                    'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
                 ]);
             }
 
@@ -81,11 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
             
         } else {
-            header("Location: login?error=wrongpass");
+            header("Location: login.php?error=wrongpass");
             exit;
         }
     } else {
-        header("Location: login?error=nouser");
+        header("Location: login.php?error=nouser");
         exit;
     }
 }
