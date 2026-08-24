@@ -88,8 +88,8 @@ while ($r = $q->fetch_assoc()) { ?>
         <td><?= $r['tgl_selesai'] ?></td>
 
         <td class="text-center">
-            <a href="data-tunjangan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Tunjangan</a>
-            <a href="data-potongan/<?= encrypt($r['id_karier']) ?>" class="btn btn-sm btn-info">Potongan</a>
+            <a href="?page=data-tunjangan&id=<?= urlencode(encrypt($r['id_karier'])) ?>" class="btn btn-sm btn-info">Tunjangan</a>
+            <a href="?page=data-potongan&id=<?= urlencode(encrypt($r['id_karier'])) ?>" class="btn btn-sm btn-info">Potongan</a>
 
             <button class="btn btn-warning btn-sm btnExtendKarier"
                 data-id="<?= $r['id_karier'] ?>"
