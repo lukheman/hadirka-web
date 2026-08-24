@@ -21,7 +21,7 @@ function isMenuOpen($pages_array, $current_page)
     <!-- Tampil untuk semua role -->
     <?php if (in_array($user_level, [0, 1, 2, 3, 4, 5, 6])): ?>
         <li class="menu-item <?= isActive('home', $current_page); ?>">
-            <a href="home" class="menu-link">
+            <a href="?page=home" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div data-i18n="Analytics">Dashboard</div>
             </a>
@@ -44,37 +44,37 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('karyawan-internal', $current_page); ?>">
-                    <a class="menu-link" href="karyawan-internal">
+                    <a class="menu-link" href="?page=karyawan-internal">
                         <div>Karyawan Internal</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('bonus-internal', $current_page); ?>">
-                    <a class="menu-link" href="bonus-internal">
+                    <a class="menu-link" href="?page=bonus-internal">
                         <div>Bonus Karyawan</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('potongan-internal', $current_page); ?>">
-                    <a class="menu-link" href="potongan-internal">
+                    <a class="menu-link" href="?page=potongan-internal">
                         <div>Potongan Internal</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('rapel-internal', $current_page); ?>">
-                    <a class="menu-link" href="rapel-internal">
+                    <a class="menu-link" href="?page=rapel-internal">
                         <div>Rapel Internal</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('pinjaman-internal', $current_page); ?>">
-                    <a class="menu-link" href="pinjaman-internal">
+                    <a class="menu-link" href="?page=pinjaman-internal">
                         <div>Pinjaman Internal</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('gaji-internal', $current_page); ?>">
-                    <a class="menu-link" href="gaji-internal">
+                    <a class="menu-link" href="?page=gaji-internal">
                         <div>Penggajian Internal</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('slip-internal', $current_page); ?>">
-                    <a class="menu-link" href="slip-internal">
+                    <a class="menu-link" href="?page=slip-internal">
                         <div>Slip Gaji Internal</div>
                     </a>
                 </li>
@@ -98,37 +98,37 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('data-karyawan', $current_page); ?>">
-                    <a class="menu-link" href="data-karyawan">
+                    <a class="menu-link" href="?page=data-karyawan">
                         <div>Data Karyawan</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('import-karier', $current_page); ?>">
-                    <a class="menu-link" href="import-karier">
+                    <a class="menu-link" href="?page=import-karier">
                         <div>Data Karier</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-site', $current_page); ?>">
-                    <a class="menu-link" href="data-site">
+                    <a class="menu-link" href="?page=data-site">
                         <div>Data Site (Lokasi)</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-departemen', $current_page); ?>">
-                    <a class="menu-link" href="data-departemen">
+                    <a class="menu-link" href="?page=data-departemen">
                         <div>Data Departemen</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-jabatan', $current_page); ?>">
-                    <a class="menu-link" href="data-jabatan">
+                    <a class="menu-link" href="?page=data-jabatan">
                         <div>Data Jabatan</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-kontrak', $current_page); ?>">
-                    <a class="menu-link" href="data-kontrak">
+                    <a class="menu-link" href="?page=data-kontrak">
                         <div>Data File Kontrak</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-bpjs-tk', $current_page); ?>">
-                    <a class="menu-link" href="data-bpjs-tk">
+                    <a class="menu-link" href="?page=data-bpjs-tk">
                         <div>Data BPJS Ketenagakerjaan</div>
                     </a>
                 </li>
@@ -145,12 +145,12 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('data-loker', $current_page); ?>">
-                    <a class="menu-link" href="data-loker">
+                    <a class="menu-link" href="?page=data-loker">
                         <div>Data Loker</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-calon-karyawan', $current_page); ?>">
-                    <a class="menu-link" href="data-calon-karyawan">
+                    <a class="menu-link" href="?page=data-calon-karyawan">
                         <div>Data Calon Karyawan</div>
                     </a>
                 </li>
@@ -169,12 +169,12 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('master-pelanggaran', $current_page); ?>">
-                    <a class="menu-link" href="master-pelanggaran">
+                    <a class="menu-link" href="?page=master-pelanggaran">
                         <div>Master Pelanggaran</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('surat-peringatan', $current_page); ?>">
-                    <a class="menu-link" href="surat-peringatan">
+                    <a class="menu-link" href="?page=surat-peringatan">
                         <div>Kelola Surat Peringatan</div>
                     </a>
                 </li>
@@ -196,27 +196,27 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('dayli-absen', $current_page); ?>">
-                    <a class="menu-link" href="dayli-absen">
+                    <a class="menu-link" href="?page=dayli-absen">
                         <div>Absensi Harian</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('rekapan-absensi', $current_page); ?>">
-                    <a class="menu-link" href="rekapan-absensi">
+                    <a class="menu-link" href="?page=rekapan-absensi">
                         <div>Rekapitulasi Bulanan</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('pengajuan-izin', $current_page); ?>">
-                    <a class="menu-link" href="pengajuan-izin">
+                    <a class="menu-link" href="?page=pengajuan-izin">
                         <div>Pengajuan Izin</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('pengajuan-cuti', $current_page); ?>">
-                    <a class="menu-link" href="pengajuan-cuti">
+                    <a class="menu-link" href="?page=pengajuan-cuti">
                         <div>Pengajuan Cuti</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('bukti-sks', $current_page); ?>">
-                    <a class="menu-link" href="bukti-sks">
+                    <a class="menu-link" href="?page=bukti-sks">
                         <div>Data SKS</div>
                     </a>
                 </li>
@@ -241,42 +241,42 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('data-periode', $current_page); ?>">
-                    <a class="menu-link" href="data-periode">
+                    <a class="menu-link" href="?page=data-periode">
                         <div>Periode Penggajian</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('payroll', $current_page); ?>">
-                    <a class="menu-link" href="payroll">
+                    <a class="menu-link" href="?page=payroll">
                         <div>Proses Gaji</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('slip-gaji', $current_page); ?>">
-                    <a class="menu-link" href="slipgajinew" target="_blank">
+                    <a class="menu-link" href="slipgajinew.php" target="_blank">
                         <div>Slip Gaji Karyawan</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-pengajuan-pinjaman', $current_page); ?>">
-                    <a class="menu-link" href="data-pengajuan-pinjaman">
+                    <a class="menu-link" href="?page=data-pengajuan-pinjaman">
                         <div>Pengajuan Pinjaman Dana</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-pinjaman', $current_page); ?>">
-                    <a class="menu-link" href="data-pinjaman">
+                    <a class="menu-link" href="?page=data-pinjaman">
                         <div>Pinjaman Dana</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-potongan-tidak-tetap', $current_page); ?>">
-                    <a class="menu-link" href="data-potongan-tidak-tetap">
+                    <a class="menu-link" href="?page=data-potongan-tidak-tetap">
                         <div>Potongan Tidak Tetap</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-rapel', $current_page); ?>">
-                    <a class="menu-link" href="data-rapel">
+                    <a class="menu-link" href="?page=data-rapel">
                         <div>Kalkulasi Rapel</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-thr', $current_page); ?>">
-                    <a class="menu-link" href="data-thr">
+                    <a class="menu-link" href="?page=data-thr">
                         <div>Sub THR Karyawan</div>
                     </a>
                 </li>
@@ -294,27 +294,27 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('kelola-transaksi', $current_page); ?>">
-                    <a class="menu-link" href="kelola-transaksi">
+                    <a class="menu-link" href="?page=kelola-transaksi">
                         <div>Kelola Transaksi</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('jurnal-umum', $current_page); ?>">
-                    <a class="menu-link" href="jurnal-umum">
+                    <a class="menu-link" href="?page=jurnal-umum">
                         <div>Jurnal Umum</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('buku-besar', $current_page); ?>">
-                    <a class="menu-link" href="buku-besar">
+                    <a class="menu-link" href="?page=buku-besar">
                         <div>Buku Besar</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('neraca-saldo', $current_page); ?>">
-                    <a class="menu-link" href="neraca-saldo">
+                    <a class="menu-link" href="?page=neraca-saldo">
                         <div>Neraca Saldo</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('laporan-keuangan', $current_page); ?>">
-                    <a class="menu-link" href="laporan-keuangan">
+                    <a class="menu-link" href="?page=laporan-keuangan">
                         <div>Laporan Laba Rugi</div>
                     </a>
                 </li>
@@ -339,17 +339,17 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('master-apd', $current_page); ?>">
-                    <a class="menu-link" href="master-apd">
+                    <a class="menu-link" href="?page=master-apd">
                         <div>Stok & Jenis APD</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('pengajuan-apd', $current_page); ?>">
-                    <a class="menu-link" href="pengajuan-apd">
+                    <a class="menu-link" href="?page=pengajuan-apd">
                         <div>Pengajuan APD</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('transaksi-apd', $current_page); ?>">
-                    <a class="menu-link" href="transaksi-apd">
+                    <a class="menu-link" href="?page=transaksi-apd">
                         <div>Distribusi APD</div>
                     </a>
                 </li>
@@ -365,7 +365,7 @@ function isMenuOpen($pages_array, $current_page)
             <span class="menu-header-text">Informasi</span>
         </li>
         <li class="menu-item <?= isActive('pengumuman', $current_page); ?>">
-            <a href="pengumuman" class="menu-link">
+            <a href="?page=pengumuman" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-bullseye"></i>
                 <div data-i18n="Broadcast">Broadcast Pengumuman</div>
             </a>
@@ -378,7 +378,7 @@ function isMenuOpen($pages_array, $current_page)
             <span class="menu-header-text">Sistem & Akses</span>
         </li>
         <li class="menu-item <?= isActive('data-users-login', $current_page); ?>">
-            <a href="data-users-login" class="menu-link">
+            <a href="?page=data-users-login" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-user-pin"></i>
                 <div data-i18n="Users">Manajemen User</div>
             </a>
@@ -394,17 +394,17 @@ function isMenuOpen($pages_array, $current_page)
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?= isActive('maintenance', $current_page); ?>">
-                    <a class="menu-link" href="maintenance">
+                    <a class="menu-link" href="?page=maintenance">
                         <div>Maintenance Mode</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('error', $current_page); ?>">
-                    <a class="menu-link" href="error">
+                    <a class="menu-link" href="?page=error">
                         <div>Log Errors</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('documentation', $current_page); ?>">
-                    <a class="menu-link" href="documentation">
+                    <a class="menu-link" href="?page=documentation">
                         <div>Dokumentasi API</div>
                     </a>
                 </li>
