@@ -6,7 +6,7 @@
                 <div class="d-flex align-items-end row">
                     <div class="col-sm-7">
                         <div class="card-body">
-                            <h5 class="card-title text-primary">Selamat Datang, Admin! 🚀</h5>
+                            <h5 class="card-title text-primary">Selamat Datang, Admin!</h5>
                             <p class="mb-4">
                                 Terus tingkatkan <span class="fw-bold">produktivitas hari ini.</span> Lihat perkembangan data dan aktivitas terbaru di dashboard.
                             </p>
@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        
+
         <?php if (in_array($user_level, [0, 1, 2, 6])): ?>
         <div class="col-lg-12 mb-4">
             <div class="row">
@@ -104,7 +104,7 @@
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between pb-2">
                     <h5 class="card-title m-0 me-2">Statistik Karyawan Aktif</h5>
-                    
+
                     <select id="siteDropdown" class="form-select form-select-sm w-auto cursor-pointer" onchange="loadStatistikKaryawan()">
                         <option value="">Semua Site</option>
                         <?php
@@ -159,24 +159,24 @@
     // Fungsi modular khusus untuk merender HTML Progress Bar Karyawan
     function renderListKaryawan(karyawanData) {
         const listContainer = document.getElementById("listKaryawanJabatan");
-        listContainer.innerHTML = ""; 
+        listContainer.innerHTML = "";
 
         if (karyawanData && karyawanData.length > 0) {
             let totalKaryawan = karyawanData.reduce((sum, item) => sum + item.jumlah, 0);
-            
+
             let htmlList = `
                 <div class="mb-4 d-flex justify-content-between align-items-center bg-lighter p-3 rounded">
                     <span class="text-muted fw-semibold">Total Karyawan Aktif</span>
                     <h4 class="mb-0 text-primary fw-bold">${totalKaryawan} <span class="fs-6 text-muted fw-normal">Orang</span></h4>
                 </div>
             `;
-            
+
             const colors = ['primary', 'success', 'info', 'warning', 'danger', 'dark'];
-            
+
             karyawanData.forEach((item, index) => {
                 let percentage = ((item.jumlah / totalKaryawan) * 100).toFixed(1);
-                let color = colors[index % colors.length]; 
-                
+                let color = colors[index % colors.length];
+
                 htmlList += `
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -210,7 +210,7 @@
     async function loadStatistikKaryawan() {
         const listContainer = document.getElementById("listKaryawanJabatan");
         const idSite = document.getElementById("siteDropdown").value;
-        
+
         listContainer.innerHTML = `
             <div class="d-flex justify-content-center align-items-center py-4">
                 <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
@@ -223,7 +223,7 @@
             const url = `app/controller/get-data/get-home.php?only_karyawan=1&id_site=${idSite}`;
             const res = await fetch(url);
             const data = await res.json();
-            
+
             if (data.status === "success") {
                 renderListKaryawan(data.karyawan_per_jabatan);
             }
@@ -338,6 +338,6 @@ async function checkNotification() {
 
         // 2. Load Notifikasi (Diberi sedikit delay agar dashboard mulus saat loading pertama)
         // PERBAIKAN 2: Sesuaikan pemanggilan dengan nama fungsi di atas
-        setTimeout(checkNotification, 500); 
+        setTimeout(checkNotification, 500);
     });
 </script>
