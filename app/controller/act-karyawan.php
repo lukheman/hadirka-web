@@ -2,6 +2,10 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 header("Content-Type: application/json");
 
 require_once __DIR__ . '/../config/koneksi.php';
@@ -32,6 +36,9 @@ if ($action == "get") {
     $r = $q->fetch_assoc();
 
     if ($r) {
+        // Never send the stored password hash to the browser.
+        unset($r['password']);
+
         // 2. Ambil data Kontak Darurat secara terpisah
         $sql_kontak = "SELECT * FROM tb_kontak_darurat WHERE id_karyawan = '$id' ORDER BY nomor_urut ASC";
         $q_kontak = $koneksi->query($sql_kontak);
@@ -205,6 +212,16 @@ if ($action == "edit") {
             throw new Exception("ID Karyawan tidak terdeteksi oleh sistem.");
         }
 
+        $new_password = $_POST['password_karyawan'] ?? '';
+        if ($new_password !== '') {
+            if ((int)($_SESSION['level'] ?? 99) !== 0) {
+                throw new Exception("Hanya user Master yang boleh mengubah password karyawan.");
+            }
+            if (strlen($new_password) < 8) {
+                throw new Exception("Password minimal 8 karakter.");
+            }
+        }
+
         // 1. UPDATE tb_karyawan
         $k_data = [
             'nik_karyawan'      => input('nik_karyawan'),
@@ -219,6 +236,10 @@ if ($action == "edit") {
             'status_pernikahan' => input('status_pernikahan'),
             'status_ptkp'       => input('status_ptkp')
         ];
+
+        if ($new_password !== '') {
+            $k_data['password'] = password_hash($new_password, PASSWORD_DEFAULT);
+        }
 
         // --- PROSES UPLOAD FOTO (EDIT) ---
         if (isset($_FILES['foto']['name']) && $_FILES['foto']['name'] != '') {

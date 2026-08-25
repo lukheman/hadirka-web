@@ -546,6 +546,17 @@
                     <input type="text" class="form-control" name="no_rek" id="edit_no_rek">
                 </div>
 
+                <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
+                    <hr>
+                    <h6>AKUN KARYAWAN</h6>
+                    <div class="alert alert-warning py-2">
+                        Kosongkan jika password tidak ingin diubah. Password minimal 8 karakter.
+                    </div>
+                    <label class="form-label" for="edit_password_karyawan">Password Baru</label>
+                    <input type="password" class="form-control" name="password_karyawan" id="edit_password_karyawan"
+                        minlength="8" autocomplete="new-password">
+                <?php endif; ?>
+
                 <hr>
                 <h6>Penempatan Kerja</h6>
                 <div class="row">
