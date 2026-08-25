@@ -1,14 +1,31 @@
 <?php
+require_once __DIR__ . '/env.php';
+
 date_default_timezone_set('Asia/Makassar');
 
-// saya meng-uncentang intelephense undefined variables di vs code biar variabel $koneksi di file lain tidak merah
-// $koneksi = mysqli_connect('localhost', 'root', '', 'db_tjs_os');
-$koneksi = mysqli_connect('localhost', 'root', 'akmal', 'tjs_hris');
-if (mysqli_connect_errno()) {
-    echo 'Koneksi database gagal : ' . mysqli_connect_error();
+$db_host = env('DB_HOST', '127.0.0.1');
+$db_port = (int)env('DB_PORT', 3306);
+$db_user = env('DB_USERNAME');
+$db_pass = env('DB_PASSWORD', '');
+$db_name = env('DB_DATABASE');
+
+if (!$db_user || !$db_name) {
+    throw new RuntimeException('Database configuration missing. Set DB_USERNAME and DB_DATABASE in .env.');
 }
 
+$koneksi = mysqli_connect($db_host, $db_user, $db_pass, $db_name, $db_port);
+if (mysqli_connect_errno()) {
+    error_log('Database connection failed: ' . mysqli_connect_error());
+    throw new RuntimeException('Database connection failed.');
+}
+$koneksi->set_charset('utf8mb4');
+
 function url() {
+    $configured_url = rtrim((string)env('APP_URL', ''), '/') . '/';
+    if ($configured_url !== '/') {
+        return $configured_url;
+    }
+
     $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     $scheme = $https ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
