@@ -553,8 +553,14 @@
                         Kosongkan jika password tidak ingin diubah. Password minimal 8 karakter.
                     </div>
                     <label class="form-label" for="edit_password_karyawan">Password Baru</label>
-                    <input type="password" class="form-control" name="password_karyawan" id="edit_password_karyawan"
-                        minlength="8" autocomplete="new-password">
+                    <div class="input-group">
+                        <input type="password" class="form-control" name="password_karyawan" id="edit_password_karyawan"
+                            minlength="8" autocomplete="new-password">
+                        <button type="button" class="btn btn-outline-secondary" id="toggle_password_karyawan"
+                            aria-label="Tampilkan password" title="Tampilkan password">
+                            <i class="bx bx-hide"></i>
+                        </button>
+                    </div>
                 <?php endif; ?>
 
                 <hr>
@@ -718,6 +724,17 @@
     let tableKaryawan = null;
 
     $(document).ready(function() {
+        $(document).on("click", "#toggle_password_karyawan", function() {
+            const input = $("#edit_password_karyawan");
+            const icon = $(this).find("i");
+            const visible = input.attr("type") === "text";
+
+            input.attr("type", visible ? "password" : "text");
+            icon.toggleClass("bx-hide", visible).toggleClass("bx-show", !visible);
+            $(this).attr("aria-label", visible ? "Tampilkan password" : "Sembunyikan password")
+                .attr("title", visible ? "Tampilkan password" : "Sembunyikan password");
+        });
+
         // Init Tooltip
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(t => new bootstrap.Tooltip(t));
