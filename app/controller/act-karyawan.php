@@ -237,10 +237,6 @@ if ($action == "edit") {
             'status_ptkp'       => input('status_ptkp')
         ];
 
-        if ($new_password !== '') {
-            $k_data['password'] = password_hash($new_password, PASSWORD_DEFAULT);
-        }
-
         // --- PROSES UPLOAD FOTO (EDIT) ---
         if (isset($_FILES['foto']['name']) && $_FILES['foto']['name'] != '') {
             // Ambil NIK dari inputan form
@@ -281,6 +277,29 @@ if ($action == "edit") {
         $sql_k = "UPDATE tb_karyawan SET " . implode(", ", $upd_k) . " WHERE id_karyawan = '$id'";
 
         $koneksi->query($sql_k);
+
+        if ($new_password !== '') {
+            // Keep employee mobile login compatible with its legacy MD5 check.
+            $password_hash = md5($new_password);
+            $password_stmt = $koneksi->prepare(
+                'UPDATE tb_karyawan SET password = ? WHERE id_karyawan = ?'
+            );
+            if (!$password_stmt) {
+                throw new Exception('Gagal menyiapkan perubahan password.');
+            }
+            $password_stmt->bind_param('si', $password_hash, $id);
+            if (!$password_stmt->execute() || $password_stmt->affected_rows !== 1) {
+                throw new Exception('Password karyawan gagal diubah.');
+            }
+
+            $verify_stmt = $koneksi->prepare('SELECT password FROM tb_karyawan WHERE id_karyawan = ?');
+            $verify_stmt->bind_param('i', $id);
+            $verify_stmt->execute();
+            $stored_password = $verify_stmt->get_result()->fetch_assoc()['password'] ?? '';
+            if (!hash_equals($stored_password, md5($new_password))) {
+                throw new Exception('Password karyawan gagal diverifikasi setelah disimpan.');
+            }
+        }
 
         // VALIDASI: Jika ID tidak ditemukan di tb_karyawan
         if ($koneksi->affected_rows === 0) {
