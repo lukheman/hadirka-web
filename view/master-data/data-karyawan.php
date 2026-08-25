@@ -962,6 +962,15 @@
                             $("#edit_nama_kontak2").val(d.nama_kontak2);
                             $("#edit_hubungan2").val(d.hubungan2);
                             $("#edit_no_telp_darurat2").val(d.no_telp_darurat2);
+
+                            // Reset password field agar tidak membawa nilai karyawan sebelumnya
+                            $("#edit_password_karyawan").val("").attr("type", "password");
+                            $("#toggle_password_karyawan").find("i")
+                                .removeClass("bx-show").addClass("bx-hide");
+                            $("#toggle_password_karyawan")
+                                .attr("aria-label", "Tampilkan password")
+                                .attr("title", "Tampilkan password");
+
                             $("#ModalEdit").modal("show");
                         });
                     }
