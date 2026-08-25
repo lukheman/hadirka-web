@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+
+/vendor/
+/app/api/vendor/
+*.log
+debug_*.log
