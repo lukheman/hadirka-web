@@ -97,6 +97,14 @@ if (!function_exists('generateSlipGaji')) {
         }
 
         if (!$karier) return ['error' => 'Karier aktif tidak ditemukan'];
+
+        $gaji_pokok = $karier['gaji_pokok'] ?? null;
+        if ($gaji_pokok === null || $gaji_pokok === '' || (float)$gaji_pokok <= 0) {
+            return [
+                'error' => 'Slip gaji tidak dapat dibuat karena gaji pokok karyawan belum terisi.'
+            ];
+        }
+
         $tgl_mulai_karier = $karier['tgl_mulai'];
         $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
 
@@ -505,7 +513,7 @@ if (!function_exists('generateSlipGaji')) {
         }
 
         // ================= Perhitungan Gaji Pokok & Potongan =================
-        $basic = floatval($karier['gaji_pokok']);
+        $basic = (float)$gaji_pokok;
 
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;

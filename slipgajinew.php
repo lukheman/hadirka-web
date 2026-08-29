@@ -252,6 +252,19 @@ require_once 'app/controller/read.php';
             background: #6c757d;
         }
 
+        .slip-alert {
+            display: none;
+            max-width: 900px;
+            margin: 10px auto;
+            padding: 12px 16px;
+            border: 1px solid #f1b0b7;
+            border-radius: 4px;
+            background: #f8d7da;
+            color: #842029;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
         select,
         input[type="date"] {
             padding: 6px 8px;
@@ -318,6 +331,8 @@ require_once 'app/controller/read.php';
             <p id="progressText" style="margin-top:5px; font-weight:bold;">Mulai memproses...</p>
         </div>
     </div>
+
+    <div id="slipAlert" class="slip-alert" role="alert"></div>
 
     <div class="wrap" id="slip">
         <div class="header">
@@ -452,6 +467,8 @@ require_once 'app/controller/read.php';
         }
 
         function render(data) {
+            hideSlipAlert();
+
             // =============== METADATA ===============
             document.getElementById('period').textContent = data.period || '-';
             document.getElementById('nikDisplay').textContent = data.nik || '-';
@@ -660,6 +677,18 @@ require_once 'app/controller/read.php';
             }
         }
 
+        function showSlipAlert(message) {
+            const alertBox = document.getElementById('slipAlert');
+            alertBox.textContent = message;
+            alertBox.style.display = 'block';
+        }
+
+        function hideSlipAlert() {
+            const alertBox = document.getElementById('slipAlert');
+            alertBox.textContent = '';
+            alertBox.style.display = 'none';
+        }
+
 
         // generateSlip: mandatory fetch from backend new-slip.php
         async function generateSlip() {
@@ -669,7 +698,7 @@ require_once 'app/controller/read.php';
             const end = document.getElementById('endDate').value;
 
             if (!start || !end) {
-                alert("Tanggal mulai & akhir wajib diisi.");
+                showSlipAlert("Tanggal mulai dan akhir wajib diisi.");
                 return;
             }
 
@@ -694,7 +723,7 @@ require_once 'app/controller/read.php';
                 if (!resp.ok) {
                     const txt = await resp.text();
                     console.error('server error', txt);
-                    alert("Gagal mengambil data slip dari server.");
+                    showSlipAlert("Gagal mengambil data slip dari server.");
                     return;
                 }
 
@@ -703,7 +732,8 @@ require_once 'app/controller/read.php';
                 // Tampilkan error API, tetapi jangan menyamarkan response kosong
                 // sebagai slip dengan nilai nol.
                 if (data.skip || data.error) {
-                    alert(data.error || "Data tidak dapat diproses.");
+                    const errorMessage = data.error || "Data tidak dapat diproses.";
+                    showSlipAlert(errorMessage);
                     document.getElementById('period').textContent = '-';
                     document.getElementById('nama').textContent = '-';
                     document.getElementById('jabatan').textContent = '-';
@@ -715,7 +745,7 @@ require_once 'app/controller/read.php';
                 }
 
                 if (typeof data.basic === 'undefined' || typeof data.total_pendapatan === 'undefined') {
-                    alert("Response slip tidak lengkap. Periksa data karier dan absensi karyawan.");
+                    showSlipAlert("Response slip tidak lengkap. Periksa data karier dan absensi karyawan.");
                     return;
                 }
 
@@ -724,7 +754,7 @@ require_once 'app/controller/read.php';
 
             } catch (e) {
                 console.error(e);
-                // alert("Terjadi kesalahan saat mengambil data.");
+                showSlipAlert("Terjadi kesalahan saat mengambil data slip.");
             }
         }
 
