@@ -729,8 +729,7 @@ require_once 'app/controller/read.php';
 
                 const data = await resp.json();
 
-                // Tampilkan error API, tetapi jangan menyamarkan response kosong
-                // sebagai slip dengan nilai nol.
+                // --- TAMBAHAN CEK SKIP ---
                 if (data.skip || data.error) {
                     const errorMessage = data.error || "Data tidak dapat diproses.";
                     showSlipAlert(errorMessage);

@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__ . '/../../config/koneksi.php';
-require_once __DIR__ . '/../../config/function.php';
-require_once __DIR__ . '/../../config/function-slip.php';
+require_once '../../config/koneksi.php';
+require_once '../../config/function.php';
+require_once '../../config/function-slip.php';
 
 // ================= Panggil function =================
 $input = json_decode(file_get_contents('php://input'), true);

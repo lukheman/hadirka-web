@@ -61,9 +61,7 @@ if (!function_exists('generateSlipGaji')) {
         $id_karyawan = $k['id_karyawan'];
 
         // ================= 2) Get Karier aktif =================
-        // Ambil karier yang berlaku pada periode. Fallback ke karier terbaru
-        // hanya boleh untuk periode yang memang memiliki penanda NEW.
-        $sqlKarier = "SELECT kar.*, jab.nama_jabatan
+        $sqlKarier = "SELECT kar.*, jab.nama_jabatan 
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
             WHERE kar.id_karyawan = '$id_karyawan'
@@ -72,30 +70,6 @@ if (!function_exists('generateSlipGaji')) {
             ORDER BY kar.tgl_mulai DESC LIMIT 1";
         $qk = mysqli_query($koneksi, $sqlKarier);
         $karier = mysqli_fetch_assoc($qk);
-
-        $has_new_attendance = false;
-        if (!$karier) {
-            $sqlNew = "SELECT 1
-                FROM tb_absen
-                WHERE id_karyawan = '$id_karyawan'
-                AND tgl_absen BETWEEN '$startDate' AND '$endDate'
-                AND UPPER(ket_absen) LIKE '%NEW%'
-                LIMIT 1";
-            $qNew = mysqli_query($koneksi, $sqlNew);
-            $has_new_attendance = $qNew && mysqli_num_rows($qNew) > 0;
-        }
-
-        if (!$karier && $has_new_attendance) {
-            $sqlKarier = "SELECT kar.*, jab.nama_jabatan
-                FROM tb_karier kar
-                LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
-                WHERE kar.id_karyawan = '$id_karyawan'
-                AND kar.tgl_mulai <= '$endDate'
-                ORDER BY kar.tgl_mulai DESC LIMIT 1";
-            $qk = mysqli_query($koneksi, $sqlKarier);
-            $karier = mysqli_fetch_assoc($qk);
-        }
-
         if (!$karier) return ['error' => 'Karier aktif tidak ditemukan'];
 
         $gaji_pokok = $karier['gaji_pokok'] ?? null;
@@ -297,15 +271,12 @@ if (!function_exists('generateSlipGaji')) {
             // ================= ADA DATA ABSEN =================
             if (isset($absenRows[$tgl])) {
 
-                // Normalize attendance labels so variants such as "NEW / SPL"
-                // are handled consistently with the plain "NEW" value.
                 $ketAbsen = strtoupper(trim((string)$absenRows[$tgl]['ket_absen']));
-                $ketAbsen = preg_replace('/\s+/', ' ', $ketAbsen);
                 $jamRaw   = trim((string)$absenRows[$tgl]['jam_kerja']);
                 $jam      = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
 
                 // ===== NEW =====
-                if (preg_match('/\bNEW\b/', $ketAbsen)) {
+                if ($ketAbsen === 'NEW') {
                     $absenForUI[] = [
                         'tanggal' => $tgl,
                         'jam' => 0,
