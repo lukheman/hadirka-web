@@ -700,7 +700,8 @@ require_once 'app/controller/read.php';
 
                 const data = await resp.json();
 
-                // --- TAMBAHAN CEK SKIP ---
+                // Tampilkan error API, tetapi jangan menyamarkan response kosong
+                // sebagai slip dengan nilai nol.
                 if (data.skip || data.error) {
                     alert(data.error || "Data tidak dapat diproses.");
                     document.getElementById('period').textContent = '-';
@@ -711,6 +712,11 @@ require_once 'app/controller/read.php';
                     document.getElementById("potonganBody").innerHTML = "";
                     document.getElementById("absenBody").innerHTML = "";
                     return; // Hentikan proses render
+                }
+
+                if (typeof data.basic === 'undefined' || typeof data.total_pendapatan === 'undefined') {
+                    alert("Response slip tidak lengkap. Periksa data karier dan absensi karyawan.");
+                    return;
                 }
 
                 // render data
