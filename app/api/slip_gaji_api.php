@@ -18,9 +18,9 @@ if (!function_exists('generateSlipGaji')) {
         $endDate = mysqli_real_escape_string($koneksi, $endDate);
 
         // ================= 1) Get Karyawan =================
-        $sql = "SELECT k.nik_karyawan, k.nama_lengkap, k.id_karyawan, k.status_karyawan, t.tgl_keluar 
-                FROM tb_karyawan k 
-                LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan 
+        $sql = "SELECT k.nik_karyawan, k.nama_lengkap, k.id_karyawan, k.status_karyawan, t.tgl_keluar
+                FROM tb_karyawan k
+                LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan
                 WHERE k.id_karyawan='$id_karyawan' LIMIT 1";
         $q = mysqli_query($koneksi, $sql);
         $k = mysqli_fetch_assoc($q);
@@ -37,7 +37,7 @@ if (!function_exists('generateSlipGaji')) {
         }
 
         // ================= 2) Get Karier Aktif =================
-        $sqlKarier = "SELECT kar.*, jab.nama_jabatan 
+        $sqlKarier = "SELECT kar.*, jab.nama_jabatan
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
             WHERE kar.id_karyawan = '$id_karyawan'
@@ -112,7 +112,7 @@ if (!function_exists('generateSlipGaji')) {
         // ================= Hitung Potongan Tidak Tetap =================
         $total_potongan_lainnya = 0;
         $potonganLainRows = [];
-        $sqlPotLain = "SELECT nominal_potongan, jenis_potongan, tgl_potongan, ket_potongan 
+        $sqlPotLain = "SELECT nominal_potongan, jenis_potongan, tgl_potongan, ket_potongan
                        FROM tb_potongan_tidak_tetap
                        WHERE id_karyawan = '$id_karyawan'
                        AND tgl_potongan BETWEEN '$startDate' AND '$endDate'";
@@ -365,7 +365,7 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 6) Kalkulasi Tunjangan Dinamis API =================
         $tunjanganRows = [];
         $total_tunjangan_db = 0;
-        
+
         // --- LOGIKA KHUSUS OPERATOR CRANE LOGISTIK ---
         $nik_karyawan_aktif = $k['nik_karyawan'];
         $nik_khusus = ['TJS-00168', 'TJS-00169', 'TJS-00245', 'TJS-00275'];
@@ -395,7 +395,7 @@ if (!function_exists('generateSlipGaji')) {
             if (!empty($nama_t) && (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false)) {
                 $nama_t = "Bonus Kehadiran";
                 $original_bonus = $jumlah_t;
-                
+
                 if ($is_khusus && $cuti_days > 0) {
                     $satuan_potongan_cuti = $original_bonus / 12;
                     $potongan_cuti_khusus = $satuan_potongan_cuti * $cuti_days;
@@ -419,12 +419,12 @@ if (!function_exists('generateSlipGaji')) {
         // PKWT potongan untuk hari NEW
         $total_pot_pkwt = 0;
         if ($new_count > 0) {
-            $total_pot_pkwt = (($total_tunjangan_db + $basic) / 25) * $new_count;
+            $total_pot_pkwt = (($total_tunjangan_db + $basic) / 31) * $new_count;
         }
 
         // PKWT potongan untuk hari RESIGN
         if ($resign_count > 0) {
-            $total_pot_pkwt += (($total_tunjangan_db + $basic) / 25) * $resign_count;
+            $total_pot_pkwt += (($total_tunjangan_db + $basic) / 31) * $resign_count;
         }
 
         // Kelebihan hari kerja (jika hari kerja > 25)
