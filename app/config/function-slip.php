@@ -37,9 +37,9 @@ if (!function_exists('generateSlipGaji')) {
 
         // ================= 1) Get Karyawan =================
         // JOIN dengan tb_tereliminasi untuk mengambil tgl_keluar
-        $sql = "SELECT k.*, t.tgl_keluar 
-                FROM tb_karyawan k 
-                LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan 
+        $sql = "SELECT k.*, t.tgl_keluar
+                FROM tb_karyawan k
+                LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan
                 WHERE k.nik_karyawan='$nik' LIMIT 1";
         $q = mysqli_query($koneksi, $sql);
         $k = mysqli_fetch_assoc($q);
@@ -61,7 +61,7 @@ if (!function_exists('generateSlipGaji')) {
         $id_karyawan = $k['id_karyawan'];
 
         // ================= 2) Get Karier aktif =================
-        $sqlKarier = "SELECT kar.*, jab.nama_jabatan 
+        $sqlKarier = "SELECT kar.*, jab.nama_jabatan
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
             WHERE kar.id_karyawan = '$id_karyawan'
@@ -88,8 +88,8 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 2a) Ambil data mentah tunjangan terlebih dahulu (diproses setelah loop absen) tb_tunjangan =================
         $tunjanganRawRows = []; // KOREKSI: Inisialisasi variabel harus sama dengan yang diisi di dalam loop
         $total_tunjangan = 0;
-        $sqlTunj = "SELECT nama_tunjangan, jumlah_tunjangan 
-            FROM tb_tunjangan 
+        $sqlTunj = "SELECT nama_tunjangan, jumlah_tunjangan
+            FROM tb_tunjangan
             WHERE id_karier = '" . $karier['id_karier'] . "'";
         $qt = mysqli_query($koneksi, $sqlTunj);
         while ($tr = mysqli_fetch_assoc($qt)) {
@@ -99,8 +99,8 @@ if (!function_exists('generateSlipGaji')) {
         // ================= Ambil Potongan (BPJS/JHT/PPH21 dll) dari tb_potongan =================
         $potonganRows = [];
         $total_potongan_tunjangan = 0;
-        $sqlPot = "SELECT jenis_potongan, jumlah_potongan 
-                   FROM tb_potongan 
+        $sqlPot = "SELECT jenis_potongan, jumlah_potongan
+                   FROM tb_potongan
                    WHERE id_karier = '" . $karier['id_karier'] . "'";
         $qp = mysqli_query($koneksi, $sqlPot);
         while ($p = mysqli_fetch_assoc($qp)) {
@@ -148,7 +148,7 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 3b) Hitung Pinjaman berdasarkan jatuh tempo =================
         $total_potongan_pinjaman = 0;
         $pinjamanRows = [];
-        $sqlPinjaman = "SELECT nominal_pinjaman, ket_pinjaman, tgl_bayar_pinjaman 
+        $sqlPinjaman = "SELECT nominal_pinjaman, ket_pinjaman, tgl_bayar_pinjaman
                 FROM tb_pinjaman
                 WHERE id_karyawan = '$id_karyawan'
                 AND tgl_bayar_pinjaman BETWEEN '$startDate' AND '$endDate'";
@@ -166,7 +166,7 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 3c) Hitung Potongan Tidak Tetap =================
         $total_potongan_lainnya = 0;
         $potonganLainRows = [];
-        $sqlPotLain = "SELECT nominal_potongan, jenis_potongan, tgl_potongan, ket_potongan 
+        $sqlPotLain = "SELECT nominal_potongan, jenis_potongan, tgl_potongan, ket_potongan
                        FROM tb_potongan_tidak_tetap
                        WHERE id_karyawan = '$id_karyawan'
                        AND tgl_potongan BETWEEN '$startDate' AND '$endDate'";
@@ -431,7 +431,7 @@ if (!function_exists('generateSlipGaji')) {
         // ================= 6) Logika Baru: Kalkulasi Tunjangan Dinamis =================
         $tunjanganRows = [];
         $total_tunjangan = 0;
-        
+
         // --- LOGIKA KHUSUS OPERATOR CRANE LOGISTIK ---
         $nik_khusus = ['TJS-00168', 'TJS-00169', 'TJS-00245', 'TJS-00275'];
         $is_khusus = in_array($nik, $nik_khusus);
@@ -462,7 +462,7 @@ if (!function_exists('generateSlipGaji')) {
             if (!empty($nama_t) && (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false)) {
                 $nama_t = "Bonus Kehadiran";
                 $original_bonus = $jumlah_t; // Simpan nilai asli sebelum dihanguskan
-                
+
                 // Hitung Potongan Cuti Khusus (Hanya jika NIK Khusus dan ada hari cuti)
                 if ($is_khusus && $cuti_days > 0) {
                     $satuan_potongan_cuti = $original_bonus / 12;
@@ -492,12 +492,12 @@ if (!function_exists('generateSlipGaji')) {
         // PKWT potongan untuk hari NEW
         $total_potongan_pkwt = 0;
         if ($new_count > 0) {
-            $total_potongan_pkwt = (($total_tunjangan + $basic) / 25) * $new_count;
+            $total_potongan_pkwt = (($total_tunjangan + $basic) / 30) * $new_count;
         }
 
         // PKWT potongan untuk hari RESIGN
         if ($resign_count > 0) {
-            $total_potongan_pkwt += (($total_tunjangan + $basic) / 25) * $resign_count;
+            $total_potongan_pkwt += (($total_tunjangan + $basic) / 30) * $resign_count;
         }
 
         $total_potongan =
