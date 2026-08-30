@@ -24,7 +24,7 @@ if (!function_exists('generateSlipGaji')) {
         if (!$k) return ['error' => 'Karyawan tidak ditemukan'];
 
         // ================= 2) Get Karier Aktif =================
-        $sqlKarier = "SELECT kar.*, jab.nama_jabatan 
+        $sqlKarier = "SELECT kar.*, jab.nama_jabatan
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
             WHERE kar.id_karyawan = '$id_karyawan'
@@ -164,10 +164,10 @@ if (!function_exists('generateSlipGaji')) {
         $basic = floatval($karier['gaji_pokok']);
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
-        $total_pot_pkwt = ($new_count > 0) ? ($basic / 25) * $new_count : 0;
+        $total_pot_pkwt = ($new_count > 0) ? ($basic / 31) * $new_count : 0;
 
-        $kelebihan_hari = ($hari_kerja_count > 25) ? ($hari_kerja_count - 25) : 0;
-        $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
+        $kelebihan_hari = ($hari_kerja_count > 31) ? ($hari_kerja_count - 31) : 0;
+        $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 31);
 
         $total_pendapatan = $basic + $total_tunjangan_db + $total_lembur + $total_overtime +
             $total_spl_1_7 + $total_spl_8 + $total_spl_9_up +
