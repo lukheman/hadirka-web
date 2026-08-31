@@ -24,15 +24,18 @@
                         <?php
                         $bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
 
+                        $bulan_options = [];
+                        $tanggal_bulan = new DateTime('first day of this month');
                         for ($i = 0; $i < 12; $i++) {
-                            $value = date('Y-m', strtotime("-$i months"));
-                            $bulanIdx = (int)date('m', strtotime("-$i months")) - 1;
-                            $tahun = date('Y', strtotime("-$i months"));
-
-                            $label = $bulanIndo[$bulanIdx] . " " . $tahun;
-                            $selected = ($i == 0) ? "selected" : "";
-
-                            echo "<option value='{$value}' $selected>{$label}</option>";
+                            $value = $tanggal_bulan->format('Y-m');
+                            $bulan_options[$value] = $bulanIndo[(int)$tanggal_bulan->format('m') - 1]
+                                . ' ' . $tanggal_bulan->format('Y');
+                            $tanggal_bulan->modify('-1 month');
+                        }
+                        foreach ($bulan_options as $value => $label) {
+                            $selected = array_key_first($bulan_options) === $value ? ' selected' : '';
+                            echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>'
+                                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
                         }
                         ?>
                     </select>
