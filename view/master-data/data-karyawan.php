@@ -1157,9 +1157,20 @@
 
                     if (res.success) {
                         // Buat pesan detail
-                        let msg = `📊 IMPORT SELESAI!\n\n`;
-                        msg += `✅ Berhasil: ${res.berhasil} data\n`;
-                        msg += `❌ Gagal: ${res.gagal} data`;
+                         let msg = `📊 IMPORT SELESAI!\n\n`;
+                         msg += `✅ Berhasil: ${res.berhasil} data\n`;
+                         msg += `↪️ Dilewati: ${res.dilewati || 0} data\n`;
+                         msg += `❌ Gagal: ${res.gagal} data`;
+
+                         if ((res.dilewati || 0) > 0 && res.debug) {
+                             const skipped = res.debug.filter(item => item.includes('Dilewati'));
+                             if (skipped.length > 0) {
+                                 msg += `\n\n📋 DATA DILEWATI:\n` + skipped.slice(0, 5).join('\n');
+                                 if (skipped.length > 5) {
+                                     msg += `\n... dan ${skipped.length - 5} data lainnya (detail ada di console)`;
+                                 }
+                             }
+                         }
 
                         // Tampilkan error jika ada (maksimal 5 error pertama)
                         if (res.errors && res.errors.length > 0) {
@@ -1195,9 +1206,11 @@
                         alert(msg);
 
                         // Toast notification
-                        if (res.gagal > 0) {
-                            showToast(`Import selesai dengan ${res.gagal} error. Cek detail!`, "warning");
-                        } else {
+                         if (res.gagal > 0) {
+                             showToast(`Import selesai dengan ${res.gagal} error. Cek detail!`, "warning");
+                         } else if ((res.dilewati || 0) > 0) {
+                             showToast(`Import selesai. ${res.dilewati} data dilewati karena NIK sudah terdaftar.`, "info");
+                         } else {
                             showToast(`Semua ${res.berhasil} data berhasil diimport!`, "success");
                         }
 

@@ -9,6 +9,7 @@ require __DIR__ . '/../../config/koneksi.php';
 require __DIR__ . '/../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 /**
  * Tambah 3 bulan dari tanggal mulai
@@ -33,11 +34,67 @@ function escapeString($koneksi, $value)
 function formatTanggal($value)
 {
     if (empty($value)) return null;
+
     try {
-        return date('Y-m-d', strtotime($value));
+        if (is_numeric($value)) {
+            return ExcelDate::excelToDateTimeObject($value)->format('Y-m-d');
+        }
+
+        $value = trim((string)$value);
+        foreach (['Y-m-d', 'd-m-Y', 'd/m/Y', 'Y/m/d'] as $format) {
+            $date = DateTime::createFromFormat('!' . $format, $value);
+            if ($date && $date->format($format) === $value) {
+                return $date->format('Y-m-d');
+            }
+        }
+
+        return null;
     } catch (Exception $e) {
         return null;
     }
+}
+
+function normalizeStatusKaryawan($status)
+{
+    $status = strtolower(trim((string)$status));
+    $aliases = [
+        'aktif' => 'Aktif',
+        'tetap' => 'Aktif',
+        'kontrak' => 'Aktif',
+        'contract' => 'Aktif',
+        'harian' => 'Aktif',
+        'resign' => 'Resign',
+        'resignation' => 'Resign',
+        'habis kontrak' => 'Habis Kontrak',
+        'end contract' => 'Habis Kontrak',
+        'pensiun' => 'Pensiun',
+        'pension' => 'Pensiun',
+        'phk' => 'PHK',
+        'termination' => 'PHK',
+        'black list' => 'Black List',
+        'blacklist' => 'Black List',
+        'cuti' => 'Cuti',
+    ];
+
+    return $aliases[$status] ?? null;
+}
+
+function normalizeJenisKelamin($value)
+{
+    $value = strtoupper(trim((string)$value));
+    // Excel can prepend locale metadata, for example "[$-409]L".
+    $value = preg_replace('/^\[\$-[^\]]+\]/', '', $value);
+    $value = trim($value);
+
+    $aliases = [
+        'L' => 'L',
+        'LAKI-LAKI' => 'L',
+        'LAKI LAKI' => 'L',
+        'P' => 'P',
+        'PEREMPUAN' => 'P',
+    ];
+
+    return $aliases[$value] ?? null;
 }
 
 // Response awal
@@ -45,6 +102,7 @@ $response = [
     "success" => false,
     "berhasil" => 0,
     "gagal" => 0,
+    "dilewati" => 0,
     "errors" => [],
     "debug" => [],
     "error" => ""
@@ -110,6 +168,25 @@ try {
     // Load Excel file
     $spreadsheet = IOFactory::load($file);
     $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+
+    $expected_headers = [
+        'No', 'NIK Karyawan', 'Nama Lengkap', 'Jenis Kelamin (L/P)', 'Site',
+        'Departemen', 'Jabatan', 'Tanggal Masuk Site (Y-M-D)',
+        'Tanggal Selesai Kontrak  (Y-M-D)', 'Tempat Lahir', 'Tanggal Lahir (Y-M-D)',
+        'Kewarganegaraan', 'Agama', 'Jenjang Pendidikan', 'Pendidikan Terakhir',
+        'Jurusan', 'Atas Nama Rekening', 'Nomor Rekening', 'Nama Bank',
+        'Nama Ibu Kandung', 'NIK KTP', 'Alamat KTP', 'RT/RW', 'Desa',
+        'Kecamatan', 'Kabupaten', 'Provinsi', 'Email Pribadi', 'No Telepon',
+        'Nama Kontak Darurat 1', 'Hubungan 1', 'No Telepon Darurat 1',
+        'Nama Kontak Darurat 2', 'Hubungan 2', 'No Telepon Darurat 2',
+        'NPWP', 'BPJS Ketenagakerjaan', 'BPJS Kesehatan', 'Status Pernikahan',
+        'Status PTKP', 'Nomor KK', 'Status Karyawan', 'Tanggal Keluar (Y-M-D)',
+        'Keterangan'
+    ];
+    $headers = array_values($sheet[1] ?? []);
+    if (count($headers) !== 44 || $headers !== $expected_headers) {
+        throw new Exception('Format template tidak sesuai. Gunakan template dengan 44 kolom A sampai AR.');
+    }
     
     foreach ($sheet as $rowNum => $row) {
         // Skip header
@@ -118,14 +195,27 @@ try {
         // skip baris kosong
         if (trim($row['B'] ?? '') === '' && trim($row['C'] ?? '') === '') continue;
 
-        // Mulai transaksi
-    $koneksi->begin_transaction();
-
+        $transaction_started = false;
         try {
             // === Mapping data kolom Excel ===
             $nik_karyawan  = escapeString($koneksi, $row['B'] ?? '');
             $nama_lengkap  = escapeString($koneksi, $row['C'] ?? '');
-            $jenis_kelamin = escapeString($koneksi, $row['D'] ?? '');
+
+            // NIK adalah kunci unik. Existing employee langsung dilewati,
+            // tanpa memvalidasi atau mengubah kolom lainnya.
+            if ($nik_karyawan !== '') {
+                $cekKaryawanAwal = $koneksi->query(
+                    "SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan' LIMIT 1"
+                );
+                if ($cekKaryawanAwal && $cekKaryawanAwal->num_rows > 0) {
+                    $response['dilewati']++;
+                    $response['debug'][] = "Baris $rowNum: Dilewati - NIK '$nik_karyawan' sudah terdaftar.";
+                    continue;
+                }
+            }
+
+            $jenis_kelamin_raw = $row['D'] ?? '';
+            $jenis_kelamin = normalizeJenisKelamin($jenis_kelamin_raw);
             
             // Raw value untuk pencarian dari Cache
             $raw_nama_site       = strtolower(trim($row['E'] ?? ''));
@@ -184,16 +274,39 @@ try {
             $kk_number         = escapeString($koneksi, $row['AO'] ?? '');
             
             $raw_status_karyawan = trim($row['AP'] ?? '') === '' ? 'Aktif' : $row['AP'];
-            $status_karyawan     = escapeString($koneksi, $raw_status_karyawan);
+            $normalized_status = normalizeStatusKaryawan($raw_status_karyawan);
+            if ($normalized_status === null) {
+                throw new Exception("Status karyawan '$raw_status_karyawan' tidak dikenal.");
+            }
+            $status_karyawan = escapeString($koneksi, $normalized_status);
             
             $tgl_keluar          = formatTanggal($row['AQ'] ?? '');
             $alasan_keluar       = escapeString($koneksi, $row['AR'] ?? '');
 
             // === Validasi wajib ===
             if (empty($nik_karyawan) || empty($nama_lengkap)) {
-                $response["gagal"]++;
-                $response["errors"][] = "Baris $rowNum: NIK atau Nama kosong.";
-                continue;
+                throw new Exception('NIK atau Nama kosong.');
+            }
+            if ($jenis_kelamin === null) {
+                throw new Exception("Jenis kelamin '$jenis_kelamin_raw' tidak valid. Gunakan L atau P.");
+            }
+            if (!empty($email_pribadi) && !filter_var($email_pribadi, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("Email '$email_pribadi' tidak valid.");
+            }
+            if (($row['H'] ?? '') !== '' && $tgl_masuk_site === null) {
+                throw new Exception('Tanggal masuk site tidak valid. Gunakan format YYYY-MM-DD.');
+            }
+            if (($row['I'] ?? '') !== '' && $tgl_selesai_kontrak === null) {
+                throw new Exception('Tanggal selesai kontrak tidak valid. Gunakan format YYYY-MM-DD.');
+            }
+            if (($row['K'] ?? '') !== '' && $tgl_lahir === null) {
+                throw new Exception('Tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.');
+            }
+            if (($row['AQ'] ?? '') !== '' && $tgl_keluar === null) {
+                throw new Exception('Tanggal keluar tidak valid. Gunakan format YYYY-MM-DD.');
+            }
+            if ($tgl_masuk_site && $tgl_selesai_kontrak && $tgl_selesai_kontrak < $tgl_masuk_site) {
+                throw new Exception('Tanggal selesai kontrak tidak boleh sebelum tanggal masuk site.');
             }
 
             // === Ambil ID referensi DARI CACHE (Super Cepat) ===
@@ -202,98 +315,26 @@ try {
             $id_jabatan    = $cache_jabatan[$raw_nama_jabatan] ?? null;
 
             if (!$id_site || !$id_departemen || !$id_jabatan) {
-                $response["gagal"]++;
-                $response["errors"][] = "Baris $rowNum: Site '$raw_nama_site', Dept '$raw_nama_departemen', atau Jabatan '$raw_nama_jabatan' tidak ditemukan/salah ketik.";
-                continue;
+                throw new Exception("Site '$raw_nama_site', Dept '$raw_nama_departemen', atau Jabatan '$raw_nama_jabatan' tidak ditemukan/salah ketik.");
             }
 
-            // === Cek apakah karyawan sudah pernah tereliminasi ===
-            $cekEliminasi = $koneksi->query("
-                SELECT te.id_tereliminasi, tk.id_karyawan 
-                FROM tb_tereliminasi te
-                JOIN tb_karyawan tk ON te.id_karyawan = tk.id_karyawan
-                WHERE tk.nik_karyawan = '$nik_karyawan'
-            ");
+            $koneksi->begin_transaction();
+            $transaction_started = true;
 
-            if ($cekEliminasi->num_rows > 0) {
-                $rowElim = $cekEliminasi->fetch_assoc();
-                $id_karyawan = $rowElim['id_karyawan'];
-
-                // hapus eliminasi & update status aktif
-                $koneksi->query("DELETE FROM tb_tereliminasi WHERE id_karyawan='$id_karyawan'");
-                $koneksi->query("UPDATE tb_karyawan SET status_karyawan='Aktif' WHERE id_karyawan='$id_karyawan'");
-            }
-            
-            // === Cek apakah karyawan sudah ada ===
-            $cekKaryawan = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan'");
-
-            if ($cekKaryawan->num_rows > 0) {
-                // ==== UPDATE KARYAWAN ====
-                $id_karyawan = $cekKaryawan->fetch_assoc()['id_karyawan'];
-
-                $updateFields = [];
-                addUpdateField($updateFields, 'nama_lengkap', $nama_lengkap);
-                addUpdateField($updateFields, 'jenis_kelamin', $jenis_kelamin);
-                addUpdateField($updateFields, 'tempat_lahir', $tempat_lahir);
-                addUpdateField($updateFields, 'email_pribadi', $email_pribadi);
-                addUpdateField($updateFields, 'no_telp', $no_telp);
-                addUpdateField($updateFields, 'nationality', $nationality);
-                addUpdateField($updateFields, 'agama', $agama);
-                addUpdateField($updateFields, 'status_pernikahan', $status_pernikahan);
-                addUpdateField($updateFields, 'status_ptkp', $status_ptkp);
-                addUpdateField($updateFields, 'status_karyawan', $status_karyawan);
-                addUpdateField($updateFields, 'tgl_lahir', $tgl_lahir);
-
-                if (!empty($updateFields)) {
-                    $sqlKaryawan = "UPDATE tb_karyawan SET " . implode(", ", $updateFields) . " WHERE id_karyawan = '$id_karyawan'";
-                    if (!$koneksi->query($sqlKaryawan)) throw new Exception("Error update tb_karyawan: " . $koneksi->error);
-                }
-
-                $updateIdentitas = [];
-                addUpdateField($updateIdentitas, 'nik_ktp', $nik_ktp);
-                addUpdateField($updateIdentitas, 'kk_number', $kk_number);
-                addUpdateField($updateIdentitas, 'npwp', $npwp);
-                addUpdateField($updateIdentitas, 'bpjs_tk', $bpjs_tk);
-                addUpdateField($updateIdentitas, 'bpjs_kes', $bpjs_kes);
-                addUpdateField($updateIdentitas, 'alamat_ktp', $alamat_ktp);
-                addUpdateField($updateIdentitas, 'provinsi', $provinsi);
-                addUpdateField($updateIdentitas, 'kabupaten', $kabupaten);
-                addUpdateField($updateIdentitas, 'kecamatan', $kecamatan);
-                addUpdateField($updateIdentitas, 'desa', $desa);
-                addUpdateField($updateIdentitas, 'rt_rw', $rt_rw);
-                addUpdateField($updateIdentitas, 'nama_ibu', $nama_ibu);
-                addUpdateField($updateIdentitas, 'last_education', $last_education);
-                addUpdateField($updateIdentitas, 'major', $major);
-                addUpdateField($updateIdentitas, 'education_level', $education_level);
-                addUpdateField($updateIdentitas, 'nama_bank', $nama_bank);
-                addUpdateField($updateIdentitas, 'no_rek', $no_rek);
-                addUpdateField($updateIdentitas, 'atas_nama_rek', $atas_nama_rek);
-
-                if (!empty($updateIdentitas)) {
-                    $sqlIdentitas = "UPDATE tb_identitas SET " . implode(", ", $updateIdentitas) . " WHERE id_karyawan = '$id_karyawan'";
-                    if (!$koneksi->query($sqlIdentitas)) throw new Exception("Error update tb_identitas: " . $koneksi->error);
-                }
-
-                // Reset kontak darurat
-                if (!empty($nama_kontak1) || !empty($nama_kontak2)) {
-                    $koneksi->query("DELETE FROM tb_kontak_darurat WHERE id_karyawan='$id_karyawan'");
-                }
-
-            } else {
-                // ==== INSERT KARYAWAN BARU ====
+            // ==== INSERT KARYAWAN BARU ====
                 $sqlKaryawan = "INSERT INTO tb_karyawan (
                     nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir,
                     email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp,
-                    status_karyawan
+                    status_karyawan, password
                 ) VALUES (
                     '$nik_karyawan', '$nama_lengkap', '$jenis_kelamin',
                     " . ($tgl_lahir ? "'$tgl_lahir'" : "NULL") . ",
                     '$tempat_lahir', '$email_pribadi', '$no_telp', '$nationality',
-                    '$agama', '$status_pernikahan', '$status_ptkp', '$status_karyawan'
-                )";
+                    '$agama', '$status_pernikahan', '$status_ptkp', '$status_karyawan', ''
+            )";
 
-                if (!$koneksi->query($sqlKaryawan)) throw new Exception("Error insert tb_karyawan: " . $koneksi->error);
-                $id_karyawan = $koneksi->insert_id;
+            if (!$koneksi->query($sqlKaryawan)) throw new Exception("Error insert tb_karyawan: " . $koneksi->error);
+            $id_karyawan = $koneksi->insert_id;
 
                 $sqlIdentitas = "INSERT INTO tb_identitas (
                     id_karyawan, nik_ktp, kk_number, npwp, bpjs_tk, bpjs_kes,
@@ -305,9 +346,7 @@ try {
                     '$desa', '$rt_rw', '$nama_ibu', '$last_education', '$major',
                     '$education_level', '$nama_bank', '$no_rek', '$atas_nama_rek'
                 )";
-                if (!$koneksi->query($sqlIdentitas)) throw new Exception("Error insert tb_identitas: " . $koneksi->error);
-            }
-
+            if (!$koneksi->query($sqlIdentitas)) throw new Exception("Error insert tb_identitas: " . $koneksi->error);
             // Insert kontak darurat (berlaku untuk update & insert)
             if (!empty($nama_kontak1) && !empty($no_telp_darurat1)) {
                 $sqlKontak1 = "INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES ('$id_karyawan', '$nama_kontak1', '$hubungan1', '$no_telp_darurat1', 1)";
@@ -338,9 +377,12 @@ try {
             } else {
                 // Insert
                 $sqlKarierInsert = "INSERT INTO tb_karier (
-                    id_karyawan, id_site, id_departemen, id_jabatan, tgl_mulai, tgl_selesai
+                    id_karyawan, id_site, id_departemen, id_jabatan,
+                    spl, ot1_spl, ot2_spl, pot_izin, pot_mangkir,
+                    tgl_mulai, tgl_selesai
                 ) VALUES (
                     '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan',
+                    '', '', '', '', '',
                     " . ($tgl_masuk_site ? "'$tgl_masuk_site'" : "NULL") . ",
                     " . ($tgl_selesai_kontrak ? "'$tgl_selesai_kontrak'" : "NULL") . "
                 )";
@@ -350,8 +392,8 @@ try {
             // === PROSES tb_tereliminasi ===
             if (!empty($status_karyawan) && strtolower($status_karyawan) != 'aktif') {
                 
-                // Cari id_jenis_keluar DARI CACHE (Super Cepat)
-                $key_jenis_keluar = strtolower(trim($raw_status_karyawan));
+                // Cari id_jenis_keluar berdasarkan status yang sudah dinormalisasi.
+                $key_jenis_keluar = strtolower(trim($normalized_status));
                 $id_jenis_keluar  = $cache_jenis_keluar[$key_jenis_keluar] ?? null;
                 
                 if (!$id_jenis_keluar) throw new Exception("Jenis keluar '$raw_status_karyawan' tidak ditemukan di m_jenis_keluar");
@@ -375,10 +417,13 @@ try {
 
             // TAMBAHKAN DI SINI: Commit hanya jika semua query di baris ini sukses
             $koneksi->commit();
+            $transaction_started = false;
             
         } catch (Exception $e) {
             // TAMBAHKAN DI SINI: Batalkan seluruh perubahan pada baris ini jika ada 1 query yang gagal
-            $koneksi->rollback();
+            if ($transaction_started) {
+                $koneksi->rollback();
+            }
 
             $response["gagal"]++;
             $response["errors"][] = "Baris $rowNum: " . $e->getMessage();
@@ -386,12 +431,15 @@ try {
     }
 
     $response["success"] = true;
-    $response["message"] = "Import selesai. Berhasil: {$response['berhasil']}, Gagal: {$response['gagal']}";
+    $response["message"] = "Import selesai. Berhasil: {$response['berhasil']}, Dilewati: {$response['dilewati']}, Gagal: {$response['gagal']}";
     
-} catch (Exception $e) {
-    if (isset($koneksi)) $koneksi->rollback();
-    
-    $response["error"] = "Gagal membaca file Excel: " . $e->getMessage();
+    } catch (Exception $e) {
+        if (isset($koneksi) && $koneksi->errno === 0) {
+            // Tidak ada transaksi aktif pada tahap validasi/skip.
+            // Rollback hanya ditangani oleh catch per baris.
+        }
+
+        $response["error"] = "Gagal membaca file Excel: " . $e->getMessage();
 }
 
 echo json_encode($response);
