@@ -66,6 +66,23 @@
         word-break: break-word;
         line-height: 1.6;
     }
+
+    .import-summary-card {
+        border: 0;
+        border-left: 4px solid var(--bs-primary);
+        background: #f8f9fa;
+    }
+
+    .import-summary-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    #importResultDetails {
+        max-height: 240px;
+        overflow-y: auto;
+    }
 </style>
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y py-4">
@@ -196,6 +213,51 @@
         <div class="d-flex">
             <div class="toast-body" id="toastMessage">Processing...</div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importResultModal" tabindex="-1" aria-labelledby="importResultModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="importResultModalLabel">
+                    <i class="fa fa-clipboard-check me-2"></i>Hasil Import
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card import-summary-card border-success h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Berhasil</div>
+                                <div class="import-summary-number text-success" id="importResultSuccess">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card import-summary-card border-info h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Dilewati</div>
+                                <div class="import-summary-number text-info" id="importResultSkipped">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card import-summary-card border-danger h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Gagal</div>
+                                <div class="import-summary-number text-danger" id="importResultFailed">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="importResultDetails" class="small"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Tutup</button>
+            </div>
         </div>
     </div>
 </div>
@@ -721,6 +783,52 @@
         toast.show();
     }
 
+    function showImportResult(res, title = "Hasil Import") {
+        const resultModal = document.getElementById('importResultModal');
+        document.getElementById('importResultModalLabel').innerHTML =
+            `<i class="fa fa-clipboard-check me-2"></i>${title}`;
+        document.getElementById('importResultSuccess').textContent = res.berhasil || 0;
+        document.getElementById('importResultSkipped').textContent = res.dilewati || 0;
+        document.getElementById('importResultFailed').textContent = res.gagal || 0;
+
+        const details = document.getElementById('importResultDetails');
+        details.innerHTML = '';
+
+        const sections = [
+            { title: 'Data dilewati', items: (res.debug || []).filter(item => item.includes('Dilewati')), className: 'text-info' },
+            { title: 'Detail error', items: res.errors || [], className: 'text-danger' }
+        ];
+
+        sections.forEach(section => {
+            if (!section.items.length) return;
+            const heading = document.createElement('div');
+            heading.className = `fw-bold mb-1 ${section.className}`;
+            heading.textContent = section.title;
+            details.appendChild(heading);
+
+            const list = document.createElement('ul');
+            list.className = 'mb-3 ps-4';
+            section.items.slice(0, 20).forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                list.appendChild(li);
+            });
+            if (section.items.length > 20) {
+                const more = document.createElement('div');
+                more.className = 'text-muted mb-2';
+                more.textContent = `... dan ${section.items.length - 20} detail lainnya. Lihat console browser untuk detail lengkap.`;
+                details.appendChild(more);
+            }
+            details.appendChild(list);
+        });
+
+        if (!details.children.length) {
+            details.innerHTML = '<div class="text-success"><i class="fa fa-check-circle me-1"></i>Semua data berhasil diproses.</div>';
+        }
+
+        bootstrap.Modal.getOrCreateInstance(resultModal).show();
+    }
+
     let tableKaryawan = null;
 
     $(document).ready(function() {
@@ -1201,9 +1309,8 @@
                         // 2. Refresh isi tabel secara diam-diam (parameter null, false agar tetap di halaman/page tabel saat ini)
                         tableKaryawan.ajax.reload(null, false);
 
-                        // 3. Tampilkan pesan berhasil
-                        // Anda bisa menghapus alert(msg); ini jika merasa Toast notification saja sudah cukup
-                        alert(msg);
+                         // Tampilkan ringkasan dalam modal Bootstrap, bukan alert native.
+                         showImportResult(res);
 
                         // Toast notification
                          if (res.gagal > 0) {
@@ -1226,7 +1333,12 @@
                             errorMsg += `Line: ${res.error_detail.line}`;
                         }
 
-                        alert(errorMsg);
+                         showImportResult({
+                             berhasil: 0,
+                             dilewati: 0,
+                             gagal: 1,
+                             errors: [res.error || "Terjadi kesalahan tidak diketahui"]
+                         }, "Import Gagal");
                         showToast("Import gagal! Cek console untuk detail.", "danger");
 
                         console.error("=== Import Error ===");
@@ -1246,7 +1358,12 @@
                     errorMsg += `Error: ${error}\n\n`;
                     errorMsg += "Cek console browser (F12) untuk detail lengkap.";
 
-                    alert(errorMsg);
+                     showImportResult({
+                         berhasil: 0,
+                         dilewati: 0,
+                         gagal: 1,
+                         errors: [errorMsg]
+                     }, "Kesalahan Server");
                     showToast("Terjadi kesalahan server!", "danger");
                 },
 
