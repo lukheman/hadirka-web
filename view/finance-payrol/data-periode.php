@@ -155,8 +155,8 @@
     }
 
     // 6. Hapus
-    function deleteData(id) {
-        if (confirm("Hapus periode ini secara permanen?")) {
+    async function deleteData(id) {
+        if (await confirmDialog("Hapus periode ini secara permanen?")) {
             fetch(`${api_act}?action=delete&id=${id}`)
                 .then(res => res.json())
                 .then(res => {

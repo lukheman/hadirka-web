@@ -273,8 +273,8 @@
             $("#modalBonus").modal("show");
         });
 
-        $(document).on("click", ".btnDelete", function() {
-            if (confirm("Hapus bonus ini?")) {
+        $(document).on("click", ".btnDelete", async function() {
+            if (await confirmDialog("Hapus bonus ini?")) {
                 $.ajax({
                     url: "app/controller/act-bonus-internal.php",
                     type: "POST",

@@ -417,7 +417,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
             ketSelectEl.addEventListener("change", updateFieldsByKeterangan);
 
 
-            document.addEventListener("click", function(e) {
+            document.addEventListener("click", async function(e) {
 
                 // TAMBAH
                 const btnTambah = e.target.closest(".btnTambahDetail");
@@ -451,7 +451,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                 // HAPUS
                 const btnHapus = e.target.closest(".btnHapusDetail");
                 if (btnHapus) {
-                    if (!confirm("Yakin hapus data?")) return;
+                    if (!(await confirmDialog("Yakin hapus data?"))) return;
 
                     const formData = new FormData();
                     formData.append("action", "delete");

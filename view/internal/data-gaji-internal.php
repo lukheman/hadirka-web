@@ -184,20 +184,21 @@
             window.location.href = `app/controller/export/export-gaji-internal.php?tgl_awal=${p.awal}&tgl_akhir=${p.akhir}&site=${site}`;
         }
 
-        window.postingGajiInternal = function() {
+        window.postingGajiInternal = async function() {
             // let tgl_awal = $("#filterTglAwal").val();
             // let tgl_akhir = $("#filterTglAkhir").val();
             // let tglBayarInfo = tgl_akhir;
 
-            // if (confirm(`Posting total gaji bersih periode (${tgl_awal} s/d ${tgl_akhir})?\nPengeluaran akan dicatat pada: ${tglBayarInfo}`)) {
+            // (Dulu memakai dialog bawaan browser — kini confirmDialog di bawah.)
             let p = getPeriodeBulan();
             let tgl_awal = p.awal;
             let tgl_akhir = p.akhir;
             let namaBulan = $("#filterBulan").val();
 
-            if (confirm(`Posting total gaji bersih periode Bulan ${namaBulan} (${tgl_awal} s/d ${tgl_akhir})?...`)) {
+            const btn = event.currentTarget;
+            if (!(await confirmDialog(`Posting total gaji bersih periode Bulan ${namaBulan} (${tgl_awal} s/d ${tgl_akhir})?...`))) return;
 
-                const btn = event.currentTarget;
+            {
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
                 btn.disabled = true;

@@ -183,10 +183,10 @@
         });
 
         // ========== DELETE ==========
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             if (e.target.classList.contains("btnDeleteLibur")) {
                 const id = e.target.dataset.id;
-                if (!confirm("Yakin hapus libur ini?")) return;
+                if (!(await confirmDialog("Yakin hapus libur ini?"))) return;
 
                 fetch("app/controller/act-libur.php", {
                         method: "POST",

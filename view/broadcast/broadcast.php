@@ -191,8 +191,8 @@
 }
 
 
-    function deleteData(id) {
-        if (confirm("Apakah Anda yakin ingin menghapus pengumuman ini?")) {
+    async function deleteData(id) {
+        if (await confirmDialog("Apakah Anda yakin ingin menghapus pengumuman ini?")) {
             fetch(`${api_act}?action=delete&id=${id}`)
                 .then(res => res.json())
                 .then(result => {

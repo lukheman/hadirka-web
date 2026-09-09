@@ -162,11 +162,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Event: Delete Data
-    document.addEventListener("click", e => {
+    document.addEventListener("click", async e => {
         let btn = e.target.closest(".btnDeletePotongan");
         if (!btn) return;
 
-        if (confirm("Yakin ingin menghapus potongan ini?")) {
+        if (await confirmDialog("Yakin ingin menghapus potongan ini?")) {
             let fd = new FormData();
             fd.append("action", "delete");
             fd.append("id_potongan", btn.dataset.id);

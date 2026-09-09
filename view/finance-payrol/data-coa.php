@@ -128,7 +128,7 @@
         handleForm(formEdit, "edit");
 
         // Handler Edit & Delete
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             if (e.target.classList.contains("btnEditCOA")) {
                 let btn = e.target;
                 formEdit.id_kategori.value = btn.dataset.id;
@@ -138,7 +138,7 @@
                 new bootstrap.Modal(document.getElementById("modalEditCOA")).show();
             }
             if (e.target.classList.contains("btnDeleteCOA")) {
-                if (confirm("Hapus akun ini?")) {
+                if (await confirmDialog("Hapus akun ini?")) {
                     let fd = new FormData();
                     fd.append("action", "delete");
                     fd.append("id_kategori", e.target.dataset.id);

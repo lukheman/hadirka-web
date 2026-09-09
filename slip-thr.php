@@ -357,6 +357,17 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
             $('.search').select2();
         });
 
+        // Helper konfirmasi (standalone, tanpa index.php). Pakai Swal jika ada.
+        if (typeof window.confirmDialog === 'undefined') {
+            window.confirmDialog = function(message) {
+                var text = String(message == null ? '' : message);
+                if (typeof Swal !== 'undefined') {
+                    return Swal.fire({ icon: 'warning', title: 'Konfirmasi', text: text, showCancelButton: true, confirmButtonText: 'Ya, Lanjutkan', cancelButtonText: 'Batal', confirmButtonColor: '#0b5ed7', reverseButtons: true, focusCancel: true }).then(function(r) { return !!(r && r.isConfirmed); });
+                }
+                return Promise.resolve(window['confirm'](text));
+            };
+        }
+
         function fmt(n) {
             if (n === null || n === undefined || n === '') return '-';
             const x = Math.round(Number(n) || 0);
@@ -457,7 +468,7 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
                 return;
             }
 
-            if (!confirm(`Generate dan unduh ${options.length} Slip THR dalam format ZIP?`)) return;
+            if (!(await confirmDialog(`Generate dan unduh ${options.length} Slip THR dalam format ZIP?`))) return;
 
             const container = document.getElementById("progressContainer");
             const bar = document.getElementById("progressBar");

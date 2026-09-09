@@ -506,7 +506,7 @@
         });
 
         // === EDIT & DELETE BUTTON ===
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             const btnEdit = e.target.closest(".btnEdit");
             const btnDelete = e.target.closest(".btnDelete");
 
@@ -530,7 +530,7 @@
             // DELETE
             if (btnDelete) {
                 const id = btnDelete.dataset.id;
-                if (confirm("Yakin menghapus pinjaman?")) {
+                if (await confirmDialog("Yakin menghapus pinjaman?")) {
                     fetch("app/controller/act-pinjaman.php", {
                             method: "POST",
                             headers: {
@@ -549,11 +549,11 @@
             }
         });
 
-        window.postingPinjaman = function() {
+        window.postingPinjaman = async function() {
             const bulan = document.getElementById("filterBulan").value;
             if (!bulan) return showToast("Pilih bulan terlebih dahulu!", "warning");
 
-            if (confirm("Posting pencairan pinjaman bulan ini ke Laporan Keuangan? (Data lama di bulan ini akan direplace otomatis)")) {
+            if (await confirmDialog("Posting pencairan pinjaman bulan ini ke Laporan Keuangan? (Data lama di bulan ini akan direplace otomatis)")) {
                 fetch("app/controller/act-posting-pinjaman.php", {
                         method: "POST",
                         headers: {

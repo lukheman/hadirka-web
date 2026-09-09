@@ -414,7 +414,7 @@
     });
 
     async function deleteCuti(id) {
-        if (confirm("Hapus permanen data pengajuan cuti ini?")) {
+        if (await confirmDialog("Hapus permanen data pengajuan cuti ini?")) {
             try {
                 const res = await fetch(`${api_act_cuti}?action=delete&id=${id}`);
                 const result = await res.json();

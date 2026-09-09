@@ -822,7 +822,7 @@ require_once 'app/controller/read.php';
                 return;
             }
 
-            if (!confirm("Generate semua slip dan download ZIP?")) return;
+            if (!(await confirmDialog("Generate semua slip dan download ZIP?"))) return;
 
             // ELEMENT PROGRESS
             const container = document.getElementById("progressContainer");
@@ -951,6 +951,16 @@ require_once 'app/controller/read.php';
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        // Helper konfirmasi (standalone, tanpa index.php). Pakai Swal jika ada.
+        if (typeof window.confirmDialog === 'undefined') {
+            window.confirmDialog = function(message) {
+                var text = String(message == null ? '' : message);
+                if (typeof Swal !== 'undefined') {
+                    return Swal.fire({ icon: 'warning', title: 'Konfirmasi', text: text, showCancelButton: true, confirmButtonText: 'Ya, Lanjutkan', cancelButtonText: 'Batal', confirmButtonColor: '#0b5ed7', reverseButtons: true, focusCancel: true }).then(function(r) { return !!(r && r.isConfirmed); });
+                }
+                return Promise.resolve(window['confirm'](text));
+            };
+        }
         $(document).ready(function() {
             // Inisialisasi Select2
             $('.search').select2({});

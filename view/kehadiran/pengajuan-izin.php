@@ -227,7 +227,7 @@
     });
 
     async function deleteIzin(id) {
-        if (confirm("Hapus permanen data pengajuan ini?")) {
+        if (await confirmDialog("Hapus permanen data pengajuan ini?")) {
             try {
                 const res = await fetch(`${api_act}?action=delete&id=${id}`);
                 const result = await res.json();

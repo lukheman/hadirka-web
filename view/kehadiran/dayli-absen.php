@@ -378,7 +378,7 @@
         document.addEventListener("click", async function(e) {
             const btn = e.target.closest(".btn-delete");
             if (!btn) return;
-            if (!confirm("Yakin ingin menghapus data ini?")) return;
+            if (!(await confirmDialog("Yakin ingin menghapus data ini?"))) return;
 
             const id = btn.dataset.id;
             const formData = new FormData();

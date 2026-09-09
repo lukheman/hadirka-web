@@ -249,8 +249,17 @@ $getIdExample = getId($koneksi, 'tb_site', 'nama_site', 'PT IPIP', 'id_site');
 echo ($getIdExample ?? 'Not Found');
 
 ?>
-<form action="" method="post">
-    <button type="submit" name="delete_tb_karyawan" value="1" onclick="return confirm('Are you sure you want to delete all records from tb_karier? This action cannot be undone.');">
+<form action="" method="post" id="formDeleteKaryawan">
+    <button type="submit" name="delete_tb_karyawan" value="1">
         DELETE TB KARYAWAN
     </button>
 </form>
+<script>
+    document.getElementById('formDeleteKaryawan').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var form = this;
+        Swal.fire({ icon: 'warning', title: 'Konfirmasi', text: 'Are you sure you want to delete all records from tb_karier? This action cannot be undone.', showCancelButton: true, confirmButtonText: 'Ya, Hapus', cancelButtonText: 'Batal', confirmButtonColor: '#dc3545', reverseButtons: true, focusCancel: true }).then(function(r) {
+            if (r && r.isConfirmed) form.submit();
+        });
+    });
+</script>

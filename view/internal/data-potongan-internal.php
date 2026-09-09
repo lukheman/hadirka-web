@@ -265,8 +265,8 @@
             $("#modalPotongan").modal("show");
         });
 
-        $(document).on("click", ".btnDeletePotongan", function() {
-            if (confirm("Hapus data potongan ini?")) {
+        $(document).on("click", ".btnDeletePotongan", async function() {
+            if (await confirmDialog("Hapus data potongan ini?")) {
                 $.ajax({
                     url: "app/controller/act-potongan-internal.php",
                     type: "POST",

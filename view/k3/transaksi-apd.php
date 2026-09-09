@@ -586,8 +586,8 @@
         }
     };
 
-    function deleteTransaksi(id) {
-        if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
+    async function deleteTransaksi(id) {
+        if (await confirmDialog("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
             fetch(`${api_trx}?action=delete&id=${id}`)
                 .then(res => res.json())
                 .then(result => {

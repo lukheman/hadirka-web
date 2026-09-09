@@ -180,8 +180,8 @@
         }
     };
 
-    function deleteAPD(id) {
-        if(confirm("Hapus data APD ini?")) {
+    async function deleteAPD(id) {
+        if(await confirmDialog("Hapus data APD ini?")) {
             fetch(`${api_act}?action=delete&id=${id}`).then(() => { loadTable(); showToast("Dihapus", "success"); });
         }
     }

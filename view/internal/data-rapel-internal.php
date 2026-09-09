@@ -261,8 +261,8 @@
             $("#modalRapel").modal("show");
         });
 
-        $(document).on("click", ".btnDeleteRapel", function() {
-            if (confirm("Hapus data rapel ini?")) {
+        $(document).on("click", ".btnDeleteRapel", async function() {
+            if (await confirmDialog("Hapus data rapel ini?")) {
                 $.ajax({
                     url: "app/controller/act-rapel-internal.php",
                     type: "POST",

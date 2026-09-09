@@ -1137,7 +1137,7 @@
         });
 
         // 10. ACTION: SIMPAN ELIMINASI
-        $("#formEliminasi").on("submit", function(e) {
+        $("#formEliminasi").on("submit", async function(e) {
             e.preventDefault();
 
             // Validasi form
@@ -1156,7 +1156,7 @@
 
             // Konfirmasi eliminasi
             let nama = $("#elim_nama_lengkap").val();
-            if (!confirm(`Apakah Anda yakin ingin mengeliminasi karyawan:\n${nama}?\n\nProses ini akan mengubah status karyawan menjadi tidak aktif.`)) {
+            if (!(await confirmDialog(`Apakah Anda yakin ingin mengeliminasi karyawan:\n${nama}?\n\nProses ini akan mengubah status karyawan menjadi tidak aktif.`))) {
                 return false;
             }
 
@@ -1184,11 +1184,11 @@
         });
 
         // 11. ACTION: DELETE DATA
-        $(document).on("click", ".btnDelete", function() {
+        $(document).on("click", ".btnDelete", async function() {
             let id = $(this).data("id");
             let nama = $(this).data("nama");
 
-            if (confirm(`Hapus data karyawan: ${nama}?`)) {
+            if (await confirmDialog(`Hapus data karyawan: ${nama}?`)) {
                 $.ajax({
                     url: "app/controller/act-karyawan.php",
                     type: "POST",

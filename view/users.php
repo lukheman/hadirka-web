@@ -272,7 +272,7 @@
             // Delete
             if (e.target.classList.contains('btnDeleteUser')) {
                 const id = e.target.dataset.id;
-                if (!confirm('Yakin hapus user?')) return;
+                if (!(await confirmDialog('Yakin hapus user?'))) return;
 
                 const fd = new URLSearchParams();
                 fd.append('action', 'delete');

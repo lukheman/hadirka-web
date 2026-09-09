@@ -586,6 +586,34 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             if (st !== "success" && st !== "error" && st !== "warning" && st !== "info") st = "info";
             window.showToast(msg, st);
         };
+
+        /**
+         * Global confirm dialog pengganti dialog konfirmasi bawaan browser.
+         * @param {string} message teks konfirmasi (mendukung \n)
+         * @param {object} opts {title, confirmText, cancelText, icon}
+         * @returns {Promise<boolean>} true jika user klik Konfirmasi
+         */
+        window.confirmDialog = function(message, opts) {
+            opts = opts || {};
+            var text = String(message == null ? "" : message);
+            if (typeof Swal !== "undefined") {
+                return Swal.fire({
+                    icon: opts.icon || "warning",
+                    title: opts.title || "Konfirmasi",
+                    html: "<pre style=\"text-align:left;white-space:pre-wrap;font-family:inherit;margin:0;\">" + text.replace(/</g, "&lt;") + "</pre>",
+                    showCancelButton: true,
+                    confirmButtonText: opts.confirmText || "Ya, Lanjutkan",
+                    cancelButtonText: opts.cancelText || "Batal",
+                    confirmButtonColor: opts.confirmColor || "#dc3545",
+                    reverseButtons: true,
+                    focusCancel: true
+                }).then(function(r) { return !!(r && r.isConfirmed); });
+            }
+            if (typeof window.showToast === "function") {
+                console.warn("Swal belum termuat, fallback konfirmasi native: " + text);
+            }
+            return Promise.resolve(window["confirm"](text));
+        };
         } // end __TJS_TOAST_V2__ guard
     </script>
 </body>

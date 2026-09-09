@@ -290,14 +290,14 @@
         });
 
         // Trigger Hapus File PDF
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             let btn = e.target.closest(".btnHapusFile");
             if (!btn) return;
 
             let idKarier = btn.dataset.id_karier;
             let nama = btn.dataset.nama;
 
-            if (confirm(`Apakah Anda yakin ingin menghapus file kontrak milik ${nama}?`)) {
+            if (await confirmDialog(`Apakah Anda yakin ingin menghapus file kontrak milik ${nama}?`)) {
                 let fd = new FormData();
                 fd.append("action", "delete_file");
                 fd.append("id_karier", idKarier);

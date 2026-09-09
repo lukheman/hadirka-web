@@ -374,7 +374,7 @@
             table.$(".chk-history").prop("checked", e.target.checked);
         });
 
-        document.getElementById("btnBatchDeleteHistory").addEventListener("click", () => {
+        document.getElementById("btnBatchDeleteHistory").addEventListener("click", async () => {
             let table = $("#tableHistoriSP").DataTable();
             let selected = [];
             table.$(".chk-history:checked").each(function() {
@@ -386,7 +386,7 @@
                 return;
             }
 
-            if (confirm(`Yakin ingin menghapus ${selected.length} riwayat surat peringatan?`)) {
+            if (await confirmDialog(`Yakin ingin menghapus ${selected.length} riwayat surat peringatan?`)) {
                 let fd = new FormData();
                 fd.append("action", "delete_sp_batch");
                 selected.forEach(id => fd.append("id_sp[]", id));
@@ -603,7 +603,8 @@
 
             // Hapus Surat
             let btnDel = e.target.closest(".btnDeleteSP");
-            if (btnDel && confirm("Hapus riwayat surat peringatan ini?")) {
+            if (btnDel) {
+                if (!(await confirmDialog("Hapus riwayat surat peringatan ini?"))) return;
                 let fd = new FormData();
                 fd.append("action", "delete_sp");
                 fd.append("id_sp", btnDel.dataset.id);

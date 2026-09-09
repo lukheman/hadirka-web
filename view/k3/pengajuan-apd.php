@@ -146,7 +146,7 @@
     });
 
     async function deletePengajuanApd(id) {
-        if (confirm("Hapus permanen data pengajuan APD ini? Data tidak bisa dikembalikan.")) {
+        if (await confirmDialog("Hapus permanen data pengajuan APD ini? Data tidak bisa dikembalikan.")) {
             try {
                 const res = await fetch(`${api_act_apd}?action=delete&id=${id}`);
                 const result = await res.json();

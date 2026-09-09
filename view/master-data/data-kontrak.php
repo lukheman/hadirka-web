@@ -104,12 +104,12 @@
         });
 
         // Submit Form Upload Massal
-        document.getElementById("formUploadKontrak").addEventListener("submit", function(e) {
+        document.getElementById("formUploadKontrak").addEventListener("submit", async function(e) {
             e.preventDefault();
             let fd = new FormData(this);
             let btnSave = document.getElementById("btnSaveUpload");
 
-            if (!confirm("File ini akan menimpa file kontrak lama pada karyawan di jabatan ini. Lanjutkan?")) return;
+            if (!(await confirmDialog("File ini akan menimpa file kontrak lama pada karyawan di jabatan ini. Lanjutkan?"))) return;
 
             btnSave.disabled = true;
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengupload...';
@@ -139,14 +139,14 @@
         });
 
         // Trigger Hapus Massal
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             let btn = e.target.closest(".btnHapusFile");
             if (!btn) return;
 
             let idJabatan = btn.dataset.id_jabatan;
             let namaJabatan = btn.dataset.nama_jabatan;
 
-            if (confirm(`Hapus file kontrak untuk semua karyawan dengan jabatan ${namaJabatan}?`)) {
+            if (await confirmDialog(`Hapus file kontrak untuk semua karyawan dengan jabatan ${namaJabatan}?`)) {
                 let fd = new FormData();
                 fd.append("action", "delete_massal");
                 fd.append("id_jabatan", idJabatan);

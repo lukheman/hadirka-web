@@ -392,8 +392,8 @@
             $("#modalPinjaman").modal("show");
         });
 
-        $(document).on("click", ".btnDeletePinjaman", function() {
-            if (confirm("Hapus baris pinjaman ini?")) {
+        $(document).on("click", ".btnDeletePinjaman", async function() {
+            if (await confirmDialog("Hapus baris pinjaman ini?")) {
                 $.ajax({
                     url: "app/controller/act-pinjaman-internal.php",
                     type: "POST",
@@ -469,7 +469,7 @@
         };
 
         // Fungsi Posting Pinjaman Internal ke Laporan Keuangan
-        window.postingPinjamanInternal = function() {
+        window.postingPinjamanInternal = async function() {
             let p = getPeriodeBulan();
             let tgl_awal = p.awal;
             let tgl_akhir = p.akhir;
@@ -477,9 +477,10 @@
 
             if (!tgl_awal || !tgl_akhir) return showToast("Pilih bulan terlebih dahulu!", "warning");
 
-            if (confirm(`Posting total pencairan pinjaman periode Bulan ${bln} (${tgl_awal} s/d ${tgl_akhir}) ke Laporan Keuangan?\n\n(Data posting lama di rentang tanggal ini akan ditimpa/direplace otomatis)`)) {
+            const btn = event.currentTarget;
+            if (!(await confirmDialog(`Posting total pencairan pinjaman periode Bulan ${bln} (${tgl_awal} s/d ${tgl_akhir}) ke Laporan Keuangan?\n\n(Data posting lama di rentang tanggal ini akan ditimpa/direplace otomatis)`))) return;
 
-                const btn = event.currentTarget;
+            {
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
                 btn.disabled = true;

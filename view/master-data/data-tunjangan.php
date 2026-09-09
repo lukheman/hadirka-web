@@ -193,11 +193,11 @@
         });
 
         // Hapus Data
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             let btn = e.target.closest(".btnDeleteTunjangan");
             if (!btn) return;
 
-            if (confirm("Yakin ingin menghapus tunjangan ini?")) {
+            if (await confirmDialog("Yakin ingin menghapus tunjangan ini?")) {
                 let fd = new FormData();
                 fd.append("action", "delete");
                 fd.append("id_tunjangan", btn.dataset.id);

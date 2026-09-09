@@ -186,11 +186,10 @@ $(document).ready(function() {
     });
 
     // [DELETE] Hapus Loker
-    $(document).on("click", ".btnDeleteLoker", function() {
+    $(document).on("click", ".btnDeleteLoker", async function() {
         let id = $(this).data("id");
-        
-        // Menggunakan native confirm agar seragam dengan import-karier.php
-        if (confirm("Yakin hapus loker? Data yang terhapus tidak dapat dikembalikan.")) {
+
+        if (await confirmDialog("Yakin hapus loker? Data yang terhapus tidak dapat dikembalikan.")) {
             $.ajax({
                 url: "app/controller/act-loker.php",
                 type: "POST",

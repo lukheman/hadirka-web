@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // =================== EDIT & DELETE HANDLER ===================
-    document.addEventListener("click", e => {
+    document.addEventListener("click", async e => {
 
         // --- EDIT ---
         if (e.target.classList.contains("btnEditJabatan")) {
@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target.classList.contains("btnDeleteJabatan")) {
             let id = e.target.dataset.id;
 
-            if (confirm("Yakin hapus jabatan?")) {
+            if (await confirmDialog("Yakin hapus jabatan?")) {
                 fetch("app/controller/act-jabatan.php", {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },

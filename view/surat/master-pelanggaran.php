@@ -147,7 +147,7 @@
         });
 
         // Delegation Event Klik untuk Edit dan Hapus
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             // Logika Klik Edit
             let btnEdit = e.target.closest(".btnEditPel");
             if (btnEdit) {
@@ -161,7 +161,7 @@
             // Logika Klik Hapus
             let btnDel = e.target.closest(".btnDeletePel");
             if (btnDel) {
-                if (confirm("Hapus master pelanggaran ini?")) {
+                if (await confirmDialog("Hapus master pelanggaran ini?")) {
                     let fd = new FormData();
                     fd.append("action", "delete");
                     fd.append("id_pelanggaran", btnDel.dataset.id);

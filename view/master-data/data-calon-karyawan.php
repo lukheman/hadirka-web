@@ -163,11 +163,11 @@
         });
 
         // 1. Aksi Terima (ACC)
-        $(document).on("click", ".btnAccPelamar", function() {
+        $(document).on("click", ".btnAccPelamar", async function() {
             let id = $(this).data("id");
             let nama = $(this).data("nama");
 
-            if (confirm("Ubah status pelamar " + nama + " menjadi DITERIMA?")) {
+            if (await confirmDialog("Ubah status pelamar " + nama + " menjadi DITERIMA?")) {
                 $.post("app/controller/act-calon-karyawan.php", {
                     action: "update_status",
                     id_calon: id,
@@ -184,11 +184,11 @@
         });
 
         // 2. Aksi Tolak
-        $(document).on("click", ".btnTolakPelamar", function() {
+        $(document).on("click", ".btnTolakPelamar", async function() {
             let id = $(this).data("id");
             let nama = $(this).data("nama");
 
-            if (confirm("Ubah status pelamar " + nama + " menjadi DITOLAK?")) {
+            if (await confirmDialog("Ubah status pelamar " + nama + " menjadi DITOLAK?")) {
                 $.post("app/controller/act-calon-karyawan.php", {
                     action: "update_status",
                     id_calon: id,
@@ -205,10 +205,10 @@
         });
 
         // 3. Aksi Hapus
-        $(document).on("click", ".btnDeletePelamar", function() {
+        $(document).on("click", ".btnDeletePelamar", async function() {
             let id = $(this).data("id");
 
-            if (confirm("Hapus data pelamar secara permanen beserta berkasnya?")) {
+            if (await confirmDialog("Hapus data pelamar secara permanen beserta berkasnya?")) {
                 $.post("app/controller/act-calon-karyawan.php", {
                     action: "delete",
                     id_calon: id

@@ -140,7 +140,7 @@
                 });
         });
 
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             if (e.target.classList.contains("btnEditDepart")) {
                 let btn = e.target;
 
@@ -153,7 +153,7 @@
             if (e.target.classList.contains("btnDeleteDepart")) {
                 let id = e.target.dataset.id;
 
-                if (confirm("Yakin hapus departemen?")) {
+                if (await confirmDialog("Yakin hapus departemen?")) {
                     fetch("app/controller/act-departemen.php", {
                             method: "POST",
                             headers: {

@@ -506,7 +506,7 @@
         });
 
         // === EDIT & DELETE BUTTON ===
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             const btnEdit = e.target.closest(".btnEdit");
             const btnDelete = e.target.closest(".btnDelete");
 
@@ -531,7 +531,7 @@
             // DELETE
             if (btnDelete) {
                 const id = btnDelete.dataset.id;
-                if (confirm("Yakin menghapus data potongan ini?")) {
+                if (await confirmDialog("Yakin menghapus data potongan ini?")) {
                     fetch("app/controller/act-potongan-tidak-tetap.php", {
                             method: "POST",
                             headers: {

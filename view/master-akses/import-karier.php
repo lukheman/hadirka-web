@@ -553,11 +553,11 @@
         });
 
         // --- 7. DELETE KARIER ---
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             let btn = e.target.closest(".btnDeleteKarier");
             if (!btn) return;
 
-            if (confirm("Yakin hapus karier ini?")) {
+            if (await confirmDialog("Yakin hapus karier ini?")) {
                 fetch("app/controller/act-karier.php", {
                         method: "POST",
                         headers: {
@@ -617,7 +617,7 @@
         });
 
         // --- BATCH EXTEND CONTRACT ---
-        document.getElementById("btnExtendBatch").addEventListener("click", () => {
+        document.getElementById("btnExtendBatch").addEventListener("click", async () => {
             let table = $(".MyTableKarier").DataTable();
             let selected = [];
 
@@ -631,7 +631,7 @@
                 return;
             }
 
-            if (confirm(`Yakin ingin memperpanjang kontrak ${selected.length} karyawan terpilih selama 6 bulan?\n(Sistem hanya akan memproses karyawan berstatus Aktif)`)) {
+            if (await confirmDialog(`Yakin ingin memperpanjang kontrak ${selected.length} karyawan terpilih selama 6 bulan?\n(Sistem hanya akan memproses karyawan berstatus Aktif)`)) {
                 let fd = new FormData();
                 fd.append("action", "extend_batch");
                 selected.forEach(id => fd.append("id_karier[]", id));
@@ -655,12 +655,12 @@
         });
 
         // --- SINGLE EXTEND CONTRACT (Untuk import-karier.php) ---
-        document.addEventListener("click", e => {
+        document.addEventListener("click", async e => {
             let btn = e.target.closest(".btnExtendKarier");
             if (!btn) return;
 
             let nama = btn.dataset.nama;
-            if (confirm(`Perpanjang kontrak ${nama} selama 6 bulan?\n(Hanya bisa jika status karyawan Aktif)`)) {
+            if (await confirmDialog(`Perpanjang kontrak ${nama} selama 6 bulan?\n(Hanya bisa jika status karyawan Aktif)`)) {
                 let fd = new FormData();
                 fd.append("action", "extend_single");
                 fd.append("id_karier", btn.dataset.id);

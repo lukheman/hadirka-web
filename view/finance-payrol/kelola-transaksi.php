@@ -703,7 +703,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
 
     async function hapusTransaksi(id) {
         // Pesan peringatan diperbarui
-        if (confirm('Hapus transaksi ini? Sistem akan otomatis menghapus jurnal pasangannya (Kas/Bank) agar neraca tetap seimbang.')) {
+        if (await confirmDialog('Hapus transaksi ini? Sistem akan otomatis menghapus jurnal pasangannya (Kas/Bank) agar neraca tetap seimbang.')) {
             const formData = new FormData();
             formData.append('action', 'delete');
             formData.append('id', id);
@@ -722,6 +722,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 }
             } catch (error) {
                 showToast('Gagal menghapus transaksi.', 'error');
+            }
         }
     }
 

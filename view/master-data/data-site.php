@@ -146,7 +146,7 @@
             });
 
             // === OPEN MODAL EDIT ===
-            document.addEventListener("click", (e) => {
+            document.addEventListener("click", async (e) => {
                 if (e.target.classList.contains("btnEdit")) {
                     let btn = e.target;
 
@@ -160,7 +160,7 @@
                 if (e.target.classList.contains("btnDelete")) {
                     let id = e.target.dataset.id;
 
-                    if (confirm("Yakin menghapus site?")) {
+                    if (await confirmDialog("Yakin menghapus site?")) {
                         fetch("app/controller/act-site.php", {
                                 method: "POST",
                                 headers: {

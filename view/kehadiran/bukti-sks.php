@@ -207,7 +207,7 @@
     });
 
     async function deleteSKS(id) {
-        if (!confirm("Hapus data SKS ini selamanya?")) return;
+        if (!(await confirmDialog("Hapus data SKS ini selamanya?"))) return;
         const res = await fetch(`${api_act_sks}?action=delete&id=${id}`);
         const result = await res.json();
         if (result.status === 'success') loadTableSKS();

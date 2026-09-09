@@ -317,8 +317,8 @@
         });
 
         // Hapus
-        $(document).on("click", ".btnDelete", function() {
-            if (confirm("Yakin hapus karyawan ini? Log bonus juga akan terhapus!")) {
+        $(document).on("click", ".btnDelete", async function() {
+            if (await confirmDialog("Yakin hapus karyawan ini? Log bonus juga akan terhapus!")) {
                 $.post("app/controller/act-karyawan-internal.php", {
                     action: "delete",
                     id: $(this).data("id")

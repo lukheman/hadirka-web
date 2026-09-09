@@ -1035,11 +1035,11 @@
         document.getElementById("editBank").addEventListener("change", toggleRekeningFields);
     });
 
-    function postingKeuangan() {
+    async function postingKeuangan() {
         let startDate = document.getElementById("startDate").value;
         let endDate = document.getElementById("endDate").value;
 
-        if (!confirm(`Tutup Buku & Posting Payroll periode ini (${startDate} s/d ${endDate}) ke Laporan Keuangan?\n\nPastikan data absensi dan kasbon sudah final.`)) {
+        if (!(await confirmDialog(`Tutup Buku & Posting Payroll periode ini (${startDate} s/d ${endDate}) ke Laporan Keuangan?\n\nPastikan data absensi dan kasbon sudah final.`))) {
             return;
         }
 

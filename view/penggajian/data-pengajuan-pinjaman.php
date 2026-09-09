@@ -693,7 +693,7 @@
             confirmText = 'Batalkan status penolakan dan kembalikan ke Pending?';
         }
 
-        if (!confirm(confirmText)) return;
+        if (!(await confirmDialog(confirmText))) return;
 
         try {
             const res = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=update-status&id=${id}&status=${newStatus}`);
@@ -710,7 +710,7 @@
     };
 
     window.deletePengajuan = async function(id) {
-        if (!confirm('Hapus permanen data pengajuan pinjaman ini beserta buktinya?')) return;
+        if (!(await confirmDialog('Hapus permanen data pengajuan pinjaman ini beserta buktinya?'))) return;
         try {
             const res = await fetch(`app/controller/act-pengajuan-pinjaman.php?action=delete&id=${id}`);
             const result = await res.json();
@@ -866,9 +866,9 @@
         }
     }
 
-    document.getElementById('btnToggleAkses').addEventListener('click', () => {
+    document.getElementById('btnToggleAkses').addEventListener('click', async () => {
         const actionText = statusBukaPinjaman === '1' ? 'MENUTUP' : 'MEMBUKA';
-        if (!confirm(`Anda yakin ingin ${actionText} akses pengajuan pinjaman untuk seluruh karyawan?`)) return;
+        if (!(await confirmDialog(`Anda yakin ingin ${actionText} akses pengajuan pinjaman untuk seluruh karyawan?`))) return;
 
         const newStatus = statusBukaPinjaman === '1' ? '0' : '1';
         let fd = new FormData();
