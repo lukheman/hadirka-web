@@ -16,6 +16,10 @@ require_once 'app/controller/read.php';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* SweetAlert2 selalu di paling depan */
+        .swal2-container {
+            z-index: 20000 !important;
+        }
         /* Simple, print-friendly styling to mimic contoh */
         :root {
             --border: #222;

@@ -18,6 +18,10 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
+        /* SweetAlert2 selalu di paling depan */
+        .swal2-container {
+            z-index: 20000 !important;
+        }
         :root {
             --border: #222;
             --muted: #666;

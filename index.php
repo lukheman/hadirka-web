@@ -288,6 +288,13 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             max-width: 180px;
             object-fit: contain;
         }
+
+        /* SweetAlert2 harus selalu di paling depan, di atas modal Bootstrap
+           (backdrop 1050, modal 1055) dan di atas backdrop-nya sendiri.
+           Toast custom (z 99999) tetap di atas Swal agar notif terlihat. */
+        .swal2-container {
+            z-index: 20000 !important;
+        }
     </style>
 </head>
 

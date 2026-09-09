@@ -233,7 +233,7 @@ echo "</pre>";
 if(isset($_POST['delete_tb_karyawan'])) {
     // Hapus semua data di tb_karyawan
     $koneksi->query("DELETE FROM tb_karyawan");
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'success',title:'Berhasil',text:'All records from tb_karier have been deleted.'});</script>";
+    echo "<style>.swal2-container{z-index:20000 !important;}</style><script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'success',title:'Berhasil',text:'All records from tb_karier have been deleted.'});</script>";
 } 
 
 function getId($koneksi, $table, $nama_field, $nama_value, $id_field)
