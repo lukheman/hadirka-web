@@ -7,6 +7,9 @@ header('Content-Type: application/json; charset=utf-8');
 
 $action = $_POST['action'] ?? '';
 $alamat_foto = '../../assets/img/user-pic/';
+if (!is_dir($alamat_foto)) {
+    mkdir($alamat_foto, 0755, true);
+}
 
 function json_resp($status, $msg = '') {
     $php_error = ob_get_clean(); // Tangkap error PHP yang bocor

@@ -695,7 +695,7 @@ require_once 'app/controller/read.php';
         }
 
 
-        // generateSlip: mandatory fetch from backend new-slip.php
+        // generateSlip: fetch data slip dari backend get-slip-gaji.php
         async function generateSlip() {
             const nikSel = document.getElementById('nikSelect').value;
             const [nik, namaDefault, jabDefault] = nikSel.split('|');

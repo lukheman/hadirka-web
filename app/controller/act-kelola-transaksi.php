@@ -2,10 +2,10 @@
 // app/controller/act-kelola-transaksi.php
 session_start();
 header('Content-Type: application/json');
-require_once __DIR__ . '/../../app/config/koneksi.php'; // Sesuaikan path
+require_once __DIR__ . '/../config/koneksi.php';
 
 $action = $_POST['action'] ?? '';
-$target_dir = __DIR__ . '/../../app/uploads/bukti_transaksi/'; // Path folder upload
+$target_dir = __DIR__ . '/../uploads/bukti_transaksi/'; // Path folder upload
 
 if (!file_exists($target_dir)) {
     mkdir($target_dir, 0755, true);

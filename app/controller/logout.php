@@ -5,7 +5,7 @@
 
 // Pastikan koneksi database tersedia (karena sudah di-include di index.php)
 if (!isset($koneksi)) {
-    require_once __DIR__ . '/../../app/config/koneksi.php';
+    require_once __DIR__ . '/../config/koneksi.php';
 }
 
 // Hapus token remember me jika ada di database & cookie browser
