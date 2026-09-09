@@ -351,8 +351,11 @@
     function notify(msg, type = "success") {
         if (typeof showToast === "function") {
             showToast(msg, type);
+        } else if (typeof Swal !== "undefined") {
+            const icon = ["success", "error", "warning", "info"].includes(type) ? type : "info";
+            Swal.fire({ icon: icon, title: type.toUpperCase(), text: msg });
         } else {
-            alert((type.toUpperCase()) + ": " + msg);
+            console.warn((type.toUpperCase()) + ": " + msg);
         }
     }
 

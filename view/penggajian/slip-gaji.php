@@ -528,7 +528,7 @@
         const endDate = document.getElementById('endDate').value;
 
         if (!nik || !startDate || !endDate) {
-            alert('Mohon isi NIK dan tanggal');
+            showToast('Mohon isi NIK dan tanggal', 'warning');
             return;
         }
 
@@ -548,7 +548,7 @@
             if (!resp.ok) throw new Error(await resp.text());
             const data = await resp.json();
             if (data.error) {
-                alert(data.error);
+                showToast(data.error, 'error');
                 return;
             }
 
@@ -737,7 +737,7 @@
 
         } catch (err) {
             console.error(err);
-            alert('Gagal mengambil data: ' + err.message);
+            showToast('Gagal mengambil data: ' + err.message, 'error');
         }
     }
 

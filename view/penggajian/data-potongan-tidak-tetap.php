@@ -423,18 +423,18 @@
                         btn.innerHTML = '<i class="fa fa-upload me-1"></i> Import';
 
                         if (res.status === "success" || res.status === "warning") {
-                            alert(res.message);
+                            showToast(res.message, res.status === "warning" ? "warning" : "success");
                             loadPotongan();
                             formImport.reset();
                         } else {
-                            alert("Gagal: " + res.message);
+                            showToast("Gagal: " + res.message, "error");
                         }
                     })
                     .catch(err => {
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fa fa-upload me-1"></i> Import';
                         console.error(err);
-                        alert("Terjadi kesalahan: " + err.message);
+                        showToast("Terjadi kesalahan: " + err.message, "error");
                     });
             });
         }

@@ -442,18 +442,18 @@
                     btn.innerHTML = '<i class="fa fa-upload"></i> Import Data';
 
                     if (res.status === "success" || res.status === "warning") {
-                        alert(res.message);
+                        showToast(res.message, res.status === "warning" ? "warning" : "success");
                         loadPinjaman(); // Refresh tabel
                         formImport.reset();
                     } else {
-                        alert("Gagal: " + res.message);
+                        showToast("Gagal: " + res.message, "error");
                     }
                 })
                 .catch(err => {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa fa-upload"></i> Import Data';
                     console.error(err);
-                    alert("Terjadi kesalahan: " + err.message);
+                    showToast("Terjadi kesalahan: " + err.message, "error");
                 });
         });
 
@@ -551,7 +551,7 @@
 
         window.postingPinjaman = function() {
             const bulan = document.getElementById("filterBulan").value;
-            if (!bulan) return alert("Pilih bulan terlebih dahulu!");
+            if (!bulan) return showToast("Pilih bulan terlebih dahulu!", "warning");
 
             if (confirm("Posting pencairan pinjaman bulan ini ke Laporan Keuangan? (Data lama di bulan ini akan direplace otomatis)")) {
                 fetch("app/controller/act-posting-pinjaman.php", {
@@ -563,9 +563,9 @@
                     })
                     .then(res => res.json())
                     .then(res => {
-                        if (res.status === "success") alert(res.message);
-                        else if (res.status === "warning") alert(res.message);
-                        else alert("Gagal: " + res.message);
+                        if (res.status === "success") showToast(res.message, "success");
+                        else if (res.status === "warning") showToast(res.message, "warning");
+                        else showToast("Gagal: " + res.message, "error");
                     });
             }
         }; 

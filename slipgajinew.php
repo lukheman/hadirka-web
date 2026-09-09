@@ -14,6 +14,7 @@ require_once 'app/controller/read.php';
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <!-- html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* Simple, print-friendly styling to mimic contoh */
         :root {
@@ -817,7 +818,7 @@ require_once 'app/controller/read.php';
             const selectedSite = document.getElementById("siteFilter").value;
 
             if (!start || !end) {
-                alert("Tanggal mulai & akhir wajib diisi.");
+                Swal.fire({ icon: 'warning', title: 'Perhatian', text: "Tanggal mulai & akhir wajib diisi." });
                 return;
             }
 
@@ -1067,7 +1068,7 @@ require_once 'app/controller/read.php';
     }
     
     console.log("Selesai! 3 file PDF seharusnya sudah ter-download.");
-    alert("Proses download 3 bulan selesai!");
+    Swal.fire({ icon: 'success', title: 'Selesai', text: "Proses download 3 bulan selesai!" });
 }
 
 // Jalankan fungsinya

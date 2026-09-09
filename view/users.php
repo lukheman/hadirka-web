@@ -217,13 +217,13 @@
             const json = await res.json();
 
             if (json.status === 'success') {
-                alert('User berhasil ditambah');
+                showToast('User berhasil ditambah', 'success');
                 bootstrap.Modal.getInstance(document.getElementById('modalTambahUser')).hide();
                 formTambah.reset();
                 document.getElementById('fotoPreviewAdd').innerHTML = '';
                 loadUsers();
             } else {
-                alert(json.msg || 'Gagal tambah user');
+                showToast(json.msg || 'Gagal tambah user', 'error');
             }
         });
 
@@ -240,11 +240,11 @@
             const json = await res.json();
 
             if (json.status === 'success') {
-                alert('User berhasil diupdate');
+                showToast('User berhasil diupdate', 'success');
                 bootstrap.Modal.getInstance(document.getElementById('modalEditUser')).hide();
                 loadUsers();
             } else {
-                alert(json.msg || 'Gagal update user');
+                showToast(json.msg || 'Gagal update user', 'error');
             }
         });
 
@@ -287,10 +287,10 @@
                 });
                 const json = await res.json();
                 if (json.status === 'success') {
-                    alert('User dihapus');
+                    showToast('User dihapus', 'success');
                     loadUsers();
                 } else {
-                    alert(json.msg || 'Gagal menghapus');
+                    showToast(json.msg || 'Gagal menghapus', 'error');
                 }
             }
         });

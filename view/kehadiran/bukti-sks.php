@@ -198,11 +198,11 @@
                 bootstrap.Modal.getInstance(document.getElementById('modalProsesSKS')).hide();
                 loadTableSKS();
             } else {
-                alert("Gagal: " + result.message);
+                showToast("Gagal: " + result.message, "error");
             }
         } catch (err) {
             console.error(err);
-            alert("Terjadi kesalahan sistem saat memproses data.");
+            showToast("Terjadi kesalahan sistem saat memproses data.", "error");
         }
     });
 

@@ -465,7 +465,7 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
             }
         } catch (error) {
             console.error("Gagal memuat laporan keuangan:", error);
-            alert("Gagal mengambil data laporan dari server.");
+            showToast("Gagal mengambil data laporan dari server.", "error");
         }
     }
 

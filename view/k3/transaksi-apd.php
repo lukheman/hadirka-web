@@ -652,18 +652,18 @@
                         }
                     }
 
-                    alert(msg);
+                    Swal.fire({ icon: 'success', title: 'Import Selesai', html: '<pre style="text-align:left;white-space:pre-wrap;">' + msg.replace(/</g, '&lt;') + '</pre>', confirmButtonText: 'OK' });
                     loadTable(); // Refresh tabel setelah import
                     $("#ModalImport").modal("hide");
                     $("#formImport")[0].reset();
                     showToast(`Import Selesai. Berhasil: ${res.berhasil}`, "success");
                 } else {
-                    alert("❌ IMPORT GAGAL!\n\n" + (res.error || "Terjadi kesalahan pada file Excel."));
+                    Swal.fire({ icon: 'error', title: 'Import Gagal', text: (res.error || "Terjadi kesalahan pada file Excel.") });
                     showToast("Import Gagal", "error");
                 }
             },
             error: function(xhr, status, error) {
-                alert("⚠️ TERJADI KESALAHAN SERVER!\nCek console browser untuk detail lengkap.");
+                showToast("TERJADI KESALAHAN SERVER! Cek console browser untuk detail lengkap.", "error");
                 console.error("Response:", xhr.responseText);
             },
             complete: function() {

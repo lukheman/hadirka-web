@@ -291,7 +291,7 @@
             }
         } catch (error) {
             console.error("Gagal mengambil data:", error);
-            alert("Gagal terhubung ke server untuk mengambil statistik.");
+            showToast("Gagal terhubung ke server untuk mengambil statistik.", "error");
         }
     }
 
@@ -317,8 +317,10 @@ async function checkNotification() {
                     },
                     backdrop: `rgba(34, 40, 50, 0.6)` // Warna backdrop gelap yang lebih elegan
                 });
+            } else if (typeof showToast !== 'undefined') {
+                showToast(data.msg.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""), "info");
             } else {
-                alert(data.msg.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""));
+                console.warn(data.msg.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""));
             }
         }
     } catch (error) {

@@ -421,7 +421,7 @@ require_once 'app/controller/read.php';
         const tgl_a = document.getElementById('tgl_a').value;
         const tgl_b = document.getElementById('tgl_b').value;
         if (!id || !tgl_a || !tgl_b) {
-            alert('Lengkapi ID karyawan dan tanggal');
+            showToast('Lengkapi ID karyawan dan tanggal', 'warning');
             return;
         }
 
@@ -433,7 +433,7 @@ require_once 'app/controller/read.php';
         try {
             res = await fetch(url);
         } catch (err) {
-            alert('Network error: ' + err.message);
+            showToast('Network error: ' + err.message, 'error');
             return;
         }
 
@@ -444,12 +444,12 @@ require_once 'app/controller/read.php';
         } catch (err) {
             // tampilkan preview error yang dikembalikan server di console dan alert singkat
             console.error('Server response (not JSON):', text);
-            alert('Server mengembalikan response yang tidak valid (lihat console). Pastikan PHP tidak menampilkan warning/notice.');
+            showToast('Server mengembalikan response yang tidak valid (lihat console). Pastikan PHP tidak menampilkan warning/notice.', 'error');
             return;
         }
 
         if (!json || json.status !== 'success') {
-            alert('Error: ' + (json.message || JSON.stringify(json)));
+            showToast('Error: ' + (json.message || JSON.stringify(json)), 'error');
             return;
         }
 
@@ -640,7 +640,7 @@ require_once 'app/controller/read.php';
         const tgl_a = document.getElementById('tgl_a').value;
         const tgl_b = document.getElementById('tgl_b').value;
         if (!id || !tgl_a || !tgl_b) {
-            alert('Lengkapi ID karyawan dan tanggal');
+            showToast('Lengkapi ID karyawan dan tanggal', 'warning');
             return;
         }
 

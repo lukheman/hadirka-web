@@ -406,7 +406,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
             if (file) {
                 if (file.type === 'application/pdf') {
                     if (file.size > 1048576) { // 1 MB
-                        alert('Ukuran file PDF maksimal 1MB!');
+                        showToast('Ukuran file PDF maksimal 1MB!', 'warning');
                         this.value = '';
                         previewBox.innerHTML = '<span class="text-danger"><i class="bx bx-x-circle"></i> File PDF Terlalu Besar (>1MB)</span>';
                         return;
@@ -433,12 +433,12 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                         }
                         reader.readAsDataURL(compressedFile);
                     } catch (error) {
-                        alert('Gagal memproses gambar.');
+                        showToast('Gagal memproses gambar.', 'error');
                         this.value = '';
                         previewBox.innerHTML = '';
                     }
                 } else {
-                    alert('Format tidak didukung! Hanya PDF, JPG, PNG.');
+                    showToast('Format tidak didukung! Hanya PDF, JPG, PNG.', 'warning');
                     this.value = '';
                     previewBox.innerHTML = '';
                 }
@@ -562,7 +562,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
             }
         } catch (error) {
             console.error("Gagal mengambil data:", error);
-            alert("Gagal memuat data tabel transaksi.");
+            showToast("Gagal memuat data tabel transaksi.", "error");
         }
     }
 
@@ -615,10 +615,10 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 bootstrap.Modal.getInstance(document.getElementById('modalTambahTransaksi')).hide();
                 loadDataTransaksi();
             } else {
-                alert(data.msg);
+                showToast(data.msg, 'error');
             }
         } catch (error) {
-            alert('Terjadi kesalahan sistem.');
+            showToast('Terjadi kesalahan sistem.', 'error');
         } finally {
             btn.innerHTML = '<i class="bx bx-save me-1"></i> Simpan Transaksi';
             btn.disabled = false;
@@ -691,10 +691,10 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 bootstrap.Modal.getInstance(document.getElementById('modalEditTransaksi')).hide();
                 loadDataTransaksi();
             } else {
-                alert(data.msg);
+                showToast(data.msg, 'error');
             }
         } catch (error) {
-            alert('Terjadi kesalahan sistem saat memperbarui data.');
+            showToast('Terjadi kesalahan sistem saat memperbarui data.', 'error');
         } finally {
             btn.innerHTML = '<i class="bx bx-check me-1"></i> Update Baris Ini';
             btn.disabled = false;
@@ -718,11 +718,10 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 if (data.status === 'success') {
                     loadDataTransaksi(); // Refresh tabel
                 } else {
-                    alert(data.msg);
+                    showToast(data.msg, 'error');
                 }
             } catch (error) {
-                alert('Gagal menghapus transaksi.');
-            }
+                showToast('Gagal menghapus transaksi.', 'error');
         }
     }
 

@@ -115,7 +115,7 @@
                 });
             }
         } catch (e) {
-            alert('Gagal memuat Jurnal Umum');
+            showToast('Gagal memuat Jurnal Umum', 'error');
         }
     }
     document.addEventListener("DOMContentLoaded", loadJurnalUmum);

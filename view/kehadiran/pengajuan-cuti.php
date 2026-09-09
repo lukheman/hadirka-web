@@ -306,7 +306,7 @@
 
             // Cek jika tgl akhir lebih kecil dari tgl awal
             if (akhir < awal) {
-                alert("Tanggal Akhir tidak boleh lebih awal dari Tanggal Awal!");
+                showToast("Tanggal Akhir tidak boleh lebih awal dari Tanggal Awal!", "warning");
                 document.getElementById('tgl_akhir').value = '';
                 document.getElementById('lama_cuti').value = '';
                 return;
@@ -319,7 +319,7 @@
 
             // --- TAMBAHKAN VALIDASI MAKSIMAL 6 HARI ---
             if (diffDays > 6) {
-                alert("Maksimal cuti dalam satu kali pengajuan adalah 6 hari!");
+                showToast("Maksimal cuti dalam satu kali pengajuan adalah 6 hari!", "warning");
                 document.getElementById('tgl_akhir').value = '';
                 document.getElementById('lama_cuti').value = '';
                 return;
@@ -367,7 +367,7 @@
                 }
 
                 loadTableCuti();
-                alert(result.message);
+                showToast(result.message, "success");
             } else {
                 errorText.innerText = result.message;
             }
@@ -406,10 +406,10 @@
                 bootstrap.Modal.getInstance(document.getElementById('modalProsesAdmin')).hide();
                 loadTableCuti();
             } else {
-                alert("Gagal: " + result.message);
+                showToast("Gagal: " + result.message, "error");
             }
         } catch (err) {
-            alert("Terjadi kesalahan sistem.");
+            showToast("Terjadi kesalahan sistem.", "error");
         }
     });
 
@@ -421,10 +421,10 @@
                 if (result.status === 'success') {
                     loadTableCuti();
                 } else {
-                    alert("Gagal menghapus: " + result.message);
+                    showToast("Gagal menghapus: " + result.message, "error");
                 }
             } catch (e) {
-                alert("Terjadi kesalahan saat menghapus data.");
+                showToast("Terjadi kesalahan saat menghapus data.", "error");
             }
         }
     }

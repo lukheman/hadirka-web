@@ -475,7 +475,7 @@
             let tgl_akhir = p.akhir;
             let bln = $("#filterBulan").val();
 
-            if (!tgl_awal || !tgl_akhir) return alert("Pilih bulan terlebih dahulu!");
+            if (!tgl_awal || !tgl_akhir) return showToast("Pilih bulan terlebih dahulu!", "warning");
 
             if (confirm(`Posting total pencairan pinjaman periode Bulan ${bln} (${tgl_awal} s/d ${tgl_akhir}) ke Laporan Keuangan?\n\n(Data posting lama di rentang tanggal ini akan ditimpa/direplace otomatis)`)) {
 
@@ -494,15 +494,15 @@
                     dataType: "json",
                     success: function(res) {
                         if (res.status === 'success') {
-                            alert(res.message);
+                            showToast(res.message, 'success');
                         } else if (res.status === 'warning') {
-                            alert("Info: " + res.message);
+                            showToast("Info: " + res.message, 'info');
                         } else {
-                            alert("Error: " + res.message);
+                            showToast("Error: " + res.message, 'error');
                         }
                     },
                     error: function(xhr) {
-                        alert("Terjadi kesalahan pada server/koneksi saat memposting.");
+                        showToast("Terjadi kesalahan pada server/koneksi saat memposting.", 'error');
                         console.error(xhr.responseText);
                     },
                     complete: function() {

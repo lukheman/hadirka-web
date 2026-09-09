@@ -211,7 +211,7 @@
         // let tgl_akhir = $("#slipTglAkhir").val();
         // let nik = $("#slipKaryawan").val();
 
-        // if (!tgl_awal || !tgl_akhir) return alert("Pilih tanggal cut-off!");
+        // if (!tgl_awal || !tgl_akhir) return showToast("Pilih tanggal cut-off!", "warning");
 
         // $.post("app/controller/get-slip/get-slip-internal.php", {
         //     tgl_awal: tgl_awal,
@@ -224,14 +224,14 @@
         let tgl_akhir = p.akhir;
         let nik = $("#slipKaryawan").val();
 
-        if (!tgl_awal || !tgl_akhir) return alert("Pilih bulan terlebih dahulu!");
+        if (!tgl_awal || !tgl_akhir) return showToast("Pilih bulan terlebih dahulu!", "warning");
 
         $.post("app/controller/get-slip/get-slip-internal.php", {
             tgl_awal: tgl_awal,
             tgl_akhir: tgl_akhir,
             nik: nik
         }, function(res) {
-            if (res.status == 'error') return alert(res.msg);
+            if (res.status == 'error') return showToast(res.msg, 'error');
 
             let d = res.data;
             let tArr = tgl_akhir.split("-");

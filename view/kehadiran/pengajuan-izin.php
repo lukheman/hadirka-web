@@ -219,10 +219,10 @@
                 bootstrap.Modal.getInstance(document.getElementById('modalProsesAdmin')).hide();
                 loadTableIzin();
             } else {
-                alert("Gagal: " + result.message);
+                showToast("Gagal: " + result.message, "error");
             }
         } catch (err) {
-            alert("Terjadi kesalahan sistem.");
+            showToast("Terjadi kesalahan sistem.", "error");
         }
     });
 
@@ -234,10 +234,10 @@
                 if (result.status === 'success') {
                     loadTableIzin();
                 } else {
-                    alert("Gagal menghapus: " + result.message);
+                    showToast("Gagal menghapus: " + result.message, "error");
                 }
             } catch (e) {
-                alert("Terjadi kesalahan saat menghapus data.");
+                showToast("Terjadi kesalahan saat menghapus data.", "error");
             }
         }
     }

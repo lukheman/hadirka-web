@@ -14,6 +14,7 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
     <title>Cetak Slip THR - Tahun <?= htmlspecialchars($tahun_aktif) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -385,7 +386,7 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
             const tahun = document.getElementById('tahunAktif').value;
 
             if (!val) {
-                alert("Silakan pilih karyawan terlebih dahulu!");
+                Swal.fire({ icon: 'warning', title: 'Perhatian', text: "Silakan pilih karyawan terlebih dahulu!" });
                 return;
             }
 
@@ -404,7 +405,7 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
                 });
 
                 if (!resp.ok) {
-                    alert("Data tidak ditemukan atau terjadi kesalahan server.");
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: "Data tidak ditemukan atau terjadi kesalahan server." });
                     return;
                 }
 
@@ -414,7 +415,7 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
 
             } catch (e) {
                 console.error(e);
-                alert("Terjadi kesalahan sistem saat memuat slip.");
+                Swal.fire({ icon: 'error', title: 'Error', text: "Terjadi kesalahan sistem saat memuat slip." });
             }
         }
 
@@ -452,7 +453,7 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
             const tahun = document.getElementById("tahunAktif").value;
 
             if (options.length === 0) {
-                alert("Tidak ada karyawan yang menerima THR di periode ini.");
+                Swal.fire({ icon: 'warning', title: 'Perhatian', text: "Tidak ada karyawan yang menerima THR di periode ini." });
                 return;
             }
 

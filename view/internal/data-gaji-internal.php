@@ -212,13 +212,13 @@
                     dataType: "json",
                     success: function(res) {
                         if (res.status === 'success') {
-                            alert(res.msg);
+                            showToast(res.msg, 'success');
                         } else {
-                            alert("Error: " + res.msg);
+                            showToast("Error: " + res.msg, 'error');
                         }
                     },
                     error: function() {
-                        alert("Terjadi kesalahan pada server/koneksi saat memposting.");
+                        showToast("Terjadi kesalahan pada server/koneksi saat memposting.", 'error');
                     },
                     complete: function() {
                         btn.innerHTML = originalText;

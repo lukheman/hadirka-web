@@ -802,16 +802,16 @@
             success: function(res) {
                 hideLoading();
                 if (res.status === "success") {
-                    alert("Data rekening berhasil diupdate!");
+                    showToast("Data rekening berhasil diupdate!", "success");
                     bootstrap.Modal.getInstance(document.getElementById('modalEditRekening')).hide();
                     loadPayrol(); // Reload data
                 } else {
-                    alert("Error: " + (res.message || "Gagal update data"));
+                    showToast("Error: " + (res.message || "Gagal update data"), "error");
                 }
             },
             error: function() {
                 hideLoading();
-                alert("Terjadi kesalahan saat menyimpan data!");
+                showToast("Terjadi kesalahan saat menyimpan data!", "error");
             }
         });
     }
@@ -945,7 +945,7 @@
 
                 if (res.status !== "success") {
                     console.error("Error:", res);
-                    alert("Error: " + (res.message || "Terjadi kesalahan"));
+                    showToast("Error: " + (res.message || "Terjadi kesalahan"), "error");
                     tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger fw-bold">Gagal memuat data.</td></tr>`;
                     return;
                 }
@@ -963,9 +963,9 @@
                 
                 try {
                     let errorData = JSON.parse(xhr.responseText);
-                    alert("Error: " + errorData.message);
+                    showToast("Error: " + errorData.message, "error");
                 } catch(e) {
-                    alert("Gagal mengambil data!");
+                    showToast("Gagal mengambil data!", "error");
                 }
                 
                 tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger fw-bold">Koneksi ke server terputus.</td></tr>`;
@@ -992,7 +992,7 @@
         });
 
         if (filteredData.length === 0) {
-            alert("Tidak ada data untuk di-export!");
+            showToast("Tidak ada data untuk di-export!", "warning");
             return;
         }
 
@@ -1054,13 +1054,13 @@
             dataType: "json",
             success: function(res) {
                 if (res.status === "success") {
-                    alert(res.message);
+                    showToast(res.message, "success");
                 } else {
-                    alert("Gagal: " + res.message);
+                    showToast("Gagal: " + res.message, "error");
                 }
             },
             error: function() {
-                alert("Terjadi kesalahan server saat memposting data.");
+                showToast("Terjadi kesalahan server saat memposting data.", "error");
             },
             complete: function() {
                 btn.innerHTML = '<i class="bx bx-send"></i> Posting Laporan';

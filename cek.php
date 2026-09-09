@@ -231,9 +231,9 @@ print_r($tidak_ada);
 echo "</pre>";
 
 if(isset($_POST['delete_tb_karyawan'])) {
-    // Hapus semua data di tb_karier
+    // Hapus semua data di tb_karyawan
     $koneksi->query("DELETE FROM tb_karyawan");
-    echo "<script>alert('All records from tb_karier have been deleted.');</script>";
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'success',title:'Berhasil',text:'All records from tb_karier have been deleted.'});</script>";
 } 
 
 function getId($koneksi, $table, $nama_field, $nama_value, $id_field)

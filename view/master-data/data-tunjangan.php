@@ -135,11 +135,11 @@
                 .then(res => {
                     if (res.status == "success") {
                         loadTunjangan();
-                        alert("Tunjangan berhasil ditambah!"); // Ganti dengan showToast jika ada
+                        showToast("Tunjangan berhasil ditambah!", "success");
                         bootstrap.Modal.getInstance(document.getElementById("modalTambahTunjangan")).hide();
                         this.reset();
                     } else {
-                        alert("Gagal menambah data: " + res.message);
+                        showToast("Gagal menambah data: " + res.message, "error");
                     }
                 })
                 .catch(err => console.error("Error:", err));
@@ -181,12 +181,12 @@
                 .then(res => {
                     if (res.status == "success") {
                         loadTunjangan();
-                        alert("Berhasil!");
+                        showToast("Berhasil!", "success");
                         bootstrap.Modal.getInstance(document.getElementById("modalEditTunjangan")).hide();
                         this.reset();
 
                     } else {
-                        alert("Gagal: " + res.message);
+                        showToast("Gagal: " + res.message, "error");
                     }
                 })
                 .catch(err => console.error("Error Detail:", err));
@@ -209,7 +209,7 @@
                     .then(res => res.json())
                     .then(res => {
                         if (res.status == "success") {
-                            alert("Berhasil menghapus!");
+                            showToast("Berhasil menghapus!", "success");
                             loadTunjangan();
                         }
                     });

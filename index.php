@@ -119,7 +119,7 @@ $hrd_pages = [
 ];
 
 if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
-    echo "<script>alert('Akses Ditolak! Khusus Master, Direktur, HRD, Supervisor, dan Admin.'); window.location.href='?page=home';</script>";
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master, Direktur, HRD, Supervisor, dan Admin.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;
 }
 
@@ -142,28 +142,28 @@ $finance_pages = [
 ];
 
 if (!in_array($user_level, [0, 1, 2, 6]) && in_array($page, $finance_pages)) {
-    echo "<script>alert('Akses Ditolak! Modul Keuangan khusus Master, Direktur, HRD, dan Finance.'); window.location.href='?page=home';</script>";
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Modul Keuangan khusus Master, Direktur, HRD, dan Finance.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;
 }
 
 // 1.c Modul Data Internal (Hanya Master dan Direktur)
 $internal_pages = ['karyawan-internal', 'bonus-internal', 'potongan-internal', 'rapel-internal', 'pinjaman-internal', 'gaji-internal', 'slip-internal'];
 if (!in_array($user_level, [0, 1]) && in_array($page, $internal_pages)) {
-    echo "<script>alert('Akses Ditolak! Modul Data Internal khusus Master dan Direktur.'); window.location.href='?page=home';</script>";
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Modul Data Internal khusus Master dan Direktur.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;
 }
 
 // 2. Modul K3 (Hanya Master, Direktur, Safety, Supervisor)
 $k3_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
 if (!in_array($user_level, [0, 1, 3, 4]) && in_array($page, $k3_pages)) {
-    echo "<script>alert('Akses Ditolak! Khusus tim K3 dan Supervisor.'); window.location.href='?page=home';</script>";
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus tim K3 dan Supervisor.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;
 }
 
 // 3. Modul Sistem & Setup (Hanya Master)
 $system_pages = ['data-users-login', 'maintenance', 'error', 'documentation', 'data-kandidat'];
 if (!in_array($user_level, [0]) && in_array($page, $system_pages)) {
-    echo "<script>alert('Akses Ditolak! Khusus Master Data.'); window.location.href='?page=home';</script>";
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master Data.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;
 }
 
