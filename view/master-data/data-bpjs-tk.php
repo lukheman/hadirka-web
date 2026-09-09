@@ -213,12 +213,7 @@
             return bpjs && bpjs.trim() !== '' && bpjs.trim() !== '-';
         }
 
-        window.showToast = function(message, type = 'success') {
-            const Toast = Swal.mixin({
-                toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
-            });
-            Toast.fire({ icon: type, title: message });
-        };
+        // showToast: pakai definisi global di index.php (P1-JS-4, jangan definisikan ulang).
 
         function populateFilters(data) {
             let sites = [...new Set(data.map(row => row.nama_site).filter(s => s))];

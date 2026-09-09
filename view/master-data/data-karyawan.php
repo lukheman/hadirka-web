@@ -208,14 +208,7 @@
     </div>
 </div>
 
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-    <div id="toastAlert" class="toast text-bg-primary border-0" role="alert" data-bs-delay="4000">
-        <div class="d-flex">
-            <div class="toast-body" id="toastMessage">Processing...</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-</div>
+<!-- toast-container global dipakai dari index.php (P1-JS-4, hindari duplikat id toastAlert) -->
 
 <div class="modal fade" id="importResultModal" tabindex="-1" aria-labelledby="importResultModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -771,17 +764,7 @@
         return `<div class="p-4 bg-light border-start border-primary border-4 rounded shadow-sm">${detailHtml}</div>`;
     }
 
-    // 2. Helper Function: Toast Notifications
-    function showToast(message, type = "success") {
-        const toastEl = document.getElementById('toastAlert');
-        const toastBody = document.getElementById('toastMessage');
-
-        toastEl.className = `toast text-bg-${type} border-0`;
-        toastBody.innerHTML = message;
-
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
-    }
+    // showToast: pakai definisi global di index.php (P1-JS-4, jangan definisikan ulang).
 
     function showImportResult(res, title = "Hasil Import") {
         const resultModal = document.getElementById('importResultModal');

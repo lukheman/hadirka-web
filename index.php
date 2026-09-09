@@ -463,9 +463,29 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
         });
 
         /**
-         * Enhanced Toast System
+         * Enhanced Toast System — SINGLE GLOBAL DEFINITION (P1-JS-4).
+         * Jangan definisikan ulang window.showToast di view/*.php, pakai yang ini.
+         * Mendukung type: success/error/warning/info (+ alias bahasa).
+         * Mendukung message string maupun object {message|msg}.
          */
-        function showToast(message, type = "success", position = "top-right", duration = 5000) {
+        if (typeof window.__TJS_TOAST_V2__ === 'undefined') {
+        window.__TJS_TOAST_V2__ = true;
+        window.showToast = function(message, type = "success", position = "top-right", duration = 5000) {
+            var allowed = ["success", "error", "warning", "info"];
+            var t = String(type || "success").toLowerCase();
+            if (t === "warn" || t === "perhatian") t = "warning";
+            else if (t === "danger" || t === "gagal" || t === "fail" || t === "failed") t = "error";
+            else if (t === "berhasil") t = "success";
+            else if (t === "informasi") t = "info";
+            if (allowed.indexOf(t) === -1) t = "success";
+            type = t;
+
+            if (message === null || message === undefined || message === "") message = "(tanpa pesan)";
+            if (typeof message === "object") {
+                message = message.message || message.msg || message.text || JSON.stringify(message);
+            }
+            message = String(message);
+
             const icons = {
                 success: "✅",
                 error: "❌",
@@ -553,7 +573,20 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
 
             let autoHide = setTimeout(removeToast, duration);
             toast.querySelector(".closeToast").onclick = removeToast;
-        }
+        };
+
+        // Convenience wrappers + normalisasi res.msg vs res.message (P1-JS-4).
+        window.toastSuccess = function(msg) { window.showToast(msg, "success"); };
+        window.toastError = function(msg) { window.showToast(msg, "error"); };
+        window.toastWarning = function(msg) { window.showToast(msg, "warning"); };
+        window.toastInfo = function(msg) { window.showToast(msg, "info"); };
+        window.toastRes = function(res, fallback) {
+            var msg = (res && (res.message || res.msg)) || fallback || "(tanpa pesan)";
+            var st = (res && res.status) || "info";
+            if (st !== "success" && st !== "error" && st !== "warning" && st !== "info") st = "info";
+            window.showToast(msg, st);
+        };
+        } // end __TJS_TOAST_V2__ guard
     </script>
 </body>
 

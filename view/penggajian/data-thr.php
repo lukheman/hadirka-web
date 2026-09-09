@@ -414,19 +414,7 @@
         // ============================================
         // UTILITY FUNCTIONS
         // ============================================
-        window.showToast = function(message, type = 'success') {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true
-            });
-            Toast.fire({
-                icon: type === 'success' ? 'success' : 'error',
-                title: message
-            });
-        };
+        // showToast: pakai definisi global di index.php (P1-JS-4, jangan definisikan ulang).
 
         function initSelect2() {
             $('.select2-init').each(function() {

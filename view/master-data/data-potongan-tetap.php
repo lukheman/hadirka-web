@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     loadPotongan();
                     modalTambah.hide();
                     this.reset();
-                    if(typeof showToast === 'function') showToast("Data berhasil disimpan", "success");
+                    showToast("Data berhasil disimpan", "success");
                 }
             });
     });
@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (res.status === "success") {
                     loadPotongan();
                     modalEdit.hide();
-                    if(typeof showToast === 'function') showToast("Data berhasil diupdate", "success");
+                    showToast("Data berhasil diupdate", "success");
                 }
             });
     });
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 .then(res => {
                     if (res.status === "success") {
                         loadPotongan();
-                        if(typeof showToast === 'function') showToast("Data berhasil dihapus", "success");
+                        showToast("Data berhasil dihapus", "success");
                     }
                 });
         }
