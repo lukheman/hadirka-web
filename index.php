@@ -29,7 +29,6 @@ $routes = [
     'data-potongan-tidak-tetap' => 'view/penggajian/data-potongan-tidak-tetap.php',
     'data-departemen' => 'view/master-data/data-departemen.php',
     'karier'          => 'view/master-data/data-karier.php',
-    'data-devisi'     => 'view/master-data/data-devisi.php',
     'data-jabatan'    => 'view/master-data/data-jabatan.php',
     'import-karier'   => 'view/master-akses/import-karier.php',
     'data-kontrak'   => 'view/master-data/data-kontrak.php',
@@ -80,7 +79,6 @@ $routes = [
     'pengajuan-apd'   => 'view/k3/pengajuan-apd.php',
 
     // Lainnya
-    'data-kandidat'   => 'view/data-kandidat.php',
     'pengumuman'      => 'view/broadcast/broadcast.php',
     'data-users-login' => 'view/users.php',
 
@@ -101,7 +99,6 @@ $hrd_pages = [
     'data-potongan',
     'data-departemen',
     'karier',
-    'data-devisi',
     'data-jabatan',
     'import-karier',
     'data-kontrak',
@@ -132,7 +129,6 @@ $finance_pages = [
     'data-potongan-tidak-tetap',
     'data-rapel',
     'data-thr',
-    'slip-gaji',
     'laporan-keuangan',
     'kelola-transaksi',
     'data-coa',
@@ -161,7 +157,7 @@ if (!in_array($user_level, [0, 1, 3, 4]) && in_array($page, $k3_pages)) {
 }
 
 // 3. Modul Sistem & Setup (Hanya Master)
-$system_pages = ['data-users-login', 'maintenance', 'error', 'documentation', 'data-kandidat'];
+$system_pages = ['data-users-login'];
 if (!in_array($user_level, [0]) && in_array($page, $system_pages)) {
     echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master Data.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;
