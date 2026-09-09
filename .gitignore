@@ -6,3 +6,10 @@
 /app/api/vendor/
 *.log
 debug_*.log
+
+# Dump database jangan di-commit (simpan di luar repo / backup terpisah)
+*.sql
+*.dump
+
+# Log runtime (ditulis aplikasi, bukan source)
+error_log.txt
