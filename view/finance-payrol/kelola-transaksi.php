@@ -613,6 +613,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 processedFileAdd = null;
                 document.getElementById('preview_bukti_add').innerHTML = '';
                 bootstrap.Modal.getInstance(document.getElementById('modalTambahTransaksi')).hide();
+                showToast(data.msg || 'Transaksi berhasil disimpan.', 'success');
                 loadDataTransaksi();
             } else {
                 showToast(data.msg, 'error');
@@ -689,6 +690,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 this.reset();
                 processedFileEdit = null;
                 bootstrap.Modal.getInstance(document.getElementById('modalEditTransaksi')).hide();
+                showToast(data.msg || 'Transaksi berhasil diperbarui.', 'success');
                 loadDataTransaksi();
             } else {
                 showToast(data.msg, 'error');
@@ -716,9 +718,10 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 const data = await res.json();
 
                 if (data.status === 'success') {
+                    showToast(data.msg || 'Transaksi berhasil dihapus.', 'success');
                     loadDataTransaksi(); // Refresh tabel
                 } else {
-                    showToast(data.msg, 'error');
+                    showToast(data.msg || 'Gagal menghapus transaksi.', 'error');
                 }
             } catch (error) {
                 showToast('Gagal menghapus transaksi.', 'error');
