@@ -704,6 +704,10 @@
                                 aria-label="Tampilkan password" title="Tampilkan password">
                                 <i class="bx bx-hide"></i>
                             </button>
+                            <button type="button" class="btn btn-outline-primary" id="btn_generate_password"
+                                title="Buatkan password otomatis (8 karakter)">
+                                <i class="bx bx-refresh"></i> Generate
+                            </button>
                         </div>
                         <label class="form-label mt-3" for="edit_password_confirm">Konfirmasi Password Baru</label>
                         <div class="input-group">
@@ -860,6 +864,54 @@
             icon.toggleClass("bx-hide", visible).toggleClass("bx-show", !visible);
             $(this).attr("aria-label", visible ? "Tampilkan password" : "Sembunyikan password")
                 .attr("title", visible ? "Tampilkan password" : "Sembunyikan password");
+        });
+
+        // Generate password otomatis: 8 karakter (huruf besar + kecil + angka)
+        function randomInt(max) {
+            if (window.crypto && window.crypto.getRandomValues) {
+                const a = new Uint32Array(1);
+                window.crypto.getRandomValues(a);
+                return a[0] % max;
+            }
+            return Math.floor(Math.random() * max);
+        }
+
+        function generatePassword(len) {
+            len = len || 8;
+            const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // tanpa I, O
+            const lower = "abcdefghijkmnpqrstuvwxyz"; // tanpa l
+            const digits = "23456789"; // tanpa 0, 1
+            const all = upper + lower + digits;
+            const chars = [
+                upper[randomInt(upper.length)],
+                lower[randomInt(lower.length)],
+                digits[randomInt(digits.length)]
+            ];
+            for (let i = 3; i < len; i++) {
+                chars.push(all[randomInt(all.length)]);
+            }
+            // Acak urutan agar posisi tiap jenis tidak tertebak
+            for (let i = chars.length - 1; i > 0; i--) {
+                const j = randomInt(i + 1);
+                [chars[i], chars[j]] = [chars[j], chars[i]];
+            }
+            return chars.join("");
+        }
+
+        $(document).on("click", "#btn_generate_password", function() {
+            const pw = generatePassword(8);
+            const inputBaru = $("#edit_password_karyawan");
+            const inputKonfirm = $("#edit_password_confirm");
+            if (!inputBaru.length) return;
+            // Isi kedua kolom + tampilkan agar bisa disalin sebelum disimpan
+            inputBaru.val(pw).attr("type", "text");
+            inputKonfirm.val(pw).attr("type", "text");
+            $(".toggle-password").find("i")
+                .removeClass("bx-hide").addClass("bx-show");
+            $(".toggle-password")
+                .attr("aria-label", "Sembunyikan password")
+                .attr("title", "Sembunyikan password");
+            showToast("Password otomatis dibuat. Salin sebelum menekan Simpan.", "info");
         });
 
         // Init Tooltip
