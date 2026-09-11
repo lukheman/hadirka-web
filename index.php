@@ -423,6 +423,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/periode.js"></script><!-- getPeriodeBulan()/setDefaultBulan() terpusat -->
 
     <script>
         $(document).ready(function() {

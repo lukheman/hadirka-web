@@ -7,6 +7,7 @@ header("Content-Type: application/json");
 
 require __DIR__ . '/../../config/koneksi.php';
 require __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::parseDate()/esc() terpusat
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
@@ -18,40 +19,6 @@ function tglAkhir3Bulan($tgl_mulai)
 {
     if (empty($tgl_mulai)) return null;
     return date('Y-m-d', strtotime("+3 months", strtotime($tgl_mulai)));
-}
-
-/**
- * Escape string untuk query SQL
- */
-function escapeString($koneksi, $value)
-{
-    return mysqli_real_escape_string($koneksi, trim($value));
-}
-
-/**
- * Format tanggal dari Excel
- */
-function formatTanggal($value)
-{
-    if (empty($value)) return null;
-
-    try {
-        if (is_numeric($value)) {
-            return ExcelDate::excelToDateTimeObject($value)->format('Y-m-d');
-        }
-
-        $value = trim((string)$value);
-        foreach (['Y-m-d', 'd-m-Y', 'd/m/Y', 'Y/m/d'] as $format) {
-            $date = DateTime::createFromFormat('!' . $format, $value);
-            if ($date && $date->format($format) === $value) {
-                return $date->format('Y-m-d');
-            }
-        }
-
-        return null;
-    } catch (Exception $e) {
-        return null;
-    }
 }
 
 function normalizeStatusKaryawan($status)
@@ -198,8 +165,8 @@ try {
         $transaction_started = false;
         try {
             // === Mapping data kolom Excel ===
-            $nik_karyawan  = escapeString($koneksi, $row['B'] ?? '');
-            $nama_lengkap  = escapeString($koneksi, $row['C'] ?? '');
+            $nik_karyawan  = Excel::esc($koneksi, $row['B'] ?? '');
+            $nama_lengkap  = Excel::esc($koneksi, $row['C'] ?? '');
 
             // NIK adalah kunci unik. Existing employee langsung dilewati,
             // tanpa memvalidasi atau mengubah kolom lainnya.
@@ -223,65 +190,65 @@ try {
             $raw_nama_jabatan    = strtolower(trim($row['G'] ?? ''));
 
             // Tanggal
-            $tgl_masuk_site      = formatTanggal($row['H'] ?? '');
-            $tgl_selesai_kontrak = formatTanggal($row['I'] ?? '');
+            $tgl_masuk_site      = Excel::parseDate($row['H'] ?? '');
+            $tgl_selesai_kontrak = Excel::parseDate($row['I'] ?? '');
 
             // Data pribadi
-            $tempat_lahir  = escapeString($koneksi, $row['J'] ?? '');
-            $tgl_lahir     = formatTanggal($row['K'] ?? '');
-            $nationality   = escapeString($koneksi, $row['L'] ?? '');
-            $agama         = escapeString($koneksi, $row['M'] ?? '');
+            $tempat_lahir  = Excel::esc($koneksi, $row['J'] ?? '');
+            $tgl_lahir     = Excel::parseDate($row['K'] ?? '');
+            $nationality   = Excel::esc($koneksi, $row['L'] ?? '');
+            $agama         = Excel::esc($koneksi, $row['M'] ?? '');
 
             // Pendidikan
-            $education_level  = escapeString($koneksi, $row['N'] ?? ''); 
-            $last_education   = escapeString($koneksi, $row['O'] ?? ''); 
-            $major            = escapeString($koneksi, $row['P'] ?? ''); 
+            $education_level  = Excel::esc($koneksi, $row['N'] ?? ''); 
+            $last_education   = Excel::esc($koneksi, $row['O'] ?? ''); 
+            $major            = Excel::esc($koneksi, $row['P'] ?? ''); 
 
             // Data bank & Identitas
-            $atas_nama_rek = escapeString($koneksi, $row['Q'] ?? '');
-            $no_rek        = escapeString($koneksi, $row['R'] ?? '');
-            $nama_bank     = escapeString($koneksi, $row['S'] ?? '');
-            $nama_ibu      = escapeString($koneksi, $row['T'] ?? '');
-            $nik_ktp       = escapeString($koneksi, $row['U'] ?? '');
+            $atas_nama_rek = Excel::esc($koneksi, $row['Q'] ?? '');
+            $no_rek        = Excel::esc($koneksi, $row['R'] ?? '');
+            $nama_bank     = Excel::esc($koneksi, $row['S'] ?? '');
+            $nama_ibu      = Excel::esc($koneksi, $row['T'] ?? '');
+            $nik_ktp       = Excel::esc($koneksi, $row['U'] ?? '');
 
             // Alamat
-            $alamat_ktp    = escapeString($koneksi, $row['V'] ?? '');
-            $rt_rw         = escapeString($koneksi, $row['W'] ?? '');
-            $desa          = escapeString($koneksi, $row['X'] ?? '');
-            $kecamatan     = escapeString($koneksi, $row['Y'] ?? '');
-            $kabupaten     = escapeString($koneksi, $row['Z'] ?? '');
-            $provinsi      = escapeString($koneksi, $row['AA'] ?? '');
+            $alamat_ktp    = Excel::esc($koneksi, $row['V'] ?? '');
+            $rt_rw         = Excel::esc($koneksi, $row['W'] ?? '');
+            $desa          = Excel::esc($koneksi, $row['X'] ?? '');
+            $kecamatan     = Excel::esc($koneksi, $row['Y'] ?? '');
+            $kabupaten     = Excel::esc($koneksi, $row['Z'] ?? '');
+            $provinsi      = Excel::esc($koneksi, $row['AA'] ?? '');
 
             // Kontak
-            $email_pribadi = escapeString($koneksi, $row['AB'] ?? '');
-            $no_telp       = escapeString($koneksi, $row['AC'] ?? '');
+            $email_pribadi = Excel::esc($koneksi, $row['AB'] ?? '');
+            $no_telp       = Excel::esc($koneksi, $row['AC'] ?? '');
 
             // Kontak Darurat 1 & 2
-            $nama_kontak1     = escapeString($koneksi, $row['AD'] ?? '');
-            $hubungan1        = escapeString($koneksi, $row['AE'] ?? '');
-            $no_telp_darurat1 = escapeString($koneksi, $row['AF'] ?? '');
+            $nama_kontak1     = Excel::esc($koneksi, $row['AD'] ?? '');
+            $hubungan1        = Excel::esc($koneksi, $row['AE'] ?? '');
+            $no_telp_darurat1 = Excel::esc($koneksi, $row['AF'] ?? '');
 
-            $nama_kontak2     = escapeString($koneksi, $row['AG'] ?? '');
-            $hubungan2        = escapeString($koneksi, $row['AH'] ?? '');
-            $no_telp_darurat2 = escapeString($koneksi, $row['AI'] ?? '');
+            $nama_kontak2     = Excel::esc($koneksi, $row['AG'] ?? '');
+            $hubungan2        = Excel::esc($koneksi, $row['AH'] ?? '');
+            $no_telp_darurat2 = Excel::esc($koneksi, $row['AI'] ?? '');
 
             // Status dan dokumen
-            $npwp              = escapeString($koneksi, $row['AJ'] ?? '');
-            $bpjs_tk           = escapeString($koneksi, $row['AK'] ?? '');
-            $bpjs_kes          = escapeString($koneksi, $row['AL'] ?? '');
-            $status_pernikahan = escapeString($koneksi, $row['AM'] ?? '');
-            $status_ptkp       = escapeString($koneksi, $row['AN'] ?? ''); 
-            $kk_number         = escapeString($koneksi, $row['AO'] ?? '');
+            $npwp              = Excel::esc($koneksi, $row['AJ'] ?? '');
+            $bpjs_tk           = Excel::esc($koneksi, $row['AK'] ?? '');
+            $bpjs_kes          = Excel::esc($koneksi, $row['AL'] ?? '');
+            $status_pernikahan = Excel::esc($koneksi, $row['AM'] ?? '');
+            $status_ptkp       = Excel::esc($koneksi, $row['AN'] ?? ''); 
+            $kk_number         = Excel::esc($koneksi, $row['AO'] ?? '');
             
             $raw_status_karyawan = trim($row['AP'] ?? '') === '' ? 'Aktif' : $row['AP'];
             $normalized_status = normalizeStatusKaryawan($raw_status_karyawan);
             if ($normalized_status === null) {
                 throw new Exception("Status karyawan '$raw_status_karyawan' tidak dikenal.");
             }
-            $status_karyawan = escapeString($koneksi, $normalized_status);
+            $status_karyawan = Excel::esc($koneksi, $normalized_status);
             
-            $tgl_keluar          = formatTanggal($row['AQ'] ?? '');
-            $alasan_keluar       = escapeString($koneksi, $row['AR'] ?? '');
+            $tgl_keluar          = Excel::parseDate($row['AQ'] ?? '');
+            $alasan_keluar       = Excel::esc($koneksi, $row['AR'] ?? '');
 
             // === Validasi wajib ===
             if (empty($nik_karyawan) || empty($nama_lengkap)) {

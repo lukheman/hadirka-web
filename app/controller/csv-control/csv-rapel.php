@@ -10,64 +10,24 @@
 
 header("Content-Type: application/json; charset=utf-8");
 require '../../config/koneksi.php';
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::json()/Excel::cleanRupiah() terpusat
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 // ================================
-// FUNCTION: Send JSON Response
-// ================================
-function sendJsonResponse($status, $message, $data = []) {
-    echo json_encode(array_merge([
-        'status' => $status,
-        'message' => $message
-    ], $data));
-    exit;
-}
-
-// --- FUNGSI PEMBERSIH FORMAT MATA UANG ---
-function cleanRupiah($val) {
-    if (empty($val)) return 0;
-    
-    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
-    if (is_numeric($val)) return floatval($val);
-    
-    $val = (string)$val;
-    // Hapus karakter huruf (Rp, rp) dan spasi
-    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
-    
-    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
-    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
-        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
-        if (strrpos($val, ',') > strrpos($val, '.')) {
-            $val = str_replace('.', '', $val); // hapus titik ribuan
-            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
-        } else {
-            // Jika format English (Contoh: 36,881.30)
-            $val = str_replace(',', '', $val); // hapus koma ribuan
-        }
-    } elseif (strpos($val, ',') !== false) {
-        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
-        $val = str_replace(',', '.', $val);
-    }
-    
-    // Konversi akhir ke tipe Float
-    return floatval($val);
-}
-
-// ================================
 // CHECK DATABASE CONNECTION
 // ================================
 if (!isset($koneksi) || !$koneksi) {
-    sendJsonResponse('error', 'Koneksi database gagal');
+    Excel::json('error', 'Koneksi database gagal');
 }
 
 // ================================
 // CHECK FILE UPLOAD
 // ================================
 if (!isset($_FILES['file_csv_rapel'])) {
-    sendJsonResponse('error', 'File CSV/Excel tidak ditemukan');
+    Excel::json('error', 'File CSV/Excel tidak ditemukan');
 }
 
 $file = $_FILES['file_csv_rapel'];
@@ -85,7 +45,7 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
     ];
     
     $errorMsg = isset($uploadErrors[$file['error']]) ? $uploadErrors[$file['error']] : 'Unknown upload error';
-    sendJsonResponse('error', 'Upload gagal: ' . $errorMsg);
+    Excel::json('error', 'Upload gagal: ' . $errorMsg);
 }
 
 $fileTmpPath = $file['tmp_name'];
@@ -98,7 +58,7 @@ $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 // ================================
 $allowedExtensions = ['csv', 'xlsx', 'xls'];
 if (!in_array($fileExtension, $allowedExtensions)) {
-    sendJsonResponse('error', 'Format file tidak didukung! Gunakan CSV, XLSX, atau XLS');
+    Excel::json('error', 'Format file tidak didukung! Gunakan CSV, XLSX, atau XLS');
 }
 
 // ================================
@@ -107,12 +67,12 @@ if (!in_array($fileExtension, $allowedExtensions)) {
 $maxFileSize = 10 * 1024 * 1024; // 10MB
 if ($fileSize > $maxFileSize) {
     $fileSizeMB = round($fileSize / (1024 * 1024), 2);
-    sendJsonResponse('error', "Ukuran file terlalu besar ({$fileSizeMB}MB)! Maksimal 10MB");
+    Excel::json('error', "Ukuran file terlalu besar ({$fileSizeMB}MB)! Maksimal 10MB");
 }
 
 // Check if file is empty
 if ($fileSize == 0) {
-    sendJsonResponse('error', 'File kosong atau tidak valid');
+    Excel::json('error', 'File kosong atau tidak valid');
 }
 
 // ================================
@@ -131,7 +91,7 @@ $allowedMimeTypes = [
 ];
 
 if (!in_array($mimeType, $allowedMimeTypes)) {
-    sendJsonResponse('error', 'Tipe file tidak valid');
+    Excel::json('error', 'Tipe file tidak valid');
 }
 
 // ================================
@@ -146,12 +106,12 @@ try {
     // memaksa mengambil string berformat "Rp", melainkan angka aslinya.
     $data = $sheet->toArray(null, true, false, true);
 } catch (Exception $e) {
-    sendJsonResponse('error', 'Gagal membaca file: ' . $e->getMessage());
+    Excel::json('error', 'Gagal membaca file: ' . $e->getMessage());
 }
 
 // Check if data is empty
 if (empty($data) || count($data) < 2) {
-    sendJsonResponse('error', 'File tidak berisi data atau hanya berisi header');
+    Excel::json('error', 'File tidak berisi data atau hanya berisi header');
 }
 
 // ================================
@@ -325,7 +285,7 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     }
 
     // Menggunakan fungsi cleanRupiah agar fleksibel membaca format Rp ataupun angka murni
-    $nominal_rapel = cleanRupiah($nominal);
+    $nominal_rapel = Excel::cleanRupiah($nominal);
 
     if ($nominal_rapel <= 0) {
         $errorCount++;

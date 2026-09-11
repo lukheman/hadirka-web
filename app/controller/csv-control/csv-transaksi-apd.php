@@ -3,26 +3,10 @@ header("Content-Type: application/json");
 
 // Sesuaikan struktur direktori koneksi dan vendor Anda
 require __DIR__ . '/../../config/koneksi.php';
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::esc()/parseDate() terpusat
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
-
-function escapeString($koneksi, $value) {
-    return mysqli_real_escape_string($koneksi, trim($value));
-}
-
-function formatTanggal($value) {
-    if (empty($value)) return null;
-    try {
-        // Handle format numeric Excel date (1900-based)
-        if (is_numeric($value)) {
-            return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value)->format('Y-m-d');
-        }
-        return date('Y-m-d', strtotime($value));
-    } catch (Exception $e) {
-        return null;
-    }
-}
 
 $response = [
     "success" => false,
@@ -65,9 +49,9 @@ try {
         // F: Tanggal Pengambilan
         // G: QTY
 
-        $nik_karyawan = escapeString($koneksi, $row['B'] ?? '');
-        $nama_apd     = escapeString($koneksi, $row['F'] ?? '');
-        $tanggal      = formatTanggal($row['G'] ?? '');
+        $nik_karyawan = Excel::esc($koneksi, $row['B'] ?? '');
+        $nama_apd     = Excel::esc($koneksi, $row['F'] ?? '');
+        $tanggal      = Excel::parseDate($row['G'] ?? '');
         $jumlah       = (int)($row['H'] ?? 0);
 
         // Abaikan jika baris benar-benar kosong

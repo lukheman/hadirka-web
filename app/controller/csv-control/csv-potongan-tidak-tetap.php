@@ -5,40 +5,11 @@ ini_set('display_errors', 0);
 header("Content-Type: application/json");
 
 require_once __DIR__ . '/../../config/koneksi.php'; 
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::cleanRupiah() terpusat
 require '../../../vendor/autoload.php'; 
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
-
-// --- FUNGSI PEMBERSIH FORMAT MATA UANG ---
-function cleanRupiah($val) {
-    if (empty($val)) return 0;
-    
-    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
-    if (is_numeric($val)) return floatval($val);
-    
-    $val = (string)$val;
-    // Hapus karakter huruf (Rp, rp) dan spasi
-    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
-    
-    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
-    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
-        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
-        if (strrpos($val, ',') > strrpos($val, '.')) {
-            $val = str_replace('.', '', $val); // hapus titik ribuan
-            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
-        } else {
-            // Jika format English (Contoh: 36,881.30)
-            $val = str_replace(',', '', $val); // hapus koma ribuan
-        }
-    } elseif (strpos($val, ',') !== false) {
-        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
-        $val = str_replace(',', '.', $val);
-    }
-    
-    // Konversi akhir ke tipe Float
-    return floatval($val);
-}
 
 try {
     // Pastikan request adalah POST
@@ -86,7 +57,7 @@ try {
 
         // 2. Bersihkan Nominal Menggunakan Pembersih `cleanRupiah`
         $nominal = $row['E'] ?? 0;
-        $nominal_potongan = cleanRupiah($nominal);
+        $nominal_potongan = Excel::cleanRupiah($nominal);
 
         // 3. Konversi Tanggal Potongan (Kolom F)
         $tglPotonganRaw = $row['F'] ?? '';

@@ -20,31 +20,26 @@ register_shutdown_function(function() {
 
 header("Content-Type: application/json; charset=utf-8");
 require '../../config/koneksi.php';
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::json() terpusat
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
-function sendJsonResponse($status, $message, $data = []) {
-    ob_clean();
-    echo json_encode(array_merge(['status' => $status, 'message' => $message], $data));
-    exit;
-}
-
-if (!isset($koneksi) || !$koneksi) sendJsonResponse('error', 'Koneksi database gagal');
-if (!isset($_FILES['file_csv_bpjs'])) sendJsonResponse('error', 'File tidak ditemukan');
+if (!isset($koneksi) || !$koneksi) Excel::json('error', 'Koneksi database gagal');
+if (!isset($_FILES['file_csv_bpjs'])) Excel::json('error', 'File tidak ditemukan');
 
 $file = $_FILES['file_csv_bpjs'];
-if ($file['error'] !== UPLOAD_ERR_OK) sendJsonResponse('error', 'Upload gagal: Kode error ' . $file['error']);
+if ($file['error'] !== UPLOAD_ERR_OK) Excel::json('error', 'Upload gagal: Kode error ' . $file['error']);
 
 try {
     $spreadsheet = IOFactory::load($file['tmp_name']);
     $sheet = $spreadsheet->getActiveSheet();
     $data = $sheet->toArray(null, true, true, true);
 } catch (Exception $e) {
-    sendJsonResponse('error', 'Excel Error: ' . $e->getMessage());
+    Excel::json('error', 'Excel Error: ' . $e->getMessage());
 }
 
-if (empty($data) || count($data) < 2) sendJsonResponse('error', 'File kosong atau hanya header');
+if (empty($data) || count($data) < 2) Excel::json('error', 'File kosong atau hanya header');
 
 // SETTING KOLOM EXCEL
 // Sesuaikan dengan format Anda: Kolom B = NIK KTP, Kolom C = Nomor BPJS

@@ -201,38 +201,10 @@
         //     $("#tglAkhir").val(formatTgl(y, m, 5));
         // }
 
-        // Logika Otomatis: Tgl 1-5 tampilkan bulan lalu, Tgl 6 ke atas tampilkan bulan berjalan
-        let today = new Date();
-        let tglHariIni = today.getDate(); // Ambil tanggal hari ini (1 s/d 31)
+        // Default bulan otomatis: tgl 1-5 = bulan lalu (terpusat di assets/js/periode.js)
+        setDefaultBulan();
 
-        let targetDate = new Date();
-        targetDate.setDate(1); // Set ke tgl 1 dulu untuk menghindari bug rollover jika hari ini tgl 31
-
-        // Jika hari ini masih tanggal 1, 2, 3, 4, atau 5
-        if (tglHariIni <= 5) {
-            targetDate.setMonth(targetDate.getMonth() - 1); // Mundur ke bulan lalu
-        }
-        // Jika hari ini tanggal 6 ke atas, targetDate dibiarkan (tetap bulan berjalan saat ini)
-
-        let y = targetDate.getFullYear();
-        let m = String(targetDate.getMonth() + 1).padStart(2, '0');
-
-        $("#filterBulan").val(`${y}-${m}`);
-
-        // Fungsi helper kalkulasi tgl 1 s/d tgl akhir bulan
-        function getPeriodeBulan() {
-            let val = $("#filterBulan").val();
-            if (!val) return {
-                awal: '',
-                akhir: ''
-            };
-            let [year, month] = val.split('-');
-            let lastDay = new Date(year, month, 0).getDate();
-            return {
-                awal: `${year}-${month}-01`,
-                akhir: `${year}-${month}-${lastDay}`
-            };
-        }
+        // getPeriodeBulan(): pakai assets/js/periode.js (terpusat, jangan definisikan ulang).
 
         $('.select2-init').select2({
             theme: 'bootstrap-5',

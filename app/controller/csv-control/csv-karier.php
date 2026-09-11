@@ -5,39 +5,10 @@ ob_clean();
 
 header("Content-Type: application/json");
 require __DIR__ . '/../../config/koneksi.php';
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::cleanRupiah()/parseDate() terpusat
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
-
-// --- FUNGSI BARU: PEMBERSIH FORMAT MATA UANG ---
-function cleanRupiah($val) {
-    if (empty($val)) return 0;
-    
-    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
-    if (is_numeric($val)) return floatval($val);
-    
-    $val = (string)$val;
-    // Hapus karakter huruf (Rp, rp) dan spasi
-    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
-    
-    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
-    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
-        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
-        if (strrpos($val, ',') > strrpos($val, '.')) {
-            $val = str_replace('.', '', $val); // hapus titik ribuan
-            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
-        } else {
-            // Jika format English (Contoh: 36,881.30)
-            $val = str_replace(',', '', $val); // hapus koma ribuan
-        }
-    } elseif (strpos($val, ',') !== false) {
-        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
-        $val = str_replace(',', '.', $val);
-    }
-    
-    // Konversi akhir ke tipe Float
-    return floatval($val);
-}
 
 /**
  * Cari ID berdasarkan nama (case-insensitive, trimmed)
@@ -52,17 +23,6 @@ function getId($koneksi, $table, $nama_field, $nama_value, $id_field)
     $result = $koneksi->query($query);
 
     return $result && $result->num_rows > 0 ? $result->fetch_assoc()[$id_field] : null;
-}
-
-function formatTanggal($value)
-{
-    if (empty($value)) return null;
-
-    try {
-        return date('Y-m-d', strtotime($value));
-    } catch (Exception $e) {
-        return null;
-    }
 }
 
 $response = ["success" => false, "berhasil" => 0, "gagal" => 0, "errors" => []];
@@ -123,28 +83,28 @@ try {
 
         $id_karyawan = $dataKaryawan['id_karyawan'];
 
-        // Ambil Nilai dari Excel & Terapkan cleanRupiah() pada nilai angka/uang
+        // Ambil Nilai dari Excel & Terapkan Excel::cleanRupiah() pada nilai angka/uang
         // Nama Karyawan di kolom C di skip
         $nama_site       = trim($row['D'] ?? '');
         $nama_departemen = trim($row['E'] ?? '');
         $nama_jabatan    = trim($row['F'] ?? '');
         
-        $basic      = cleanRupiah($row['G'] ?? 0);
-        $t_daerah   = cleanRupiah($row['H'] ?? 0);
-        $t_hidup    = cleanRupiah($row['I'] ?? 0);
-        $t_skill    = cleanRupiah($row['J'] ?? 0);
-        $t_posisi   = cleanRupiah($row['K'] ?? 0);
-        $t_makan    = cleanRupiah($row['L'] ?? 0);
-        $p_bonus    = cleanRupiah($row['M'] ?? 0);
-        $lembur     = cleanRupiah($row['N'] ?? 0); // Pengganti ke-5 kolom OT/SPL
-        $pot_bpjs   = cleanRupiah($row['O'] ?? 0);
-        $pot_jht    = cleanRupiah($row['P'] ?? 0);
-        $pph21      = cleanRupiah($row['Q'] ?? 0);
-        $pot_izin   = cleanRupiah($row['R'] ?? 0);
-        $pot_mangkir = cleanRupiah($row['S'] ?? 0);
+        $basic      = Excel::cleanRupiah($row['G'] ?? 0);
+        $t_daerah   = Excel::cleanRupiah($row['H'] ?? 0);
+        $t_hidup    = Excel::cleanRupiah($row['I'] ?? 0);
+        $t_skill    = Excel::cleanRupiah($row['J'] ?? 0);
+        $t_posisi   = Excel::cleanRupiah($row['K'] ?? 0);
+        $t_makan    = Excel::cleanRupiah($row['L'] ?? 0);
+        $p_bonus    = Excel::cleanRupiah($row['M'] ?? 0);
+        $lembur     = Excel::cleanRupiah($row['N'] ?? 0); // Pengganti ke-5 kolom OT/SPL
+        $pot_bpjs   = Excel::cleanRupiah($row['O'] ?? 0);
+        $pot_jht    = Excel::cleanRupiah($row['P'] ?? 0);
+        $pph21      = Excel::cleanRupiah($row['Q'] ?? 0);
+        $pot_izin   = Excel::cleanRupiah($row['R'] ?? 0);
+        $pot_mangkir = Excel::cleanRupiah($row['S'] ?? 0);
         
-        $tgl_masuk_site = formatTanggal($row['T'] ?? '');
-        $tgl_selesai_kontrak = formatTanggal($row['U'] ?? '');
+        $tgl_masuk_site = Excel::parseDate($row['T'] ?? '');
+        $tgl_selesai_kontrak = Excel::parseDate($row['U'] ?? '');
 
         // === Ambil ID referensi ===
         $id_site       = getId($koneksi, 'tb_site', 'nama_site', $nama_site, 'id_site');

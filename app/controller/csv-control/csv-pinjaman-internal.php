@@ -4,28 +4,11 @@ ini_set('display_errors', 0);
 header("Content-Type: application/json; charset=utf-8");
 
 require __DIR__ . '/../../config/koneksi.php';
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::cleanRupiah() terpusat
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
-
-function cleanRupiah($val) {
-    if (empty($val)) return 0;
-    if (is_numeric($val)) return floatval($val);
-    $val = (string)$val;
-    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
-    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
-        if (strrpos($val, ',') > strrpos($val, '.')) {
-            $val = str_replace('.', '', $val); 
-            $val = str_replace(',', '.', $val); 
-        } else {
-            $val = str_replace(',', '', $val);
-        }
-    } elseif (strpos($val, ',') !== false) {
-        $val = str_replace(',', '.', $val);
-    }
-    return floatval($val);
-}
 
 try {
     if (!isset($_FILES['file_excel']) || $_FILES['file_excel']['error'] !== UPLOAD_ERR_OK) {
@@ -49,7 +32,7 @@ try {
 
         // Mapping Kolom Import
         $nik = strtoupper(trim($row['B'] ?? ''));
-        $nominal_total = cleanRupiah($row['D'] ?? '0');
+        $nominal_total = Excel::cleanRupiah($row['D'] ?? '0');
         $tglPinjamRaw = trim($row['E'] ?? '');
         $tglBayarRaw = trim($row['F'] ?? '');
         $ket = trim($row['G'] ?? '');

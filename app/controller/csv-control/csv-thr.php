@@ -25,53 +25,17 @@ register_shutdown_function(function() {
 
 header("Content-Type: application/json; charset=utf-8");
 require '../../config/koneksi.php';
+require_once __DIR__ . '/../../config/Excel.php'; // Excel::json()/cleanRupiah() terpusat
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
-function sendJsonResponse($status, $message, $data = [])
-{
-    ob_clean(); // Wajib bersihkan sebelum kirim JSON
-    echo json_encode(array_merge(['status' => $status, 'message' => $message], $data));
-    exit;
-}
-
-// --- FUNGSI PEMBERSIH FORMAT MATA UANG (TERSTANDAR) ---
-function cleanRupiah($val) {
-    if (empty($val)) return 0;
-    
-    // Jika dari Excel sudah terbaca sebagai angka murni, langsung return
-    if (is_numeric($val)) return floatval($val);
-    
-    $val = (string)$val;
-    // Hapus karakter huruf (Rp, rp) dan spasi
-    $val = preg_replace('/[a-zA-Z\s]/', '', $val);
-    
-    // Deteksi pemisah ribuan dan desimal (Contoh: 36.881,30)
-    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
-        // Jika koma berada setelah titik, berarti koma adalah desimal (Format Indo)
-        if (strrpos($val, ',') > strrpos($val, '.')) {
-            $val = str_replace('.', '', $val); // hapus titik ribuan
-            $val = str_replace(',', '.', $val); // jadikan koma sebagai desimal
-        } else {
-            // Jika format English (Contoh: 36,881.30)
-            $val = str_replace(',', '', $val); // hapus koma ribuan
-        }
-    } elseif (strpos($val, ',') !== false) {
-        // Jika cuma ada koma (Contoh: 36881,30), asumsikan format Indo (koma = desimal)
-        $val = str_replace(',', '.', $val);
-    }
-    
-    // Konversi akhir ke tipe Float
-    return floatval($val);
-}
-
-if (!isset($koneksi) || !$koneksi) sendJsonResponse('error', 'Koneksi database gagal');
-if (!isset($_FILES['file_csv_thr'])) sendJsonResponse('error', 'File tidak ditemukan');
+if (!isset($koneksi) || !$koneksi) Excel::json('error', 'Koneksi database gagal');
+if (!isset($_FILES['file_csv_thr'])) Excel::json('error', 'File tidak ditemukan');
 
 $file = $_FILES['file_csv_thr'];
-if ($file['error'] !== UPLOAD_ERR_OK) sendJsonResponse('error', 'Upload gagal: Kode error ' . $file['error']);
+if ($file['error'] !== UPLOAD_ERR_OK) Excel::json('error', 'Upload gagal: Kode error ' . $file['error']);
 
 try {
     $spreadsheet = IOFactory::load($file['tmp_name']);
@@ -82,10 +46,10 @@ try {
     // memaksa mengambil string berformat "Rp", melainkan angka aslinya.
     $data = $sheet->toArray(null, true, false, true);
 } catch (Exception $e) {
-    sendJsonResponse('error', 'Excel Error: ' . $e->getMessage());
+    Excel::json('error', 'Excel Error: ' . $e->getMessage());
 }
 
-if (empty($data) || count($data) < 2) sendJsonResponse('error', 'File kosong atau hanya header');
+if (empty($data) || count($data) < 2) Excel::json('error', 'File kosong atau hanya header');
 
 $colNIK = 'B';
 $colTglMulai = 'E';
@@ -115,7 +79,7 @@ for ($i = 2; $i <= count($data); $i++) {
     }
 
     $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
-    if (!$stmtK) sendJsonResponse('error', "Query Karyawan Error: " . $koneksi->error);
+    if (!$stmtK) Excel::json('error', "Query Karyawan Error: " . $koneksi->error);
     
     $stmtK->bind_param("s", $nik_karyawan);
     $stmtK->execute();
@@ -143,15 +107,15 @@ for ($i = 2; $i <= count($data); $i++) {
         continue;
     }
 
-    // PERBAIKAN PENTING 3: Menggunakan fungsi cleanRupiah() yang baru
-    $str_gapok = (string) cleanRupiah($row[$colGapok] ?? 0);
-    $str_lokasi = (string) cleanRupiah($row[$colTunjLokasi] ?? 0);
-    $str_kebutuhan = (string) cleanRupiah($row[$colTunjKebutuhan] ?? 0);
-    $str_nominal = (string) cleanRupiah($row[$colNominalTHR] ?? 0);
+    // PERBAIKAN PENTING 3: Menggunakan fungsi Excel::cleanRupiah() yang baru
+    $str_gapok = (string) Excel::cleanRupiah($row[$colGapok] ?? 0);
+    $str_lokasi = (string) Excel::cleanRupiah($row[$colTunjLokasi] ?? 0);
+    $str_kebutuhan = (string) Excel::cleanRupiah($row[$colTunjKebutuhan] ?? 0);
+    $str_nominal = (string) Excel::cleanRupiah($row[$colNominalTHR] ?? 0);
     $str_masa_kerja = trim((string)($row[$colMasaKerja] ?? '0'));
 
     $stmtCheck = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ?");
-    if (!$stmtCheck) sendJsonResponse('error', "Query Check Error: " . $koneksi->error);
+    if (!$stmtCheck) Excel::json('error', "Query Check Error: " . $koneksi->error);
     
     $stmtCheck->bind_param("is", $id_karyawan, $periode); 
     $stmtCheck->execute();
@@ -165,7 +129,7 @@ for ($i = 2; $i <= count($data); $i++) {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
-        if (!$stmtInsert) sendJsonResponse('error', 'Query Insert Error: ' . $koneksi->error);
+        if (!$stmtInsert) Excel::json('error', 'Query Insert Error: ' . $koneksi->error);
 
         $stmtInsert->bind_param("issssssss", $id_karyawan, $periode, $tgl_mulai, $tgl_raya, $str_gapok, $str_lokasi, $str_kebutuhan, $str_masa_kerja, $str_nominal);
 
@@ -184,7 +148,7 @@ for ($i = 2; $i <= count($data); $i++) {
             WHERE id_karyawan = ? AND periode = ?
         ");
 
-        if (!$stmtUpdate) sendJsonResponse('error', 'Query Update Error: ' . $koneksi->error);
+        if (!$stmtUpdate) Excel::json('error', 'Query Update Error: ' . $koneksi->error);
 
         $stmtUpdate->bind_param("sssssssis", $tgl_mulai, $tgl_raya, $str_gapok, $str_lokasi, $str_kebutuhan, $str_masa_kerja, $str_nominal, $id_karyawan, $periode);
 
