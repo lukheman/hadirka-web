@@ -319,6 +319,12 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
                             <i class="bx bx-menu bx-sm"></i>
                         </a>
                     </div>
+                    <div class="navbar-nav align-items-xl-center me-3 me-xl-0 d-none d-xl-block"
+                        title="Tutup/buka sidebar">
+                        <a id="btnSidebarToggle" class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+                            <i class="bx bx-menu bx-sm"></i>
+                        </a>
+                    </div>
 
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
                         <div class="navbar-nav align-items-center">
@@ -424,6 +430,35 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
 
     <script src="assets/js/main.js"></script>
     <script src="assets/js/periode.js"></script><!-- getPeriodeBulan()/setDefaultBulan() terpusat -->
+    <script>
+        // Toggle sidebar mandiri (tidak tergantung assets/js/main.js).
+        // vendor Helpers.setCollapsed() rusak untuk desktop (hanya menangani
+        // layar kecil), jadi class di-toggle langsung:
+        // - 'layout-menu-collapsed' di <html>  -> navbar/footer/konten menyesuaikan
+        // - 'menu-collapsed' di #layout-menu   -> lebar sidebar jadi 5.25rem (core.css)
+        (function() {
+            var KEY = 'tjs-sidebar-collapsed';
+            function apply(collapse) {
+                document.documentElement.classList.toggle('layout-menu-collapsed', collapse);
+                var menu = document.getElementById('layout-menu') || document.querySelector('.layout-menu');
+                if (menu) menu.classList.toggle('menu-collapsed', collapse);
+                setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 60);
+            }
+            try {
+                if (localStorage.getItem(KEY) === '1') apply(true);
+            } catch (err) {}
+            var btn = document.getElementById('btnSidebarToggle');
+            if (!btn) return;
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var willCollapse = !document.documentElement.classList.contains('layout-menu-collapsed');
+                apply(willCollapse);
+                try {
+                    localStorage.setItem(KEY, willCollapse ? '1' : '0');
+                } catch (err) {}
+            });
+        })();
+    </script>
 
     <script>
         $(document).ready(function() {
