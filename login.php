@@ -81,7 +81,6 @@ require_once 'app/controller/login.php'; // logic login ada di sini
 
                     <p class="text-center">
                         <span>Belum ada akun?</span>
-akmal
                         <a href="#"><span>Buat disini</span></a>
                     </p>
                 </div>
