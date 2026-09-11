@@ -25,9 +25,10 @@ function tpl_json($status, $msg, array $extra = [])
 if ($action === 'list_jabatan') {
     $rows = [];
     $q = $koneksi->query("SELECT id_jabatan, nama_jabatan FROM tb_jabatan ORDER BY nama_jabatan ASC");
-    if ($q) {
-        while ($r = $q->fetch_assoc()) $rows[] = $r;
+    if (!$q) {
+        tpl_json('error', 'Gagal mengambil data jabatan: ' . $koneksi->error);
     }
+    while ($r = $q->fetch_assoc()) $rows[] = $r;
     echo json_encode(['status' => 'success', 'data' => $rows]);
     exit;
 }

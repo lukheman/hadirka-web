@@ -91,16 +91,29 @@
 
         // Checkbox daftar jabatan
         function loadJabatan() {
+            const box = document.getElementById("listJabatan");
+            const btnSave = document.getElementById("btnSaveTemplate");
+            btnSave.disabled = true;
             fetch(API, {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
                     body: "action=list_jabatan"
                 })
-                .then(res => res.json())
+                .then(async res => {
+                    const text = await res.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error("list_jabatan bukan JSON:", text);
+                        throw new Error("Respon server tidak valid.");
+                    }
+                })
                 .then(res => {
-                    const box = document.getElementById("listJabatan");
-                    if (res.status !== "success" || !res.data.length) {
-                        box.innerHTML = '<span class="text-danger">Gagal memuat jabatan.</span>';
+                    if (res.status !== "success") {
+                        throw new Error(res.msg || res.message || "Gagal memuat jabatan.");
+                    }
+                    if (!res.data.length) {
+                        box.innerHTML = '<span class="text-muted">Belum ada data jabatan. Tambahkan dulu di menu Data Jabatan.</span>';
                         return;
                     }
                     box.innerHTML = res.data.map(j =>
@@ -111,10 +124,12 @@
                         </div>`
                     ).join("");
                     document.getElementById("checkAllJabatan").checked = false;
+                    btnSave.disabled = false;
                 })
-                .catch(() => {
-                    document.getElementById("listJabatan").innerHTML =
-                        '<span class="text-danger">Gagal memuat jabatan.</span>';
+                .catch(err => {
+                    console.error("loadJabatan:", err);
+                    box.innerHTML =
+                        '<span class="text-danger">Gagal memuat jabatan: ' + escHtml(err.message || err) + '</span>';
                 });
         }
 
