@@ -154,9 +154,10 @@ try {
             }
             // ----------------------------------------
 
-            $sql = "INSERT INTO tb_karier (id_karyawan,id_site,id_departemen,id_jabatan,gaji_pokok,lembur,pot_izin,pot_mangkir,tgl_mulai,tgl_selesai) VALUES (?,?,?,?,?,?,?,?,?,?)";
+            $sql = "INSERT INTO tb_karier (id_karyawan,id_site,id_departemen,id_jabatan,gaji_pokok,lembur,pot_izin,pot_mangkir,spl,ot1_spl,ot2_spl,tgl_mulai,tgl_selesai) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
             $stmt = $koneksi->prepare($sql);
-            $stmt->bind_param("iiiiddddss", $id_karyawan, $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai);
+            $kosong = '';
+            $stmt->bind_param("iiiiddddsssss", $id_karyawan, $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $kosong, $kosong, $kosong, $tgl_mulai, $tgl_selesai);
         }
 
         // EDIT

@@ -278,7 +278,7 @@
                             <label class="form-label mt-3">NIK Karyawan</label>
                             <input type="text" class="form-control" name="nik_karyawan" required>
                             <label class="form-label mt-3">Jenis Kelamin</label>
-                            <select class="form-control" name="jenis_kelamin">
+                            <select class="form-control" name="jenis_kelamin" required>
                                 <option value="">-- Pilih Jenis Kelamin</option>
                                 <option value="L">Laki-laki</option>
                                 <option value="P">Perempuan</option>
@@ -457,6 +457,38 @@
                         <label class="form-label">Nomor Telepon</label>
                         <input type="text" class="form-control" name="no_telp_darurat2">
                     </div>
+
+                    <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
+                        <hr>
+                        <h6>AKUN LOGIN</h6>
+                        <div class="alert alert-warning py-2">
+                            Kosongkan bila sandi ingin diisi otomatis (default = NIK Karyawan). Sandi minimal 8 karakter.
+                        </div>
+                        <label class="form-label" for="add_password_karyawan">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="password_karyawan" id="add_password_karyawan"
+                                minlength="8" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_add_password"
+                                data-target="#add_password_karyawan"
+                                aria-label="Tampilkan password" title="Tampilkan password">
+                                <i class="bx bx-hide"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="btn_generate_password_add"
+                                title="Buatkan password otomatis (8 karakter)">
+                                <i class="bx bx-refresh"></i> Generate
+                            </button>
+                        </div>
+                        <label class="form-label mt-3" for="add_password_confirm">Konfirmasi Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="add_password_confirm"
+                                minlength="8" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_add_password_confirm"
+                                data-target="#add_password_confirm"
+                                aria-label="Tampilkan password" title="Tampilkan password">
+                                <i class="bx bx-hide"></i>
+                            </button>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Simpan</button>
@@ -796,7 +828,10 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- SENGAJA tanpa bootstrap.bundle ganda: index.php sudah memuat vendor
+     bootstrap.js. Dua instance Bootstrap menangani data-bs-toggle/modal
+     bersamaan sehingga backdrop ganda dan overlay nyangkut (sudah terbukti
+     via uji headless: 2 backdrop saat open, sisa 1 setelah hide). -->
 <script>
     // 1. Helper Function: Detail Expandable Row
     function formatDetail(detailHtml) {
@@ -909,6 +944,21 @@
             $(".toggle-password").find("i")
                 .removeClass("bx-hide").addClass("bx-show");
             $(".toggle-password")
+                .attr("aria-label", "Sembunyikan password")
+                .attr("title", "Sembunyikan password");
+            showToast("Password otomatis dibuat. Salin sebelum menekan Simpan.", "info");
+        });
+
+        $(document).on("click", "#btn_generate_password_add", function() {
+            const pw = generatePassword(8);
+            const inputBaru = $("#add_password_karyawan");
+            const inputKonfirm = $("#add_password_confirm");
+            if (!inputBaru.length) return;
+            inputBaru.val(pw).attr("type", "text");
+            inputKonfirm.val(pw).attr("type", "text");
+            $("#toggle_add_password, #toggle_add_password_confirm").find("i")
+                .removeClass("bx-hide").addClass("bx-show");
+            $("#toggle_add_password, #toggle_add_password_confirm")
                 .attr("aria-label", "Sembunyikan password")
                 .attr("title", "Sembunyikan password");
             showToast("Password otomatis dibuat. Salin sebelum menekan Simpan.", "info");
@@ -1057,6 +1107,22 @@
         // 6. ACTION: TAMBAH DATA
         $("#formTambahKaryawan").on("submit", function(e) {
             e.preventDefault();
+
+            // Validasi password (hanya ada untuk Master)
+            if ($("#add_password_karyawan").length) {
+                const pwAdd = $("#add_password_karyawan").val();
+                if (pwAdd !== "") {
+                    if (pwAdd.length < 8) {
+                        showToast("Password minimal 8 karakter.", "warning");
+                        return;
+                    }
+                    if (pwAdd !== $("#add_password_confirm").val()) {
+                        showToast("Konfirmasi password tidak cocok.", "warning");
+                        return;
+                    }
+                }
+            }
+
             let formData = new FormData(this);
             formData.append("action", "add");
 

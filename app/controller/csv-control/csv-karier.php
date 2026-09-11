@@ -154,10 +154,10 @@ try {
 
             $koneksi->query("INSERT INTO tb_karier (
                 id_karyawan, id_site, id_departemen, id_jabatan,
-                gaji_pokok, lembur, pot_izin, pot_mangkir, tgl_mulai, tgl_selesai
+                gaji_pokok, lembur, pot_izin, pot_mangkir, spl, ot1_spl, ot2_spl, tgl_mulai, tgl_selesai
             ) VALUES (
                 '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan', $basic, $lembur,
-                $pot_izin, $pot_mangkir, '$tglMulai', " . ($tglSelesai ? "'$tglSelesai'" : "NULL") . "
+                $pot_izin, $pot_mangkir, '', '', '', '$tglMulai', " . ($tglSelesai ? "'$tglSelesai'" : "NULL") . "
             )");
             $id_karier = $koneksi->insert_id;
         }

@@ -78,11 +78,33 @@ if ($action == "add") {
 
         // Ambil NIK dari inputan form
         $nik_input = input('nik_karyawan');
+
+        // Jenis kelamin wajib L/P sesuai enum kolom (string kosong ditolak
+        // MySQL strict mode dengan error "Data truncated").
+        $jk_input = input('jenis_kelamin');
+        if (!in_array($jk_input, ['L', 'P'], true)) {
+            throw new Exception("Jenis kelamin wajib dipilih (Laki-laki/Perempuan).");
+        }
+
+        // Password: opsional dari form (khusus Master, min 8), default = md5(NIK)
+        // agar tidak error "Field 'password' doesn't have a default value".
+        $add_password = $_POST['password_karyawan'] ?? '';
+        if ($add_password !== '') {
+            if ((int)($_SESSION['level'] ?? 99) !== 0) {
+                throw new Exception("Hanya user Master yang boleh mengatur password karyawan.");
+            }
+            if (strlen($add_password) < 8) {
+                throw new Exception("Password minimal 8 karakter.");
+            }
+            $password_sql = "'" . md5($add_password) . "'";
+        } else {
+            $password_sql = "'" . md5($nik_input) . "'";
+        }
         // Bersihkan nama untuk nama file (hilangkan spasi dan karakter aneh)
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
 
         $sql1 = "INSERT INTO tb_karyawan 
-        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, status_karyawan, foto)
+        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, status_karyawan, foto, password)
         VALUES (
             '" . input('nik_karyawan') . "',
             '" . input('nama_lengkap') . "',
@@ -96,7 +118,8 @@ if ($action == "add") {
             '" . input('status_pernikahan') . "',
             '" . input('status_ptkp') . "',
             'Aktif',
-            ''
+            '',
+            $password_sql
         )";
 
         if (!$koneksi->query($sql1)) {
@@ -153,13 +176,19 @@ if ($action == "add") {
         // Siapkan variabel tanggal (Jika kosong jadikan NULL, jika ada isinya bungkus dengan kutip)
         $tgl_mulai_val   = input('tgl_mulai') === '' ? "NULL" : "'" . input('tgl_mulai') . "'";
         $tgl_selesai_val = input('tgl_selesai') === '' ? "NULL" : "'" . input('tgl_selesai') . "'";
+        // ID relasi kosong ('' dari dropdown "-- Pilih --") wajib jadi NULL,
+        // karena kolom INT menolak string kosong (Incorrect integer value).
+        $id_site_val       = input('id_site') === '' ? "NULL" : "'" . input('id_site') . "'";
+        $id_departemen_val = input('id_departemen') === '' ? "NULL" : "'" . input('id_departemen') . "'";
+        $id_jabatan_val    = input('id_jabatan') === '' ? "NULL" : "'" . input('id_jabatan') . "'";
 
-        $sql3 = "INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, tgl_mulai, tgl_selesai)
+        $sql3 = "INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, spl, ot1_spl, ot2_spl, pot_izin, pot_mangkir, tgl_mulai, tgl_selesai)
         VALUES (
             '$id_karyawan',
-            '" . input('id_site') . "',
-            '" . input('id_departemen') . "',
-            '" . input('id_jabatan') . "',
+            $id_site_val,
+            $id_departemen_val,
+            $id_jabatan_val,
+            '', '', '', '', '',
             $tgl_mulai_val, 
             $tgl_selesai_val
         )";
