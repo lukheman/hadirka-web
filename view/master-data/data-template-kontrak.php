@@ -14,14 +14,14 @@
             <div class="card-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> Satu template bisa berlaku untuk <strong>beberapa jabatan</strong>
-                    sekaligus. File harus PDF, maksimal 2 MB.
+                    sekaligus. File harus Word (.doc/.docx), maksimal 2 MB.
                 </div>
                 <div class="table-responsive text-nowrap">
                     <table class="table table-bordered MyTableTemplate">
                         <thead class="table-info">
                             <tr>
                                 <th class="text-center" style="width: 5%;"><i class="fa fa-hashtag"></i> No</th>
-                                <th class="text-center"><i class="fa fa-file-pdf"></i> File Template</th>
+                                <th class="text-center"><i class="fa fa-file-word"></i> File Template</th>
                                 <th class="text-center"><i class="fa fa-hdd"></i> Ukuran</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Berlaku Untuk</th>
                                 <th class="text-center"><i class="fa fa-calendar"></i> Tgl Upload</th>
@@ -46,9 +46,9 @@
 
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Pilih File PDF <span class="text-danger">*</span></label>
-                        <input type="file" name="file_pdf" class="form-control" accept="application/pdf" required>
-                        <small class="text-muted">Maksimal 2 MB.</small>
+                        <label class="form-label">Pilih File Word <span class="text-danger">*</span></label>
+                        <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+                        <small class="text-muted">Format .doc/.docx, maksimal 2 MB.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Berlaku Untuk Jabatan <span class="text-danger">*</span></label>
@@ -150,7 +150,7 @@
                         return `<tr>
                             <td class="text-center">${i + 1}</td>
                             <td>
-                                <i class="fas fa-file-pdf text-danger"></i>
+                                <i class="fas fa-file-word text-primary"></i>
                                 <strong>${escHtml(r.nama_asli || r.file)}</strong><br>
                                 <small class="text-muted">${escHtml(r.file)}</small>
                             </td>

@@ -88,8 +88,9 @@ if ($action === 'upload') {
         $file_name = $_FILES['file_pdf']['name'];
         $file_size = (int)$_FILES['file_pdf']['size'];
 
-        if (strtolower(pathinfo($file_name, PATHINFO_EXTENSION)) !== 'pdf') {
-            throw new Exception("Format file harus .pdf");
+        $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        if (!in_array($file_ext, ['doc', 'docx'], true)) {
+            throw new Exception("Format file harus .doc atau .docx (Word).");
         }
         if ($file_size > 2097152) {
             throw new Exception("Ukuran file maksimal 2 MB.");
@@ -99,7 +100,7 @@ if ($action === 'upload') {
             throw new Exception("Gagal menyiapkan folder upload.");
         }
 
-        $new_file = 'template_' . time() . '_' . bin2hex(random_bytes(4)) . '.pdf';
+        $new_file = 'template_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $file_ext;
         if (!move_uploaded_file($file_tmp, $upload_dir . $new_file)) {
             throw new Exception("Gagal mengupload file ke server.");
         }
