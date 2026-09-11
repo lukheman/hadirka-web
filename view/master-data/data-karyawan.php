@@ -477,6 +477,24 @@
             <div class="modal-body">
                 <input type="hidden" name="action" value="edit">
                 <input type="hidden" name="id_karyawan" id="edit_id_karyawan">
+                <ul class="nav nav-tabs" id="editKaryawanTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-data-karyawan" data-bs-toggle="tab"
+                            data-bs-target="#pane-data-karyawan" type="button" role="tab">
+                            <i class="fa fa-user"></i> Data Karyawan
+                        </button>
+                    </li>
+                    <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-ubah-sandi" data-bs-toggle="tab"
+                                data-bs-target="#pane-ubah-sandi" type="button" role="tab">
+                                <i class="fa fa-key"></i> Ubah Sandi
+                            </button>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+                <div class="tab-content pt-3">
+                    <div class="tab-pane fade show active" id="pane-data-karyawan" role="tabpanel" aria-labelledby="tab-data-karyawan">
                 <h6>DATA PRIBADI</h6>
                 <div class="row mb-3">
                     <div class="col-md-12">
@@ -601,23 +619,6 @@
                     <input type="text" class="form-control" name="no_rek" id="edit_no_rek">
                 </div>
 
-                <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
-                    <hr>
-                    <h6>AKUN KARYAWAN</h6>
-                    <div class="alert alert-warning py-2">
-                        Kosongkan jika password tidak ingin diubah. Password minimal 8 karakter.
-                    </div>
-                    <label class="form-label" for="edit_password_karyawan">Password Baru</label>
-                    <div class="input-group">
-                        <input type="password" class="form-control" name="password_karyawan" id="edit_password_karyawan"
-                            minlength="8" autocomplete="new-password">
-                        <button type="button" class="btn btn-outline-secondary" id="toggle_password_karyawan"
-                            aria-label="Tampilkan password" title="Tampilkan password">
-                            <i class="bx bx-hide"></i>
-                        </button>
-                    </div>
-                <?php endif; ?>
-
                 <hr>
                 <h6>Penempatan Kerja</h6>
                 <div class="row">
@@ -683,6 +684,40 @@
                     <label class="form-label">Nomor Telepon</label>
                     <input type="text" class="form-control" name="no_telp_darurat2" id="edit_no_telp_darurat2">
                 </div>
+                    </div><!-- /pane-data-karyawan -->
+                    <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
+                    <div class="tab-pane fade" id="pane-ubah-sandi" role="tabpanel" aria-labelledby="tab-ubah-sandi">
+                        <h6>UBAH SANDI</h6>
+                        <div class="alert alert-info py-2">
+                            Ubah sandi login untuk <strong id="info_nama_karyawan">-</strong>
+                            (<span id="info_nik_karyawan">-</span>).
+                        </div>
+                        <div class="alert alert-warning py-2">
+                            Kosongkan kedua kolom jika sandi tidak ingin diubah. Sandi minimal 8 karakter.
+                        </div>
+                        <label class="form-label" for="edit_password_karyawan">Password Baru</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="password_karyawan" id="edit_password_karyawan"
+                                minlength="8" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_password_karyawan"
+                                data-target="#edit_password_karyawan"
+                                aria-label="Tampilkan password" title="Tampilkan password">
+                                <i class="bx bx-hide"></i>
+                            </button>
+                        </div>
+                        <label class="form-label mt-3" for="edit_password_confirm">Konfirmasi Password Baru</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="edit_password_confirm"
+                                minlength="8" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_password_confirm"
+                                data-target="#edit_password_confirm"
+                                aria-label="Tampilkan password" title="Tampilkan password">
+                                <i class="bx bx-hide"></i>
+                            </button>
+                        </div>
+                    </div><!-- /pane-ubah-sandi -->
+                    <?php endif; ?>
+                </div><!-- /tab-content -->
             </div>
 
             <div class="modal-footer">
@@ -815,8 +850,9 @@
     let tableKaryawan = null;
 
     $(document).ready(function() {
-        $(document).on("click", "#toggle_password_karyawan", function() {
-            const input = $("#edit_password_karyawan");
+        $(document).on("click", ".toggle-password", function() {
+            const input = $($(this).data("target"));
+            if (!input.length) return;
             const icon = $(this).find("i");
             const visible = input.attr("type") === "text";
 
@@ -1054,11 +1090,14 @@
                             $("#edit_hubungan2").val(d.hubungan2);
                             $("#edit_no_telp_darurat2").val(d.no_telp_darurat2);
 
-                            // Reset password field agar tidak membawa nilai karyawan sebelumnya
-                            $("#edit_password_karyawan").val("").attr("type", "password");
-                            $("#toggle_password_karyawan").find("i")
+                            // Reset tab & field sandi agar tidak membawa nilai karyawan sebelumnya
+                            $("#tab-data-karyawan").trigger("click");
+                            $("#edit_password_karyawan, #edit_password_confirm").val("").attr("type", "password");
+                            $("#info_nama_karyawan").text(d.nama_lengkap);
+                            $("#info_nik_karyawan").text(res.data.nik_karyawan);
+                            $(".toggle-password").find("i")
                                 .removeClass("bx-show").addClass("bx-hide");
-                            $("#toggle_password_karyawan")
+                            $(".toggle-password")
                                 .attr("aria-label", "Tampilkan password")
                                 .attr("title", "Tampilkan password");
 
@@ -1072,6 +1111,23 @@
         // 8. ACTION: SIMPAN PERUBAHAN (EDIT)
         $("#formEdit").on("submit", function(e) {
             e.preventDefault();
+
+            // Validasi tab Ubah Sandi (hanya ada untuk Master)
+            if ($("#edit_password_karyawan").length) {
+                const pwBaru = $("#edit_password_karyawan").val();
+                if (pwBaru !== "") {
+                    if (pwBaru.length < 8) {
+                        showToast("Password minimal 8 karakter.", "warning");
+                        $("#tab-ubah-sandi").trigger("click");
+                        return;
+                    }
+                    if (pwBaru !== $("#edit_password_confirm").val()) {
+                        showToast("Konfirmasi password tidak cocok.", "warning");
+                        $("#tab-ubah-sandi").trigger("click");
+                        return;
+                    }
+                }
+            }
 
             // Gunakan FormData agar file gambar ikut terkirim
             let formDataEdit = new FormData(this);
