@@ -327,6 +327,8 @@
             </form>
         </div>
     </div>
+
+    <?php include __DIR__ . '/../master-data/modal-karier-tunjangan-potongan.php'; ?>
 </div>
 
 <script>

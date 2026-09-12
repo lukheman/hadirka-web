@@ -4,8 +4,6 @@
 // Jalankan:  php -S localhost:8000 router.php
 // Meniru aturan rewrite di .htaccess:
 //   ^karier/([^/\.]+)/?$          -> index.php?page=karier&id=$1
-//   ^data-tunjangan/([^/\.]+)/?$  -> index.php?page=data-tunjangan&id=$1
-//   ^data-potongan/([^/\.]+)/?$   -> index.php?page=data-potongan&id=$1
 //   ^([a-zA-Z0-9_-]+)/?$          -> index.php?page=$1
 
 $uri  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -27,8 +25,6 @@ if ($path !== '/') {
 // 2. Pretty URL -> $_GET (urutan sama seperti .htaccess).
 $pretty = [
     '#^/karier/([^/\.]+)/?$#'         => ['page' => 'karier', 'id' => 1],
-    '#^/data-tunjangan/([^/\.]+)/?$#' => ['page' => 'data-tunjangan', 'id' => 1],
-    '#^/data-potongan/([^/\.]+)/?$#'  => ['page' => 'data-potongan', 'id' => 1],
     '#^/([a-zA-Z0-9_-]+)/?$#'         => ['page' => 1],
 ];
 foreach ($pretty as $re => $map) {

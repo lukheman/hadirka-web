@@ -89,7 +89,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $master_pages = ['data-karyawan', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-tunjangan', 'data-potongan', 'data-template-kontrak', 'data-bpjs-tk'];
+        $master_pages = ['data-karyawan', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-template-kontrak', 'data-bpjs-tk'];
         ?>
         <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">

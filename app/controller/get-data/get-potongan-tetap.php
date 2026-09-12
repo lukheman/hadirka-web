@@ -11,15 +11,16 @@ $q = $koneksi->query("SELECT * FROM tb_potongan WHERE id_karier='$id_karier' ORD
 $no = 1;
 if ($q->num_rows > 0) {
     while ($r = $q->fetch_assoc()) {
+        $nama_esc = htmlspecialchars($r['jenis_potongan'], ENT_QUOTES);
         echo "
         <tr>
             <td class='text-center'>$no</td>
-            <td>{$r['jenis_potongan']}</td>
+            <td>{$nama_esc}</td>
             <td class='text-end'>" . number_format($r['jumlah_potongan'], 0, ',', '.') . "</td>
             <td class='text-center'>
                 <button class='btn btn-warning btn-sm btnEditPotongan'
                     data-id='{$r['id_potongan']}'
-                    data-nama='{$r['jenis_potongan']}'
+                    data-nama='{$nama_esc}'
                     data-jumlah='{$r['jumlah_potongan']}'>
                     <i class='fa fa-edit'></i>
                 </button>

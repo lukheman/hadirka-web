@@ -24,8 +24,6 @@ $routes = [
     // Master Data
     'data-karyawan'   => 'view/master-data/data-karyawan.php',
     'data-site'       => 'view/master-data/data-site.php',
-    'data-tunjangan'  => 'view/master-data/data-tunjangan.php',
-    'data-potongan'   => 'view/master-data/data-potongan-tetap.php',
     'data-potongan-tidak-tetap' => 'view/penggajian/data-potongan-tidak-tetap.php',
     'data-departemen' => 'view/master-data/data-departemen.php',
     'karier'          => 'view/master-data/data-karier.php',
@@ -95,8 +93,6 @@ $user_level = $_SESSION['level'] ?? 99;
 $hrd_pages = [
     'data-karyawan',
     'data-site',
-    'data-tunjangan',
-    'data-potongan',
     'data-departemen',
     'karier',
     'data-jabatan',

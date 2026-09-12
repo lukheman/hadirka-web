@@ -249,7 +249,7 @@
         </div>
     </div>
 
-
+    <?php include __DIR__ . '/modal-karier-tunjangan-potongan.php'; ?>
 
 </div>
 
