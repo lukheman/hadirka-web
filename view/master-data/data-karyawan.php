@@ -1094,6 +1094,19 @@
             $('#detailNamaKaryawan').text(data.nama);
             $('#detailBodyKaryawan').html(data.detail);
             new bootstrap.Modal(document.getElementById('modalDetailKaryawan')).show();
+
+            // Load riwayat karier untuk tab Riwayat Karier
+            let riwayatBody = document.getElementById('riwayatKarierBody');
+            if (riwayatBody && data.id_karyawan) {
+                fetch('app/controller/get-data/get-riwayat-karier.php?id_karyawan=' + encodeURIComponent(data.id_karyawan))
+                    .then(res => res.text())
+                    .then(html => {
+                        riwayatBody.innerHTML = html;
+                    })
+                    .catch(() => {
+                        riwayatBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Gagal memuat riwayat karier.</td></tr>';
+                    });
+            }
         });
 
         // 5. Filter Reload

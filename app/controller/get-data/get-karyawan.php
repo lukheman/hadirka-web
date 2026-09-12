@@ -53,7 +53,8 @@ try {
 
     $where_sql = implode(" AND ", $where);
 
-    $query = "SELECT 
+    $query = "SELECT
+            kar.id_karyawan AS kar_id_karyawan,
             kar.*,
             i.*,
             k.*,
@@ -167,10 +168,20 @@ try {
         }
 
 
-        // Build detail HTML (child row)
+        // Build detail HTML (tab: Informasi Pribadi & Riwayat Karier)
         $detail = "
         <div class='card' style='font-size: 13px;'>
             <div class='card-body'>
+                <ul class='nav nav-tabs' role='tablist'>
+                    <li class='nav-item' role='presentation'>
+                        <button class='nav-link active' data-bs-toggle='tab' data-bs-target='#tab-info-pribadi' type='button' role='tab'>Informasi Pribadi</button>
+                    </li>
+                    <li class='nav-item' role='presentation'>
+                        <button class='nav-link' data-bs-toggle='tab' data-bs-target='#tab-riwayat-karier' type='button' role='tab'>Riwayat Karier</button>
+                    </li>
+                </ul>
+                <div class='tab-content pt-3'>
+                    <div class='tab-pane fade show active' id='tab-info-pribadi' role='tabpanel'>
                 <div class='row '>
                     <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-user'></i> Data Pribadi</h6>
@@ -199,13 +210,8 @@ try {
                     </div>
                     
                     <div class='col-md-4 mb-4'>
-                        <h6 class='text-primary'><i class='fa fa-briefcase'></i> Karier & Pendidikan</h6>
+                        <h6 class='text-primary'><i class='fa fa-graduation-cap'></i> Pendidikan</h6>
                         <table class='table table-sm table-borderless info-table'>
-                            <tr><td><strong>Site</strong></td><td>: " . htmlspecialchars($row['nama_site'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Departemen</strong></td><td>: " . htmlspecialchars($row['nama_departemen'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Jabatan</strong></td><td>: " . htmlspecialchars($row['nama_jabatan'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Tanggal Mulai</strong></td><td>: $tgl_mulai_format</td></tr>
-                            <tr><td><strong>Tanggal Selesai</strong></td><td>: <span class='badge bg-danger'>$tgl_selesai_format</span></td></tr>
                             <tr><td><strong>Pendidikan</strong></td><td>: " . htmlspecialchars($row['last_education'] ?? '-') . "</td></tr>
                             <tr><td><strong>Jurusan</strong></td><td>: " . htmlspecialchars($row['major'] ?? '-') . "</td></tr>
                         </table>
@@ -241,6 +247,29 @@ try {
                         $eliminasiHtml
                     </div>
                 </div>
+                    </div>
+                    <div class='tab-pane fade' id='tab-riwayat-karier' role='tabpanel'>
+                        <div class='table-responsive'>
+                            <table class='table table-sm table-bordered'>
+                                <thead class='table-info'>
+                                    <tr>
+                                        <th class='text-center'>No</th>
+                                        <th class='text-center'>Site</th>
+                                        <th class='text-center'>Departemen</th>
+                                        <th class='text-center'>Jabatan</th>
+                                        <th class='text-center'>Gaji Pokok</th>
+                                        <th class='text-center'>Tgl Mulai</th>
+                                        <th class='text-center'>Tgl Selesai</th>
+                                        <th class='text-center'>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id='riwayatKarierBody'>
+                                    <tr><td colspan='8' class='text-center'>Memuat riwayat karier...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         ";
@@ -261,16 +290,16 @@ try {
                 <button class='btn btn-sm btn-info btnDetail' title='Lihat Detail'>
                     <i class='fa fa-eye'></i>
                 </button>
-                <a href='?page=karier&id=" . urlencode(encrypt($row['id_karyawan'])) . "' class='btn btn-sm btn-info' title='Lihat Karier'>
+                <a href='?page=karier&id=" . urlencode(encrypt($row['kar_id_karyawan'])) . "' class='btn btn-sm btn-info' title='Lihat Karier'>
                     <i class='fa fa-briefcase'></i>
                 </a>
-                <button class='btn btn-sm btn-warning btnEdit' data-id='" . $row['id_karyawan'] . "' title='Edit'>
+                <button class='btn btn-sm btn-warning btnEdit' data-id='" . $row['kar_id_karyawan'] . "' title='Edit'>
                     <i class='fa fa-edit'></i>
                 </button>
-                <button class='btn btn-sm btn-danger btnDelete' data-id='" . $row['id_karyawan'] . "' data-nama='" . htmlspecialchars($row['nama_lengkap']) . "' title='Hapus'>
+                <button class='btn btn-sm btn-danger btnDelete' data-id='" . $row['kar_id_karyawan'] . "' data-nama='" . htmlspecialchars($row['nama_lengkap']) . "' title='Hapus'>
                     <i class='fa fa-trash'></i>
                 </button>
-                <button class='btn btn-sm btn-dark btnElimination' data-id='" . $row['id_karyawan'] . "' title='Eliminasi'>
+                <button class='btn btn-sm btn-dark btnElimination' data-id='" . $row['kar_id_karyawan'] . "' title='Eliminasi'>
                     <i class='fa fa-user-slash'></i>
                 </button>
             ";
@@ -278,6 +307,7 @@ try {
 
         $data[] = [
             'no' => $no++,
+            'id_karyawan' => (int)($row['kar_id_karyawan'] ?? 0),
             'foto' => $foto_html,
             'nama' => htmlspecialchars($row['nama_lengkap']),
             'nik' => htmlspecialchars($row['nik_karyawan'] ?? '-'),
