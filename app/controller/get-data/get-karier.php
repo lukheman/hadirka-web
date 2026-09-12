@@ -92,6 +92,11 @@ while ($r = $q->fetch_assoc()) { ?>
         <td class="text-center">
             <button type="button" class="btn btn-sm btn-info btnTunjangan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Tunjangan</button>
             <button type="button" class="btn btn-sm btn-info btnPotongan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Potongan</button>
+            <?php $fileKontrak = $r['file_kontrak'] ?? ''; ?>
+            <?php if (!empty($fileKontrak)) { ?>
+            <a href="app/uploads/kontrak/<?= rawurlencode($fileKontrak) ?>" target="_blank" class="btn btn-sm btn-success" title="Lihat File Kontrak"><i class="fa fa-file-pdf"></i></a>
+            <?php } ?>
+            <button type="button" class="btn btn-sm btn-secondary btnUploadKontrak" data-id="<?= $r['id_karier'] ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>" data-file="<?= htmlspecialchars($fileKontrak, ENT_QUOTES) ?>" title="<?= !empty($fileKontrak) ? 'Ganti File Kontrak' : 'Upload File Kontrak' ?>"><i class="fa fa-upload"></i></button>
 
             <?php if (!$id) { ?>
             <button class="btn btn-warning btn-sm btnExtendKarier"

@@ -113,6 +113,35 @@
     </div>
 </div>
 
+<!-- Modal Upload File Kontrak per Karier -->
+<div class="modal fade" id="modalKarierKontrak" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="formModalKontrak" class="modal-content" enctype="multipart/form-data">
+            <input type="hidden" name="id_karier" id="modalKontrakKarierId">
+            <div class="modal-header bg-secondary">
+                <h5 class="modal-title text-white">
+                    <i class="fa fa-file-contract"></i> File Kontrak - <span id="labelKontrakNama">-</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="kontrakFileSaatIni" class="alert alert-info py-2"></div>
+                <div class="mb-3">
+                    <label class="form-label" for="modalKontrakFile">Pilih File (PDF/JPG/PNG, maks 5MB)</label>
+                    <input type="file" name="file_kontrak" id="modalKontrakFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto d-none" id="btnModalKontrakHapus">
+                    <i class="fa fa-trash"></i> Hapus File
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 (function() {
     // Guard: partial ini di-include di 2 halaman berbeda, tapi script hanya boleh init sekali per page load.
@@ -173,6 +202,35 @@
         new bootstrap.Modal(document.getElementById("modalKarierPotongan")).show();
     };
 
+    function refreshKontrakInfo() {
+        const file = document.getElementById("modalKontrakKarierId").dataset.file || "";
+        const info = document.getElementById("kontrakFileSaatIni");
+        const btnHapus = document.getElementById("btnModalKontrakHapus");
+        if (file) {
+            info.innerHTML = 'File saat ini: <a href="app/uploads/kontrak/' + encodeURIComponent(file) + '" target="_blank">' + file + '</a>';
+            btnHapus.classList.remove("d-none");
+        } else {
+            info.textContent = "Belum ada file kontrak untuk karier ini.";
+            btnHapus.classList.add("d-none");
+        }
+    }
+
+    window.openModalKontrak = function(idKarier, nama, file) {
+        const hidden = document.getElementById("modalKontrakKarierId");
+        hidden.value = idKarier || "";
+        hidden.dataset.file = file || "";
+        document.getElementById("labelKontrakNama").textContent = nama || "-";
+        document.getElementById("formModalKontrak").reset();
+        // reset() mengosongkan hidden juga, kembalikan nilainya
+        hidden.value = idKarier || "";
+        refreshKontrakInfo();
+        new bootstrap.Modal(document.getElementById("modalKarierKontrak")).show();
+    };
+
+    function reloadKarierTable() {
+        if (typeof window.reloadKarierTable === "function") window.reloadKarierTable();
+    }
+
     document.addEventListener("click", e => {
         const btnT = e.target.closest(".btnTunjangan");
         if (btnT) {
@@ -182,6 +240,11 @@
         const btnP = e.target.closest(".btnPotongan");
         if (btnP) {
             window.openModalPotongan(btnP.dataset.idKarierEnc, btnP.dataset.nama);
+            return;
+        }
+        const btnK = e.target.closest(".btnUploadKontrak");
+        if (btnK) {
+            window.openModalKontrak(btnK.dataset.id, btnK.dataset.nama, btnK.dataset.file);
             return;
         }
 
@@ -310,6 +373,62 @@
 
         const cancelP = document.getElementById("btnModalPotonganCancel");
         if (cancelP) cancelP.addEventListener("click", resetPotonganForm);
+
+        const formK = document.getElementById("formModalKontrak");
+        if (formK && !formK.dataset.bound) {
+            formK.dataset.bound = "1";
+            formK.addEventListener("submit", function(e) {
+                e.preventDefault();
+                const fileInput = document.getElementById("modalKontrakFile");
+                if (!fileInput.value) {
+                    showToast("Pilih file kontrak terlebih dahulu.", "warning");
+                    return;
+                }
+                const fd = new FormData(this);
+                fd.append("action", "upload");
+                fetch("app/controller/act-kontrak.php", { method: "POST", body: fd })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === "success") {
+                            showToast("File kontrak berhasil diunggah!", "success");
+                            document.getElementById("modalKontrakKarierId").dataset.file = res.file || "";
+                            refreshKontrakInfo();
+                            reloadKarierTable();
+                            bootstrap.Modal.getInstance(document.getElementById("modalKarierKontrak")).hide();
+                        } else {
+                            showToast("Gagal: " + (res.message || "upload gagal"), "error");
+                        }
+                    })
+                    .catch(err => console.error("Error:", err));
+            });
+        }
+
+        const btnHapusK = document.getElementById("btnModalKontrakHapus");
+        if (btnHapusK && !btnHapusK.dataset.bound) {
+            btnHapusK.dataset.bound = "1";
+            btnHapusK.addEventListener("click", async () => {
+                const idKarier = document.getElementById("modalKontrakKarierId").value;
+                if (!idKarier) return;
+                if (await confirmDialog("Yakin ingin menghapus file kontrak ini?")) {
+                    const fd = new FormData();
+                    fd.append("action", "delete");
+                    fd.append("id_karier", idKarier);
+                    fetch("app/controller/act-kontrak.php", { method: "POST", body: fd })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.status === "success") {
+                                showToast("File kontrak berhasil dihapus!", "success");
+                                document.getElementById("modalKontrakKarierId").dataset.file = "";
+                                refreshKontrakInfo();
+                                reloadKarierTable();
+                            } else {
+                                showToast("Gagal: " + (res.message || "hapus gagal"), "error");
+                            }
+                        })
+                        .catch(err => console.error("Error:", err));
+                }
+            });
+        }
     });
 })();
 </script>

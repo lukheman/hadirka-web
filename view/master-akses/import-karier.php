@@ -583,6 +583,7 @@
         });
 
         // --- 8. LOAD DATA TABEL SAAT PERTAMA KALI DIBUKA ---
+        window.reloadKarierTable = loadKarier;
         loadKarier();
 
         // --- 9. EXPORT CSV KARIER ---

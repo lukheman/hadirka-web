@@ -446,6 +446,7 @@
 
 
         // --- Load awal ---
+        window.reloadKarierTable = loadKarier;
         loadKarier();
 
     });
