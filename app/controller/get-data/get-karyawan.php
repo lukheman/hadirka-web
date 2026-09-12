@@ -72,6 +72,7 @@ try {
         FROM tb_karyawan kar
         LEFT JOIN tb_identitas i ON kar.id_karyawan = i.id_karyawan
         LEFT JOIN tb_karier k ON kar.id_karyawan = k.id_karyawan
+            AND k.id_karier = (SELECT MAX(k2.id_karier) FROM tb_karier k2 WHERE k2.id_karyawan = kar.id_karyawan)
         LEFT JOIN tb_site s ON k.id_site = s.id_site
         LEFT JOIN tb_departemen d ON k.id_departemen = d.id_departemen
         LEFT JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
