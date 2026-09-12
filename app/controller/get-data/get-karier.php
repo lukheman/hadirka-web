@@ -68,8 +68,8 @@ while ($r = $q->fetch_assoc()) { ?>
         <td><input type="checkbox" class="chk-extend" value="<?= $r['id_karier'] ?>"></td>
         <td><?= $no ?></td>
     <?php } ?>
-        <td><?= $r['nik_karyawan'] ?></td>
         <?php if (!$id) { ?>
+        <td><?= $r['nik_karyawan'] ?></td>
         <td><?= $r['nama_lengkap'] ?></td>
         <?php } ?>
         <td><?= $r['nama_site'] ?></td>
@@ -93,11 +93,13 @@ while ($r = $q->fetch_assoc()) { ?>
             <button type="button" class="btn btn-sm btn-info btnTunjangan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Tunjangan</button>
             <button type="button" class="btn btn-sm btn-info btnPotongan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Potongan</button>
 
+            <?php if (!$id) { ?>
             <button class="btn btn-warning btn-sm btnExtendKarier"
                 data-id="<?= $r['id_karier'] ?>"
                 data-nama="<?= $r['nama_lengkap'] ?>">
                 <i class="fa fa-calendar-plus"></i> +6 Bln
             </button>
+            <?php } ?>
             
             <button class="btn btn-primary btn-sm btnEditKarier"
                 data-id="<?= $r['id_karier'] ?>"

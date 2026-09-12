@@ -36,7 +36,6 @@
                         <thead class="table-info">
                             <tr>
                                 <th class="text-center">No</th>
-                                <th class="text-center">NIK</th>
                                 <th class="text-center">Site</th>
                                 <th class="text-center">Departemen</th>
                                 <th class="text-center">Jabatan</th>
