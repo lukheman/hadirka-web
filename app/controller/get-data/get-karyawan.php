@@ -254,7 +254,7 @@ try {
             ";
         } else {
             $action = "
-                <a href='karier/" . encrypt($row['id_karyawan']) . "' class='btn btn-sm btn-info' title='Lihat Karier'>
+                <a href='?page=karier&id=" . urlencode(encrypt($row['id_karyawan'])) . "' class='btn btn-sm btn-info' title='Lihat Karier'>
                     <i class='fa fa-briefcase'></i>
                 </a>
                 <button class='btn btn-sm btn-warning btnEdit' data-id='" . $row['id_karyawan'] . "' title='Edit'>
