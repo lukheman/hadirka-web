@@ -1,9 +1,4 @@
 <style>
-    /* sedikit styling untuk icon expand */
-    td.dt-control {
-        cursor: pointer;
-    }
-
     .fade-in {
         animation: fadeIn 300ms ease;
     }
@@ -162,7 +157,7 @@
                     <table id="tableKaryawan" class="table table-hover table-bordered table-striped">
                         <thead class="table-info">
                             <tr>
-                                <th class="text-center"></th>
+                                <th class="text-center"><i class="fa fa-eye"></i></th>
                                 <th class="text-center"><i class="fa fa-hashtag"></i> No</th>
                                 <th class="text-center"><i class="fa fa-image"></i> Foto</th>
                                 <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
@@ -175,6 +170,23 @@
                         <tbody></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetailKaryawan" tabindex="-1" aria-labelledby="modalDetailKaryawanLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title text-white" id="modalDetailKaryawanLabel">
+                    <i class="fa fa-user"></i> Detail Karyawan - <span id="detailNamaKaryawan">-</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detailBodyKaryawan"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -833,11 +845,6 @@
      bersamaan sehingga backdrop ganda dan overlay nyangkut (sudah terbukti
      via uji headless: 2 backdrop saat open, sisa 1 setelah hide). -->
 <script>
-    // 1. Helper Function: Detail Expandable Row
-    function formatDetail(detailHtml) {
-        return `<div class="p-4 bg-light border-start border-primary border-4 rounded shadow-sm">${detailHtml}</div>`;
-    }
-
     // showToast: pakai definisi global di index.php (P1-JS-4, jangan definisikan ulang).
 
     function showImportResult(res, title = "Hasil Import") {
@@ -1028,10 +1035,10 @@
                 dataSrc: "data"
             },
             columns: [{
-                    className: 'dt-control text-center',
                     orderable: false,
                     data: null,
-                    defaultContent: '<i class="fa fa-plus-circle text-primary"></i>'
+                    className: "text-center",
+                    defaultContent: '<button class="btn btn-sm btn-info btnDetail" title="Lihat Detail"><i class="fa fa-eye"></i></button>'
                 },
                 {
                     data: "no",
@@ -1085,18 +1092,14 @@
         });
 
 
-        // 4. Handle Expand/Collapse
-        $('#tableKaryawan tbody').on('click', 'td.dt-control', function() {
-            let tr = $(this).closest('tr');
-            let row = tableKaryawan.row(tr);
+        // 4. Handle Detail Modal
+        $('#tableKaryawan tbody').on('click', '.btnDetail', function() {
+            let data = tableKaryawan.row($(this).closest('tr')).data();
+            if (!data) return;
 
-            if (row.child.isShown()) {
-                row.child.hide();
-                $(this).html('<i class="fa fa-plus-circle text-primary"></i>');
-            } else {
-                row.child(formatDetail(row.data().detail)).show();
-                $(this).html('<i class="fa fa-minus-circle text-danger"></i>');
-            }
+            $('#detailNamaKaryawan').text(data.nama);
+            $('#detailBodyKaryawan').html(data.detail);
+            new bootstrap.Modal(document.getElementById('modalDetailKaryawan')).show();
         });
 
         // 5. Filter Reload
