@@ -1,8 +1,25 @@
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y">
 
+        <?php
+        require_once __DIR__ . '/../../app/config/function.php';
+        $breadcrumb_nama = '-';
+        if (!empty($_GET['id'])) {
+            $id_karyawan_bc = (int)decrypt($_GET['id']);
+            if ($id_karyawan_bc > 0) {
+                $stmt_bc = $koneksi->prepare("SELECT nama_lengkap FROM tb_karyawan WHERE id_karyawan = ?");
+                $stmt_bc->bind_param("i", $id_karyawan_bc);
+                $stmt_bc->execute();
+                $row_bc = $stmt_bc->get_result()->fetch_assoc();
+                if ($row_bc) {
+                    $breadcrumb_nama = $row_bc['nama_lengkap'];
+                }
+                $stmt_bc->close();
+            }
+        }
+        ?>
         <h4 class="fw-bold">
-            <span class="text-muted fw-light">Data Karyawan /</span> Karier
+            <span class="text-muted fw-light">Data Karyawan / Karier /</span> <?= htmlspecialchars($breadcrumb_nama) ?>
         </h4>
 
         <div class="pb-3">
@@ -20,7 +37,6 @@
                             <tr>
                                 <th class="text-center">No</th>
                                 <th class="text-center">NIK</th>
-                                <th class="text-center">Nama</th>
                                 <th class="text-center">Site</th>
                                 <th class="text-center">Departemen</th>
                                 <th class="text-center">Jabatan</th>
@@ -290,7 +306,7 @@
 
         // --- LOAD DATA ---
         function loadKarier() {
-            fetch("app/controller/get-data/get-karier.php?id=" + karyawanId)
+            fetch("app/controller/get-data/get-karier.php?id=" + encodeURIComponent(karyawanId))
                 .then(res => res.text())
                 .then(html => {
                     if ($.fn.DataTable.isDataTable(".MyTableKarier")) {

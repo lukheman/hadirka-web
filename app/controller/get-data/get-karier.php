@@ -69,7 +69,9 @@ while ($r = $q->fetch_assoc()) { ?>
         <td><?= $no ?></td>
     <?php } ?>
         <td><?= $r['nik_karyawan'] ?></td>
+        <?php if (!$id) { ?>
         <td><?= $r['nama_lengkap'] ?></td>
+        <?php } ?>
         <td><?= $r['nama_site'] ?></td>
         <td><?= $r['nama_departemen'] ?></td>
         <td><?= $r['nama_jabatan'] ?></td>
