@@ -157,7 +157,6 @@
                     <table id="tableKaryawan" class="table table-hover table-bordered table-striped">
                         <thead class="table-info">
                             <tr>
-                                <th class="text-center"><i class="fa fa-eye"></i></th>
                                 <th class="text-center"><i class="fa fa-hashtag"></i> No</th>
                                 <th class="text-center"><i class="fa fa-image"></i> Foto</th>
                                 <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
@@ -1035,14 +1034,9 @@
                 dataSrc: "data"
             },
             columns: [{
-                    orderable: false,
-                    data: null,
-                    className: "text-center",
-                    defaultContent: '<button class="btn btn-sm btn-info btnDetail" title="Lihat Detail"><i class="fa fa-eye"></i></button>'
-                },
-                {
                     data: "no",
-                    className: "text-center"
+                    className: "text-center",
+                    width: "45px"
                 },
                 {
                     data: "foto",
@@ -1071,7 +1065,7 @@
                 }
             ],
             order: [
-                [1, "asc"]
+                [0, "asc"]
             ],
             language: {
                 // url: "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"
@@ -1083,9 +1077,9 @@
             let status = $(this).val();
 
             if (status === 'Aktif' || status === 'Semua') {
-                tableKaryawan.column(6).visible(false);
+                tableKaryawan.column(5).visible(false);
             } else {
-                tableKaryawan.column(6).visible(true);
+                tableKaryawan.column(5).visible(true);
             }
 
             tableKaryawan.ajax.reload();

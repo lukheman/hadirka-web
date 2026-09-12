@@ -250,11 +250,17 @@ try {
 
         if (in_array($row['status_karyawan'], $eliminatedStatuses)) {
             $action = "
+                <button class='btn btn-sm btn-info btnDetail' title='Lihat Detail'>
+                    <i class='fa fa-eye'></i>
+                </button><br>
                 <span class='badge bg-danger'>TERELIMINASI</span><br>
                 <small class='text-muted'>Tidak dapat diedit</small>
             ";
         } else {
             $action = "
+                <button class='btn btn-sm btn-info btnDetail' title='Lihat Detail'>
+                    <i class='fa fa-eye'></i>
+                </button>
                 <a href='?page=karier&id=" . urlencode(encrypt($row['id_karyawan'])) . "' class='btn btn-sm btn-info' title='Lihat Karier'>
                     <i class='fa fa-briefcase'></i>
                 </a>
