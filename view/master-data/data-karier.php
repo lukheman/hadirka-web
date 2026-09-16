@@ -440,11 +440,44 @@
                 .catch(() => { if (my === addNoSuratSeq) prev.textContent = "—"; });
         }
 
+        // --- AUTO-ISI NILAI DARI DETAIL KONTRAK SAAT JABATAN DIPILIH ---
+        // Hanya mengisi field yang masih kosong/nol agar input manual tidak tertimpa.
+        function autoIsiNilaiKontrak() {
+            const form = document.getElementById("formTambahKarier");
+            if (!form || typeof formatIndo !== "function") return;
+            const idJabatan = form.querySelector("select[name=id_jabatan]").value;
+            if (!idJabatan) return;
+            const pf = new FormData();
+            pf.append("action", "preview_info");
+            pf.append("id_jabatan", idJabatan);
+            fetch("app/controller/act-template-kontrak.php", { method: "POST", body: pf })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status !== "success" || !res.detail) return;
+                    const map = {
+                        gaji_pokok: "gaji_pokok",
+                        lembur: "upah_lembur",
+                        pot_izin: "potongan_izin",
+                        pot_mangkir: "potongan_mangkir"
+                    };
+                    Object.keys(map).forEach(name => {
+                        const el = form.querySelector(`input[name=${name}]`);
+                        if (!el) return;
+                        const angka = String(el.value || "").replace(/[^0-9]/g, "").replace(/^0+/, "");
+                        if (angka === "") el.value = formatIndo(res.detail[map[name]] ?? 0);
+                    });
+                })
+                .catch(() => {});
+        }
+
         (function bindAddNoSurat() {
             const form = document.getElementById("formTambahKarier");
             if (!form || form.dataset.nosuratBound) return;
             form.dataset.nosuratBound = "1";
-            form.querySelector("select[name=id_jabatan]").addEventListener("change", refreshAddNoSurat);
+            form.querySelector("select[name=id_jabatan]").addEventListener("change", () => {
+                refreshAddNoSurat();
+                autoIsiNilaiKontrak();
+            });
             form.querySelector("input[name=tgl_mulai]").addEventListener("change", refreshAddNoSurat);
             document.getElementById("modalTambahKarier").addEventListener("show.bs.modal", refreshAddNoSurat);
         })();

@@ -359,11 +359,22 @@ if ($action === 'preview_info') {
     $jab = $qj->fetch_assoc();
 
     $qt = $koneksi->query(
-        "SELECT t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
+        "SELECT t.id_template, t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
         "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
         "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC LIMIT 1"
     );
     $tpl = ($qt && $qt->num_rows > 0) ? $qt->fetch_assoc() : null;
+
+    // Nilai kontrak dari detail template (untuk prefill form tambah karier).
+    $detail = null;
+    if ($tpl && !empty($tpl['id_template'])) {
+        $id_tpl = (int)$tpl['id_template'];
+        $qd = $koneksi->query(
+            "SELECT gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
+            "FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1"
+        );
+        if ($qd && $qd->num_rows > 0) $detail = $qd->fetch_assoc();
+    }
 
     $tahun = preg_match('/^(\d{4})-\d{2}-\d{2}$/', $tgl_mulai, $m) ? $m[1] : date('Y');
     $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
@@ -376,6 +387,7 @@ if ($action === 'preview_info') {
         'tahun' => $tahun,
         'no_surat_preview' => $kode !== '' ? sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode, $next, $tahun) : null,
         'template' => $tpl,
+        'detail' => $detail,
     ]);
 }
 
