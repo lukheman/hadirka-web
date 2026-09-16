@@ -155,11 +155,26 @@ try {
             }
             // ----------------------------------------
 
-            // Nomor surat dibuat otomatis: TPJS-KONTRAK-{kode_jabatan}/{urut}/{tahun tgl_mulai}.
+            // Nomor surat: bila Nomor Urut manual (4 digit) diisi, susun
+            // TPJS-KONTRAK-{kode_jabatan}/{urut}/{tahun tgl_mulai} tanpa
+            // mengurangi counter; selain itu nomor dibuat otomatis.
             // Gagal bila jabatan belum punya kode_jabatan.
-            $qKode = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-            $kode_jabatan = ($qKode && $qKode->num_rows > 0) ? ($qKode->fetch_assoc()['kode_jabatan'] ?? '') : '';
-            $no_surat = generate_no_surat($koneksi, $kode_jabatan, $tgl_mulai);
+            $no_urut_manual = substr(preg_replace('/\D/', '', (string)($_POST['no_urut'] ?? '')), 0, 4);
+            if ($no_urut_manual !== '') {
+                $qKode = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
+                $kode_jabatan = ($qKode && $qKode->num_rows > 0) ? trim((string)($qKode->fetch_assoc()['kode_jabatan'] ?? '')) : '';
+                if ($kode_jabatan === '') throw new Exception('Kode jabatan belum diisi. Lengkapi kode jabatan terlebih dahulu.');
+                $no_surat = sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode_jabatan, (int)$no_urut_manual, substr($tgl_mulai, 0, 4));
+                $cekNo = $koneksi->prepare("SELECT id_karier FROM tb_karier WHERE no_surat = ? LIMIT 1");
+                $cekNo->bind_param("s", $no_surat);
+                $cekNo->execute();
+                if ($cekNo->get_result()->num_rows > 0) throw new Exception("Nomor surat sudah dipakai, gunakan nomor urut lain.");
+                $cekNo->close();
+            } else {
+                $qKode = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
+                $kode_jabatan = ($qKode && $qKode->num_rows > 0) ? ($qKode->fetch_assoc()['kode_jabatan'] ?? '') : '';
+                $no_surat = generate_no_surat($koneksi, $kode_jabatan, $tgl_mulai);
+            }
 
             $sql = "INSERT INTO tb_karier (id_karyawan,id_site,id_departemen,id_jabatan,gaji_pokok,lembur,pot_izin,pot_mangkir,spl,ot1_spl,ot2_spl,tgl_mulai,tgl_selesai,no_surat) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             $stmt = $koneksi->prepare($sql);
@@ -172,18 +187,28 @@ try {
             $response = ['status' => 'success', 'no_surat' => $no_surat];
         }
 
-        // EDIT (nomor surat tidak diubah: nomor dokumen bersifat tetap)
+        // EDIT (nomor surat bisa dikoreksi manual; kosong = tanpa nomor)
         elseif ($action === 'edit') {
+            $no_surat_manual = trim($_POST['no_surat'] ?? '');
+            if (strlen($no_surat_manual) > 100) throw new Exception("Nomor surat maksimal 100 karakter");
+            $no_surat_edit = $no_surat_manual !== '' ? $no_surat_manual : null;
+            if ($no_surat_edit !== null) {
+                $cekNo = $koneksi->prepare("SELECT id_karier FROM tb_karier WHERE no_surat = ? AND id_karier <> ? LIMIT 1");
+                $cekNo->bind_param("si", $no_surat_edit, $id_karier);
+                $cekNo->execute();
+                if ($cekNo->get_result()->num_rows > 0) throw new Exception("Nomor surat sudah dipakai karier lain.");
+                $cekNo->close();
+            }
             if ($tgl_selesai === null) {
-                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=NULL WHERE id_karier=?";
+                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=NULL, no_surat=? WHERE id_karier=?";
                 $stmt = $koneksi->prepare($sql);
                 // KOREKSI: Mengubah tipe data dari "iiiidddsi" menjadi "iiiddddsi"
-                $stmt->bind_param("iiiddddsi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $id_karier);
+                $stmt->bind_param("iiiddddssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $no_surat_edit, $id_karier);
             } else {
-                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=? WHERE id_karier=?";
+                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=?, no_surat=? WHERE id_karier=?";
                 $stmt = $koneksi->prepare($sql);
                 // KOREKSI: Mengubah tipe data dari "iiiidddssi" menjadi "iiiddddssi"
-                $stmt->bind_param("iiiddddssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai, $id_karier);
+                $stmt->bind_param("iiiddddsssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai, $no_surat_edit, $id_karier);
             }
             if (!$stmt->execute())
                 throw new Exception($stmt->error);

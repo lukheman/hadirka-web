@@ -152,12 +152,18 @@
                             <input type="date" name="tgl_selesai" class="form-control">
                         </div>
 
+                        <!-- Nomor urut manual (opsional, hanya 4 digit) -->
+                        <div class="col-md-12">
+                            <label>Nomor Urut <small class="text-muted">(opsional — 4 digit, kosongkan untuk otomatis)</small></label>
+                            <input type="text" name="no_urut" class="form-control" maxlength="4" inputmode="numeric" placeholder="cth: 0007">
+                        </div>
+
                         <!-- No Surat -->
                         <div class="col-md-12">
                             <div class="alert alert-info py-2 mb-0">
                                 <i class="fa fa-file-contract"></i> Preview No Surat:
                                 <strong id="addNoSuratPreview">&mdash;</strong>
-                                <br><small class="text-muted">Nomor final diterbitkan sistem saat simpan.</small>
+                                <br><small class="text-muted">Kosongkan Nomor Urut untuk nomor otomatis.</small>
                             </div>
                             <div id="addNoSuratWarning"></div>
                         </div>
@@ -264,6 +270,12 @@
                         <div class="col-md-6">
                             <label>Tgl Selesai</label>
                             <input type="date" name="tgl_selesai" class="form-control">
+                        </div>
+
+                        <!-- No Surat manual -->
+                        <div class="col-md-12">
+                            <label>No Surat</label>
+                            <input type="text" name="no_surat" class="form-control" maxlength="100" placeholder="Kosongkan bila tanpa nomor">
                         </div>
 
                     </div>
@@ -417,12 +429,15 @@
         function renderPreviewKarier(form, info) {
             const fd = new FormData(form);
             const rp = v => (v == null || v === "" || v === "0") ? "-" : "Rp " + v;
+            const manualNo = composeManualNoSurat(form, info);
             const tplCell = info.template
                 ? `<a href="app/uploads/kontrak/${encodeURIComponent(info.template.file)}" target="_blank">${escPreview(info.template.nama_asli || info.template.file)}</a>`
                 : `<span class="badge bg-warning text-dark">Belum ada template untuk jabatan ini</span>`;
-            const noCell = info.no_surat_preview
-                ? `<strong>${escPreview(info.no_surat_preview)}</strong><br><small class="text-muted">Estimasi &mdash; nomor final terbit saat simpan</small>`
-                : `<span class="badge bg-danger">Kode jabatan belum diisi</span>`;
+            const noCell = manualNo
+                ? `<strong>${escPreview(manualNo)}</strong><br><small class="text-muted">Nomor urut manual</small>`
+                : (info.no_surat_preview
+                    ? `<strong>${escPreview(info.no_surat_preview)}</strong><br><small class="text-muted">Estimasi &mdash; nomor final terbit saat simpan</small>`
+                    : `<span class="badge bg-danger">Kode jabatan belum diisi</span>`);
             const rows = [
                 ["Karyawan", escPreview(karyawanNama)],
                 ["Site", escPreview(selText(form, "id_site"))],
@@ -439,14 +454,29 @@
             ];
             document.getElementById("tbodyPreviewKarier").innerHTML = rows.map(r =>
                 `<tr><th style="width:30%">${r[0]}</th><td>${r[1]}</td></tr>`).join("");
-            const ok = !!info.no_surat_preview;
+            const ok = !!(manualNo || info.no_surat_preview);
             document.getElementById("btnKonfirmasiKarier").disabled = !ok;
             document.getElementById("previewKarierWarning").innerHTML = ok ? "" :
-                `<div class="alert alert-danger py-2 mb-0">Simpan diblokir: lengkapi kode jabatan terlebih dahulu.</div>`;
+                `<div class="alert alert-danger py-2 mb-0">Simpan diblokir: isi Nomor Urut manual atau lengkapi kode jabatan terlebih dahulu.</div>`;
             new bootstrap.Modal(document.getElementById("modalPreviewKarier")).show();
         }
 
         // --- PREVIEW NO SURAT LIVE DI MODAL TAMBAH ---
+        // --- NOMOR URUT MANUAL (hanya 4 digit, input di atas preview) ---
+        // Bila diisi, nomor lengkap disusun sebagai
+        // TPJS-KONTRAK-{kode_jabatan}/{urut}/{tahun} memakai kode dari server.
+        function manualUrutVal(form) {
+            const el = form.querySelector("input[name=no_urut]");
+            return el ? el.value.replace(/\D/g, "").slice(0, 4) : "";
+        }
+        function composeManualNoSurat(form, info) {
+            const urut = manualUrutVal(form);
+            if (!urut || !info || !info.kode_jabatan) return "";
+            const tgl = form.querySelector("input[name=tgl_mulai]").value || "";
+            const tahun = /^\d{4}/.test(tgl) ? tgl.slice(0, 4) : String(new Date().getFullYear());
+            return `TPJS-KONTRAK-${info.kode_jabatan}/${urut.padStart(4, "0")}/${tahun}`;
+        }
+
         let addNoSuratSeq = 0;
         function refreshAddNoSurat() {
             const form = document.getElementById("formTambahKarier");
@@ -471,7 +501,11 @@
                 .then(res => {
                     if (my !== addNoSuratSeq) return;
                     if (res.status !== "success") { prev.textContent = "—"; return; }
-                    if (res.no_surat_preview) {
+                    const manualFull = composeManualNoSurat(form, res);
+                    if (manualFull) {
+                        prev.textContent = manualFull;
+                        if (warn) warn.innerHTML = `<div class="alert alert-secondary py-2 mt-2 mb-0">Nomor urut manual akan dipakai — counter otomatis tidak berkurang.</div>`;
+                    } else if (res.no_surat_preview) {
                         prev.textContent = res.no_surat_preview;
                         if (warn) warn.innerHTML = "";
                     } else {
@@ -522,6 +556,7 @@
                 autoIsiNilaiKontrak();
             });
             $(form).find("input[name=tgl_mulai]").on("change", refreshAddNoSurat);
+            $(form).find("input[name=no_urut]").on("input", refreshAddNoSurat);
             document.getElementById("modalTambahKarier").addEventListener("show.bs.modal", refreshAddNoSurat);
         })();
 
@@ -629,6 +664,7 @@
 
             form.querySelector("input[name=tgl_mulai]").value = btn.dataset.tgl_mulai;
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
+            form.querySelector("input[name=no_surat]").value = btn.dataset.no_surat || "";
 
             new bootstrap.Modal(document.getElementById("modalEditKarier")).show();
         });
