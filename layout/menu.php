@@ -37,7 +37,7 @@ function isMenuOpen($pages_array, $current_page)
         // PERBAIKAN: Penambahan array untuk accordion menu internal
         $internal_pages = ['karyawan-internal', 'bonus-internal', 'potongan-internal', 'rapel-internal', 'pinjaman-internal', 'gaji-internal', 'slip-internal'];
         ?>
-        <li class="menu-item <?= isMenuOpen($internal_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($internal_pages, $current_page); ?>" data-menu="internal">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-lock-alt"></i>
                 <div data-i18n="Data Internal">Data Internal</div>
@@ -89,9 +89,9 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $master_pages = ['data-karyawan', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-template-kontrak', 'data-bpjs-tk'];
+        $master_pages = ['data-karyawan', 'karier', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-template-kontrak', 'data-bpjs-tk'];
         ?>
-        <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>" data-menu="master">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-collection"></i>
                 <div data-i18n="Master Data">Master Data</div>
@@ -138,7 +138,7 @@ function isMenuOpen($pages_array, $current_page)
         <?php
         $master_pages = ['data-loker', 'data-calon-karyawan'];
         ?>
-        <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>" data-menu="rekruitmen">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-collection"></i>
                 <div data-i18n="Master Data">Rekruitmen</div>
@@ -162,7 +162,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php $indisipliner_pages = ['master-pelanggaran', 'surat-peringatan']; ?>
-        <li class="menu-item <?= isMenuOpen($indisipliner_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($indisipliner_pages, $current_page); ?>" data-menu="indisipliner">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-error-alt"></i>
                 <div data-i18n="Indisipliner">Sanksi & Indisipliner</div>
@@ -189,7 +189,7 @@ function isMenuOpen($pages_array, $current_page)
         <?php
         $absensi_pages = ['dayli-absen', 'rekapan-absensi', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks'];
         ?>
-        <li class="menu-item <?= isMenuOpen($absensi_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($absensi_pages, $current_page); ?>" data-menu="absensi">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-calendar-check"></i>
                 <div data-i18n="Manajemen Absensi">Manajemen Absensi</div>
@@ -234,7 +234,7 @@ function isMenuOpen($pages_array, $current_page)
         <?php
         $payroll_pages = ['data-periode', 'payroll', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-potongan-tidak-tetap', 'data-rapel', 'data-thr'];
         ?>
-        <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>" data-menu="payroll">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-money"></i>
                 <div data-i18n="Payroll System">Payroll System</div>
@@ -285,9 +285,9 @@ function isMenuOpen($pages_array, $current_page)
 
         <?php
         // REVISI: Gabungkan sub-menu baru ke variabel deteksi accordion open
-        $finance_pages = ['kelola-transaksi', 'jurnal-umum', 'buku-besar', 'neraca-saldo', 'laporan-keuangan'];
+        $finance_pages = ['data-coa', 'kelola-transaksi', 'jurnal-umum', 'buku-besar', 'neraca-saldo', 'laporan-keuangan'];
         ?>
-        <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>" data-menu="finance">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-spreadsheet"></i>
                 <div data-i18n="Manajemen Keuangan">Manajemen Keuangan</div>
@@ -332,7 +332,7 @@ function isMenuOpen($pages_array, $current_page)
         <?php
         $apd_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
         ?>
-        <li class="menu-item <?= isMenuOpen($apd_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($apd_pages, $current_page); ?>" data-menu="apd">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-shield-quarter"></i>
                 <div data-i18n="Manajemen APD">Manajemen APD</div>
@@ -387,7 +387,7 @@ function isMenuOpen($pages_array, $current_page)
         <?php
         $util_pages = ['maintenance', 'error', 'documentation'];
         ?>
-        <li class="menu-item <?= isMenuOpen($util_pages, $current_page); ?>">
+        <li class="menu-item <?= isMenuOpen($util_pages, $current_page); ?>" data-menu="utility">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-cog"></i>
                 <div data-i18n="Utility">System Utility</div>
