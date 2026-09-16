@@ -7,34 +7,6 @@ if (!function_exists('generateSlipGaji')) {
     {
         global $koneksi;
 
-        // ================= Helper functions =================
-        if (!function_exists('daysOverlap')) {
-            function daysOverlap($a_start, $a_end, $b_start, $b_end)
-            {
-                $s = max(strtotime($a_start), strtotime($b_start));
-                $e = min(strtotime($a_end), strtotime($b_end));
-                if ($e < $s) return 0;
-                return floor(($e - $s) / 86400) + 1;
-            }
-        }
-
-        if (!function_exists('getOverlapDays')) {
-            function getOverlapDays($conn, $table, $id, $start, $end, $awal, $akhir)
-            {
-                $days = 0;
-                $sql = "SELECT $awal, $akhir FROM $table
-                WHERE id_karyawan = '$id'
-                AND (( $awal BETWEEN '$start' AND '$end')
-                OR ( $akhir BETWEEN '$start' AND '$end')
-                OR ($awal <= '$start' AND $akhir >= '$end'))";
-                $q = mysqli_query($conn, $sql);
-                while ($z = mysqli_fetch_assoc($q)) {
-                    $days += daysOverlap($z[$awal], $z[$akhir], $start, $end);
-                }
-                return $days;
-            }
-        }
-
         // ================= 1) Get Karyawan =================
         // JOIN dengan tb_tereliminasi untuk mengambil tgl_keluar
         $sql = "SELECT k.*, t.tgl_keluar
