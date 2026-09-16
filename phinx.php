@@ -1,5 +1,13 @@
 <?php
 
+require_once __DIR__ . '/app/config/env.php';
+
+$dbHost = (string) env('DB_HOST', 'localhost');
+$dbPort = (string) env('DB_PORT', '3306');
+$dbName = (string) env('DB_DATABASE', 'tjs_hris');
+$dbUser = (string) env('DB_USERNAME', 'root');
+$dbPass = (string) env('DB_PASSWORD', '');
+
 return
 [
     'paths' => [
@@ -11,29 +19,29 @@ return
         'default_environment' => 'development',
         'production' => [
             'adapter' => 'mysql',
-            'host' => 'localhost',
-            'name' => 'production_db',
-            'user' => 'root',
-            'pass' => '',
-            'port' => '3306',
+            'host' => $dbHost,
+            'name' => $dbName,
+            'user' => $dbUser,
+            'pass' => $dbPass,
+            'port' => $dbPort,
             'charset' => 'utf8',
         ],
         'development' => [
             'adapter' => 'mysql',
-            'host' => 'localhost',
-            'name' => 'tjs_hris',
-            'user' => 'root',
-            'pass' => 'akmal',
-            'port' => '3306',
+            'host' => $dbHost,
+            'name' => $dbName,
+            'user' => $dbUser,
+            'pass' => $dbPass,
+            'port' => $dbPort,
             'charset' => 'utf8',
         ],
         'testing' => [
             'adapter' => 'mysql',
-            'host' => 'localhost',
-            'name' => 'testing_db',
-            'user' => 'root',
-            'pass' => '',
-            'port' => '3306',
+            'host' => $dbHost,
+            'name' => $dbName,
+            'user' => $dbUser,
+            'pass' => $dbPass,
+            'port' => $dbPort,
             'charset' => 'utf8',
         ]
     ],
