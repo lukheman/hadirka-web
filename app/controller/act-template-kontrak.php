@@ -346,6 +346,39 @@ if ($action === 'delete_potongan') {
     tpl_json('success', 'Potongan berhasil dihapus.');
 }
 
+// --- Info untuk preview surat kontrak sebelum karier disimpan ---
+// Mengembalikan kode jabatan, estimasi no_surat (counter+1, nomor final terbit saat simpan),
+// dan file template kontrak yang berlaku untuk jabatan tersebut.
+if ($action === 'preview_info') {
+    $id_jabatan = (int)($_POST['id_jabatan'] ?? $_GET['id_jabatan'] ?? 0);
+    $tgl_mulai = (string)($_POST['tgl_mulai'] ?? $_GET['tgl_mulai'] ?? '');
+    if ($id_jabatan <= 0) tpl_json('error', 'Jabatan belum dipilih.');
+
+    $qj = $koneksi->query("SELECT kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
+    if (!$qj || $qj->num_rows === 0) tpl_json('error', 'Jabatan tidak ditemukan.');
+    $jab = $qj->fetch_assoc();
+
+    $qt = $koneksi->query(
+        "SELECT t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
+        "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
+        "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC LIMIT 1"
+    );
+    $tpl = ($qt && $qt->num_rows > 0) ? $qt->fetch_assoc() : null;
+
+    $tahun = preg_match('/^(\d{4})-\d{2}-\d{2}$/', $tgl_mulai, $m) ? $m[1] : date('Y');
+    $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
+    $next = ($qc && $qc->num_rows > 0) ? ((int)$qc->fetch_assoc()['terakhir'] + 1) : 1;
+
+    $kode = trim((string)($jab['kode_jabatan'] ?? ''));
+    tpl_json('success', 'OK', [
+        'kode_jabatan' => $kode,
+        'nama_jabatan' => $jab['nama_jabatan'] ?? '',
+        'tahun' => $tahun,
+        'no_surat_preview' => $kode !== '' ? sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode, $next, $tahun) : null,
+        'template' => $tpl,
+    ]);
+}
+
 // --- Hapus template ---
 if ($action === 'delete') {
     $id = (int)($_POST['id_template'] ?? 0);

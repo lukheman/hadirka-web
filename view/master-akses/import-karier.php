@@ -227,8 +227,12 @@
                         </div>
 
                         <div class="col-md-12">
-                            <label>No Surat Kontrak</label>
-                            <input type="text" name="no_surat" class="form-control" maxlength="100" placeholder="Ex: 344/TJS/V/2026">
+                            <div class="alert alert-info py-2 mb-0">
+                                <i class="fa fa-file-contract"></i> Preview No Surat:
+                                <strong id="addNoSuratPreview">&mdash;</strong>
+                                <br><small class="text-muted">Nomor final diterbitkan sistem saat simpan.</small>
+                            </div>
+                            <div id="addNoSuratWarning"></div>
                         </div>
                     </div>
                 </div>
@@ -323,11 +327,6 @@
                             <label>Tgl Selesai</label>
                             <input type="date" name="tgl_selesai" class="form-control">
                         </div>
-
-                        <div class="col-md-12">
-                            <label>No Surat Kontrak</label>
-                            <input type="text" name="no_surat" class="form-control" maxlength="100" placeholder="Ex: 344/TJS/V/2026">
-                        </div>
                     </div>
                 </div>
 
@@ -340,6 +339,36 @@
     </div>
 
     <?php include __DIR__ . '/../master-data/modal-karier-tunjangan-potongan.php'; ?>
+
+    <!-- Modal Preview Surat Kontrak (sebelum simpan) -->
+    <div class="modal fade" id="modalPreviewKarier">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title text-white"><i class="fa fa-file-contract"></i> Preview Surat Kontrak</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning py-2">
+                        <i class="fa fa-info-circle"></i> Periksa kembali data kontrak sebelum disimpan.
+                        Nomor surat final diterbitkan sistem saat simpan.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <tbody id="tbodyPreviewKarier"></tbody>
+                        </table>
+                    </div>
+                    <div id="previewKarierWarning"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kembali</button>
+                    <button type="button" class="btn btn-success" id="btnKonfirmasiKarier">
+                        <i class="fa fa-save"></i> Simpan Kontrak
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -496,12 +525,126 @@
                 });
         });
 
-        // --- 4. TAMBAH KARIER MANUAL ---
+        // --- 4. TAMBAH KARIER MANUAL (DENGAN PREVIEW SURAT KONTRAK) ---
+        function escPreview(s) {
+            return String(s == null || s === "" ? "-" : s).replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function selText(form, name) {
+            const sel = form.querySelector("select[name=" + name + "]");
+            return sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : "-";
+        }
+
+        function renderPreviewKarier(form, info) {
+            const fd = new FormData(form);
+            const rp = v => (v == null || v === "" || v === "0") ? "-" : "Rp " + v;
+            const tplCell = info.template
+                ? `<a href="app/uploads/kontrak/${encodeURIComponent(info.template.file)}" target="_blank">${escPreview(info.template.nama_asli || info.template.file)}</a>`
+                : `<span class="badge bg-warning text-dark">Belum ada template untuk jabatan ini</span>`;
+            const noCell = info.no_surat_preview
+                ? `<strong>${escPreview(info.no_surat_preview)}</strong><br><small class="text-muted">Estimasi &mdash; nomor final terbit saat simpan</small>`
+                : `<span class="badge bg-danger">Kode jabatan belum diisi</span>`;
+            const rows = [
+                ["Karyawan", escPreview(selText(form, "id_karyawan"))],
+                ["Site", escPreview(selText(form, "id_site"))],
+                ["Departemen", escPreview(selText(form, "id_departemen"))],
+                ["Jabatan", escPreview(selText(form, "id_jabatan")) + (info.kode_jabatan ? ` <small class="text-muted">(${escPreview(info.kode_jabatan)})</small>` : "")],
+                ["Gaji Pokok", rp(fd.get("gaji_pokok"))],
+                ["Upah Lembur", rp(fd.get("lembur"))],
+                ["Potongan Izin", rp(fd.get("pot_izin"))],
+                ["Potongan Mangkir", rp(fd.get("pot_mangkir"))],
+                ["Tgl Mulai", escPreview(fd.get("tgl_mulai"))],
+                ["Tgl Selesai", escPreview(fd.get("tgl_selesai"))],
+                ["No Surat", noCell],
+                ["Template Kontrak", tplCell]
+            ];
+            document.getElementById("tbodyPreviewKarier").innerHTML = rows.map(r =>
+                `<tr><th style="width:30%">${r[0]}</th><td>${r[1]}</td></tr>`).join("");
+            const ok = !!info.no_surat_preview;
+            document.getElementById("btnKonfirmasiKarier").disabled = !ok;
+            document.getElementById("previewKarierWarning").innerHTML = ok ? "" :
+                `<div class="alert alert-danger py-2 mb-0">Simpan diblokir: lengkapi kode jabatan terlebih dahulu.</div>`;
+            new bootstrap.Modal(document.getElementById("modalPreviewKarier")).show();
+        }
+
+        // --- PREVIEW NO SURAT LIVE DI MODAL TAMBAH ---
+        let addNoSuratSeq = 0;
+        function refreshAddNoSurat() {
+            const form = document.getElementById("formTambahKarier");
+            const prev = document.getElementById("addNoSuratPreview");
+            const warn = document.getElementById("addNoSuratWarning");
+            if (!form || !prev) return;
+            const idJabatan = form.querySelector("select[name=id_jabatan]").value;
+            const tglMulai = form.querySelector("input[name=tgl_mulai]").value;
+            if (!idJabatan) {
+                prev.textContent = "—";
+                if (warn) warn.innerHTML = "";
+                return;
+            }
+            const my = ++addNoSuratSeq;
+            prev.textContent = "Memuat...";
+            const pf = new FormData();
+            pf.append("action", "preview_info");
+            pf.append("id_jabatan", idJabatan);
+            pf.append("tgl_mulai", tglMulai || "");
+            fetch("app/controller/act-template-kontrak.php", { method: "POST", body: pf })
+                .then(res => res.json())
+                .then(res => {
+                    if (my !== addNoSuratSeq) return;
+                    if (res.status !== "success") { prev.textContent = "—"; return; }
+                    if (res.no_surat_preview) {
+                        prev.textContent = res.no_surat_preview;
+                        if (warn) warn.innerHTML = "";
+                    } else {
+                        prev.textContent = "—";
+                        if (warn) warn.innerHTML = `<div class="alert alert-warning py-2 mt-2 mb-0">Jabatan belum punya kode &mdash; lengkapi kode jabatan agar nomor bisa diterbitkan.</div>`;
+                    }
+                })
+                .catch(() => { if (my === addNoSuratSeq) prev.textContent = "—"; });
+        }
+
+        (function bindAddNoSurat() {
+            const form = document.getElementById("formTambahKarier");
+            if (!form || form.dataset.nosuratBound) return;
+            form.dataset.nosuratBound = "1";
+            form.querySelector("select[name=id_jabatan]").addEventListener("change", refreshAddNoSurat);
+            form.querySelector("input[name=tgl_mulai]").addEventListener("change", refreshAddNoSurat);
+            document.getElementById("modalTambahKarier").addEventListener("show.bs.modal", refreshAddNoSurat);
+        })();
+
         document.getElementById("formTambahKarier").addEventListener("submit", function(e) {
             e.preventDefault();
-            let fd = new FormData(this);
+            const form = this;
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+            const fd = new FormData(form);
+            // id_karyawan diambil otomatis dari dropdown <select name="id_karyawan">
+
+            const pf = new FormData();
+            pf.append("action", "preview_info");
+            pf.append("id_jabatan", fd.get("id_jabatan"));
+            pf.append("tgl_mulai", fd.get("tgl_mulai") || "");
+
+            fetch("app/controller/act-template-kontrak.php", {
+                    method: "POST",
+                    body: pf
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status !== "success") {
+                        showToast(res.msg || "Gagal memuat preview.", "error");
+                        return;
+                    }
+                    renderPreviewKarier(form, res);
+                })
+                .catch(() => showToast("Terjadi kesalahan sistem.", "error"));
+        });
+
+        document.getElementById("btnKonfirmasiKarier").addEventListener("click", function() {
+            const btn = this;
+            btn.disabled = true;
+            const fd = new FormData(document.getElementById("formTambahKarier"));
             fd.append("action", "add");
-            // HAPUS fd.append("id_karyawan", karyawanId) karena id_karyawan sudah diambil otomatis dari dropdown <select name="id_karyawan">
 
             fetch("app/controller/act-karier.php", {
                     method: "POST",
@@ -511,13 +654,18 @@
                 .then(res => {
                     if (res.status == "success") {
                         loadKarier();
-                        showToast("Karier berhasil ditambah!", "success");
+                        showToast("Karier berhasil ditambah!" + (res.no_surat ? " No: " + res.no_surat : ""), "success");
+                        bootstrap.Modal.getInstance(document.getElementById("modalPreviewKarier")).hide();
                         bootstrap.Modal.getInstance(document.getElementById("modalTambahKarier")).hide();
-                        this.reset();
+                        document.getElementById("formTambahKarier").reset();
+                        document.getElementById("addNoSuratPreview").textContent = "—";
+                        document.getElementById("addNoSuratWarning").innerHTML = "";
                     } else {
                         showToast(res.msg, "error");
                     }
-                });
+                })
+                .catch(() => showToast("Terjadi kesalahan sistem.", "error"))
+                .finally(() => { btn.disabled = false; });
         });
 
         // --- 5. TAMPILKAN MODAL EDIT ---
@@ -539,7 +687,6 @@
 
             form.querySelector("input[name=tgl_mulai]").value = btn.dataset.tgl_mulai;
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
-            form.querySelector("input[name=no_surat]").value = btn.dataset.no_surat || "";
 
             new bootstrap.Modal(document.getElementById("modalEditKarier")).show();
         });

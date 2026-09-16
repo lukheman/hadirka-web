@@ -7,6 +7,7 @@ header("Content-Type: application/json");
 
 require_once __DIR__ . '/../config/koneksi.php';
 require_once __DIR__ . '/../config/function.php';
+require_once __DIR__ . '/../config/nomor_surat.php';
 
 $action = $_POST['action'] ?? '';
 $response = [];
@@ -136,9 +137,6 @@ try {
 
         $tgl_mulai   = $_POST['tgl_mulai'];
         $tgl_selesai = !empty($_POST['tgl_selesai']) ? $_POST['tgl_selesai'] : null;
-        $no_surat    = isset($_POST['no_surat']) ? trim($_POST['no_surat']) : '';
-        if (strlen($no_surat) > 100) $no_surat = substr($no_surat, 0, 100);
-        if ($no_surat === '') $no_surat = null;
 
         if (!validDate($tgl_mulai))
             throw new Exception("Tanggal mulai tidak valid");
@@ -157,31 +155,41 @@ try {
             }
             // ----------------------------------------
 
+            // Nomor surat dibuat otomatis: TPJS-KONTRAK-{kode_jabatan}/{urut}/{tahun tgl_mulai}.
+            // Gagal bila jabatan belum punya kode_jabatan.
+            $qKode = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
+            $kode_jabatan = ($qKode && $qKode->num_rows > 0) ? ($qKode->fetch_assoc()['kode_jabatan'] ?? '') : '';
+            $no_surat = generate_no_surat($koneksi, $kode_jabatan, $tgl_mulai);
+
             $sql = "INSERT INTO tb_karier (id_karyawan,id_site,id_departemen,id_jabatan,gaji_pokok,lembur,pot_izin,pot_mangkir,spl,ot1_spl,ot2_spl,tgl_mulai,tgl_selesai,no_surat) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             $stmt = $koneksi->prepare($sql);
             $kosong = '';
             $stmt->bind_param("iiiiddddssssss", $id_karyawan, $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $kosong, $kosong, $kosong, $tgl_mulai, $tgl_selesai, $no_surat);
+            if (!$stmt->execute()) {
+                if ((int)$koneksi->errno === 1062) throw new Exception("Nomor surat ganda, silakan ulangi simpan.");
+                throw new Exception($stmt->error);
+            }
+            $response = ['status' => 'success', 'no_surat' => $no_surat];
         }
 
-        // EDIT
+        // EDIT (nomor surat tidak diubah: nomor dokumen bersifat tetap)
         elseif ($action === 'edit') {
             if ($tgl_selesai === null) {
-                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=NULL, no_surat=? WHERE id_karier=?";
+                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=NULL WHERE id_karier=?";
                 $stmt = $koneksi->prepare($sql);
                 // KOREKSI: Mengubah tipe data dari "iiiidddsi" menjadi "iiiddddsi"
-                $stmt->bind_param("iiiddddssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $no_surat, $id_karier);
+                $stmt->bind_param("iiiddddsi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $id_karier);
             } else {
-                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=?, no_surat=? WHERE id_karier=?";
+                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=? WHERE id_karier=?";
                 $stmt = $koneksi->prepare($sql);
                 // KOREKSI: Mengubah tipe data dari "iiiidddssi" menjadi "iiiddddssi"
-                $stmt->bind_param("iiiddddsssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai, $no_surat, $id_karier);
+                $stmt->bind_param("iiiddddssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai, $id_karier);
             }
+            if (!$stmt->execute())
+                throw new Exception($stmt->error);
+
+            $response = ['status' => 'success'];
         }
-
-        if (!$stmt->execute())
-            throw new Exception($stmt->error);
-
-        $response = ['status' => 'success'];
     }
 } catch (Exception $e) {
     $response = ['status' => 'error', 'msg' => $e->getMessage()];

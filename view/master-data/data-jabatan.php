@@ -19,6 +19,7 @@
                         <thead class="table-info">
                             <tr>
                                 <th class="text-center">No</th>
+                                <th>Kode Jabatan</th>
                                 <th>Nama Jabatan</th>
                                 <th class="text-center">Aksi</th>
                             </tr>
@@ -40,7 +41,9 @@
                 </div>
 
                 <div class="modal-body">
-                    <label>Nama Jabatan</label>
+                    <label>Kode Jabatan</label>
+                    <input type="text" name="kode_jabatan" class="form-control" maxlength="50" placeholder="Ex: JBT-001">
+                    <label class="mt-2">Nama Jabatan</label>
                     <input type="text" name="nama_jabatan" class="form-control" required>
                 </div>
 
@@ -63,7 +66,9 @@
                 </div>
 
                 <div class="modal-body">
-                    <label>Nama Jabatan</label>
+                    <label>Kode Jabatan</label>
+                    <input type="text" name="kode_jabatan" class="form-control" maxlength="50" placeholder="Ex: JBT-001">
+                    <label class="mt-2">Nama Jabatan</label>
                     <input type="text" name="nama_jabatan" class="form-control" required>
                 </div>
 
@@ -156,6 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let btn = e.target;
 
             formEdit.querySelector("input[name=id_jabatan]").value = btn.dataset.id;
+            formEdit.querySelector("input[name=kode_jabatan]").value = btn.dataset.kode || "";
             formEdit.querySelector("input[name=nama_jabatan]").value = btn.dataset.nama;
 
             new bootstrap.Modal(document.getElementById("modalEditJabatan")).show();

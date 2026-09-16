@@ -6,6 +6,7 @@ ob_clean();
 header("Content-Type: application/json");
 require __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../config/Excel.php'; // Excel::cleanRupiah()/parseDate() terpusat
+require_once __DIR__ . '/../../config/nomor_surat.php'; // generate_no_surat()
 require '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -105,9 +106,7 @@ try {
         
         $tgl_masuk_site = Excel::parseDate($row['T'] ?? '');
         $tgl_selesai_kontrak = Excel::parseDate($row['U'] ?? '');
-        $no_surat_raw = trim((string)($row['V'] ?? ''));
-        if (strlen($no_surat_raw) > 100) $no_surat_raw = substr($no_surat_raw, 0, 100);
-        $has_no_surat_col = array_key_exists('V', $row);
+        // Kolom V (NO SURAT) diabaikan: nomor dibuat otomatis sistem.
 
         // === Ambil ID referensi ===
         $id_site       = getId($koneksi, 'tb_site', 'nama_site', $nama_site, 'id_site');
@@ -141,13 +140,7 @@ try {
                 $setTanggal[] = "tgl_selesai=NULL";
             }
 
-            // Update Karier Terakhir
-            $no_surat_esc = $koneksi->real_escape_string($no_surat_raw);
-            $setNoSurat = '';
-            // Hanya timpa no_surat bila template Excel sudah ada kolom V (agar import lama tidak menghapus data)
-            if ($has_no_surat_col) {
-                $setNoSurat = $no_surat_raw !== '' ? ", no_surat='$no_surat_esc'" : ", no_surat=NULL";
-            }
+            // Update Karier Terakhir (no_surat lama dipertahankan, tidak ditimpa)
             $koneksi->query("UPDATE tb_karier SET
                 id_site='$id_site', id_departemen='$id_departemen', id_jabatan='$id_jabatan', 
                 gaji_pokok=$basic,
@@ -155,14 +148,21 @@ try {
                 pot_izin=$pot_izin, 
                 pot_mangkir=$pot_mangkir,
                 " . implode(",", $setTanggal) . "
-                $setNoSurat
             WHERE id_karier='$id_karier'");
         } else {
-            // Insert Baru jika belum ada data karier sama sekali
+            // Insert Baru jika belum ada data karier sama sekali (nomor surat otomatis)
             $tglMulai = $tgl_masuk_site ?: date('Y-m-d');
             $tglSelesai = $tgl_selesai_kontrak ?: null;
-            $no_surat_esc = $koneksi->real_escape_string($no_surat_raw);
-            $no_surat_sql = $no_surat_raw !== '' ? "'$no_surat_esc'" : "NULL";
+            $no_surat_sql = "NULL";
+            $qKodeImp = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
+            $kodeImp = ($qKodeImp && $qKodeImp->num_rows > 0) ? trim((string)($qKodeImp->fetch_assoc()['kode_jabatan'] ?? '')) : '';
+            if ($kodeImp !== '') {
+                try {
+                    $no_surat_sql = "'" . $koneksi->real_escape_string(generate_no_surat($koneksi, $kodeImp, $tglMulai)) . "'";
+                } catch (Exception $e) {
+                    $no_surat_sql = "NULL"; // jabatan tanpa kode: biarkan kosong, tidak menggagalkan baris
+                }
+            }
 
             $koneksi->query("INSERT INTO tb_karier (
                 id_karyawan, id_site, id_departemen, id_jabatan,
