@@ -143,13 +143,19 @@
                         <!-- Tgl Mulai -->
                         <div class="col-md-6">
                             <label>Tgl Mulai</label>
-                            <input type="date" name="tgl_mulai" class="form-control" required>
+                            <input type="date" name="tgl_mulai" class="form-control" required value="<?= date('Y-m-d') ?>">
                         </div>
 
                         <!-- Tgl Selesai -->
                         <div class="col-md-6">
                             <label>Tgl Selesai</label>
                             <input type="date" name="tgl_selesai" class="form-control">
+                            <div class="d-flex align-items-center gap-1 mt-1">
+                                <small class="text-muted me-1">Durasi:</small>
+                                <button type="button" class="btn btn-primary btn-sm btnDurasiKontrak" data-bulan="3">3 Bln</button>
+                                <button type="button" class="btn btn-success btn-sm btnDurasiKontrak" data-bulan="6">6 Bln</button>
+                                <button type="button" class="btn btn-warning btn-sm btnDurasiKontrak" data-bulan="12">1 Thn</button>
+                            </div>
                         </div>
 
                         <!-- Nomor urut manual (opsional, hanya 4 digit) -->
@@ -270,6 +276,12 @@
                         <div class="col-md-6">
                             <label>Tgl Selesai</label>
                             <input type="date" name="tgl_selesai" class="form-control">
+                            <div class="d-flex align-items-center gap-1 mt-1">
+                                <small class="text-muted me-1">Durasi:</small>
+                                <button type="button" class="btn btn-primary btn-sm btnDurasiKontrak" data-bulan="3">3 Bln</button>
+                                <button type="button" class="btn btn-success btn-sm btnDurasiKontrak" data-bulan="6">6 Bln</button>
+                                <button type="button" class="btn btn-warning btn-sm btnDurasiKontrak" data-bulan="12">1 Thn</button>
+                            </div>
                         </div>
 
                         <!-- No Surat manual -->
@@ -476,6 +488,37 @@
             const tahun = /^\d{4}/.test(tgl) ? tgl.slice(0, 4) : String(new Date().getFullYear());
             return `TPJS-KONTRAK-${info.kode_jabatan}/${urut.padStart(4, "0")}/${tahun}`;
         }
+
+        // --- DURASI KONTRAK CEPAT: isi Tgl Selesai dari Tgl Mulai + N bulan ---
+        // Konvensi akhir periode: tanggal mulai + N bulan, mundur 1 hari
+        // (cth: mulai 2026-09-01 + 6 bln = selesai 2027-02-28).
+        function setDurasiKontrak(form, bulan) {
+            const mulaiEl = form.querySelector("input[name=tgl_mulai]");
+            const selesaiEl = form.querySelector("input[name=tgl_selesai]");
+            if (!mulaiEl || !selesaiEl) return;
+            if (!mulaiEl.value) {
+                showToast("Isi Tgl Mulai terlebih dahulu.", "warning");
+                mulaiEl.focus();
+                return;
+            }
+            const d = new Date(mulaiEl.value + "T00:00:00");
+            if (isNaN(d.getTime())) { showToast("Tgl Mulai tidak valid.", "error"); return; }
+            const tanggal = d.getDate();
+            d.setDate(1);
+            d.setMonth(d.getMonth() + bulan);
+            const maks = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+            d.setDate(Math.min(tanggal - 1, maks));
+            const pad = n => String(n).padStart(2, "0");
+            selesaiEl.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            selesaiEl.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        document.addEventListener("click", e => {
+            const btn = e.target.closest(".btnDurasiKontrak");
+            if (!btn) return;
+            const bulan = parseInt(btn.dataset.bulan, 10) || 0;
+            const form = btn.closest("form");
+            if (form && bulan > 0) setDurasiKontrak(form, bulan);
+        });
 
         let addNoSuratSeq = 0;
         function refreshAddNoSurat() {
