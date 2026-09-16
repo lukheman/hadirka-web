@@ -2,7 +2,7 @@
 .env.*
 !.env.example
 
-/vendor/
+# /vendor/
 /app/api/vendor/
 *.log
 debug_*.log
