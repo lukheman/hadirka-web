@@ -193,8 +193,18 @@ try {
             $n_potongan = 0;
             if ($id_template > 0) {
                 $qDet = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1");
-                if ($qDet && $qDet->num_rows > 0) {
-                    $id_detail = (int)$qDet->fetch_assoc()['id_detail'];
+                $id_detail = ($qDet && $qDet->num_rows > 0) ? (int)$qDet->fetch_assoc()['id_detail'] : 0;
+                if ($id_detail <= 0) {
+                    // Template lama belum punya baris detail: buatkan (kosong) agar penyalinan tetap berjalan.
+                    if (!$koneksi->query(
+                        "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) " .
+                        "VALUES ('$id_template', 0, 0, 0, 0)"
+                    )) {
+                        throw new Exception("Karier tersimpan, tetapi detail template gagal disiapkan: " . $koneksi->error);
+                    }
+                    $id_detail = (int)$koneksi->insert_id;
+                }
+                {
                     if ($koneksi->query(
                         "INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jumlah_tunjangan) " .
                         "SELECT '$id_karier_baru', nama_tunjangan, jumlah_tunjangan " .

@@ -204,7 +204,15 @@
                                 <input type="hidden" name="id_tunjangan" id="tplTunjanganId">
                                 <div class="col-md-6">
                                     <label class="form-label">Nama Tunjangan</label>
-                                    <input type="text" name="nama_tunjangan" id="tplTunjanganNama" class="form-control" maxlength="25" placeholder="Contoh: Tunjangan Makan" required>
+                                    <select name="nama_tunjangan" id="tplTunjanganNama" class="form-select" required>
+                                        <option value="">-- Pilih Tunjangan --</option>
+                                        <option value="Tunjangan Daerah">Tunjangan Daerah</option>
+                                        <option value="Tunjangan Hidup">Tunjangan Hidup</option>
+                                        <option value="Tunjangan Makan">Tunjangan Makan</option>
+                                        <option value="Tunjangan Skill">Tunjangan Skill</option>
+                                        <option value="Bonus Kehadiran">Bonus Kehadiran</option>
+                                        <option value="Tunjangan Posisi">Tunjangan Posisi</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Jumlah (Rp)</label>
@@ -240,7 +248,13 @@
                                 <input type="hidden" name="id_potongan" id="tplPotonganId">
                                 <div class="col-md-6">
                                     <label class="form-label">Nama Potongan</label>
-                                    <input type="text" name="jenis_potongan" id="tplPotonganNama" class="form-control" maxlength="25" placeholder="Contoh: BPJS" required>
+                                    <select name="jenis_potongan" id="tplPotonganNama" class="form-select" required>
+                                        <option value="">-- Pilih Potongan --</option>
+                                        <option value="BPJS Kesehatan">BPJS Kesehatan</option>
+                                        <option value="BPJS Ketenagakerjaan">BPJS Ketenagakerjaan</option>
+                                        <option value="JHT">JHT</option>
+                                        <option value="PPh 21">PPh 21</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Jumlah (Rp)</label>

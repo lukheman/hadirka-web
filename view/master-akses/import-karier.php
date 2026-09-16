@@ -615,6 +615,15 @@
             const rp = v => (v == null || v === "" || v === "0") ? "-" : "Rp " + v;
             const manualNo = composeManualNoSurat(form, info);
             const tpl = chosenTemplate(form, info);
+            const fmtRpPrev = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
+            const tunjList = (tpl && Array.isArray(tpl.tunjangan)) ? tpl.tunjangan : [];
+            const potList = (tpl && Array.isArray(tpl.potongan)) ? tpl.potongan : [];
+            const tunjCell = tunjList.length
+                ? tunjList.map(t => `${escPreview(t.nama_tunjangan)}: ${fmtRpPrev(t.jumlah_tunjangan)}`).join("<br>")
+                : `<span class="text-muted">-</span>`;
+            const potCell = potList.length
+                ? potList.map(p => `${escPreview(p.jenis_potongan)}: ${fmtRpPrev(p.jumlah_potongan)}`).join("<br>")
+                : `<span class="text-muted">-</span>`;
             const tplCell = tpl
                 ? `<a href="app/uploads/kontrak/${encodeURIComponent(tpl.file)}" target="_blank">${escPreview(tpl.nama_kontrak || tpl.nama_asli || tpl.file)}</a>`
                 : `<span class="badge bg-warning text-dark">Belum ada template untuk jabatan ini</span>`;
@@ -632,6 +641,8 @@
                 ["Upah Lembur", rp(fd.get("lembur"))],
                 ["Potongan Izin", rp(fd.get("pot_izin"))],
                 ["Potongan Mangkir", rp(fd.get("pot_mangkir"))],
+                ["Tunjangan (Template)", tunjCell],
+                ["Potongan (Template)", potCell],
                 ["Tgl Mulai", escPreview(fd.get("tgl_mulai"))],
                 ["Tgl Selesai", escPreview(fd.get("tgl_selesai"))],
                 ["No Surat", noCell],

@@ -489,10 +489,27 @@ if ($action === 'preview_info') {
         while ($tr = $qt->fetch_assoc()) {
             $id_tpl = (int)$tr['id_template'];
             $qd = $koneksi->query(
-                "SELECT gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
+                "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
                 "FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1"
             );
-            $tr['detail'] = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
+            $detailRow = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
+            $tr['tunjangan'] = [];
+            $tr['potongan'] = [];
+            if ($detailRow && !empty($detailRow['id_detail'])) {
+                $id_det = (int)$detailRow['id_detail'];
+                $qt2 = $koneksi->query(
+                    "SELECT nama_tunjangan, jumlah_tunjangan FROM tb_tunjangan_kontrak " .
+                    "WHERE id_detail_kontrak = '$id_det' ORDER BY id_tunjangan_kontrak ASC"
+                );
+                if ($qt2) while ($x = $qt2->fetch_assoc()) $tr['tunjangan'][] = $x;
+                $qp2 = $koneksi->query(
+                    "SELECT jenis_potongan, jumlah_potongan FROM tb_potongan_kontrak " .
+                    "WHERE id_detail_kontrak = '$id_det' ORDER BY id_potongan_kontrak ASC"
+                );
+                if ($qp2) while ($x = $qp2->fetch_assoc()) $tr['potongan'][] = $x;
+                unset($detailRow['id_detail']);
+            }
+            $tr['detail'] = $detailRow;
             $templates[] = $tr;
         }
     }
