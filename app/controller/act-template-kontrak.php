@@ -6,8 +6,10 @@
 // Actions (POST, response {status, msg|message, ...}):
 // - list          : daftar template + jabatan yang ditautkan + detail nilai kontrak
 // - list_jabatan  : daftar jabatan untuk checkbox modal (GET/POST)
-// - upload        : file_pdf (PDF, maks 2MB) + id_jabatan[] (min 1)
+// - upload        : nama_kontrak (wajib, maks 150) + file_pdf (Word, maks 2MB)
+//                   + id_jabatan[] (min 1)
 //                   + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (opsional, default 0)
+// - rename        : id_template + nama_kontrak (ubah nama kontrak)
 // - save_detail   : id_template + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (upsert)
 // - list_tunjangan / save_tunjangan / delete_tunjangan   : tunjangan milik detail kontrak (tb_tunjangan_kontrak)
 // - list_potongan / save_potongan / delete_potongan       : potongan milik detail kontrak (tb_potongan_kontrak)
@@ -63,7 +65,7 @@ if ($action === 'list_jabatan') {
 if ($action === 'list') {
     $data = [];
     $q = $koneksi->query(
-        "SELECT id_template, `file`, nama_asli, ukuran, created_at " .
+        "SELECT id_template, nama_kontrak, `file`, nama_asli, ukuran, created_at " .
         "FROM tb_template_kontrak ORDER BY id_template DESC"
     );
     if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
@@ -108,6 +110,14 @@ if ($action === 'upload') {
     try {
         if (!isset($_FILES['file_pdf']) || $_FILES['file_pdf']['error'] !== UPLOAD_ERR_OK) {
             throw new Exception("Pilih file PDF terlebih dahulu.");
+        }
+
+        $nama_kontrak = trim($_POST['nama_kontrak'] ?? '');
+        if ($nama_kontrak === '') {
+            throw new Exception("Nama kontrak wajib diisi.");
+        }
+        if (strlen($nama_kontrak) > 150) {
+            throw new Exception("Nama kontrak maksimal 150 karakter.");
         }
 
         $ids = $_POST['id_jabatan'] ?? [];
@@ -156,10 +166,10 @@ if ($action === 'upload') {
         $koneksi->begin_transaction();
         try {
             $stmt = $koneksi->prepare(
-                "INSERT INTO tb_template_kontrak (`file`, nama_asli, ukuran) VALUES (?, ?, ?)"
+                "INSERT INTO tb_template_kontrak (nama_kontrak, `file`, nama_asli, ukuran) VALUES (?, ?, ?, ?)"
             );
             if (!$stmt) throw new Exception("Gagal menyiapkan data: " . $koneksi->error);
-            $stmt->bind_param("ssi", $new_file, $file_name, $file_size);
+            $stmt->bind_param("sssi", $nama_kontrak, $new_file, $file_name, $file_size);
             if (!$stmt->execute()) throw new Exception("Gagal menyimpan template: " . $stmt->error);
             $id_template = $stmt->insert_id;
             $stmt->close();
@@ -195,6 +205,26 @@ if ($action === 'upload') {
     } catch (Exception $e) {
         tpl_json('error', $e->getMessage());
     }
+}
+
+// --- Ubah nama kontrak ---
+if ($action === 'rename') {
+    $id = (int)($_POST['id_template'] ?? 0);
+    if ($id <= 0) tpl_json('error', 'ID template tidak valid.');
+    $nama_kontrak = trim($_POST['nama_kontrak'] ?? '');
+    if ($nama_kontrak === '') tpl_json('error', 'Nama kontrak wajib diisi.');
+    if (strlen($nama_kontrak) > 150) tpl_json('error', 'Nama kontrak maksimal 150 karakter.');
+
+    $stmt = $koneksi->prepare("UPDATE tb_template_kontrak SET nama_kontrak = ? WHERE id_template = ?");
+    if (!$stmt) tpl_json('error', 'Gagal menyiapkan data: ' . $koneksi->error);
+    $stmt->bind_param("si", $nama_kontrak, $id);
+    if (!$stmt->execute()) tpl_json('error', 'Gagal menyimpan: ' . $stmt->error);
+    if ($stmt->affected_rows === 0) {
+        $cek = $koneksi->query("SELECT id_template FROM tb_template_kontrak WHERE id_template = '$id'");
+        if (!$cek || $cek->num_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
+    }
+    $stmt->close();
+    tpl_json('success', 'Nama kontrak berhasil disimpan.');
 }
 
 // --- Simpan/ubah nilai kontrak (upsert) ---
@@ -359,7 +389,7 @@ if ($action === 'preview_info') {
     $jab = $qj->fetch_assoc();
 
     $qt = $koneksi->query(
-        "SELECT t.id_template, t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
+        "SELECT t.id_template, t.nama_kontrak, t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
         "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
         "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC LIMIT 1"
     );

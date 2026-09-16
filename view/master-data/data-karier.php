@@ -443,7 +443,7 @@
             const rp = v => (v == null || v === "" || v === "0") ? "-" : "Rp " + v;
             const manualNo = composeManualNoSurat(form, info);
             const tplCell = info.template
-                ? `<a href="app/uploads/kontrak/${encodeURIComponent(info.template.file)}" target="_blank">${escPreview(info.template.nama_asli || info.template.file)}</a>`
+                ? `<a href="app/uploads/kontrak/${encodeURIComponent(info.template.file)}" target="_blank">${escPreview(info.template.nama_kontrak || info.template.nama_asli || info.template.file)}</a>`
                 : `<span class="badge bg-warning text-dark">Belum ada template untuk jabatan ini</span>`;
             const noCell = manualNo
                 ? `<strong>${escPreview(manualNo)}</strong><br><small class="text-muted">Nomor urut manual</small>`

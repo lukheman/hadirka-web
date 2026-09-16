@@ -21,6 +21,7 @@
                         <thead class="table-info">
                             <tr>
                                 <th class="text-center" style="width: 5%;"><i class="fa fa-hashtag"></i> No</th>
+                                <th class="text-center"><i class="fa fa-file-contract"></i> Nama Kontrak</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Berlaku Untuk</th>
                                 <th class="text-center"><i class="fa fa-money-bill"></i> Nilai Kontrak</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
@@ -43,6 +44,10 @@
                 </div>
 
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Kontrak <span class="text-danger">*</span></label>
+                        <input type="text" name="nama_kontrak" class="form-control" maxlength="150" placeholder="cth: Kontrak Kerja Operator 2026" required>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Pilih File Word <span class="text-danger">*</span></label>
                         <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
@@ -313,11 +318,11 @@
                     }
                     const tbody = document.getElementById("tbodyTemplate");
                     if (res.status !== "success") {
-                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Gagal memuat data.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Gagal memuat data.</td></tr>`;
                         return;
                     }
                     if (!res.data.length) {
-                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Belum ada template. Klik Upload Template.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada template. Klik Upload Template.</td></tr>`;
                         return;
                     }
                     tbody.innerHTML = res.data.map((r, i) => {
@@ -333,20 +338,25 @@
                             `<span class="text-muted">Tunjangan: ${r.jml_tunjangan ?? 0} • Potongan: ${r.jml_potongan ?? 0}</span></small>`;
                         return `<tr>
                             <td class="text-center">${i + 1}</td>
+                            <td><strong>${escHtml(r.nama_kontrak || "-")}</strong></td>
                             <td>${badges}<br><small class="text-muted">${r.jml_jabatan} jabatan</small></td>
                             <td>${nilai}</td>
                             <td class="text-center">
                                 <a href="app/uploads/kontrak/${escHtml(r.file)}" target="_blank"
                                     class="btn btn-sm btn-info" title="Lihat file"><i class="fas fa-eye"></i></a>
                                 <button class="btn btn-sm btn-warning btnEditDetail" data-id="${r.id_template}"
-                                    data-nama="${escHtml(r.nama_asli || r.file)}"
+                                    data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}"
                                     data-gaji_pokok="${escHtml(d.gaji_pokok ?? 0)}"
                                     data-upah_lembur="${escHtml(d.upah_lembur ?? 0)}"
                                     data-potongan_izin="${escHtml(d.potongan_izin ?? 0)}"
                                     data-potongan_mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
                                     title="Edit nilai, tunjangan & potongan kontrak"><i class="fas fa-money-bill"></i> Nilai Kontrak</button>
+                                <button class="btn btn-sm btn-secondary btnRenameTemplate" data-id="${r.id_template}"
+                                    data-nama-kontrak="${escHtml(r.nama_kontrak || "")}" title="Ubah nama kontrak">
+                                    <i class="fas fa-pen"></i>
+                                </button>
                                 <button class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
-                                    data-nama="${escHtml(r.nama_asli || r.file)}" title="Hapus template">
+                                    data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}" title="Hapus template">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -356,7 +366,7 @@
                 })
                 .catch(() => {
                     document.getElementById("tbodyTemplate").innerHTML =
-                        `<tr><td colspan="4" class="text-center text-danger">Gagal menghubungi server.</td></tr>`;
+                        `<tr><td colspan="5" class="text-center text-danger">Gagal menghubungi server.</td></tr>`;
                 });
         }
 
@@ -661,6 +671,45 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save"></i> Upload';
+            }
+        });
+
+        document.addEventListener("click", async e => {
+            const btnRN = e.target.closest(".btnRenameTemplate");
+            if (btnRN) {
+                const current = btnRN.dataset.namaKontrak || "";
+                let nama = null;
+                if (typeof Swal !== "undefined") {
+                    const r = await Swal.fire({
+                        title: "Nama Kontrak",
+                        input: "text",
+                        inputValue: current,
+                        inputAttributes: { maxlength: 150 },
+                        showCancelButton: true,
+                        confirmButtonText: "Simpan",
+                        cancelButtonText: "Batal",
+                        inputValidator: v => (!v || !v.trim()) ? "Nama kontrak wajib diisi." : null
+                    });
+                    if (!r.isConfirmed) return;
+                    nama = r.value.trim();
+                } else {
+                    nama = window.prompt("Nama kontrak:", current);
+                    if (nama === null) return;
+                    nama = nama.trim();
+                    if (!nama) { showToast("Nama kontrak wajib diisi.", "warning"); return; }
+                }
+                const fd = new FormData();
+                fd.append("action", "rename");
+                fd.append("id_template", btnRN.dataset.id);
+                fd.append("nama_kontrak", nama);
+                try {
+                    const res = await (await fetch(API, { method: "POST", body: fd })).json();
+                    showToast(res.msg || "Selesai.", res.status === "success" ? "success" : "error");
+                    if (res.status === "success") loadTable();
+                } catch (err) {
+                    showToast("Terjadi kesalahan sistem.", "error");
+                }
+                return;
             }
         });
 
