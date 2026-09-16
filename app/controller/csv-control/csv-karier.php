@@ -105,6 +105,9 @@ try {
         
         $tgl_masuk_site = Excel::parseDate($row['T'] ?? '');
         $tgl_selesai_kontrak = Excel::parseDate($row['U'] ?? '');
+        $no_surat_raw = trim((string)($row['V'] ?? ''));
+        if (strlen($no_surat_raw) > 100) $no_surat_raw = substr($no_surat_raw, 0, 100);
+        $has_no_surat_col = array_key_exists('V', $row);
 
         // === Ambil ID referensi ===
         $id_site       = getId($koneksi, 'tb_site', 'nama_site', $nama_site, 'id_site');
@@ -139,6 +142,12 @@ try {
             }
 
             // Update Karier Terakhir
+            $no_surat_esc = $koneksi->real_escape_string($no_surat_raw);
+            $setNoSurat = '';
+            // Hanya timpa no_surat bila template Excel sudah ada kolom V (agar import lama tidak menghapus data)
+            if ($has_no_surat_col) {
+                $setNoSurat = $no_surat_raw !== '' ? ", no_surat='$no_surat_esc'" : ", no_surat=NULL";
+            }
             $koneksi->query("UPDATE tb_karier SET
                 id_site='$id_site', id_departemen='$id_departemen', id_jabatan='$id_jabatan', 
                 gaji_pokok=$basic,
@@ -146,18 +155,21 @@ try {
                 pot_izin=$pot_izin, 
                 pot_mangkir=$pot_mangkir,
                 " . implode(",", $setTanggal) . "
+                $setNoSurat
             WHERE id_karier='$id_karier'");
         } else {
             // Insert Baru jika belum ada data karier sama sekali
             $tglMulai = $tgl_masuk_site ?: date('Y-m-d');
             $tglSelesai = $tgl_selesai_kontrak ?: null;
+            $no_surat_esc = $koneksi->real_escape_string($no_surat_raw);
+            $no_surat_sql = $no_surat_raw !== '' ? "'$no_surat_esc'" : "NULL";
 
             $koneksi->query("INSERT INTO tb_karier (
                 id_karyawan, id_site, id_departemen, id_jabatan,
-                gaji_pokok, lembur, pot_izin, pot_mangkir, spl, ot1_spl, ot2_spl, tgl_mulai, tgl_selesai
+                gaji_pokok, lembur, pot_izin, pot_mangkir, spl, ot1_spl, ot2_spl, tgl_mulai, tgl_selesai, no_surat
             ) VALUES (
                 '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan', $basic, $lembur,
-                $pot_izin, $pot_mangkir, '', '', '', '$tglMulai', " . ($tglSelesai ? "'$tglSelesai'" : "NULL") . "
+                $pot_izin, $pot_mangkir, '', '', '', '$tglMulai', " . ($tglSelesai ? "'$tglSelesai'" : "NULL") . ", $no_surat_sql
             )");
             $id_karier = $koneksi->insert_id;
         }

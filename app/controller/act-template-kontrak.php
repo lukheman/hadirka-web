@@ -4,13 +4,39 @@
 // Satu template bisa berlaku untuk BANYAK jabatan.
 //
 // Actions (POST, response {status, msg|message, ...}):
-// - list          : daftar template + jabatan yang ditautkan
+// - list          : daftar template + jabatan yang ditautkan + detail nilai kontrak
 // - list_jabatan  : daftar jabatan untuk checkbox modal (GET/POST)
 // - upload        : file_pdf (PDF, maks 2MB) + id_jabatan[] (min 1)
-// - delete        : id_template (hapus pivot + baris + file fisik)
+//                   + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (opsional, default 0)
+// - save_detail   : id_template + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (upsert)
+// - list_tunjangan / save_tunjangan / delete_tunjangan   : tunjangan milik detail kontrak (tb_tunjangan_kontrak)
+// - list_potongan / save_potongan / delete_potongan       : potongan milik detail kontrak (tb_potongan_kontrak)
+// - delete        : id_template (hapus pivot + detail (cascade: tunjangan/potongan kontrak ikut terhapus) + baris + file fisik)
 
 header("Content-Type: application/json; charset=utf-8");
 require_once __DIR__ . '/../config/koneksi.php';
+
+// Nominal "1.500.000,50" -> float 1500000.50 (samakan dengan act-karier.php)
+function tpl_float($val)
+{
+    if (!isset($val) || $val === '') return 0;
+    $val = str_replace('.', '', (string)$val);
+    $val = str_replace(',', '.', $val);
+    return is_numeric($val) ? floatval($val) : 0;
+}
+
+// Pastikan baris detail ada untuk template (template lama belum punya), kembalikan id_detail.
+function tpl_ensure_detail($koneksi, $id_template)
+{
+    $id_template = (int)$id_template;
+    $q = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1");
+    if ($q && $q->num_rows > 0) return (int)$q->fetch_assoc()['id_detail'];
+    $koneksi->query(
+        "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) " .
+        "VALUES ('$id_template', 0, 0, 0, 0)"
+    );
+    return (int)$koneksi->insert_id;
+}
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 $upload_dir = __DIR__ . '/../uploads/kontrak/';
@@ -55,6 +81,22 @@ if ($action === 'list') {
         }
         $r['jabatan'] = $jab;
         $r['jml_jabatan'] = count($jab);
+        $qd = $koneksi->query(
+            "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
+            "FROM tb_detail_kontrak WHERE id_template = '$id' LIMIT 1"
+        );
+        $detail = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
+        $r['detail'] = $detail;
+        if ($detail) {
+            $id_detail = (int)$detail['id_detail'];
+            $qt = $koneksi->query("SELECT COUNT(*) AS n FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail'");
+            $qp = $koneksi->query("SELECT COUNT(*) AS n FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_detail'");
+            $r['jml_tunjangan'] = $qt ? (int)$qt->fetch_assoc()['n'] : 0;
+            $r['jml_potongan'] = $qp ? (int)$qp->fetch_assoc()['n'] : 0;
+        } else {
+            $r['jml_tunjangan'] = 0;
+            $r['jml_potongan'] = 0;
+        }
         $data[] = $r;
     }
     echo json_encode(['status' => 'success', 'data' => $data]);
@@ -106,6 +148,11 @@ if ($action === 'upload') {
             throw new Exception("Gagal mengupload file ke server.");
         }
 
+        $gaji_pokok      = tpl_float($_POST['gaji_pokok'] ?? 0);
+        $upah_lembur     = tpl_float($_POST['upah_lembur'] ?? 0);
+        $potongan_izin   = tpl_float($_POST['potongan_izin'] ?? 0);
+        $potongan_mangkir = tpl_float($_POST['potongan_mangkir'] ?? 0);
+
         $koneksi->begin_transaction();
         try {
             $stmt = $koneksi->prepare(
@@ -127,6 +174,14 @@ if ($action === 'upload') {
             }
             $stmt2->close();
 
+            $stmt3 = $koneksi->prepare(
+                "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) VALUES (?, ?, ?, ?, ?)"
+            );
+            if (!$stmt3) throw new Exception("Gagal menyiapkan detail: " . $koneksi->error);
+            $stmt3->bind_param("idddd", $id_template, $gaji_pokok, $upah_lembur, $potongan_izin, $potongan_mangkir);
+            if (!$stmt3->execute()) throw new Exception("Gagal menyimpan detail kontrak: " . $stmt3->error);
+            $stmt3->close();
+
             $koneksi->commit();
         } catch (Exception $e) {
             $koneksi->rollback();
@@ -140,6 +195,155 @@ if ($action === 'upload') {
     } catch (Exception $e) {
         tpl_json('error', $e->getMessage());
     }
+}
+
+// --- Simpan/ubah nilai kontrak (upsert) ---
+if ($action === 'save_detail') {
+    $id_template = (int)($_POST['id_template'] ?? 0);
+    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
+
+    $cek = $koneksi->query("SELECT id_template FROM tb_template_kontrak WHERE id_template = '$id_template'");
+    if (!$cek || $cek->num_rows === 0) tpl_json('error', 'Template tidak ditemukan.');
+
+    $gaji_pokok       = tpl_float($_POST['gaji_pokok'] ?? 0);
+    $upah_lembur      = tpl_float($_POST['upah_lembur'] ?? 0);
+    $potongan_izin    = tpl_float($_POST['potongan_izin'] ?? 0);
+    $potongan_mangkir = tpl_float($_POST['potongan_mangkir'] ?? 0);
+
+    $stmt = $koneksi->prepare(
+        "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) " .
+        "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE " .
+        "gaji_pokok = VALUES(gaji_pokok), upah_lembur = VALUES(upah_lembur), " .
+        "potongan_izin = VALUES(potongan_izin), potongan_mangkir = VALUES(potongan_mangkir)"
+    );
+    if (!$stmt) tpl_json('error', 'Gagal menyiapkan data: ' . $koneksi->error);
+    $stmt->bind_param("idddd", $id_template, $gaji_pokok, $upah_lembur, $potongan_izin, $potongan_mangkir);
+    if (!$stmt->execute()) tpl_json('error', 'Gagal menyimpan detail: ' . $stmt->error);
+    $stmt->close();
+
+    tpl_json('success', 'Nilai kontrak berhasil disimpan.');
+}
+
+// --- Tunjangan milik detail kontrak (tabel khusus tb_tunjangan_kontrak) ---
+if ($action === 'list_tunjangan') {
+    $id_template = (int)($_POST['id_template'] ?? $_GET['id_template'] ?? 0);
+    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
+    $id_detail = tpl_ensure_detail($koneksi, $id_template);
+    $rows = [];
+    $q = $koneksi->query(
+        "SELECT id_tunjangan_kontrak AS id_tunjangan, nama_tunjangan, jumlah_tunjangan " .
+        "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail' ORDER BY id_tunjangan_kontrak ASC"
+    );
+    if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
+    while ($r = $q->fetch_assoc()) $rows[] = $r;
+    echo json_encode(['status' => 'success', 'data' => $rows, 'id_detail' => $id_detail]);
+    exit;
+}
+
+if ($action === 'save_tunjangan') {
+    $id_template = (int)($_POST['id_template'] ?? 0);
+    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
+    $nama_raw = trim($_POST['nama_tunjangan'] ?? '');
+    if ($nama_raw === '') tpl_json('error', 'Nama tunjangan wajib diisi.');
+    if (strlen($nama_raw) > 25) tpl_json('error', 'Nama tunjangan maksimal 25 karakter.');
+    $jumlah_raw = $_POST['jumlah_tunjangan'] ?? '';
+    if ($jumlah_raw === '' || $jumlah_raw === null) tpl_json('error', 'Jumlah tunjangan wajib diisi.');
+    $jumlah = (string)tpl_float($jumlah_raw);
+    $id_detail = tpl_ensure_detail($koneksi, $id_template);
+    $nama = $koneksi->real_escape_string($nama_raw);
+    $jumlah_esc = $koneksi->real_escape_string($jumlah);
+
+    $id_tunjangan = (int)($_POST['id_tunjangan'] ?? 0);
+    if ($id_tunjangan > 0) {
+        $ok = $koneksi->query(
+            "UPDATE tb_tunjangan_kontrak SET nama_tunjangan = '$nama', jumlah_tunjangan = '$jumlah_esc' " .
+            "WHERE id_tunjangan_kontrak = '$id_tunjangan' AND id_detail_kontrak = '$id_detail'"
+        );
+        if (!$ok) tpl_json('error', 'Gagal mengupdate: ' . $koneksi->error);
+        if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
+        tpl_json('success', 'Tunjangan berhasil diupdate.');
+    } else {
+        $ok = $koneksi->query(
+            "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jumlah_tunjangan) " .
+            "VALUES ('$id_detail', '$nama', '$jumlah_esc')"
+        );
+        if (!$ok) tpl_json('error', 'Gagal menyimpan: ' . $koneksi->error);
+        tpl_json('success', 'Tunjangan berhasil ditambah.', ['id_tunjangan' => $koneksi->insert_id]);
+    }
+}
+
+if ($action === 'delete_tunjangan') {
+    $id_template = (int)($_POST['id_template'] ?? 0);
+    $id_tunjangan = (int)($_POST['id_tunjangan'] ?? 0);
+    if ($id_template <= 0 || $id_tunjangan <= 0) tpl_json('error', 'ID tidak valid.');
+    $id_detail = tpl_ensure_detail($koneksi, $id_template);
+    $ok = $koneksi->query(
+        "DELETE FROM tb_tunjangan_kontrak WHERE id_tunjangan_kontrak = '$id_tunjangan' AND id_detail_kontrak = '$id_detail'"
+    );
+    if (!$ok) tpl_json('error', 'Gagal menghapus: ' . $koneksi->error);
+    if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
+    tpl_json('success', 'Tunjangan berhasil dihapus.');
+}
+
+// --- Potongan milik detail kontrak (tabel khusus tb_potongan_kontrak) ---
+if ($action === 'list_potongan') {
+    $id_template = (int)($_POST['id_template'] ?? $_GET['id_template'] ?? 0);
+    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
+    $id_detail = tpl_ensure_detail($koneksi, $id_template);
+    $rows = [];
+    $q = $koneksi->query(
+        "SELECT id_potongan_kontrak AS id_potongan, jenis_potongan, jumlah_potongan " .
+        "FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_detail' ORDER BY id_potongan_kontrak ASC"
+    );
+    if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
+    while ($r = $q->fetch_assoc()) $rows[] = $r;
+    echo json_encode(['status' => 'success', 'data' => $rows, 'id_detail' => $id_detail]);
+    exit;
+}
+
+if ($action === 'save_potongan') {
+    $id_template = (int)($_POST['id_template'] ?? 0);
+    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
+    $jenis_raw = trim($_POST['jenis_potongan'] ?? '');
+    if ($jenis_raw === '') tpl_json('error', 'Nama potongan wajib diisi.');
+    if (strlen($jenis_raw) > 25) tpl_json('error', 'Nama potongan maksimal 25 karakter.');
+    $jumlah_raw = $_POST['jumlah_potongan'] ?? '';
+    if ($jumlah_raw === '' || $jumlah_raw === null) tpl_json('error', 'Jumlah potongan wajib diisi.');
+    $jumlah = (string)tpl_float($jumlah_raw);
+    $id_detail = tpl_ensure_detail($koneksi, $id_template);
+    $jenis = $koneksi->real_escape_string($jenis_raw);
+    $jumlah_esc = $koneksi->real_escape_string($jumlah);
+
+    $id_potongan = (int)($_POST['id_potongan'] ?? 0);
+    if ($id_potongan > 0) {
+        $ok = $koneksi->query(
+            "UPDATE tb_potongan_kontrak SET jenis_potongan = '$jenis', jumlah_potongan = '$jumlah_esc' " .
+            "WHERE id_potongan_kontrak = '$id_potongan' AND id_detail_kontrak = '$id_detail'"
+        );
+        if (!$ok) tpl_json('error', 'Gagal mengupdate: ' . $koneksi->error);
+        if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
+        tpl_json('success', 'Potongan berhasil diupdate.');
+    } else {
+        $ok = $koneksi->query(
+            "INSERT INTO tb_potongan_kontrak (id_detail_kontrak, jenis_potongan, jumlah_potongan) " .
+            "VALUES ('$id_detail', '$jenis', '$jumlah_esc')"
+        );
+        if (!$ok) tpl_json('error', 'Gagal menyimpan: ' . $koneksi->error);
+        tpl_json('success', 'Potongan berhasil ditambah.', ['id_potongan' => $koneksi->insert_id]);
+    }
+}
+
+if ($action === 'delete_potongan') {
+    $id_template = (int)($_POST['id_template'] ?? 0);
+    $id_potongan = (int)($_POST['id_potongan'] ?? 0);
+    if ($id_template <= 0 || $id_potongan <= 0) tpl_json('error', 'ID tidak valid.');
+    $id_detail = tpl_ensure_detail($koneksi, $id_template);
+    $ok = $koneksi->query(
+        "DELETE FROM tb_potongan_kontrak WHERE id_potongan_kontrak = '$id_potongan' AND id_detail_kontrak = '$id_detail'"
+    );
+    if (!$ok) tpl_json('error', 'Gagal menghapus: ' . $koneksi->error);
+    if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
+    tpl_json('success', 'Potongan berhasil dihapus.');
 }
 
 // --- Hapus template ---

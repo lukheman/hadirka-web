@@ -94,7 +94,8 @@ $headers = [
     'R1' => 'POTONGAN IZIN', 
     'S1' => 'POTONGAN MANGKIR', 
     'T1' => 'TGL MASUK SITE', 
-    'U1' => 'TGL SELESAI KONTRAK'
+    'U1' => 'TGL SELESAI KONTRAK',
+    'V1' => 'NO SURAT'
 ];
 
 // Set nilai header dan buat tulisan jadi bold
@@ -158,6 +159,7 @@ if ($result && $result->num_rows > 0) {
         $sheet->setCellValue('S' . $rowNum, $row['pot_mangkir']);
         $sheet->setCellValue('T' . $rowNum, $row['tgl_mulai']);
         $sheet->setCellValue('U' . $rowNum, $row['tgl_selesai']);
+        $sheet->setCellValue('V' . $rowNum, $row['no_surat'] ?? '');
 
         $rowNum++;
     }

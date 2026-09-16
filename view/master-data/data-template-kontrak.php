@@ -21,10 +21,8 @@
                         <thead class="table-info">
                             <tr>
                                 <th class="text-center" style="width: 5%;"><i class="fa fa-hashtag"></i> No</th>
-                                <th class="text-center"><i class="fa fa-file-word"></i> File Template</th>
-                                <th class="text-center"><i class="fa fa-hdd"></i> Ukuran</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Berlaku Untuk</th>
-                                <th class="text-center"><i class="fa fa-calendar"></i> Tgl Upload</th>
+                                <th class="text-center"><i class="fa fa-money-bill"></i> Nilai Kontrak</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
                             </tr>
                         </thead>
@@ -60,6 +58,26 @@
                             <span class="text-muted">Memuat jabatan...</span>
                         </div>
                     </div>
+                    <hr>
+                    <label class="form-label fw-bold">Nilai Kontrak</label>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Gaji Pokok</label>
+                            <input type="text" name="gaji_pokok" class="form-control nominal-mask" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Upah Lembur</label>
+                            <input type="text" name="upah_lembur" class="form-control nominal-mask" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Potongan Izin</label>
+                            <input type="text" name="potongan_izin" class="form-control nominal-mask" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Potongan Mangkir</label>
+                            <input type="text" name="potongan_mangkir" class="form-control nominal-mask" value="0">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer">
@@ -71,18 +89,120 @@
             </form>
         </div>
     </div>
+
+    <div class="modal fade" id="modalEditDetail" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="fas fa-money-bill"></i> Nilai Kontrak - <span id="labelEditDetail">-</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="fw-bold">Nilai Pokok</h6>
+                    <form id="formEditDetail">
+                        <input type="hidden" name="id_template">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Gaji Pokok</label>
+                                <input type="text" name="gaji_pokok" class="form-control nominal-mask">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Upah Lembur</label>
+                                <input type="text" name="upah_lembur" class="form-control nominal-mask">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Potongan Izin</label>
+                                <input type="text" name="potongan_izin" class="form-control nominal-mask">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Potongan Mangkir</label>
+                                <input type="text" name="potongan_mangkir" class="form-control nominal-mask">
+                            </div>
+                        </div>
+                        <div class="mt-2 text-end">
+                            <button type="submit" class="btn btn-warning" id="btnSaveDetail">
+                                <i class="fas fa-save"></i> Simpan Nilai
+                            </button>
+                        </div>
+                    </form>
+                    <hr>
+                    <h6 class="fw-bold"><i class="fa fa-money-bill"></i> Tunjangan</h6>
+                    <form id="formTplTunjangan" class="row g-2 align-items-end">
+                        <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
+                        <input type="hidden" name="id_tunjangan" id="tplTunjanganId">
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Tunjangan</label>
+                            <input type="text" name="nama_tunjangan" id="tplTunjanganNama" class="form-control" maxlength="25" placeholder="Contoh: Tunjangan Makan" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Jumlah (Rp)</label>
+                            <input type="text" name="jumlah_tunjangan" id="tplTunjanganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                        </div>
+                        <div class="col-md-3 d-flex gap-1">
+                            <button type="submit" class="btn btn-success" id="btnTplTunjanganSubmit">
+                                <i class="fa fa-save"></i> Simpan
+                            </button>
+                            <button type="button" class="btn btn-secondary d-none" id="btnTplTunjanganCancel">Batal</button>
+                        </div>
+                    </form>
+                    <div class="table-responsive mt-2">
+                        <table class="table table-bordered table-sm w-100">
+                            <thead class="table-info">
+                                <tr>
+                                    <th class="text-center" style="width:5%">No</th>
+                                    <th class="text-center">Nama Tunjangan</th>
+                                    <th class="text-center">Jumlah (Rp)</th>
+                                    <th class="text-center" style="width:15%">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyTplTunjangan"></tbody>
+                        </table>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold"><i class="fa fa-scissors"></i> Potongan</h6>
+                    <form id="formTplPotongan" class="row g-2 align-items-end">
+                        <input type="hidden" name="id_template" id="tplPotonganTemplateId">
+                        <input type="hidden" name="id_potongan" id="tplPotonganId">
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Potongan</label>
+                            <input type="text" name="jenis_potongan" id="tplPotonganNama" class="form-control" maxlength="25" placeholder="Contoh: BPJS" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Jumlah (Rp)</label>
+                            <input type="text" name="jumlah_potongan" id="tplPotonganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                        </div>
+                        <div class="col-md-3 d-flex gap-1">
+                            <button type="submit" class="btn btn-success" id="btnTplPotonganSubmit">
+                                <i class="fa fa-save"></i> Simpan
+                            </button>
+                            <button type="button" class="btn btn-secondary d-none" id="btnTplPotonganCancel">Batal</button>
+                        </div>
+                    </form>
+                    <div class="table-responsive mt-2">
+                        <table class="table table-bordered table-sm w-100">
+                            <thead class="table-info">
+                                <tr>
+                                    <th class="text-center" style="width:5%">No</th>
+                                    <th class="text-center">Nama Potongan</th>
+                                    <th class="text-center">Jumlah (Rp)</th>
+                                    <th class="text-center" style="width:15%">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyTplPotongan"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const API = "app/controller/act-template-kontrak.php";
-
-        function formatBytes(b) {
-            b = parseInt(b) || 0;
-            if (b < 1024) return b + " B";
-            if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
-            return (b / 1048576).toFixed(2) + " MB";
-        }
 
         function escHtml(s) {
             return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -151,30 +271,38 @@
                     }
                     const tbody = document.getElementById("tbodyTemplate");
                     if (res.status !== "success") {
-                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Gagal memuat data.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Gagal memuat data.</td></tr>`;
                         return;
                     }
                     if (!res.data.length) {
-                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada template. Klik Upload Template.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Belum ada template. Klik Upload Template.</td></tr>`;
                         return;
                     }
                     tbody.innerHTML = res.data.map((r, i) => {
                         const badges = (r.jabatan && r.jabatan.length)
                             ? r.jabatan.map(j => `<span class="badge bg-primary me-1 mb-1">${escHtml(j.nama_jabatan)}</span>`).join("")
                             : '<span class="badge bg-secondary">Tanpa jabatan</span>';
+                        const d = r.detail || {};
+                        const fmtRp = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
+                        const nilai = `<small>Gaji: <strong>${fmtRp(d.gaji_pokok)}</strong><br>` +
+                            `Lembur: <strong>${fmtRp(d.upah_lembur)}</strong><br>` +
+                            `Pot Izin: <strong>${fmtRp(d.potongan_izin)}</strong><br>` +
+                            `Pot Mangkir: <strong>${fmtRp(d.potongan_mangkir)}</strong><br>` +
+                            `<span class="text-muted">Tunjangan: ${r.jml_tunjangan ?? 0} • Potongan: ${r.jml_potongan ?? 0}</span></small>`;
                         return `<tr>
                             <td class="text-center">${i + 1}</td>
-                            <td>
-                                <i class="fas fa-file-word text-primary"></i>
-                                <strong>${escHtml(r.nama_asli || r.file)}</strong><br>
-                                <small class="text-muted">${escHtml(r.file)}</small>
-                            </td>
-                            <td class="text-center">${formatBytes(r.ukuran)}</td>
                             <td>${badges}<br><small class="text-muted">${r.jml_jabatan} jabatan</small></td>
-                            <td class="text-center">${escHtml(r.created_at || "-")}</td>
+                            <td>${nilai}</td>
                             <td class="text-center">
                                 <a href="app/uploads/kontrak/${escHtml(r.file)}" target="_blank"
                                     class="btn btn-sm btn-info" title="Lihat file"><i class="fas fa-eye"></i></a>
+                                <button class="btn btn-sm btn-warning btnEditDetail" data-id="${r.id_template}"
+                                    data-nama="${escHtml(r.nama_asli || r.file)}"
+                                    data-gaji_pokok="${escHtml(d.gaji_pokok ?? 0)}"
+                                    data-upah_lembur="${escHtml(d.upah_lembur ?? 0)}"
+                                    data-potongan_izin="${escHtml(d.potongan_izin ?? 0)}"
+                                    data-potongan_mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
+                                    title="Edit nilai, tunjangan & potongan kontrak"><i class="fas fa-money-bill"></i> Nilai Kontrak</button>
                                 <button class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
                                     data-nama="${escHtml(r.nama_asli || r.file)}" title="Hapus template">
                                     <i class="fas fa-trash"></i>
@@ -186,9 +314,275 @@
                 })
                 .catch(() => {
                     document.getElementById("tbodyTemplate").innerHTML =
-                        `<tr><td colspan="6" class="text-center text-danger">Gagal menghubungi server.</td></tr>`;
+                        `<tr><td colspan="4" class="text-center text-danger">Gagal menghubungi server.</td></tr>`;
                 });
         }
+
+        // Format masking nominal (titik ribuan, koma desimal) ala halaman karier
+        function formatIndo(val) {
+            if (val === undefined || val === null || val === '') return "0";
+            let parts = val.toString().split(".");
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return parts.join(",");
+        }
+        document.addEventListener("input", e => {
+            if (e.target.classList && e.target.classList.contains("nominal-mask")) {
+                let input = e.target;
+                let cursorPos = input.selectionStart;
+                let prevLength = input.value.length;
+                let val = input.value.replace(/[^0-9,]/g, "");
+                let parts = val.split(",");
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                input.value = parts.length > 2 ? parts[0] + "," + parts[1] : parts.join(",");
+                let diff = input.value.length - prevLength;
+                try { input.setSelectionRange(cursorPos + diff, cursorPos + diff); } catch (err) {}
+            }
+        });
+
+        // Tampilkan modal edit nilai kontrak (sekaligus tunjangan & potongan)
+        document.addEventListener("click", e => {
+            const btn = e.target.closest(".btnEditDetail");
+            if (!btn) return;
+            const form = document.getElementById("formEditDetail");
+            form.querySelector("input[name=id_template]").value = btn.dataset.id;
+            form.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gaji_pokok);
+            form.querySelector("input[name=upah_lembur]").value = formatIndo(btn.dataset.upah_lembur);
+            form.querySelector("input[name=potongan_izin]").value = formatIndo(btn.dataset.potongan_izin);
+            form.querySelector("input[name=potongan_mangkir]").value = formatIndo(btn.dataset.potongan_mangkir);
+            document.getElementById("labelEditDetail").textContent = btn.dataset.nama || "-";
+            document.getElementById("tplTunjanganTemplateId").value = btn.dataset.id;
+            document.getElementById("tplPotonganTemplateId").value = btn.dataset.id;
+            resetTplTunjanganForm();
+            resetTplPotonganForm();
+            loadTplTunjangan();
+            loadTplPotongan();
+            new bootstrap.Modal(document.getElementById("modalEditDetail")).show();
+        });
+
+        // Simpan nilai kontrak (upsert)
+        document.getElementById("formEditDetail").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById("btnSaveDetail");
+            btn.disabled = true;
+            try {
+                const fd = new FormData(this);
+                fd.append("action", "save_detail");
+                const res = await fetch(API, { method: "POST", body: fd });
+                const data = await res.json();
+                if (data.status === "success") {
+                    showToast(data.msg || "Nilai kontrak berhasil disimpan.", "success");
+                    bootstrap.Modal.getInstance(document.getElementById("modalEditDetail")).hide();
+                    loadTable();
+                } else {
+                    showToast(data.msg || "Gagal menyimpan.", "error");
+                }
+            } catch (err) {
+                showToast("Terjadi kesalahan sistem.", "error");
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // Simpan nilai kontrak (upsert)
+        document.getElementById("formEditDetail").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById("btnSaveDetail");
+            btn.disabled = true;
+            try {
+                const fd = new FormData(this);
+                fd.append("action", "save_detail");
+                const res = await fetch(API, { method: "POST", body: fd });
+                const data = await res.json();
+                if (data.status === "success") {
+                    showToast(data.msg || "Nilai kontrak berhasil disimpan.", "success");
+                    bootstrap.Modal.getInstance(document.getElementById("modalEditDetail")).hide();
+                    loadTable();
+                } else {
+                    showToast(data.msg || "Gagal menyimpan.", "error");
+                }
+            } catch (err) {
+                showToast("Terjadi kesalahan sistem.", "error");
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // --- Tunjangan milik detail kontrak ---
+        const fmtModalRp = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
+
+        function resetTplTunjanganForm() {
+            document.getElementById("tplTunjanganId").value = "";
+            document.getElementById("tplTunjanganNama").value = "";
+            document.getElementById("tplTunjanganJumlah").value = "";
+            document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Simpan';
+            document.getElementById("btnTplTunjanganCancel").classList.add("d-none");
+        }
+
+        function loadTplTunjangan() {
+            const id = document.getElementById("tplTunjanganTemplateId").value;
+            if (!id) return;
+            const fd = new FormData();
+            fd.append("action", "list_tunjangan");
+            fd.append("id_template", id);
+            fetch(API, { method: "POST", body: fd })
+                .then(res => res.json())
+                .then(res => {
+                    const tbody = document.getElementById("tbodyTplTunjangan");
+                    if (res.status !== "success" || !res.data.length) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Belum ada tunjangan.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = res.data.map((t, i) => `<tr>
+                        <td class="text-center">${i + 1}</td>
+                        <td>${escHtml(t.nama_tunjangan)}</td>
+                        <td class="text-end">${fmtModalRp(t.jumlah_tunjangan)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-warning btnTplTunjanganEdit"
+                                data-id="${t.id_tunjangan}" data-nama="${escHtml(t.nama_tunjangan)}"
+                                data-jumlah="${escHtml(t.jumlah_tunjangan)}">Edit</button>
+                            <button class="btn btn-sm btn-danger btnTplTunjanganDel"
+                                data-id="${t.id_tunjangan}"><i class="fa fa-trash"></i></button>
+                        </td>
+                    </tr>`).join("");
+                })
+                .catch(() => {
+                    document.getElementById("tbodyTplTunjangan").innerHTML =
+                        `<tr><td colspan="4" class="text-center text-danger">Gagal memuat.</td></tr>`;
+                });
+        }
+
+        // --- Potongan milik detail kontrak ---
+        function resetTplPotonganForm() {
+            document.getElementById("tplPotonganId").value = "";
+            document.getElementById("tplPotonganNama").value = "";
+            document.getElementById("tplPotonganJumlah").value = "";
+            document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="fa fa-save"></i> Simpan';
+            document.getElementById("btnTplPotonganCancel").classList.add("d-none");
+        }
+
+        function loadTplPotongan() {
+            const id = document.getElementById("tplPotonganTemplateId").value;
+            if (!id) return;
+            const fd = new FormData();
+            fd.append("action", "list_potongan");
+            fd.append("id_template", id);
+            fetch(API, { method: "POST", body: fd })
+                .then(res => res.json())
+                .then(res => {
+                    const tbody = document.getElementById("tbodyTplPotongan");
+                    if (res.status !== "success" || !res.data.length) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Belum ada potongan.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = res.data.map((p, i) => `<tr>
+                        <td class="text-center">${i + 1}</td>
+                        <td>${escHtml(p.jenis_potongan)}</td>
+                        <td class="text-end">${fmtModalRp(p.jumlah_potongan)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-warning btnTplPotonganEdit"
+                                data-id="${p.id_potongan}" data-nama="${escHtml(p.jenis_potongan)}"
+                                data-jumlah="${escHtml(p.jumlah_potongan)}">Edit</button>
+                            <button class="btn btn-sm btn-danger btnTplPotonganDel"
+                                data-id="${p.id_potongan}"><i class="fa fa-trash"></i></button>
+                        </td>
+                    </tr>`).join("");
+                })
+                .catch(() => {
+                    document.getElementById("tbodyTplPotongan").innerHTML =
+                        `<tr><td colspan="4" class="text-center text-danger">Gagal memuat.</td></tr>`;
+                });
+        }
+
+        document.addEventListener("click", e => {
+            const btnET = e.target.closest(".btnTplTunjanganEdit");
+            if (btnET) {
+                document.getElementById("tplTunjanganId").value = btnET.dataset.id;
+                document.getElementById("tplTunjanganNama").value = btnET.dataset.nama || "";
+                document.getElementById("tplTunjanganJumlah").value = formatIndo(btnET.dataset.jumlah);
+                document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Update';
+                document.getElementById("btnTplTunjanganCancel").classList.remove("d-none");
+                return;
+            }
+            const btnEP = e.target.closest(".btnTplPotonganEdit");
+            if (btnEP) {
+                document.getElementById("tplPotonganId").value = btnEP.dataset.id;
+                document.getElementById("tplPotonganNama").value = btnEP.dataset.nama || "";
+                document.getElementById("tplPotonganJumlah").value = formatIndo(btnEP.dataset.jumlah);
+                document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="fa fa-save"></i> Update';
+                document.getElementById("btnTplPotonganCancel").classList.remove("d-none");
+                return;
+            }
+        });
+
+        document.addEventListener("click", async e => {
+            const btnDT = e.target.closest(".btnTplTunjanganDel");
+            if (btnDT) {
+                if (await confirmDialog("Yakin hapus tunjangan ini?")) {
+                    const fd = new FormData();
+                    fd.append("action", "delete_tunjangan");
+                    fd.append("id_template", document.getElementById("tplTunjanganTemplateId").value);
+                    fd.append("id_tunjangan", btnDT.dataset.id);
+                    const res = await (await fetch(API, { method: "POST", body: fd })).json();
+                    showToast(res.msg || "Selesai.", res.status === "success" ? "success" : "error");
+                    if (res.status === "success") { loadTplTunjangan(); loadTable(); }
+                }
+                return;
+            }
+            const btnDP = e.target.closest(".btnTplPotonganDel");
+            if (btnDP) {
+                if (await confirmDialog("Yakin hapus potongan ini?")) {
+                    const fd = new FormData();
+                    fd.append("action", "delete_potongan");
+                    fd.append("id_template", document.getElementById("tplPotonganTemplateId").value);
+                    fd.append("id_potongan", btnDP.dataset.id);
+                    const res = await (await fetch(API, { method: "POST", body: fd })).json();
+                    showToast(res.msg || "Selesai.", res.status === "success" ? "success" : "error");
+                    if (res.status === "success") { loadTplPotongan(); loadTable(); }
+                }
+            }
+        });
+
+        document.getElementById("formTplTunjangan").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const isEdit = document.getElementById("tplTunjanganId").value !== "";
+            const fd = new FormData(this);
+            fd.append("action", "save_tunjangan");
+            try {
+                const res = await (await fetch(API, { method: "POST", body: fd })).json();
+                if (res.status === "success") {
+                    showToast(res.msg || "Berhasil.", "success");
+                    resetTplTunjanganForm();
+                    loadTplTunjangan();
+                    loadTable();
+                } else {
+                    showToast(res.msg || "Gagal menyimpan.", "error");
+                }
+            } catch (err) {
+                showToast("Terjadi kesalahan sistem.", "error");
+            }
+        });
+
+        document.getElementById("formTplPotongan").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const fd = new FormData(this);
+            fd.append("action", "save_potongan");
+            try {
+                const res = await (await fetch(API, { method: "POST", body: fd })).json();
+                if (res.status === "success") {
+                    showToast(res.msg || "Berhasil.", "success");
+                    resetTplPotonganForm();
+                    loadTplPotongan();
+                    loadTable();
+                } else {
+                    showToast(res.msg || "Gagal menyimpan.", "error");
+                }
+            } catch (err) {
+                showToast("Terjadi kesalahan sistem.", "error");
+            }
+        });
+
+        document.getElementById("btnTplTunjanganCancel").addEventListener("click", resetTplTunjanganForm);
+        document.getElementById("btnTplPotonganCancel").addEventListener("click", resetTplPotonganForm);
 
         document.getElementById("btnTambahTemplate").addEventListener("click", () => {
             document.getElementById("formUploadTemplate").reset();

@@ -116,6 +116,7 @@
                                 <th class="text-center">Pot Mangkir</th>
                                 <th class="text-center">Tgl Mulai</th>
                                 <th class="text-center">Tgl Selesai</th>
+                                <th class="text-center">No Surat</th>
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -224,6 +225,11 @@
                             <label>Tgl Selesai</label>
                             <input type="date" name="tgl_selesai" class="form-control">
                         </div>
+
+                        <div class="col-md-12">
+                            <label>No Surat Kontrak</label>
+                            <input type="text" name="no_surat" class="form-control" maxlength="100" placeholder="Ex: 344/TJS/V/2026">
+                        </div>
                     </div>
                 </div>
 
@@ -316,6 +322,11 @@
                         <div class="col-md-6">
                             <label>Tgl Selesai</label>
                             <input type="date" name="tgl_selesai" class="form-control">
+                        </div>
+
+                        <div class="col-md-12">
+                            <label>No Surat Kontrak</label>
+                            <input type="text" name="no_surat" class="form-control" maxlength="100" placeholder="Ex: 344/TJS/V/2026">
                         </div>
                     </div>
                 </div>
@@ -528,6 +539,7 @@
 
             form.querySelector("input[name=tgl_mulai]").value = btn.dataset.tgl_mulai;
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
+            form.querySelector("input[name=no_surat]").value = btn.dataset.no_surat || "";
 
             new bootstrap.Modal(document.getElementById("modalEditKarier")).show();
         });

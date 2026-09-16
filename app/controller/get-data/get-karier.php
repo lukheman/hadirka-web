@@ -89,6 +89,9 @@ while ($r = $q->fetch_assoc()) { ?>
         <td><?= $r['tgl_mulai'] ?></td>
         <td><?= $r['tgl_selesai'] ?></td>
 
+        <!-- No Surat Kontrak -->
+        <td><?= htmlspecialchars($r['no_surat'] ?? '', ENT_QUOTES) ?></td>
+
         <td class="text-center">
             <button type="button" class="btn btn-sm btn-info btnTunjangan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Tunjangan</button>
             <button type="button" class="btn btn-sm btn-info btnPotongan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Potongan</button>
@@ -121,7 +124,8 @@ while ($r = $q->fetch_assoc()) { ?>
                 data-pot_mangkir="<?= $r['pot_mangkir'] ?>"
 
                 data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
-                data-tgl_selesai="<?= $r['tgl_selesai'] ?>">
+                data-tgl_selesai="<?= $r['tgl_selesai'] ?>"
+                data-no_surat="<?= htmlspecialchars($r['no_surat'] ?? '', ENT_QUOTES) ?>">
 
                 Edit
             </button>
