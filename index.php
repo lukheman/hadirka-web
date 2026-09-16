@@ -459,7 +459,10 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
     <script>
         $(document).ready(function() {
             // Initialize Select2
-            $('.select-search').select2({
+            // Catatan: select di dalam .modal dilewati — di-init per-modal
+            // dengan dropdownParent agar dropdown tidak tertutup backdrop
+            // modal (kelihatan seperti "tidak ada data").
+            $('.select-search').not('.modal .select-search').select2({
                 placeholder: "Pilih opsi...",
                 allowClear: true
             });

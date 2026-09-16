@@ -167,7 +167,7 @@
 
                         <div class="col-md-4">
                             <label>Departemen</label>
-                            <select name="id_departemen" class="form-control" required>
+                            <select name="id_departemen" class="form-control select-search" required>
                                 <option value="">-- Pilih Departemen --</option>
                                 <?php
                                 $departemens = $koneksi->query("SELECT * FROM tb_departemen ORDER BY nama_departemen ASC");
@@ -180,7 +180,7 @@
 
                         <div class="col-md-4">
                             <label>Jabatan</label>
-                            <select name="id_jabatan" class="form-control" required>
+                            <select name="id_jabatan" class="form-control select-search" required>
                                 <option value="">-- Pilih Jabatan --</option>
                                 <?php
                                 $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
@@ -271,7 +271,8 @@
 
                         <div class="col-md-4">
                             <label>Departemen</label>
-                            <select name="id_departemen" class="form-control" required>
+                            <select name="id_departemen" class="form-control select-search" required>
+                                <option value="">-- Pilih Departemen --</option>
                                 <?php
                                 $departemens = $koneksi->query("SELECT * FROM tb_departemen ORDER BY nama_departemen ASC");
                                 while ($d = $departemens->fetch_assoc()) {
@@ -283,7 +284,8 @@
 
                         <div class="col-md-4">
                             <label>Jabatan</label>
-                            <select name="id_jabatan" class="form-control" required>
+                            <select name="id_jabatan" class="form-control select-search" required>
+                                <option value="">-- Pilih Jabatan --</option>
                                 <?php
                                 $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
                                 while ($j = $jabatans->fetch_assoc()) {
@@ -414,6 +416,46 @@
                 // Sesuaikan kembali posisi kursor ketikan agar tidak melompat
                 let diff = input.value.length - prevLength;
                 input.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            }
+        });
+
+        // --- SELECT2 BISA DICARI UNTUK DEPARTEMEN & JABATAN (dalam modal) ---
+        // Select2 di dalam modal Bootstrap WAJIB memakai dropdownParent.
+        // Tanpa itu dropdown menempel ke <body> dan tertutup backdrop modal
+        // sehingga terlihat seperti "tidak ada data".
+        // Init global di index.php sengaja melewati select dalam modal, jadi
+        // inisialisasi di sini langsung saat DOM siap (tanpa menunggu window
+        // load) + dipastikan ulang setiap modal dibuka.
+        function initKarierSelect2() {
+            ["#modalTambahKarier", "#modalEditKarier"].forEach(function(modal) {
+                $(modal + " .select-search").each(function() {
+                    if ($(this).hasClass("select2-hidden-accessible")) $(this).select2("destroy");
+                    $(this).select2({
+                        dropdownParent: $(modal),
+                        width: "100%",
+                        placeholder: "Ketik untuk mencari...",
+                        allowClear: true
+                    });
+                });
+            });
+        }
+        initKarierSelect2();
+        ["modalTambahKarier", "modalEditKarier"].forEach(function(id) {
+            var modalEl = document.getElementById(id);
+            if (modalEl) {
+                modalEl.addEventListener("shown.bs.modal", function() {
+                    // Pengaman: init select yang belum terpasang Select2.
+                    $(this).find(".select-search").each(function() {
+                        if (!$(this).hasClass("select2-hidden-accessible")) {
+                            $(this).select2({
+                                dropdownParent: $(this).closest(".modal"),
+                                width: "100%",
+                                placeholder: "Ketik untuk mencari...",
+                                allowClear: true
+                            });
+                        }
+                    });
+                });
             }
         });
 
@@ -638,11 +680,12 @@
             const form = document.getElementById("formTambahKarier");
             if (!form || form.dataset.nosuratBound) return;
             form.dataset.nosuratBound = "1";
-            form.querySelector("select[name=id_jabatan]").addEventListener("change", () => {
+            // Pakai jQuery .on agar change dari Select2 ikut tertangkap.
+            $(form).find("select[name=id_jabatan]").on("change", () => {
                 refreshAddNoSurat();
                 autoIsiNilaiKontrak();
             });
-            form.querySelector("input[name=tgl_mulai]").addEventListener("change", refreshAddNoSurat);
+            $(form).find("input[name=tgl_mulai]").on("change", refreshAddNoSurat);
             document.getElementById("modalTambahKarier").addEventListener("show.bs.modal", refreshAddNoSurat);
         })();
 
@@ -652,6 +695,10 @@
             if (!form.checkValidity()) { form.reportValidity(); return; }
             const fd = new FormData(form);
             // id_karyawan diambil otomatis dari dropdown <select name="id_karyawan">
+            // Select2 menyembunyikan select asli sehingga validasi required bawaan terlewat — cek manual.
+            for (const [k, label] of [["id_site", "Site"], ["id_departemen", "Departemen"], ["id_jabatan", "Jabatan"]]) {
+                if (!fd.get(k)) { showToast("Pilih " + label + " terlebih dahulu.", "warning"); return; }
+            }
 
             const pf = new FormData();
             pf.append("action", "preview_info");
@@ -691,6 +738,7 @@
                         bootstrap.Modal.getInstance(document.getElementById("modalPreviewKarier")).hide();
                         bootstrap.Modal.getInstance(document.getElementById("modalTambahKarier")).hide();
                         document.getElementById("formTambahKarier").reset();
+                        $("#formTambahKarier select.select-search").val("").trigger("change");
                         document.getElementById("addNoSuratPreview").textContent = "—";
                         document.getElementById("addNoSuratWarning").innerHTML = "";
                     } else {
@@ -711,6 +759,9 @@
             form.querySelector("select[name=id_site]").value = btn.dataset.id_site;
             form.querySelector("select[name=id_departemen]").value = btn.dataset.id_departemen;
             form.querySelector("select[name=id_jabatan]").value = btn.dataset.id_jabatan;
+            // Sinkronkan tampilan Select2
+            $(form.querySelector("select[name=id_departemen]")).trigger("change");
+            $(form.querySelector("select[name=id_jabatan]")).trigger("change");
 
             // KOREKSI: Gunakan fungsi formatIndo agar data pecahan langsung bermasker titik koma di modal edit
             form.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gaji_pokok);
