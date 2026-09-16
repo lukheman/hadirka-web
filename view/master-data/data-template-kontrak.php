@@ -63,19 +63,31 @@
                     <div class="row g-2">
                         <div class="col-md-6">
                             <label class="form-label">Gaji Pokok</label>
-                            <input type="text" name="gaji_pokok" class="form-control nominal-mask" value="0">
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" name="gaji_pokok" class="form-control nominal-mask" value="0">
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Upah Lembur</label>
-                            <input type="text" name="upah_lembur" class="form-control nominal-mask" value="0">
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" name="upah_lembur" class="form-control nominal-mask" value="0">
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Potongan Izin</label>
-                            <input type="text" name="potongan_izin" class="form-control nominal-mask" value="0">
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" name="potongan_izin" class="form-control nominal-mask" value="0">
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Potongan Mangkir</label>
-                            <input type="text" name="potongan_mangkir" class="form-control nominal-mask" value="0">
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" name="potongan_mangkir" class="form-control nominal-mask" value="0">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -98,25 +110,46 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <h6 class="fw-bold">Nilai Pokok</h6>
+                    <ul class="nav nav-tabs" id="tabDetailKontrak" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tab-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-nilai" type="button" role="tab" aria-controls="tab-nilai" aria-selected="true">Nilai Pokok</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-tp-tab" data-bs-toggle="tab" data-bs-target="#tab-tp" type="button" role="tab" aria-controls="tab-tp" aria-selected="false">Tunjangan &amp; Potongan</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3">
+                        <div class="tab-pane fade show active" id="tab-nilai" role="tabpanel" aria-labelledby="tab-nilai-tab">
                     <form id="formEditDetail">
                         <input type="hidden" name="id_template">
                         <div class="row g-2">
                             <div class="col-md-3">
                                 <label class="form-label">Gaji Pokok</label>
-                                <input type="text" name="gaji_pokok" class="form-control nominal-mask">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" name="gaji_pokok" class="form-control nominal-mask">
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Upah Lembur</label>
-                                <input type="text" name="upah_lembur" class="form-control nominal-mask">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" name="upah_lembur" class="form-control nominal-mask">
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Potongan Izin</label>
-                                <input type="text" name="potongan_izin" class="form-control nominal-mask">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" name="potongan_izin" class="form-control nominal-mask">
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Potongan Mangkir</label>
-                                <input type="text" name="potongan_mangkir" class="form-control nominal-mask">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" name="potongan_mangkir" class="form-control nominal-mask">
+                                </div>
                             </div>
                         </div>
                         <div class="mt-2 text-end">
@@ -125,7 +158,8 @@
                             </button>
                         </div>
                     </form>
-                    <hr>
+                        </div>
+                        <div class="tab-pane fade" id="tab-tp" role="tabpanel" aria-labelledby="tab-tp-tab">
                     <h6 class="fw-bold"><i class="fa fa-money-bill"></i> Tunjangan</h6>
                     <form id="formTplTunjangan" class="row g-2 align-items-end">
                         <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
@@ -136,7 +170,10 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Jumlah (Rp)</label>
-                            <input type="text" name="jumlah_tunjangan" id="tplTunjanganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" name="jumlah_tunjangan" id="tplTunjanganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                            </div>
                         </div>
                         <div class="col-md-3 d-flex gap-1">
                             <button type="submit" class="btn btn-success" id="btnTplTunjanganSubmit">
@@ -169,7 +206,10 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Jumlah (Rp)</label>
-                            <input type="text" name="jumlah_potongan" id="tplPotonganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" name="jumlah_potongan" id="tplPotonganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                            </div>
                         </div>
                         <div class="col-md-3 d-flex gap-1">
                             <button type="submit" class="btn btn-success" id="btnTplPotonganSubmit">
@@ -190,6 +230,8 @@
                             </thead>
                             <tbody id="tbodyTplPotongan"></tbody>
                         </table>
+                    </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -356,6 +398,8 @@
             resetTplPotonganForm();
             loadTplTunjangan();
             loadTplPotongan();
+            const tabNilai = document.querySelector('#tabDetailKontrak button[data-bs-target="#tab-nilai"]');
+            if (tabNilai) bootstrap.Tab.getOrCreateInstance(tabNilai).show();
             new bootstrap.Modal(document.getElementById("modalEditDetail")).show();
         });
 
