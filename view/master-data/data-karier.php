@@ -158,6 +158,14 @@
                             </div>
                         </div>
 
+                        <!-- Template Kontrak (pilih bila jabatan punya lebih dari satu) -->
+                        <div class="col-md-12">
+                            <label>Template Kontrak <small class="text-muted">(ganti template menimpa nilai di bawah)</small></label>
+                            <select name="id_template" class="form-control">
+                                <option value="">-- Pilih jabatan terlebih dahulu --</option>
+                            </select>
+                        </div>
+
                         <!-- Nomor urut manual (opsional, hanya 4 digit) -->
                         <div class="col-md-12">
                             <label>Nomor Urut <small class="text-muted">(opsional — 4 digit, kosongkan untuk otomatis)</small></label>
@@ -442,8 +450,9 @@
             const fd = new FormData(form);
             const rp = v => (v == null || v === "" || v === "0") ? "-" : "Rp " + v;
             const manualNo = composeManualNoSurat(form, info);
-            const tplCell = info.template
-                ? `<a href="app/uploads/kontrak/${encodeURIComponent(info.template.file)}" target="_blank">${escPreview(info.template.nama_kontrak || info.template.nama_asli || info.template.file)}</a>`
+            const tpl = chosenTemplate(form, info);
+            const tplCell = tpl
+                ? `<a href="app/uploads/kontrak/${encodeURIComponent(tpl.file)}" target="_blank">${escPreview(tpl.nama_kontrak || tpl.nama_asli || tpl.file)}</a>`
                 : `<span class="badge bg-warning text-dark">Belum ada template untuk jabatan ini</span>`;
             const noCell = manualNo
                 ? `<strong>${escPreview(manualNo)}</strong><br><small class="text-muted">Nomor urut manual</small>`
@@ -559,8 +568,52 @@
                 .catch(() => { if (my === addNoSuratSeq) prev.textContent = "—"; });
         }
 
+        // --- TEMPLATE KONTRAK PILIHAN SAAT JABATAN DIPILIH ---
+        // Bila satu jabatan punya beberapa template, user memilih yang dipakai;
+        // nilai kontrak mengisi field yang masih kosong agar input manual tidak tertimpa.
+        let karierTemplates = [];
+        function templateLabel(t) {
+            return t.nama_kontrak || t.nama_asli || t.file || ("Template #" + t.id_template);
+        }
+        function renderTemplateOptions(form, keepSelected) {
+            const sel = form.querySelector("select[name=id_template]");
+            if (!sel) return;
+            const prev = keepSelected ? sel.value : "";
+            if (!karierTemplates.length) {
+                sel.innerHTML = `<option value="">Belum ada template untuk jabatan ini</option>`;
+                return;
+            }
+            sel.innerHTML = karierTemplates.map(t =>
+                `<option value="${t.id_template}">${escPreview(templateLabel(t))}</option>`
+            ).join("");
+            const stillThere = prev && karierTemplates.some(t => String(t.id_template) === String(prev));
+            sel.value = stillThere ? prev : String(karierTemplates[0].id_template);
+        }
+        function isiNilaiDariTemplate(form, force) {
+            const sel = form.querySelector("select[name=id_template]");
+            const t = karierTemplates.find(x => sel && String(x.id_template) === String(sel.value)) || karierTemplates[0];
+            if (!t || !t.detail || typeof formatIndo !== "function") return;
+            const map = {
+                gaji_pokok: "gaji_pokok",
+                lembur: "upah_lembur",
+                pot_izin: "potongan_izin",
+                pot_mangkir: "potongan_mangkir"
+            };
+            Object.keys(map).forEach(name => {
+                const el = form.querySelector(`input[name=${name}]`);
+                if (!el) return;
+                // Isi bila kolom masih kosong, kecuali ganti template eksplisit (force) yang menimpa nilai.
+                const angka = String(el.value || "").replace(/[^0-9]/g, "").replace(/^0+/, "");
+                if (angka === "" || force) el.value = formatIndo(t.detail[map[name]] ?? 0);
+            });
+        }
+        function chosenTemplate(form, info) {
+            if (info && Array.isArray(info.templates)) karierTemplates = info.templates;
+            const sel = form.querySelector("select[name=id_template]");
+            return karierTemplates.find(x => sel && String(x.id_template) === String(sel.value)) ||
+                karierTemplates[0] || (info && info.template) || null;
+        }
         // --- AUTO-ISI NILAI DARI DETAIL KONTRAK SAAT JABATAN DIPILIH ---
-        // Hanya mengisi field yang masih kosong/nol agar input manual tidak tertimpa.
         function autoIsiNilaiKontrak() {
             const form = document.getElementById("formTambahKarier");
             if (!form || typeof formatIndo !== "function") return;
@@ -572,19 +625,10 @@
             fetch("app/controller/act-template-kontrak.php", { method: "POST", body: pf })
                 .then(res => res.json())
                 .then(res => {
-                    if (res.status !== "success" || !res.detail) return;
-                    const map = {
-                        gaji_pokok: "gaji_pokok",
-                        lembur: "upah_lembur",
-                        pot_izin: "potongan_izin",
-                        pot_mangkir: "potongan_mangkir"
-                    };
-                    Object.keys(map).forEach(name => {
-                        const el = form.querySelector(`input[name=${name}]`);
-                        if (!el) return;
-                        const angka = String(el.value || "").replace(/[^0-9]/g, "").replace(/^0+/, "");
-                        if (angka === "") el.value = formatIndo(res.detail[map[name]] ?? 0);
-                    });
+                    if (res.status !== "success") return;
+                    karierTemplates = Array.isArray(res.templates) ? res.templates : [];
+                    renderTemplateOptions(form, false);
+                    isiNilaiDariTemplate(form);
                 })
                 .catch(() => {});
         }
@@ -597,6 +641,9 @@
             $(form).find("select[name=id_jabatan]").on("change", () => {
                 refreshAddNoSurat();
                 autoIsiNilaiKontrak();
+            });
+            $(form).find("select[name=id_template]").on("change", () => {
+                isiNilaiDariTemplate(form, true);
             });
             $(form).find("input[name=tgl_mulai]").on("change", refreshAddNoSurat);
             $(form).find("input[name=no_urut]").on("input", refreshAddNoSurat);
@@ -648,11 +695,15 @@
                 .then(res => {
                     if (res.status == "success") {
                         loadKarier();
-                        showToast("Karier berhasil ditambah!" + (res.no_surat ? " No: " + res.no_surat : ""), "success");
+                        const salin = ((res.tunjangan || 0) + (res.potongan || 0) > 0) ?
+                            ` (${res.tunjangan || 0} tunjangan, ${res.potongan || 0} potongan tersalin)` : "";
+                        showToast("Karier berhasil ditambah!" + (res.no_surat ? " No: " + res.no_surat : "") + salin, "success");
                         // toastr.success("Berhasil menghapus!");
                         bootstrap.Modal.getInstance(document.getElementById("modalPreviewKarier")).hide();
                         bootstrap.Modal.getInstance(document.getElementById("modalTambahKarier")).hide();
                         document.getElementById("formTambahKarier").reset();
+                        karierTemplates = [];
+                        renderTemplateOptions(document.getElementById("formTambahKarier"), false);
                         $("#formTambahKarier select.select-search").val("").trigger("change");
                         document.getElementById("addNoSuratPreview").textContent = "—";
                         document.getElementById("addNoSuratWarning").innerHTML = "";

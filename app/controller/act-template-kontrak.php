@@ -10,6 +10,8 @@
 //                   + id_jabatan[] (min 1)
 //                   + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (opsional, default 0)
 // - rename        : id_template + nama_kontrak (ubah nama kontrak)
+// - update        : id_template + nama_kontrak + id_jabatan[] (min 1)
+//                   + file_pdf opsional (pengganti, Word maks 2MB)
 // - save_detail   : id_template + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (upsert)
 // - list_tunjangan / save_tunjangan / delete_tunjangan   : tunjangan milik detail kontrak (tb_tunjangan_kontrak)
 // - list_potongan / save_potongan / delete_potongan       : potongan milik detail kontrak (tb_potongan_kontrak)
@@ -227,6 +229,93 @@ if ($action === 'rename') {
     tpl_json('success', 'Nama kontrak berhasil disimpan.');
 }
 
+// --- Ubah template (nama, jabatan tertaut, opsional ganti file) ---
+if ($action === 'update') {
+    try {
+        $id_template = (int)($_POST['id_template'] ?? 0);
+        if ($id_template <= 0) throw new Exception("ID template tidak valid.");
+
+        $q = $koneksi->query("SELECT `file` FROM tb_template_kontrak WHERE id_template = '$id_template' LIMIT 1");
+        $lama = $q ? $q->fetch_assoc() : null;
+        if (!$lama) throw new Exception("Template tidak ditemukan.");
+
+        $nama_kontrak = trim($_POST['nama_kontrak'] ?? '');
+        if ($nama_kontrak === '') throw new Exception("Nama kontrak wajib diisi.");
+        if (strlen($nama_kontrak) > 150) throw new Exception("Nama kontrak maksimal 150 karakter.");
+
+        $ids = $_POST['id_jabatan'] ?? [];
+        if (!is_array($ids)) $ids = [$ids];
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), function ($v) {
+            return $v > 0;
+        })));
+        if (empty($ids)) throw new Exception("Pilih minimal satu jabatan.");
+
+        $in = implode(',', $ids);
+        $cek = $koneksi->query("SELECT COUNT(*) AS n FROM tb_jabatan WHERE id_jabatan IN ($in)");
+        $n = $cek ? (int)$cek->fetch_assoc()['n'] : 0;
+        if ($n !== count($ids)) throw new Exception("Ada jabatan yang tidak valid.");
+
+        // File pengganti (opsional, kosongkan bila tidak diganti).
+        $new_file = null;
+        $file_name = null;
+        $file_size = null;
+        if (isset($_FILES['file_pdf']) && $_FILES['file_pdf']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['file_pdf']['error'] !== UPLOAD_ERR_OK) throw new Exception("Gagal membaca file pengganti.");
+            $file_tmp  = $_FILES['file_pdf']['tmp_name'];
+            $file_name = $_FILES['file_pdf']['name'];
+            $file_size = (int)$_FILES['file_pdf']['size'];
+            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            if (!in_array($file_ext, ['doc', 'docx'], true)) throw new Exception("Format file harus .doc atau .docx (Word).");
+            if ($file_size > 2097152) throw new Exception("Ukuran file maksimal 2 MB.");
+            if (!is_dir($upload_dir) && !mkdir($upload_dir, 0755, true)) throw new Exception("Gagal menyiapkan folder upload.");
+            $new_file = 'template_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $file_ext;
+            if (!move_uploaded_file($file_tmp, $upload_dir . $new_file)) throw new Exception("Gagal mengupload file ke server.");
+        }
+
+        $koneksi->begin_transaction();
+        try {
+            if ($new_file !== null) {
+                $stmt = $koneksi->prepare(
+                    "UPDATE tb_template_kontrak SET nama_kontrak = ?, `file` = ?, nama_asli = ?, ukuran = ? WHERE id_template = ?"
+                );
+                if (!$stmt) throw new Exception("Gagal menyiapkan data: " . $koneksi->error);
+                $stmt->bind_param("sssii", $nama_kontrak, $new_file, $file_name, $file_size, $id_template);
+            } else {
+                $stmt = $koneksi->prepare("UPDATE tb_template_kontrak SET nama_kontrak = ? WHERE id_template = ?");
+                if (!$stmt) throw new Exception("Gagal menyiapkan data: " . $koneksi->error);
+                $stmt->bind_param("si", $nama_kontrak, $id_template);
+            }
+            if (!$stmt->execute()) throw new Exception("Gagal menyimpan template: " . $stmt->error);
+            $stmt->close();
+
+            if (!$koneksi->query("DELETE FROM tb_template_kontrak_jabatan WHERE id_template = '$id_template'")) {
+                throw new Exception("Gagal memperbarui relasi: " . $koneksi->error);
+            }
+            $stmt2 = $koneksi->prepare(
+                "INSERT INTO tb_template_kontrak_jabatan (id_template, id_jabatan) VALUES (?, ?)"
+            );
+            if (!$stmt2) throw new Exception("Gagal menyiapkan relasi: " . $koneksi->error);
+            foreach ($ids as $id_jab) {
+                $stmt2->bind_param("ii", $id_template, $id_jab);
+                if (!$stmt2->execute()) throw new Exception("Gagal menautkan jabatan: " . $stmt2->error);
+            }
+            $stmt2->close();
+            $koneksi->commit();
+        } catch (Exception $e) {
+            $koneksi->rollback();
+            if ($new_file !== null) @unlink($upload_dir . $new_file);
+            throw $e;
+        }
+
+        if ($new_file !== null && !empty($lama['file']) && file_exists($upload_dir . $lama['file'])) {
+            @unlink($upload_dir . $lama['file']);
+        }
+        tpl_json('success', 'Template berhasil diperbarui.');
+    } catch (Exception $e) {
+        tpl_json('error', $e->getMessage());
+    }
+}
+
 // --- Simpan/ubah nilai kontrak (upsert) ---
 if ($action === 'save_detail') {
     $id_template = (int)($_POST['id_template'] ?? 0);
@@ -391,20 +480,26 @@ if ($action === 'preview_info') {
     $qt = $koneksi->query(
         "SELECT t.id_template, t.nama_kontrak, t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
         "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-        "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC LIMIT 1"
+        "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC"
     );
-    $tpl = ($qt && $qt->num_rows > 0) ? $qt->fetch_assoc() : null;
-
-    // Nilai kontrak dari detail template (untuk prefill form tambah karier).
-    $detail = null;
-    if ($tpl && !empty($tpl['id_template'])) {
-        $id_tpl = (int)$tpl['id_template'];
-        $qd = $koneksi->query(
-            "SELECT gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
-            "FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1"
-        );
-        if ($qd && $qd->num_rows > 0) $detail = $qd->fetch_assoc();
+    // Semua template yang berlaku untuk jabatan (+ detail nilai masing-masing)
+    // agar user bisa memilih bila jumlahnya lebih dari satu.
+    $templates = [];
+    if ($qt) {
+        while ($tr = $qt->fetch_assoc()) {
+            $id_tpl = (int)$tr['id_template'];
+            $qd = $koneksi->query(
+                "SELECT gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
+                "FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1"
+            );
+            $tr['detail'] = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
+            $templates[] = $tr;
+        }
     }
+    $tpl = $templates[0] ?? null;
+
+    // Nilai kontrak dari detail template terbaru (untuk prefill form tambah karier).
+    $detail = $tpl['detail'] ?? null;
 
     $tahun = preg_match('/^(\d{4})-\d{2}-\d{2}$/', $tgl_mulai, $m) ? $m[1] : date('Y');
     $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
@@ -417,6 +512,7 @@ if ($action === 'preview_info') {
         'tahun' => $tahun,
         'no_surat_preview' => $kode !== '' ? sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode, $next, $tahun) : null,
         'template' => $tpl,
+        'templates' => $templates,
         'detail' => $detail,
     ]);
 }

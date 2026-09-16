@@ -184,7 +184,38 @@ try {
                 if ((int)$koneksi->errno === 1062) throw new Exception("Nomor surat ganda, silakan ulangi simpan.");
                 throw new Exception($stmt->error);
             }
-            $response = ['status' => 'success', 'no_surat' => $no_surat];
+            $id_karier_baru = $stmt->insert_id;
+            $stmt->close();
+
+            // Salin tunjangan & potongan dari template kontrak terpilih ke karier baru.
+            $id_template = intval($_POST['id_template'] ?? 0);
+            $n_tunjangan = 0;
+            $n_potongan = 0;
+            if ($id_template > 0) {
+                $qDet = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1");
+                if ($qDet && $qDet->num_rows > 0) {
+                    $id_detail = (int)$qDet->fetch_assoc()['id_detail'];
+                    if ($koneksi->query(
+                        "INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jumlah_tunjangan) " .
+                        "SELECT '$id_karier_baru', nama_tunjangan, jumlah_tunjangan " .
+                        "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail'"
+                    )) {
+                        $n_tunjangan = $koneksi->affected_rows;
+                    } else {
+                        throw new Exception("Karier tersimpan, tetapi tunjangan template gagal disalin: " . $koneksi->error);
+                    }
+                    if ($koneksi->query(
+                        "INSERT INTO tb_potongan (id_karier, jenis_potongan, jumlah_potongan) " .
+                        "SELECT '$id_karier_baru', jenis_potongan, jumlah_potongan " .
+                        "FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_detail'"
+                    )) {
+                        $n_potongan = $koneksi->affected_rows;
+                    } else {
+                        throw new Exception("Karier tersimpan, tetapi potongan template gagal disalin: " . $koneksi->error);
+                    }
+                }
+            }
+            $response = ['status' => 'success', 'no_surat' => $no_surat, 'tunjangan' => $n_tunjangan, 'potongan' => $n_potongan];
         }
 
         // EDIT (nomor surat bisa dikoreksi manual; kosong = tanpa nomor)

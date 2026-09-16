@@ -107,135 +107,168 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalEditDetail" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalEditTemplate" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title"><i class="fas fa-money-bill"></i> Nilai Kontrak - <span id="labelEditDetail">-</span></h5>
+                    <h5 class="modal-title"><i class="fas fa-pen"></i> Edit Template Kontrak</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+
                 <div class="modal-body">
-                    <ul class="nav nav-tabs" id="tabDetailKontrak" role="tablist">
+                    <ul class="nav nav-tabs" id="tabEditTemplate" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="tab-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-nilai" type="button" role="tab" aria-controls="tab-nilai" aria-selected="true">Nilai Pokok</button>
+                            <button class="nav-link active" id="tab-et-template-tab" data-bs-toggle="tab" data-bs-target="#tab-et-template" type="button" role="tab" aria-controls="tab-et-template" aria-selected="true">Template</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-tp-tab" data-bs-toggle="tab" data-bs-target="#tab-tp" type="button" role="tab" aria-controls="tab-tp" aria-selected="false">Tunjangan &amp; Potongan</button>
+                            <button class="nav-link" id="tab-et-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-et-nilai" type="button" role="tab" aria-controls="tab-et-nilai" aria-selected="false">Nilai Kontrak</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-et-tp-tab" data-bs-toggle="tab" data-bs-target="#tab-et-tp" type="button" role="tab" aria-controls="tab-et-tp" aria-selected="false">Tunjangan &amp; Potongan</button>
                         </li>
                     </ul>
                     <div class="tab-content pt-3">
-                        <div class="tab-pane fade show active" id="tab-nilai" role="tabpanel" aria-labelledby="tab-nilai-tab">
-                    <form id="formEditDetail">
-                        <input type="hidden" name="id_template">
-                        <div class="row g-2">
-                            <div class="col-md-3">
-                                <label class="form-label">Gaji Pokok</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="text" name="gaji_pokok" class="form-control nominal-mask">
+                        <div class="tab-pane fade show active" id="tab-et-template" role="tabpanel" aria-labelledby="tab-et-template-tab">
+                            <form id="formEditTemplate" enctype="multipart/form-data">
+                                <input type="hidden" name="id_template" id="editTemplateId">
+                                <div class="mb-3">
+                                    <label class="form-label">Nama Kontrak <span class="text-danger">*</span></label>
+                                    <input type="text" name="nama_kontrak" id="editTemplateNama" class="form-control" maxlength="150" placeholder="cth: Kontrak Kerja Operator 2026" required>
                                 </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Upah Lembur</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="text" name="upah_lembur" class="form-control nominal-mask">
+                                <div class="mb-3">
+                                    <label class="form-label">Ganti File Word <small class="text-muted">(opsional — kosongkan bila tidak diganti)</small></label>
+                                    <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                                    <small class="text-muted">File saat ini: <span id="editTemplateFile">-</span>. Format .doc/.docx, maksimal 2 MB.</small>
                                 </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Potongan Izin</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="text" name="potongan_izin" class="form-control nominal-mask">
+                                <div class="mb-3">
+                                    <label class="form-label">Berlaku Untuk Jabatan <span class="text-danger">*</span></label>
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" class="form-check-input" id="checkAllJabatanEdit">
+                                        <label class="form-check-label fw-bold" for="checkAllJabatanEdit">Pilih Semua</label>
+                                    </div>
+                                    <div id="listJabatanEdit" class="border rounded p-3" style="max-height: 260px; overflow-y: auto;">
+                                        <span class="text-muted">Memuat jabatan...</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Potongan Mangkir</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="text" name="potongan_mangkir" class="form-control nominal-mask">
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-warning" id="btnUpdateTemplate">
+                                        <i class="fas fa-save"></i> Simpan Template
+                                    </button>
                                 </div>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="tab-et-nilai" role="tabpanel" aria-labelledby="tab-et-nilai-tab">
+                            <form id="formEditDetail">
+                                <input type="hidden" name="id_template">
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Gaji Pokok</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" name="gaji_pokok" class="form-control nominal-mask">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Upah Lembur</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" name="upah_lembur" class="form-control nominal-mask">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Potongan Izin</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" name="potongan_izin" class="form-control nominal-mask">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Potongan Mangkir</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" name="potongan_mangkir" class="form-control nominal-mask">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-end">
+                                    <button type="submit" class="btn btn-warning" id="btnSaveDetail">
+                                        <i class="fas fa-save"></i> Simpan Nilai
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="tab-et-tp" role="tabpanel" aria-labelledby="tab-et-tp-tab">
+                            <h6 class="fw-bold"><i class="fa fa-money-bill"></i> Tunjangan</h6>
+                            <form id="formTplTunjangan" class="row g-2 align-items-end">
+                                <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
+                                <input type="hidden" name="id_tunjangan" id="tplTunjanganId">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nama Tunjangan</label>
+                                    <input type="text" name="nama_tunjangan" id="tplTunjanganNama" class="form-control" maxlength="25" placeholder="Contoh: Tunjangan Makan" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Jumlah (Rp)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" name="jumlah_tunjangan" id="tplTunjanganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 d-flex gap-1">
+                                    <button type="submit" class="btn btn-success" id="btnTplTunjanganSubmit">
+                                        <i class="fa fa-save"></i> Simpan
+                                    </button>
+                                    <button type="button" class="btn btn-secondary d-none" id="btnTplTunjanganCancel">Batal</button>
+                                </div>
+                            </form>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-bordered table-sm w-100">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th class="text-center" style="width:5%">No</th>
+                                            <th class="text-center">Nama Tunjangan</th>
+                                            <th class="text-center">Jumlah (Rp)</th>
+                                            <th class="text-center" style="width:15%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyTplTunjangan"></tbody>
+                                </table>
                             </div>
-                        </div>
-                        <div class="mt-2 text-end">
-                            <button type="submit" class="btn btn-warning" id="btnSaveDetail">
-                                <i class="fas fa-save"></i> Simpan Nilai
-                            </button>
-                        </div>
-                    </form>
-                        </div>
-                        <div class="tab-pane fade" id="tab-tp" role="tabpanel" aria-labelledby="tab-tp-tab">
-                    <h6 class="fw-bold"><i class="fa fa-money-bill"></i> Tunjangan</h6>
-                    <form id="formTplTunjangan" class="row g-2 align-items-end">
-                        <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
-                        <input type="hidden" name="id_tunjangan" id="tplTunjanganId">
-                        <div class="col-md-6">
-                            <label class="form-label">Nama Tunjangan</label>
-                            <input type="text" name="nama_tunjangan" id="tplTunjanganNama" class="form-control" maxlength="25" placeholder="Contoh: Tunjangan Makan" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Jumlah (Rp)</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="text" name="jumlah_tunjangan" id="tplTunjanganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                            <hr>
+                            <h6 class="fw-bold"><i class="fa fa-scissors"></i> Potongan</h6>
+                            <form id="formTplPotongan" class="row g-2 align-items-end">
+                                <input type="hidden" name="id_template" id="tplPotonganTemplateId">
+                                <input type="hidden" name="id_potongan" id="tplPotonganId">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nama Potongan</label>
+                                    <input type="text" name="jenis_potongan" id="tplPotonganNama" class="form-control" maxlength="25" placeholder="Contoh: BPJS" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Jumlah (Rp)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" name="jumlah_potongan" id="tplPotonganJumlah" class="form-control nominal-mask" placeholder="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 d-flex gap-1">
+                                    <button type="submit" class="btn btn-success" id="btnTplPotonganSubmit">
+                                        <i class="fa fa-save"></i> Simpan
+                                    </button>
+                                    <button type="button" class="btn btn-secondary d-none" id="btnTplPotonganCancel">Batal</button>
+                                </div>
+                            </form>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-bordered table-sm w-100">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th class="text-center" style="width:5%">No</th>
+                                            <th class="text-center">Nama Potongan</th>
+                                            <th class="text-center">Jumlah (Rp)</th>
+                                            <th class="text-center" style="width:15%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyTplPotongan"></tbody>
+                                </table>
                             </div>
-                        </div>
-                        <div class="col-md-3 d-flex gap-1">
-                            <button type="submit" class="btn btn-success" id="btnTplTunjanganSubmit">
-                                <i class="fa fa-save"></i> Simpan
-                            </button>
-                            <button type="button" class="btn btn-secondary d-none" id="btnTplTunjanganCancel">Batal</button>
-                        </div>
-                    </form>
-                    <div class="table-responsive mt-2">
-                        <table class="table table-bordered table-sm w-100">
-                            <thead class="table-info">
-                                <tr>
-                                    <th class="text-center" style="width:5%">No</th>
-                                    <th class="text-center">Nama Tunjangan</th>
-                                    <th class="text-center">Jumlah (Rp)</th>
-                                    <th class="text-center" style="width:15%">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbodyTplTunjangan"></tbody>
-                        </table>
-                    </div>
-                    <hr>
-                    <h6 class="fw-bold"><i class="fa fa-scissors"></i> Potongan</h6>
-                    <form id="formTplPotongan" class="row g-2 align-items-end">
-                        <input type="hidden" name="id_template" id="tplPotonganTemplateId">
-                        <input type="hidden" name="id_potongan" id="tplPotonganId">
-                        <div class="col-md-6">
-                            <label class="form-label">Nama Potongan</label>
-                            <input type="text" name="jenis_potongan" id="tplPotonganNama" class="form-control" maxlength="25" placeholder="Contoh: BPJS" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Jumlah (Rp)</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="text" name="jumlah_potongan" id="tplPotonganJumlah" class="form-control nominal-mask" placeholder="0" required>
-                            </div>
-                        </div>
-                        <div class="col-md-3 d-flex gap-1">
-                            <button type="submit" class="btn btn-success" id="btnTplPotonganSubmit">
-                                <i class="fa fa-save"></i> Simpan
-                            </button>
-                            <button type="button" class="btn btn-secondary d-none" id="btnTplPotonganCancel">Batal</button>
-                        </div>
-                    </form>
-                    <div class="table-responsive mt-2">
-                        <table class="table table-bordered table-sm w-100">
-                            <thead class="table-info">
-                                <tr>
-                                    <th class="text-center" style="width:5%">No</th>
-                                    <th class="text-center">Nama Potongan</th>
-                                    <th class="text-center">Jumlah (Rp)</th>
-                                    <th class="text-center" style="width:15%">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbodyTplPotongan"></tbody>
-                        </table>
-                    </div>
                         </div>
                     </div>
                 </div>
@@ -245,6 +278,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -304,6 +338,108 @@
             document.querySelectorAll(".chk-jabatan").forEach(c => c.checked = this.checked);
         });
 
+        // Checkbox daftar jabatan untuk modal edit (dengan pra-pilih tautan saat ini)
+        function loadJabatanEdit(selectedIds) {
+            const box = document.getElementById("listJabatanEdit");
+            const selected = new Set((selectedIds || []).map(String));
+            box.innerHTML = '<span class="text-muted">Memuat jabatan...</span>';
+            fetch(API, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "action=list_jabatan"
+                })
+                .then(async res => {
+                    const text = await res.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error("list_jabatan bukan JSON:", text);
+                        throw new Error("Respon server tidak valid.");
+                    }
+                })
+                .then(res => {
+                    if (res.status !== "success") {
+                        throw new Error(res.msg || res.message || "Gagal memuat jabatan.");
+                    }
+                    if (!res.data.length) {
+                        box.innerHTML = '<span class="text-muted">Belum ada data jabatan. Tambahkan dulu di menu Data Jabatan.</span>';
+                        return;
+                    }
+                    box.innerHTML = res.data.map(j =>
+                        `<div class="form-check">
+                            <input type="checkbox" class="form-check-input chk-jabatan-edit" name="id_jabatan[]"
+                                value="${j.id_jabatan}" id="jabedit_${j.id_jabatan}"${selected.has(String(j.id_jabatan)) ? " checked" : ""}>
+                            <label class="form-check-label" for="jabedit_${j.id_jabatan}">${escHtml(j.nama_jabatan)}</label>
+                        </div>`
+                    ).join("");
+                    const all = box.querySelectorAll(".chk-jabatan-edit");
+                    document.getElementById("checkAllJabatanEdit").checked =
+                        all.length > 0 && box.querySelectorAll(".chk-jabatan-edit:checked").length === all.length;
+                })
+                .catch(err => {
+                    console.error("loadJabatanEdit:", err);
+                    box.innerHTML =
+                        '<span class="text-danger">Gagal memuat jabatan: ' + escHtml(err.message || err) + '</span>';
+                });
+        }
+
+        document.getElementById("checkAllJabatanEdit").addEventListener("change", function() {
+            document.querySelectorAll(".chk-jabatan-edit").forEach(c => c.checked = this.checked);
+        });
+
+        // Buka modal edit template (template, nilai kontrak, tunjangan & potongan) dengan prefill
+        document.addEventListener("click", e => {
+            const btn = e.target.closest(".btnEditTemplate");
+            if (!btn) return;
+            document.getElementById("formEditTemplate").reset();
+            document.getElementById("editTemplateId").value = btn.dataset.id;
+            document.getElementById("editTemplateNama").value = btn.dataset.namaKontrak || "";
+            document.getElementById("editTemplateFile").textContent = btn.dataset.file || "-";
+            const ids = (btn.dataset.jabatanIds || "").split(",").map(s => s.trim()).filter(Boolean);
+            loadJabatanEdit(ids);
+            const formD = document.getElementById("formEditDetail");
+            formD.querySelector("input[name=id_template]").value = btn.dataset.id;
+            formD.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gajiPokok);
+            formD.querySelector("input[name=upah_lembur]").value = formatIndo(btn.dataset.upahLembur);
+            formD.querySelector("input[name=potongan_izin]").value = formatIndo(btn.dataset.potonganIzin);
+            formD.querySelector("input[name=potongan_mangkir]").value = formatIndo(btn.dataset.potonganMangkir);
+            document.getElementById("tplTunjanganTemplateId").value = btn.dataset.id;
+            document.getElementById("tplPotonganTemplateId").value = btn.dataset.id;
+            resetTplTunjanganForm();
+            resetTplPotonganForm();
+            loadTplTunjangan();
+            loadTplPotongan();
+            const tabTpl = document.querySelector('#tabEditTemplate button[data-bs-target="#tab-et-template"]');
+            if (tabTpl) bootstrap.Tab.getOrCreateInstance(tabTpl).show();
+            new bootstrap.Modal(document.getElementById("modalEditTemplate")).show();
+        });
+
+        document.getElementById("formEditTemplate").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            if (!document.querySelector(".chk-jabatan-edit:checked")) {
+                showToast("Pilih minimal satu jabatan.", "warning");
+                return;
+            }
+            const btn = document.getElementById("btnUpdateTemplate");
+            btn.disabled = true;
+            try {
+                const fd = new FormData(this);
+                fd.append("action", "update");
+                const res = await (await fetch(API, { method: "POST", body: fd })).json();
+                if (res.status === "success") {
+                    showToast(res.msg || "Template berhasil diperbarui.", "success");
+                    bootstrap.Modal.getInstance(document.getElementById("modalEditTemplate")).hide();
+                    loadTable();
+                } else {
+                    showToast(res.msg || "Gagal menyimpan.", "error");
+                }
+            } catch (err) {
+                showToast("Terjadi kesalahan sistem.", "error");
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
         // Tabel template
         function loadTable() {
             fetch(API, {
@@ -344,17 +480,15 @@
                             <td class="text-center">
                                 <a href="app/uploads/kontrak/${escHtml(r.file)}" target="_blank"
                                     class="btn btn-sm btn-info" title="Lihat file"><i class="fas fa-eye"></i></a>
-                                <button class="btn btn-sm btn-warning btnEditDetail" data-id="${r.id_template}"
-                                    data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}"
+                                <button class="btn btn-sm btn-primary btnEditTemplate" data-id="${r.id_template}"
+                                    data-nama-kontrak="${escHtml(r.nama_kontrak || "")}"
+                                    data-file="${escHtml(r.nama_asli || r.file)}"
+                                    data-jabatan-ids="${(r.jabatan || []).map(j => j.id_jabatan).join(",")}"
                                     data-gaji_pokok="${escHtml(d.gaji_pokok ?? 0)}"
                                     data-upah_lembur="${escHtml(d.upah_lembur ?? 0)}"
                                     data-potongan_izin="${escHtml(d.potongan_izin ?? 0)}"
                                     data-potongan_mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
-                                    title="Edit nilai, tunjangan & potongan kontrak"><i class="fas fa-money-bill"></i> Nilai Kontrak</button>
-                                <button class="btn btn-sm btn-secondary btnRenameTemplate" data-id="${r.id_template}"
-                                    data-nama-kontrak="${escHtml(r.nama_kontrak || "")}" title="Ubah nama kontrak">
-                                    <i class="fas fa-pen"></i>
-                                </button>
+                                    title="Edit template, nilai & tunjangan"><i class="fas fa-pen"></i> Edit</button>
                                 <button class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
                                     data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}" title="Hapus template">
                                     <i class="fas fa-trash"></i>
@@ -391,29 +525,7 @@
             }
         });
 
-        // Tampilkan modal edit nilai kontrak (sekaligus tunjangan & potongan)
-        document.addEventListener("click", e => {
-            const btn = e.target.closest(".btnEditDetail");
-            if (!btn) return;
-            const form = document.getElementById("formEditDetail");
-            form.querySelector("input[name=id_template]").value = btn.dataset.id;
-            form.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gaji_pokok);
-            form.querySelector("input[name=upah_lembur]").value = formatIndo(btn.dataset.upah_lembur);
-            form.querySelector("input[name=potongan_izin]").value = formatIndo(btn.dataset.potongan_izin);
-            form.querySelector("input[name=potongan_mangkir]").value = formatIndo(btn.dataset.potongan_mangkir);
-            document.getElementById("labelEditDetail").textContent = btn.dataset.nama || "-";
-            document.getElementById("tplTunjanganTemplateId").value = btn.dataset.id;
-            document.getElementById("tplPotonganTemplateId").value = btn.dataset.id;
-            resetTplTunjanganForm();
-            resetTplPotonganForm();
-            loadTplTunjangan();
-            loadTplPotongan();
-            const tabNilai = document.querySelector('#tabDetailKontrak button[data-bs-target="#tab-nilai"]');
-            if (tabNilai) bootstrap.Tab.getOrCreateInstance(tabNilai).show();
-            new bootstrap.Modal(document.getElementById("modalEditDetail")).show();
-        });
-
-        // Simpan nilai kontrak (upsert)
+        // Simpan nilai kontrak (upsert, modal tetap terbuka)
         document.getElementById("formEditDetail").addEventListener("submit", async function(e) {
             e.preventDefault();
             const btn = document.getElementById("btnSaveDetail");
@@ -425,31 +537,6 @@
                 const data = await res.json();
                 if (data.status === "success") {
                     showToast(data.msg || "Nilai kontrak berhasil disimpan.", "success");
-                    bootstrap.Modal.getInstance(document.getElementById("modalEditDetail")).hide();
-                    loadTable();
-                } else {
-                    showToast(data.msg || "Gagal menyimpan.", "error");
-                }
-            } catch (err) {
-                showToast("Terjadi kesalahan sistem.", "error");
-            } finally {
-                btn.disabled = false;
-            }
-        });
-
-        // Simpan nilai kontrak (upsert)
-        document.getElementById("formEditDetail").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById("btnSaveDetail");
-            btn.disabled = true;
-            try {
-                const fd = new FormData(this);
-                fd.append("action", "save_detail");
-                const res = await fetch(API, { method: "POST", body: fd });
-                const data = await res.json();
-                if (data.status === "success") {
-                    showToast(data.msg || "Nilai kontrak berhasil disimpan.", "success");
-                    bootstrap.Modal.getInstance(document.getElementById("modalEditDetail")).hide();
                     loadTable();
                 } else {
                     showToast(data.msg || "Gagal menyimpan.", "error");
@@ -671,45 +758,6 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save"></i> Upload';
-            }
-        });
-
-        document.addEventListener("click", async e => {
-            const btnRN = e.target.closest(".btnRenameTemplate");
-            if (btnRN) {
-                const current = btnRN.dataset.namaKontrak || "";
-                let nama = null;
-                if (typeof Swal !== "undefined") {
-                    const r = await Swal.fire({
-                        title: "Nama Kontrak",
-                        input: "text",
-                        inputValue: current,
-                        inputAttributes: { maxlength: 150 },
-                        showCancelButton: true,
-                        confirmButtonText: "Simpan",
-                        cancelButtonText: "Batal",
-                        inputValidator: v => (!v || !v.trim()) ? "Nama kontrak wajib diisi." : null
-                    });
-                    if (!r.isConfirmed) return;
-                    nama = r.value.trim();
-                } else {
-                    nama = window.prompt("Nama kontrak:", current);
-                    if (nama === null) return;
-                    nama = nama.trim();
-                    if (!nama) { showToast("Nama kontrak wajib diisi.", "warning"); return; }
-                }
-                const fd = new FormData();
-                fd.append("action", "rename");
-                fd.append("id_template", btnRN.dataset.id);
-                fd.append("nama_kontrak", nama);
-                try {
-                    const res = await (await fetch(API, { method: "POST", body: fd })).json();
-                    showToast(res.msg || "Selesai.", res.status === "success" ? "success" : "error");
-                    if (res.status === "success") loadTable();
-                } catch (err) {
-                    showToast("Terjadi kesalahan sistem.", "error");
-                }
-                return;
             }
         });
 
