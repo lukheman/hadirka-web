@@ -1,8 +1,9 @@
 <?php
-// Partial: modal upload File Kontrak + logika Tunjangan & Potongan untuk halaman karier.
+// Partial: modal upload File Kontrak + logika tab Tunjangan dan tab Potongan untuk halaman karier.
 // Dipakai oleh view/master-data/data-karier.php dan view/master-akses/import-karier.php.
-// Form + tabel Tunjangan/Potongan kini berada di tab modal Edit Karier
-// (fragment-karier-tunjangan-potongan.php); fungsi di bawah mengisinya.
+// Form + tabel Tunjangan/Potongan kini berada di tab Tunjangan dan tab Potongan
+// pada modal Edit Karier (fragment-karier-tunjangan.php & fragment-karier-potongan.php);
+// fungsi di bawah mengisinya.
 ?>
 <!-- Modal Upload File Kontrak per Karier -->
 <div class="modal fade" id="modalKarierKontrak" tabindex="-1" aria-hidden="true">

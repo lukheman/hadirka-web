@@ -207,7 +207,10 @@
                             <button class="nav-link active" id="tab-edit-data-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-data" type="button" role="tab" aria-controls="tab-edit-data" aria-selected="true">Data Karier</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-edit-tp-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-tp" type="button" role="tab" aria-controls="tab-edit-tp" aria-selected="false">Tunjangan &amp; Potongan</button>
+                            <button class="nav-link" id="tab-edit-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-tunjangan" type="button" role="tab" aria-controls="tab-edit-tunjangan" aria-selected="false">Tunjangan</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-edit-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-potongan" type="button" role="tab" aria-controls="tab-edit-potongan" aria-selected="false">Potongan</button>
                         </li>
                     </ul>
                     <div class="tab-content pt-3">
@@ -314,8 +317,11 @@
                             </div>
                             </form>
                         </div>
-                        <div class="tab-pane fade" id="tab-edit-tp" role="tabpanel" aria-labelledby="tab-edit-tp-tab">
-                            <?php include __DIR__ . '/fragment-karier-tunjangan-potongan.php'; ?>
+                        <div class="tab-pane fade" id="tab-edit-tunjangan" role="tabpanel" aria-labelledby="tab-edit-tunjangan-tab">
+                            <?php include __DIR__ . '/fragment-karier-tunjangan.php'; ?>
+                        </div>
+                        <div class="tab-pane fade" id="tab-edit-potongan" role="tabpanel" aria-labelledby="tab-edit-potongan-tab">
+                            <?php include __DIR__ . '/fragment-karier-potongan.php'; ?>
                         </div>
                     </div>
                 </div>
@@ -789,7 +795,7 @@
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
             form.querySelector("input[name=no_surat]").value = btn.dataset.no_surat || "";
 
-            // Isi tab Tunjangan & Potongan + kembali ke tab Data Karier
+            // Isi tab Tunjangan & tab Potongan + kembali ke tab Data Karier
             if (typeof window.setKarierTp === "function") window.setKarierTp(btn.dataset.idKarierEnc, btn.dataset.nama);
             const tabData = document.querySelector('#tabEditKarier button[data-bs-target="#tab-edit-data"]');
             if (tabData) bootstrap.Tab.getOrCreateInstance(tabData).show();
