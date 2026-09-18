@@ -99,7 +99,10 @@ while ($r = $q->fetch_assoc()) { ?>
             <?php if (!empty($fileKontrak)) { ?>
             <a href="app/uploads/kontrak/<?= rawurlencode($fileKontrak) ?>" target="_blank" class="btn btn-sm btn-success" title="Lihat File Kontrak"><i class="fa fa-file-pdf"></i></a>
             <?php } ?>
+            <a href="app/controller/generate-kontrak.php?action=preview&id_karier=<?= $r['id_karier'] ?>" target="_blank" class="btn btn-sm btn-dark" title="Preview surat kontrak (PDF)"><i class="fa fa-eye"></i> Preview</a>
+            <a href="app/controller/generate-kontrak.php?action=download&id_karier=<?= $r['id_karier'] ?>" class="btn btn-sm btn-success" title="Generate & unduh surat kontrak (Word)"><i class="fa fa-download"></i> Kontrak</a>
             <button type="button" class="btn btn-sm btn-secondary btnUploadKontrak" data-id="<?= $r['id_karier'] ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>" data-file="<?= htmlspecialchars($fileKontrak, ENT_QUOTES) ?>" title="<?= !empty($fileKontrak) ? 'Ganti File Kontrak' : 'Upload File Kontrak' ?>"><i class="fa fa-upload"></i></button>
+            <a href="app/controller/cetak/cetak-kontrak.php?id_karier=<?= $r['id_karier'] ?>" target="_blank" class="btn btn-sm btn-success" title="Cetak kontrak (Word)"><i class="fa fa-print"></i></a>
 
             <?php if (!$id) { ?>
             <button class="btn btn-warning btn-sm btnExtendKarier"

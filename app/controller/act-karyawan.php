@@ -369,27 +369,28 @@ if ($action == "edit") {
         $sql_i = "UPDATE tb_identitas SET " . implode(", ", $upd_i) . " WHERE id_karyawan = '$id'";
         $koneksi->query($sql_i);
 
-        // 3. Update data karier
-        $karier_data = [
-            'id_site'    => input('id_site'),
-            'id_departemen' => input('id_departemen'),
-            'id_jabatan' => input('id_jabatan'),
-            'tgl_mulai' => input('tgl_mulai'),
-            'tgl_selesai' => input('tgl_selesai'),
-        ];
-
-        $upd_kar = [];
-        foreach ($karier_data as $k => $v) {
-            // CEK: Jika data kosong dan field-nya adalah tanggal, set sebagai NULL (tanpa kutip)
-            if ($v === '' && in_array($k, ['tgl_mulai', 'tgl_selesai'])) {
-                $upd_kar[] = "$k = NULL";
-            } else {
-                $upd_kar[] = "$k = '$v'"; // Set normal pakai kutip
-            }
+        // 3. Update data karier (hanya jika field penempatan dikirim form;
+        //    form edit karyawan tidak lagi memuatnya, jadi lewati agar tidak menimpa)
+        $karier_keys = ['id_site', 'id_departemen', 'id_jabatan', 'tgl_mulai', 'tgl_selesai'];
+        $karier_data = [];
+        foreach ($karier_keys as $k) {
+            if (array_key_exists($k, $_POST)) $karier_data[$k] = input($k);
         }
 
-        $sql_kar = "UPDATE tb_karier SET " . implode(",", $upd_kar) . " WHERE id_karyawan='$id'";
-        $koneksi->query($sql_kar);
+        if (!empty($karier_data)) {
+            $upd_kar = [];
+            foreach ($karier_data as $k => $v) {
+                // CEK: Jika data kosong dan field-nya adalah tanggal, set sebagai NULL (tanpa kutip)
+                if ($v === '' && in_array($k, ['tgl_mulai', 'tgl_selesai'])) {
+                    $upd_kar[] = "$k = NULL";
+                } else {
+                    $upd_kar[] = "$k = '$v'"; // Set normal pakai kutip
+                }
+            }
+
+            $sql_kar = "UPDATE tb_karier SET " . implode(",", $upd_kar) . " WHERE id_karyawan='$id'";
+            $koneksi->query($sql_kar);
+        }
 
         // 4. Update data kontak darurat
         // Strategi: Hapus semua kontak lama milik karyawan ini, lalu insert ulang yang baru dari form.

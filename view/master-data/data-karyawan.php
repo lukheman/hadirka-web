@@ -663,38 +663,6 @@
                 </div>
 
                 <hr>
-                <h6>Penempatan Kerja</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="mt-3">Site</label>
-                        <select id="edit_id_site" name="id_site" class="form-control">
-                            <option value="">-- Pilih Site --</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="mt-3">Departemen</label>
-                        <select id="edit_id_departemen" name="id_departemen" class="form-control">
-                            <option value="">-- Pilih Departemen --</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="mt-3">Jabatan</label>
-                        <select id="edit_id_jabatan" name="id_jabatan" class="form-control">
-                            <option value="">-- Pilih Jabatan --</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <label>Tanggal Mulai</label>
-                        <input type="date" id="edit_tgl_mulai"
-                            name="tgl_mulai" class="form-control">
-                    </div>
-                    <div class="col-12 mt-3">
-                        <label>Tanggal Kontrak Selesai</label>
-                        <input type="date" id="edit_tgl_selesai" name="tgl_selesai" class="form-control">
-                    </div>
-                </div>
-
-                <hr>
                 <h6>KONTAK DARURAT 1</h6>
                 <div class="row">
                     <div class="col-md-6">
@@ -1002,9 +970,6 @@
                     $("#siteSelectAdd").html(siteOpt);
                     $("#departemenSelectAdd").html(departemenOpt);
                     $("#jabatanSelectAdd").html(jabatanOpt);
-                    $("#edit_id_site").html(siteOpt);
-                    $("#edit_id_departemen").html(departemenOpt);
-                    $("#edit_id_jabatan").html(jabatanOpt);
 
                     if (callback) callback();
                 }
@@ -1206,11 +1171,6 @@
                             $("#edit_nama_bank").val(d.nama_bank);
                             $("#edit_atas_nama_rek").val(d.atas_nama_rek);
                             $("#edit_no_rek").val(d.no_rek);
-                            $("#edit_id_site").val(d.id_site);
-                            $("#edit_id_departemen").val(d.id_departemen);
-                            $("#edit_id_jabatan").val(d.id_jabatan);
-                            $("#edit_tgl_mulai").val(d.tgl_mulai);
-                            $("#edit_tgl_selesai").val(d.tgl_selesai);
                             $("#edit_nama_kontak1").val(d.nama_kontak1);
                             $("#edit_hubungan1").val(d.hubungan1);
                             $("#edit_no_telp_darurat1").val(d.no_telp_darurat1);
