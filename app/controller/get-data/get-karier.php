@@ -93,8 +93,6 @@ while ($r = $q->fetch_assoc()) { ?>
         <td><?= htmlspecialchars($r['no_surat'] ?? '', ENT_QUOTES) ?></td>
 
         <td class="text-center">
-            <button type="button" class="btn btn-sm btn-info btnTunjangan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>" title="Tunjangan"><i class="fa fa-money-bill"></i></button>
-            <button type="button" class="btn btn-sm btn-info btnPotongan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>" title="Potongan"><i class="fa fa-scissors"></i></button>
             <?php $fileKontrak = $r['file_kontrak'] ?? ''; ?>
             <?php if (!empty($fileKontrak)) { ?>
             <a href="app/uploads/kontrak/<?= rawurlencode($fileKontrak) ?>" target="_blank" class="btn btn-sm btn-success" title="Lihat File Kontrak"><i class="fa fa-file-pdf"></i></a>
@@ -114,6 +112,8 @@ while ($r = $q->fetch_assoc()) { ?>
             
             <button class="btn btn-primary btn-sm btnEditKarier"
                 data-id="<?= $r['id_karier'] ?>"
+                data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>"
+                data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>"
                 data-id_karyawan="<?= $r['id_karyawan'] ?>"
                 data-id_site="<?= $r['id_site'] ?>"
                 data-id_departemen="<?= $r['id_departemen'] ?>"

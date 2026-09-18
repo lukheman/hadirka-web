@@ -195,16 +195,26 @@
     <!-- Modal Edit -->
     <div class="modal fade" id="modalEditKarier">
         <div class="modal-dialog modal-xl"> <!-- ukuran sama seperti modal tambah -->
-            <form id="formEditKarier" class="modal-content">
-                <input type="hidden" name="id_karier">
-
+            <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title text-white"><i class="fa fa-edit"></i> Edit Karier</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
-                    <div class="row g-3">
+                    <ul class="nav nav-tabs" id="tabEditKarier" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tab-edit-data-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-data" type="button" role="tab" aria-controls="tab-edit-data" aria-selected="true">Data Karier</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-edit-tp-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-tp" type="button" role="tab" aria-controls="tab-edit-tp" aria-selected="false">Tunjangan &amp; Potongan</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3">
+                        <div class="tab-pane fade show active" id="tab-edit-data" role="tabpanel" aria-labelledby="tab-edit-data-tab">
+                            <form id="formEditKarier">
+                                <input type="hidden" name="id_karier">
+                                <div class="row g-3">
 
                         <!-- Site -->
                         <div class="col-md-4">
@@ -299,13 +309,21 @@
                         </div>
 
                     </div>
+                            <div class="mt-2 text-end">
+                                <button class="btn btn-primary"><i class="fa fa-save"></i> Update</button>
+                            </div>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="tab-edit-tp" role="tabpanel" aria-labelledby="tab-edit-tp-tab">
+                            <?php include __DIR__ . '/fragment-karier-tunjangan-potongan.php'; ?>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-primary"><i class="fa fa-save"></i> Update</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -770,6 +788,11 @@
             form.querySelector("input[name=tgl_mulai]").value = btn.dataset.tgl_mulai;
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
             form.querySelector("input[name=no_surat]").value = btn.dataset.no_surat || "";
+
+            // Isi tab Tunjangan & Potongan + kembali ke tab Data Karier
+            if (typeof window.setKarierTp === "function") window.setKarierTp(btn.dataset.idKarierEnc, btn.dataset.nama);
+            const tabData = document.querySelector('#tabEditKarier button[data-bs-target="#tab-edit-data"]');
+            if (tabData) bootstrap.Tab.getOrCreateInstance(tabData).show();
 
             new bootstrap.Modal(document.getElementById("modalEditKarier")).show();
         });
