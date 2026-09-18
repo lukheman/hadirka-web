@@ -502,7 +502,7 @@
                                     data-upah_lembur="${escHtml(d.upah_lembur ?? 0)}"
                                     data-potongan_izin="${escHtml(d.potongan_izin ?? 0)}"
                                     data-potongan_mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
-                                    title="Edit template, nilai & tunjangan"><i class="fas fa-pen"></i> Edit</button>
+                                    title="Edit template, nilai & tunjangan"><i class="fas fa-pen"></i></button>
                                 <button class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
                                     data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}" title="Hapus template">
                                     <i class="fas fa-trash"></i>

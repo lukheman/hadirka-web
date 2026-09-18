@@ -157,8 +157,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("click", async e => {
 
         // --- EDIT ---
-        if (e.target.classList.contains("btnEditJabatan")) {
-            let btn = e.target;
+        const btnEJ = e.target.closest ? e.target.closest(".btnEditJabatan") : null;
+        if (btnEJ) {
+            let btn = btnEJ;
 
             formEdit.querySelector("input[name=id_jabatan]").value = btn.dataset.id;
             formEdit.querySelector("input[name=kode_jabatan]").value = btn.dataset.kode || "";
@@ -168,8 +169,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // --- DELETE ---
-        if (e.target.classList.contains("btnDeleteJabatan")) {
-            let id = e.target.dataset.id;
+        const btnDJ = e.target.closest ? e.target.closest(".btnDeleteJabatan") : null;
+        if (btnDJ) {
+            let id = btnDJ.dataset.id;
 
             if (await confirmDialog("Yakin hapus jabatan?")) {
                 fetch("app/controller/act-jabatan.php", {

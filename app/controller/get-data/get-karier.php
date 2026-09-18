@@ -93,8 +93,8 @@ while ($r = $q->fetch_assoc()) { ?>
         <td><?= htmlspecialchars($r['no_surat'] ?? '', ENT_QUOTES) ?></td>
 
         <td class="text-center">
-            <button type="button" class="btn btn-sm btn-info btnTunjangan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Tunjangan</button>
-            <button type="button" class="btn btn-sm btn-info btnPotongan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>">Potongan</button>
+            <button type="button" class="btn btn-sm btn-info btnTunjangan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>" title="Tunjangan"><i class="fa fa-money-bill"></i></button>
+            <button type="button" class="btn btn-sm btn-info btnPotongan" data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>" data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>" title="Potongan"><i class="fa fa-scissors"></i></button>
             <?php $fileKontrak = $r['file_kontrak'] ?? ''; ?>
             <?php if (!empty($fileKontrak)) { ?>
             <a href="app/uploads/kontrak/<?= rawurlencode($fileKontrak) ?>" target="_blank" class="btn btn-sm btn-success" title="Lihat File Kontrak"><i class="fa fa-file-pdf"></i></a>
@@ -104,8 +104,9 @@ while ($r = $q->fetch_assoc()) { ?>
             <?php if (!$id) { ?>
             <button class="btn btn-warning btn-sm btnExtendKarier"
                 data-id="<?= $r['id_karier'] ?>"
-                data-nama="<?= $r['nama_lengkap'] ?>">
-                <i class="fa fa-calendar-plus"></i> +6 Bln
+                data-nama="<?= $r['nama_lengkap'] ?>"
+                title="Perpanjang 6 bulan">
+                <i class="fa fa-calendar-plus"></i>
             </button>
             <?php } ?>
             
@@ -125,14 +126,15 @@ while ($r = $q->fetch_assoc()) { ?>
 
                 data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
                 data-tgl_selesai="<?= $r['tgl_selesai'] ?>"
-                data-no_surat="<?= htmlspecialchars($r['no_surat'] ?? '', ENT_QUOTES) ?>">
-
-                Edit
+                data-no_surat="<?= htmlspecialchars($r['no_surat'] ?? '', ENT_QUOTES) ?>"
+                title="Edit karier">
+                <i class="fa fa-pen"></i>
             </button>
 
             <button class="btn btn-danger btn-sm btnDeleteKarier"
-                data-id="<?= $r['id_karier'] ?>">
-                <i class="fa fa-trash"></i> Hapus
+                data-id="<?= $r['id_karier'] ?>"
+                title="Hapus karier">
+                <i class="fa fa-trash"></i>
             </button>
         </td>
     </tr>

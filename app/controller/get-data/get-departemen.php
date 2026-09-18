@@ -15,13 +15,15 @@ while ($r = $q->fetch_assoc()) {
         <td class='text-center'>
             <button class='btn btn-primary btn-sm btnEditDepart'
                 data-id='{$r['id_departemen']}'
-                data-nama='{$r['nama_departemen']}'>
-                Edit
+                data-nama='{$r['nama_departemen']}'
+                title='Edit departemen'>
+                <i class='fa fa-pen'></i>
             </button>
 
             <button class='btn btn-danger btn-sm btnDeleteDepart'
-                data-id='{$r['id_departemen']}'>
-                Hapus
+                data-id='{$r['id_departemen']}'
+                title='Hapus departemen'>
+                <i class='fa fa-trash'></i>
             </button>
         </td>
     </tr>";

@@ -141,17 +141,20 @@
         });
 
         document.addEventListener("click", async e => {
-            if (e.target.classList.contains("btnEditDepart")) {
-                let btn = e.target;
+            const btnEdit = e.target.closest ? e.target.closest(".btnEditDepart") : null;
+            if (btnEdit) {
+                let btn = btnEdit;
 
                 formEdit.querySelector("input[name=id_departemen]").value = btn.dataset.id;
                 formEdit.querySelector("input[name=nama_departemen]").value = btn.dataset.nama;
 
                 new bootstrap.Modal(document.getElementById("modalEditDepartemen")).show();
+                return;
             }
 
-            if (e.target.classList.contains("btnDeleteDepart")) {
-                let id = e.target.dataset.id;
+            const btnDel = e.target.closest ? e.target.closest(".btnDeleteDepart") : null;
+            if (btnDel) {
+                let id = btnDel.dataset.id;
 
                 if (await confirmDialog("Yakin hapus departemen?")) {
                     fetch("app/controller/act-departemen.php", {
