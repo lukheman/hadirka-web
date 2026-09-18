@@ -19,6 +19,7 @@
 
 header("Content-Type: application/json; charset=utf-8");
 require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../config/nomor_surat.php';
 
 // Nominal "1.500.000,50" -> float 1500000.50 (samakan dengan act-karier.php)
 function tpl_float($val)
@@ -519,8 +520,8 @@ if ($action === 'preview_info') {
     $detail = $tpl['detail'] ?? null;
 
     $tahun = preg_match('/^(\d{4})-\d{2}-\d{2}$/', $tgl_mulai, $m) ? $m[1] : date('Y');
-    $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
-    $next = ($qc && $qc->num_rows > 0) ? ((int)$qc->fetch_assoc()['terakhir'] + 1) : 1;
+    // Estimasi TANPA mengonsumsi counter: lanjut dari yang terbesar (counter vs data) + 1.
+    $next = peek_no_urut($koneksi);
 
     $kode = trim((string)($jab['kode_jabatan'] ?? ''));
     tpl_json('success', 'OK', [
