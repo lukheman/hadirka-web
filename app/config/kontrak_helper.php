@@ -42,15 +42,14 @@ if (!function_exists('terbilang_id')) {
 }
 
 if (!function_exists('kontrak_bulan_diff')) {
-    // Selisih bulan penuh tgl_mulai -> tgl_selesai (mis. 2026-01-01 s/d 2026-07-01 = 6).
+    // Selisih bulan kalender tgl_mulai -> tgl_selesai (tanpa penyesuaian tanggal),
+    // mis. 2026-09-18 s/d 2027-03-17 = 6; 2026-01-01 s/d 2026-07-01 = 6.
     function kontrak_bulan_diff($tgl_mulai, $tgl_selesai)
     {
         $d1 = new DateTime($tgl_mulai);
         $d2 = new DateTime($tgl_selesai);
         if ($d2 < $d1) throw new Exception('Tanggal selesai kontrak lebih awal dari tanggal mulai.');
-        $m = ((int)$d2->format('Y') - (int)$d1->format('Y')) * 12 + ((int)$d2->format('n') - (int)$d1->format('n'));
-        if ((int)$d2->format('j') < (int)$d1->format('j')) $m--;
-        return max($m, 0);
+        return ((int)$d2->format('Y') - (int)$d1->format('Y')) * 12 + ((int)$d2->format('n') - (int)$d1->format('n'));
     }
 }
 
