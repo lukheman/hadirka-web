@@ -268,7 +268,9 @@ if (!function_exists('build_kontrak_docx')) {
             'tgl_mulai' => kontrak_tgl_id($r['tgl_mulai'] ?? ''),
             'tgl_selesai' => kontrak_tgl_id($r['tgl_selesai'] ?? ''),
             'nama' => $r['nama_lengkap'] ?? '-',
-            'nik' => !empty($r['nik_ktp']) ? $r['nik_ktp'] : ($r['nik_karyawan'] ?? '-'),
+            // NIK kontrak hanya dari nik_ktp (tb_identitas); kosong bila tidak ada.
+            // nik_karyawan berisi ID karyawan, bukan nomor KTP.
+            'nik' => trim((string)($r['nik_ktp'] ?? '')),
             'jenis_kelamin' => $jk_label,
             'tempat_tanggal_lahir' => $ttl,
             'jabatan' => $r['nama_jabatan'] ?? '-',
