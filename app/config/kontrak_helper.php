@@ -263,7 +263,13 @@ if (!function_exists('build_kontrak_docx')) {
 
         $vars = [
             'nomor_kontrak' => $no_surat,
+            // ${alamat} = alamat lengkap gabungan (jalan + Kel/Desa + Kec. + Kab.).
+            // Kunci granular dipertahankan untuk kompatibilitas template lama.
             'alamat' => kontrak_alamat($r),
+            'desa ' => trim((string)($r['desa'] ?? '')),
+            'desa' => trim((string)($r['desa'] ?? '')),
+            'kecamatan' => trim((string)($r['kecamatan'] ?? '')),
+            'kabupaten' => trim((string)($r['kabupaten'] ?? '')),
             'durasi' => kontrak_durasi($r['tgl_mulai'] ?? '', $r['tgl_selesai'] ?? ''),
             'tgl_mulai' => kontrak_tgl_id($r['tgl_mulai'] ?? ''),
             'tgl_selesai' => kontrak_tgl_id($r['tgl_selesai'] ?? ''),
