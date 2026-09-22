@@ -202,7 +202,7 @@
                             <form id="formTplTunjangan" class="row g-2 align-items-end">
                                 <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
                                 <input type="hidden" name="id_tunjangan" id="tplTunjanganId">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label">Nama Tunjangan</label>
                                     <select name="nama_tunjangan" id="tplTunjanganNama" class="form-select" required>
                                         <option value="">-- Pilih Tunjangan --</option>
@@ -212,6 +212,13 @@
                                         <option value="Tunjangan Skill">Tunjangan Skill</option>
                                         <option value="Bonus Kehadiran">Bonus Kehadiran</option>
                                         <option value="Tunjangan Posisi">Tunjangan Posisi</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Jenis</label>
+                                    <select name="jenis_tunjangan" id="tplTunjanganJenis" class="form-select" required>
+                                        <option value="tetap">Tetap</option>
+                                        <option value="tidak_tetap">Tidak Tetap</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -234,6 +241,7 @@
                                         <tr>
                                             <th class="text-center" style="width:5%">No</th>
                                             <th class="text-center">Nama Tunjangan</th>
+                                            <th class="text-center">Jenis</th>
                                             <th class="text-center">Jumlah (Rp)</th>
                                             <th class="text-center" style="width:15%">Aksi</th>
                                         </tr>
@@ -568,6 +576,7 @@
         function resetTplTunjanganForm() {
             document.getElementById("tplTunjanganId").value = "";
             document.getElementById("tplTunjanganNama").value = "";
+            document.getElementById("tplTunjanganJenis").value = "tetap";
             document.getElementById("tplTunjanganJumlah").value = "";
             document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Simpan';
             document.getElementById("btnTplTunjanganCancel").classList.add("d-none");
@@ -584,16 +593,20 @@
                 .then(res => {
                     const tbody = document.getElementById("tbodyTplTunjangan");
                     if (res.status !== "success" || !res.data.length) {
-                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Belum ada tunjangan.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada tunjangan.</td></tr>`;
                         return;
                     }
                     tbody.innerHTML = res.data.map((t, i) => `<tr>
                         <td class="text-center">${i + 1}</td>
                         <td>${escHtml(t.nama_tunjangan)}</td>
+                        <td class="text-center">${t.jenis_tunjangan === "tidak_tetap"
+                            ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
+                            : '<span class="badge bg-success">Tetap</span>'}</td>
                         <td class="text-end">${fmtModalRp(t.jumlah_tunjangan)}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-warning btnTplTunjanganEdit"
                                 data-id="${t.id_tunjangan}" data-nama="${escHtml(t.nama_tunjangan)}"
+                                data-jenis="${escHtml(t.jenis_tunjangan || "tetap")}"
                                 data-jumlah="${escHtml(t.jumlah_tunjangan)}">Edit</button>
                             <button class="btn btn-sm btn-danger btnTplTunjanganDel"
                                 data-id="${t.id_tunjangan}"><i class="fa fa-trash"></i></button>
@@ -602,7 +615,7 @@
                 })
                 .catch(() => {
                     document.getElementById("tbodyTplTunjangan").innerHTML =
-                        `<tr><td colspan="4" class="text-center text-danger">Gagal memuat.</td></tr>`;
+                        `<tr><td colspan="5" class="text-center text-danger">Gagal memuat.</td></tr>`;
                 });
         }
 
@@ -653,6 +666,7 @@
             if (btnET) {
                 document.getElementById("tplTunjanganId").value = btnET.dataset.id;
                 document.getElementById("tplTunjanganNama").value = btnET.dataset.nama || "";
+                document.getElementById("tplTunjanganJenis").value = btnET.dataset.jenis || "tetap";
                 document.getElementById("tplTunjanganJumlah").value = formatIndo(btnET.dataset.jumlah);
                 document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Update';
                 document.getElementById("btnTplTunjanganCancel").classList.remove("d-none");

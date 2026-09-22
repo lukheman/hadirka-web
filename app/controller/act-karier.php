@@ -206,8 +206,8 @@ try {
                 }
                 {
                     if ($koneksi->query(
-                        "INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jumlah_tunjangan) " .
-                        "SELECT '$id_karier_baru', nama_tunjangan, jumlah_tunjangan " .
+                        "INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) " .
+                        "SELECT '$id_karier_baru', nama_tunjangan, jenis_tunjangan, jumlah_tunjangan " .
                         "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail'"
                     )) {
                         $n_tunjangan = $koneksi->affected_rows;

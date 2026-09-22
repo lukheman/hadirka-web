@@ -7,7 +7,8 @@
 //   Lama    : ${nama}, ${nik}, ${jenis_kelamin}, ${tempat_tanggal_lahir}, ${jabatan},
 //             ${gaji_pokok}, ${upah_lembur}, ${izin}, ${mangkir},
 //             ${bonus}, ${tunjangan_daerah}, ${tunjangan_hidup},
-//             ${tunjangan_skill}, ${tunjangan_uang_makan}
+//             ${tunjangan_skill}, ${tunjangan_uang_makan},
+//             ${tunjangan_tetap}, ${tunjangan_tidak_tetap} (daftar per jenis)
 
 require_once __DIR__ . '/nomor_surat.php';
 
@@ -237,14 +238,25 @@ if (!function_exists('build_kontrak_docx')) {
             $koneksi->query("UPDATE tb_karier SET no_surat = '$ns_esc' WHERE id_karier = '$id_karier'");
         }
 
-        // Tunjangan per nama (lowercase).
+        // Tunjangan per nama (lowercase) + daftar per jenis (tetap / tidak_tetap).
         $tun = [];
-        $qtun = $koneksi->query("SELECT nama_tunjangan, jumlah_tunjangan FROM tb_tunjangan WHERE id_karier = '$id_karier'");
+        $tun_tetap = [];
+        $tun_tidak = [];
+        $qtun = $koneksi->query("SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan FROM tb_tunjangan WHERE id_karier = '$id_karier' ORDER BY id_tunjangan ASC");
         if ($qtun) {
             while ($t = $qtun->fetch_assoc()) {
                 $tun[strtolower(trim((string)$t['nama_tunjangan']))] = $t['jumlah_tunjangan'];
+                $baris = trim((string)$t['nama_tunjangan']) . ': ' . kontrak_rupiah($t['jumlah_tunjangan']);
+                if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
+                    $tun_tidak[] = $baris;
+                } else {
+                    $tun_tetap[] = $baris;
+                }
             }
         }
+        $tun_daftar = function ($list) {
+            return $list ? implode("\n", $list) : '-';
+        };
         $tun_nilai = function ($keys) use ($tun) {
             foreach ((array)$keys as $k) {
                 if (isset($tun[strtolower($k)])) return $tun[strtolower($k)];
@@ -288,6 +300,8 @@ if (!function_exists('build_kontrak_docx')) {
             'tunjangan_hidup' => kontrak_rupiah($tun_nilai(['tunjangan hidup'])),
             'tunjangan_skill' => kontrak_rupiah($tun_nilai(['tunjangan skill'])),
             'tunjangan_uang_makan' => kontrak_rupiah($tun_nilai(['tunjangan uang makan', 'tunjangan makan'])),
+            'tunjangan_tetap' => $tun_daftar($tun_tetap),
+            'tunjangan_tidak_tetap' => $tun_daftar($tun_tidak),
         ];
 
         $out_dir = __DIR__ . '/../uploads/kontrak/';

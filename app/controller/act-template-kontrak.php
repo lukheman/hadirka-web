@@ -351,7 +351,7 @@ if ($action === 'list_tunjangan') {
     $id_detail = tpl_ensure_detail($koneksi, $id_template);
     $rows = [];
     $q = $koneksi->query(
-        "SELECT id_tunjangan_kontrak AS id_tunjangan, nama_tunjangan, jumlah_tunjangan " .
+        "SELECT id_tunjangan_kontrak AS id_tunjangan, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan " .
         "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail' ORDER BY id_tunjangan_kontrak ASC"
     );
     if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
@@ -368,6 +368,8 @@ if ($action === 'save_tunjangan') {
     if (strlen($nama_raw) > 25) tpl_json('error', 'Nama tunjangan maksimal 25 karakter.');
     $jumlah_raw = $_POST['jumlah_tunjangan'] ?? '';
     if ($jumlah_raw === '' || $jumlah_raw === null) tpl_json('error', 'Jumlah tunjangan wajib diisi.');
+    $jenis_t = strtolower(trim($_POST['jenis_tunjangan'] ?? 'tetap'));
+    if (!in_array($jenis_t, ['tetap', 'tidak_tetap'], true)) tpl_json('error', 'Jenis tunjangan tidak valid.');
     $jumlah = (string)tpl_float($jumlah_raw);
     $id_detail = tpl_ensure_detail($koneksi, $id_template);
     $nama = $koneksi->real_escape_string($nama_raw);
@@ -376,7 +378,7 @@ if ($action === 'save_tunjangan') {
     $id_tunjangan = (int)($_POST['id_tunjangan'] ?? 0);
     if ($id_tunjangan > 0) {
         $ok = $koneksi->query(
-            "UPDATE tb_tunjangan_kontrak SET nama_tunjangan = '$nama', jumlah_tunjangan = '$jumlah_esc' " .
+            "UPDATE tb_tunjangan_kontrak SET nama_tunjangan = '$nama', jenis_tunjangan = '$jenis_t', jumlah_tunjangan = '$jumlah_esc' " .
             "WHERE id_tunjangan_kontrak = '$id_tunjangan' AND id_detail_kontrak = '$id_detail'"
         );
         if (!$ok) tpl_json('error', 'Gagal mengupdate: ' . $koneksi->error);
@@ -384,8 +386,8 @@ if ($action === 'save_tunjangan') {
         tpl_json('success', 'Tunjangan berhasil diupdate.');
     } else {
         $ok = $koneksi->query(
-            "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jumlah_tunjangan) " .
-            "VALUES ('$id_detail', '$nama', '$jumlah_esc')"
+            "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) " .
+            "VALUES ('$id_detail', '$nama', '$jenis_t', '$jumlah_esc')"
         );
         if (!$ok) tpl_json('error', 'Gagal menyimpan: ' . $koneksi->error);
         tpl_json('success', 'Tunjangan berhasil ditambah.', ['id_tunjangan' => $koneksi->insert_id]);

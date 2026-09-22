@@ -36,6 +36,11 @@ try {
         $id_kar = isset($_POST['id_karier']) ? mysqli_real_escape_string($koneksi, decrypt(trim($_POST['id_karier']))) : '';
         $jumlah = isset($_POST['jumlah_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['jumlah_tunjangan'])) : '';
         $nama_raw = trim($_POST['nama_tunjangan'] ?? '');
+        $jenis_raw = strtolower(trim($_POST['jenis_tunjangan'] ?? 'tetap'));
+        if (!in_array($jenis_raw, ['tetap', 'tidak_tetap'], true)) {
+            throw new Exception("Jenis tunjangan tidak valid: [$jenis_raw]");
+        }
+        $jenis = $jenis_raw;
 
         // Validasi nama tunjangan HANYA dilakukan saat add atau edit
         if ($action == "add" || $action == "edit") {
@@ -58,7 +63,7 @@ try {
             if ($action == "add") {
                 if (empty($id_kar)) throw new Exception("ID Karier tidak valid");
 
-                $q = $koneksi->query("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jumlah_tunjangan) VALUES ('$id_kar', '$nama', '$jumlah')");
+                $q = $koneksi->query("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) VALUES ('$id_kar', '$nama', '$jenis', '$jumlah')");
                 if ($q) {
                     $response = ["status" => "success", "message" => "Data berhasil ditambahkan"];
                 } else {
@@ -68,7 +73,7 @@ try {
             elseif ($action == "edit") {
                 if (empty($id_tun)) throw new Exception("ID Tunjangan tidak valid");
 
-                $q = $koneksi->query("UPDATE tb_tunjangan SET nama_tunjangan='$nama', jumlah_tunjangan='$jumlah' WHERE id_tunjangan='$id_tun'");
+                $q = $koneksi->query("UPDATE tb_tunjangan SET nama_tunjangan='$nama', jenis_tunjangan='$jenis', jumlah_tunjangan='$jumlah' WHERE id_tunjangan='$id_tun'");
                 if ($q) {
                     $response = ["status" => "success", "message" => "Data berhasil diupdate"];
                 } else {

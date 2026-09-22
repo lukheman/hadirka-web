@@ -43,6 +43,7 @@
     function resetTunjanganForm() {
         document.getElementById("modalTunjanganId").value = "";
         document.getElementById("modalTunjanganNama").value = "";
+        document.getElementById("modalTunjanganJenis").value = "tetap";
         document.getElementById("modalTunjanganJumlah").value = "";
         document.getElementById("btnModalTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Simpan';
         document.getElementById("btnModalTunjanganCancel").classList.add("d-none");
@@ -132,6 +133,7 @@
         if (btnEditT) {
             document.getElementById("modalTunjanganId").value = btnEditT.dataset.id || "";
             document.getElementById("modalTunjanganNama").value = btnEditT.dataset.nama || "";
+            document.getElementById("modalTunjanganJenis").value = btnEditT.dataset.jenis || "tetap";
             document.getElementById("modalTunjanganJumlah").value = btnEditT.dataset.jumlah || "";
             document.getElementById("btnModalTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Update';
             document.getElementById("btnModalTunjanganCancel").classList.remove("d-none");
