@@ -239,6 +239,7 @@ if (!function_exists('build_kontrak_docx')) {
         }
 
         // Tunjangan per nama (lowercase) + daftar per jenis (tetap / tidak_tetap).
+        // Tiap baris = [nama, rupiah] agar bisa dirender sebagai tabel Word (":" sejajar).
         $tun = [];
         $tun_tetap = [];
         $tun_tidak = [];
@@ -246,7 +247,7 @@ if (!function_exists('build_kontrak_docx')) {
         if ($qtun) {
             while ($t = $qtun->fetch_assoc()) {
                 $tun[strtolower(trim((string)$t['nama_tunjangan']))] = $t['jumlah_tunjangan'];
-                $baris = trim((string)$t['nama_tunjangan']) . ': ' . kontrak_rupiah($t['jumlah_tunjangan']);
+                $baris = [trim((string)$t['nama_tunjangan']), kontrak_rupiah($t['jumlah_tunjangan'])];
                 if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
                     $tun_tidak[] = $baris;
                 } else {
@@ -254,8 +255,23 @@ if (!function_exists('build_kontrak_docx')) {
                 }
             }
         }
-        $tun_daftar = function ($list) {
-            return $list ? implode("\n", $list) : '-';
+        // Tabel Word 2 kolom (nama | ": Rp ...") agar ":" sejajar vertikal.
+        // Dipakai via setComplexBlock karena placeholder berdiri sendiri satu paragraf.
+        $tun_tabel = function ($rows) {
+            $style = new \PhpOffice\PhpWord\Style\Table();
+            $style->setBorderSize(0);
+            $style->setBorderColor('FFFFFF');
+            $style->setCellMargin(50);
+            // Geser tabel ke kanan (720 twips = 1,27 cm).
+            $style->setIndent(new \PhpOffice\PhpWord\ComplexType\TblWidth(720));
+            $table = new \PhpOffice\PhpWord\Element\Table($style);
+            $font = ['name' => 'Times New Roman', 'size' => 11];
+            foreach ($rows as $row) {
+                $table->addRow();
+                $table->addCell(4500)->addText($row[0], $font);
+                $table->addCell(4500)->addText(': ' . $row[1], $font);
+            }
+            return $table;
         };
         $tun_nilai = function ($keys) use ($tun) {
             foreach ((array)$keys as $k) {
@@ -300,8 +316,6 @@ if (!function_exists('build_kontrak_docx')) {
             'tunjangan_hidup' => kontrak_rupiah($tun_nilai(['tunjangan hidup'])),
             'tunjangan_skill' => kontrak_rupiah($tun_nilai(['tunjangan skill'])),
             'tunjangan_uang_makan' => kontrak_rupiah($tun_nilai(['tunjangan uang makan', 'tunjangan makan'])),
-            'tunjangan_tetap' => $tun_daftar($tun_tetap),
-            'tunjangan_tidak_tetap' => $tun_daftar($tun_tidak),
         ];
 
         $out_dir = __DIR__ . '/../uploads/kontrak/';
@@ -312,6 +326,15 @@ if (!function_exists('build_kontrak_docx')) {
         kontrak_patch_docx($src, $dst);
 
         $tp = new \PhpOffice\PhpWord\TemplateProcessor($dst);
+        // Daftar tunjangan dirender sebagai tabel 2 kolom (nama | ": Rp ...")
+        // agar ":" sejajar vertikal; daftar kosong diisi "-".
+        foreach (['tunjangan_tetap' => $tun_tetap, 'tunjangan_tidak_tetap' => $tun_tidak] as $macro => $rows) {
+            if ($rows) {
+                $tp->setComplexBlock($macro, $tun_tabel($rows));
+            } else {
+                $tp->setValue($macro, '-');
+            }
+        }
         $tp->setValues($vars);
         $tp->saveAs($dst);
 
