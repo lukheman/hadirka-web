@@ -110,11 +110,19 @@ foreach ($tunj as $k => $v) {
     }
 }
 
-// Tempat, tanggal lahir Indonesia.
+// Tempat, tanggal lahir Indonesia (Title Case; data tersimpan huruf besar semua).
+if (!function_exists('kontrak_title')) {
+    function kontrak_title($s)
+    {
+        $s = trim((string)$s);
+        if ($s === '') return $s;
+        return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
+    }
+}
 $namaBulan = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 $ttl = '-';
 if (!empty($kar['tempat_lahir']) || !empty($kar['tgl_lahir'])) {
-    $ttl = trim((string)($kar['tempat_lahir'] ?? ''));
+    $ttl = kontrak_title($kar['tempat_lahir'] ?? '');
     if (!empty($kar['tgl_lahir']) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', (string)$kar['tgl_lahir'], $m)) {
         $tglId = ((int)$m[3]) . ' ' . ($namaBulan[(int)$m[2]] ?? $m[2]) . ' ' . $m[1];
         $ttl = $ttl !== '' ? ($ttl . ', ' . $tglId) : $tglId;
@@ -127,8 +135,8 @@ if (!empty($kar['tempat_lahir']) || !empty($kar['tgl_lahir'])) {
 $nik = trim((string)($kar['nik_ktp'] ?? ''));
 
 $vars = [
-    'nama'                 => trim((string)($kar['nama_lengkap'] ?? '')) !== '' ? $kar['nama_lengkap'] : '-',
-    'jabatan'              => trim((string)($kar['nama_jabatan'] ?? '')) !== '' ? $kar['nama_jabatan'] : '-',
+    'nama'                 => trim((string)($kar['nama_lengkap'] ?? '')) !== '' ? kontrak_title($kar['nama_lengkap']) : '-',
+    'jabatan'              => trim((string)($kar['nama_jabatan'] ?? '')) !== '' ? kontrak_title($kar['nama_jabatan']) : '-',
     'jenis_kelamin'        => jk($kar['jenis_kelamin'] ?? ''),
     'tempat_tanggal_lahir' => $ttl,
     'nik'                  => $nik,

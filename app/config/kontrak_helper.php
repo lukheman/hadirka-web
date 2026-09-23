@@ -106,15 +106,26 @@ if (!function_exists('kontrak_rupiah_makan')) {
     }
 }
 
+if (!function_exists('kontrak_title')) {
+    // Data master tersimpan HURUF BESAR semua -> tampilkan Title Case di dokumen
+    // ("ABDUL KHAIR" -> "Abdul Khair"). Tidak mengubah data di database/payroll.
+    function kontrak_title($s)
+    {
+        $s = trim((string)$s);
+        if ($s === '') return $s;
+        return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
+    }
+}
+
 if (!function_exists('kontrak_alamat')) {
-    // Gabungan alamat KTP + wilayah.
+    // Gabungan alamat KTP + wilayah (Title Case).
     function kontrak_alamat($row)
     {
         $parts = [];
-        if (!empty($row['alamat_ktp'])) $parts[] = trim((string)$row['alamat_ktp']);
-        if (!empty($row['desa'])) $parts[] = 'Kel/Desa ' . trim((string)$row['desa']);
-        if (!empty($row['kecamatan'])) $parts[] = 'Kec. ' . trim((string)$row['kecamatan']);
-        if (!empty($row['kabupaten'])) $parts[] = 'Kab. ' . trim((string)$row['kabupaten']);
+        if (!empty($row['alamat_ktp'])) $parts[] = kontrak_title($row['alamat_ktp']);
+        if (!empty($row['desa'])) $parts[] = 'Kel/Desa ' . kontrak_title($row['desa']);
+        if (!empty($row['kecamatan'])) $parts[] = 'Kec. ' . kontrak_title($row['kecamatan']);
+        if (!empty($row['kabupaten'])) $parts[] = 'Kab. ' . kontrak_title($row['kabupaten']);
         return $parts ? implode(', ', $parts) : '-';
     }
 }
@@ -276,7 +287,7 @@ if (!function_exists('build_kontrak_docx')) {
                 $rupiah = kontrak_is_makan($t['nama_tunjangan'] ?? '')
                     ? kontrak_rupiah_makan($t['jumlah_tunjangan'])
                     : kontrak_rupiah($t['jumlah_tunjangan']);
-                $baris = [trim((string)$t['nama_tunjangan']), $rupiah];
+                $baris = [kontrak_title($t['nama_tunjangan']), $rupiah];
                 if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
                     $tun_tidak[] = $baris;
                 } else {
@@ -310,8 +321,8 @@ if (!function_exists('build_kontrak_docx')) {
         };
 
         $jk = strtoupper(trim((string)($r['jenis_kelamin'] ?? '')));
-        $jk_label = $jk === 'L' ? 'Laki-laki' : ($jk === 'P' ? 'Perempuan' : ($r['jenis_kelamin'] ?? '-'));
-        $ttl = trim((string)($r['tempat_lahir'] ?? ''));
+        $jk_label = $jk === 'L' ? 'Laki-laki' : ($jk === 'P' ? 'Perempuan' : (!empty($r['jenis_kelamin']) ? kontrak_title($r['jenis_kelamin']) : '-'));
+        $ttl = kontrak_title($r['tempat_lahir'] ?? '');
         if (!empty($r['tgl_lahir']) && $r['tgl_lahir'] !== '0000-00-00') {
             $ttl .= ($ttl !== '' ? ', ' : '') . kontrak_tgl_id($r['tgl_lahir']);
         }
@@ -322,20 +333,20 @@ if (!function_exists('build_kontrak_docx')) {
             // ${alamat} = alamat lengkap gabungan (jalan + Kel/Desa + Kec. + Kab.).
             // Kunci granular dipertahankan untuk kompatibilitas template lama.
             'alamat' => kontrak_alamat($r),
-            'desa ' => trim((string)($r['desa'] ?? '')),
-            'desa' => trim((string)($r['desa'] ?? '')),
-            'kecamatan' => trim((string)($r['kecamatan'] ?? '')),
-            'kabupaten' => trim((string)($r['kabupaten'] ?? '')),
+            'desa ' => kontrak_title($r['desa'] ?? ''),
+            'desa' => kontrak_title($r['desa'] ?? ''),
+            'kecamatan' => kontrak_title($r['kecamatan'] ?? ''),
+            'kabupaten' => kontrak_title($r['kabupaten'] ?? ''),
             'durasi' => kontrak_durasi($r['tgl_mulai'] ?? '', $r['tgl_selesai'] ?? ''),
             'tgl_mulai' => kontrak_tgl_id($r['tgl_mulai'] ?? ''),
             'tgl_selesai' => kontrak_tgl_id($r['tgl_selesai'] ?? ''),
-            'nama' => $r['nama_lengkap'] ?? '-',
+            'nama' => isset($r['nama_lengkap']) && trim((string)$r['nama_lengkap']) !== '' ? kontrak_title($r['nama_lengkap']) : '-',
             // NIK kontrak hanya dari nik_ktp (tb_identitas); kosong bila tidak ada.
             // nik_karyawan berisi ID karyawan, bukan nomor KTP.
             'nik' => trim((string)($r['nik_ktp'] ?? '')),
             'jenis_kelamin' => $jk_label,
             'tempat_tanggal_lahir' => $ttl,
-            'jabatan' => $r['nama_jabatan'] ?? '-',
+            'jabatan' => isset($r['nama_jabatan']) && trim((string)$r['nama_jabatan']) !== '' ? kontrak_title($r['nama_jabatan']) : '-',
             'gaji_pokok' => kontrak_rupiah($r['gaji_pokok'] ?? 0),
             'upah_lembur' => kontrak_rupiah($r['lembur'] ?? 0),
             'izin' => kontrak_rupiah($r['pot_izin'] ?? 0),
