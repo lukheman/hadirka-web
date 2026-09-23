@@ -101,17 +101,41 @@ if ($action === 'info') {
     ]);
 }
 
+// ---------- COUNTER global (tanpa jabatan) ----------
+if ($action === 'counter') {
+    $terakhir = 0;
+    $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
+    if ($qc && $qc->num_rows > 0) $terakhir = (int)$qc->fetch_assoc()['terakhir'];
+    $terbesar = 0;
+    $qm = $koneksi->query(
+        "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
+        "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+    );
+    if ($qm) $terbesar = (int)$qm->fetch_assoc()['mx'];
+    cetak_json('success', 'OK', [
+        'terakhir_counter' => $terakhir,
+        'terbesar_data' => $terbesar,
+        'berikutnya' => max($terakhir, $terbesar) + 1,
+    ]);
+}
+
 // ---------- GENERATE: reservasi nomor + bangun ZIP ----------
 if ($action === 'generate') {
     try {
-        $id_jabatan = (int)($_POST['id_jabatan'] ?? 0);
-        $id_template = (int)($_POST['id_template'] ?? 0);
-        $jumlah = (int)($_POST['jumlah'] ?? 0);
+        // Repeater: sekali generate bisa beberapa jabatan.
+        // Menerima array id_jabatan[] + id_template[] + jumlah[] (tetap kompatibel dgn kiriman tunggal).
+        $to_arr = function ($v) {
+            if (is_array($v)) return array_values($v);
+            return [$v];
+        };
+        $rows_jab = $to_arr($_POST['id_jabatan'] ?? []);
+        $rows_tpl = $to_arr($_POST['id_template'] ?? []);
+        $rows_jml = $to_arr($_POST['jumlah'] ?? []);
         $tahun = preg_replace('/\D/', '', (string)($_POST['tahun'] ?? ''));
         if (strlen($tahun) !== 4) $tahun = date('Y');
-        if ($id_jabatan <= 0) throw new Exception('Pilih jabatan terlebih dahulu.');
-        if ($id_template <= 0) throw new Exception('Pilih template terlebih dahulu.');
-        if ($jumlah < 1 || $jumlah > 50) throw new Exception('Jumlah harus 1 s/d 50 per sekali cetak.');
+        $n_rows = max(count($rows_jab), count($rows_tpl), count($rows_jml));
+        if ($n_rows < 1) throw new Exception('Tambahkan minimal satu baris jabatan.');
+        if ($n_rows > 10) throw new Exception('Maksimal 10 baris jabatan per sekali cetak.');
 
         // Periode kontrak blanko: Tgl Mulai + Durasi (3/6/12 bulan).
         // Tgl Selesai = mulai + N bulan, mundur 1 hari (sama seperti form karier).
@@ -127,71 +151,96 @@ if ($action === 'generate') {
         $d_selesai->setDate((int)$d_selesai->format('Y'), (int)$d_selesai->format('n'), min($tgl_mulai_bln - 1, $maks_bln));
         $tgl_selesai = $d_selesai->format('Y-m-d');
 
-        // Jabatan + kode.
-        $qj = $koneksi->query("SELECT kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-        if (!$qj || $qj->num_rows === 0) throw new Exception('Jabatan tidak ditemukan.');
-        $jab = $qj->fetch_assoc();
-        $kode = trim((string)($jab['kode_jabatan'] ?? ''));
-        if ($kode === '') throw new Exception('Kode jabatan belum diisi. Lengkapi kode jabatan terlebih dahulu.');
-        $nama_jabatan = $jab['nama_jabatan'] ?? '-';
+        // Validasi + siapkan spesifikasi tiap baris (jabatan, template, nilai).
+        $specs = [];
+        $total = 0;
+        for ($ri = 0; $ri < $n_rows; $ri++) {
+            $no_baris = $ri + 1;
+            $id_jabatan = (int)($rows_jab[$ri] ?? 0);
+            $id_template = (int)($rows_tpl[$ri] ?? 0);
+            $jumlah = (int)($rows_jml[$ri] ?? 0);
+            if ($id_jabatan <= 0) throw new Exception("Baris $no_baris: pilih jabatan terlebih dahulu.");
+            if ($id_template <= 0) throw new Exception("Baris $no_baris: pilih template terlebih dahulu.");
+            if ($jumlah < 1 || $jumlah > 50) throw new Exception("Baris $no_baris: jumlah harus 1 s/d 50.");
 
-        // Template harus berlaku untuk jabatan ini.
-        $qp = $koneksi->query(
-            "SELECT t.`file`, t.nama_kontrak FROM tb_template_kontrak_jabatan p " .
-            "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-            "WHERE p.id_jabatan = '$id_jabatan' AND p.id_template = '$id_template' LIMIT 1"
-        );
-        if (!$qp || $qp->num_rows === 0) throw new Exception('Template tidak berlaku untuk jabatan ini.');
-        $tpl = $qp->fetch_assoc();
+            // Jabatan + kode.
+            $qj = $koneksi->query("SELECT kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
+            if (!$qj || $qj->num_rows === 0) throw new Exception("Baris $no_baris: jabatan tidak ditemukan.");
+            $jab = $qj->fetch_assoc();
+            $kode = trim((string)($jab['kode_jabatan'] ?? ''));
+            if ($kode === '') throw new Exception("Baris $no_baris: kode jabatan belum diisi. Lengkapi kode jabatan terlebih dahulu.");
+            $nama_jabatan = $jab['nama_jabatan'] ?? '-';
 
-        $tpl_base = basename((string)$tpl['file']);
-        $src = __DIR__ . '/../uploads/template-kontrak/' . $tpl_base;
-        if (!is_file($src)) {
-            $legacy = __DIR__ . '/../uploads/kontrak/' . $tpl_base;
-            if (is_file($legacy)) $src = $legacy;
-        }
-        if (!is_file($src)) throw new Exception('File template tidak ditemukan di server.');
-
-        // Nilai kontrak dari detail template.
-        $qd = $koneksi->query(
-            "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
-            "FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1"
-        );
-        $det = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : ['gaji_pokok' => 0, 'upah_lembur' => 0, 'potongan_izin' => 0, 'potongan_mangkir' => 0];
-        $id_det = (int)($det['id_detail'] ?? 0);
-
-        // Tunjangan template yg tampil saja (untuk daftar + placeholder per nama).
-        $tun = [];
-        $tun_tetap = [];
-        $tun_tidak = [];
-        if ($id_det > 0) {
-            $qtun = $koneksi->query(
-                "SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan FROM tb_tunjangan_kontrak " .
-                "WHERE id_detail_kontrak = '$id_det' AND tampil_template = 1 ORDER BY id_tunjangan_kontrak ASC"
+            // Template harus berlaku untuk jabatan ini.
+            $qp = $koneksi->query(
+                "SELECT t.`file`, t.nama_kontrak FROM tb_template_kontrak_jabatan p " .
+                "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
+                "WHERE p.id_jabatan = '$id_jabatan' AND p.id_template = '$id_template' LIMIT 1"
             );
-            if ($qtun) {
-                while ($t = $qtun->fetch_assoc()) {
-                    $tun[strtolower(trim((string)$t['nama_tunjangan']))] = $t['jumlah_tunjangan'];
-                    $rupiah = kontrak_is_makan($t['nama_tunjangan'] ?? '')
-                        ? kontrak_rupiah_makan($t['jumlah_tunjangan'])
-                        : kontrak_rupiah($t['jumlah_tunjangan']);
-                    $baris = [kontrak_title($t['nama_tunjangan']), $rupiah];
-                    if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
-                        $tun_tidak[] = $baris;
-                    } else {
-                        $tun_tetap[] = $baris;
+            if (!$qp || $qp->num_rows === 0) throw new Exception("Baris $no_baris: template tidak berlaku untuk jabatan ini.");
+            $tpl = $qp->fetch_assoc();
+
+            $tpl_base = basename((string)$tpl['file']);
+            $src = __DIR__ . '/../uploads/template-kontrak/' . $tpl_base;
+            if (!is_file($src)) {
+                $legacy = __DIR__ . '/../uploads/kontrak/' . $tpl_base;
+                if (is_file($legacy)) $src = $legacy;
+            }
+            if (!is_file($src)) throw new Exception("Baris $no_baris: file template tidak ditemukan di server.");
+
+            // Nilai kontrak dari detail template.
+            $qd = $koneksi->query(
+                "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
+                "FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1"
+            );
+            $det = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : ['gaji_pokok' => 0, 'upah_lembur' => 0, 'potongan_izin' => 0, 'potongan_mangkir' => 0];
+            $id_det = (int)($det['id_detail'] ?? 0);
+
+            // Tunjangan template yg tampil saja (untuk daftar + placeholder per nama).
+            $tun = [];
+            $tun_tetap = [];
+            $tun_tidak = [];
+            if ($id_det > 0) {
+                $qtun = $koneksi->query(
+                    "SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan FROM tb_tunjangan_kontrak " .
+                    "WHERE id_detail_kontrak = '$id_det' AND tampil_template = 1 ORDER BY id_tunjangan_kontrak ASC"
+                );
+                if ($qtun) {
+                    while ($t = $qtun->fetch_assoc()) {
+                        $tun[strtolower(trim((string)$t['nama_tunjangan']))] = $t['jumlah_tunjangan'];
+                        $rupiah = kontrak_is_makan($t['nama_tunjangan'] ?? '')
+                            ? kontrak_rupiah_makan($t['jumlah_tunjangan'])
+                            : kontrak_rupiah($t['jumlah_tunjangan']);
+                        $baris = [kontrak_title($t['nama_tunjangan']), $rupiah];
+                        if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
+                            $tun_tidak[] = $baris;
+                        } else {
+                            $tun_tetap[] = $baris;
+                        }
                     }
                 }
             }
+            $specs[] = [
+                'kode' => $kode,
+                'nama_jabatan' => $nama_jabatan,
+                'src' => $src,
+                'det' => $det,
+                'tun' => $tun,
+                'tun_tetap' => $tun_tetap,
+                'tun_tidak' => $tun_tidak,
+                'jumlah' => $jumlah,
+            ];
+            $total += $jumlah;
         }
-        $tun_nilai = function ($keys) use ($tun) {
+        if ($total > 100) throw new Exception('Total file maksimal 100 per sekali cetak.');
+        $tun_nilai = function ($tun, $keys) {
             foreach ((array)$keys as $k) {
                 if (isset($tun[strtolower($k)])) return $tun[strtolower($k)];
             }
             return 0;
         };
 
-        // Reservasi N nomor berurutan (kunci baris counter, catat di tb_nomor_urut).
+        // Reservasi TOTAL nomor berurutan sekaligus (satu transaksi counter untuk semua baris).
         $koneksi->begin_transaction();
         try {
             $koneksi->query("INSERT IGNORE INTO tb_nomor_urut (nama, terakhir) VALUES ('kontrak', 0)");
@@ -205,7 +254,7 @@ if ($action === 'generate') {
             if (!$qm) throw new Exception('Gagal membaca nomor terakhir: ' . $koneksi->error);
             $mx = (int)$qm->fetch_assoc()['mx'];
             $mulai = max($last, $mx) + 1;
-            $akhir = $mulai + $jumlah - 1;
+            $akhir = $mulai + $total - 1;
             if (!$koneksi->query("UPDATE tb_nomor_urut SET terakhir = '$akhir' WHERE nama = 'kontrak'")) {
                 throw new Exception('Gagal mencatat nomor surat: ' . $koneksi->error);
             }
@@ -216,31 +265,24 @@ if ($action === 'generate') {
         }
 
         // Isian blanko: titik-titik untuk diisi kemudian, kecuali jabatan,
-        // nilai kontrak (dari template), dan periode (dari pilihan).
+        // nilai kontrak (dari template tiap baris), dan periode (dari pilihan).
         $kosong_panjang = '........................................................';
-        $vars_tetap = [
+        $durasi_teks = $durasi_bulan . ' (' . terbilang_id($durasi_bulan) . ') bulan';
+        $tgl_mulai_teks = kontrak_tgl_id($tgl_mulai);
+        $tgl_selesai_teks = kontrak_tgl_id($tgl_selesai);
+        $vars_bersama = [
             'alamat' => $kosong_panjang,
             'desa ' => '........................',
             'desa' => '........................',
             'kecamatan' => '........................',
             'kabupaten' => '........................',
-            'durasi' => $durasi_bulan . ' (' . terbilang_id($durasi_bulan) . ') bulan',
-            'tgl_mulai' => kontrak_tgl_id($tgl_mulai),
-            'tgl_selesai' => kontrak_tgl_id($tgl_selesai),
+            'durasi' => $durasi_teks,
+            'tgl_mulai' => $tgl_mulai_teks,
+            'tgl_selesai' => $tgl_selesai_teks,
             'nama' => $kosong_panjang,
             'nik' => $kosong_panjang,
             'jenis_kelamin' => '........................',
             'tempat_tanggal_lahir' => $kosong_panjang,
-            'jabatan' => kontrak_title($nama_jabatan),
-            'gaji_pokok' => kontrak_rupiah($det['gaji_pokok'] ?? 0),
-            'upah_lembur' => kontrak_rupiah($det['upah_lembur'] ?? 0),
-            'izin' => kontrak_rupiah($det['potongan_izin'] ?? 0),
-            'mangkir' => kontrak_rupiah($det['potongan_mangkir'] ?? 0),
-            'bonus' => kontrak_rupiah($tun_nilai(['bonus kehadiran', 'bonus'])),
-            'tunjangan_daerah' => kontrak_rupiah($tun_nilai(['tunjangan daerah'])),
-            'tunjangan_hidup' => kontrak_rupiah($tun_nilai(['tunjangan hidup'])),
-            'tunjangan_skill' => kontrak_rupiah($tun_nilai(['tunjangan skill'])),
-            'tunjangan_uang_makan' => kontrak_rupiah_makan($tun_nilai(['tunjangan uang makan', 'tunjangan makan'])),
         ];
 
         $tun_tabel = function ($rows) {
@@ -263,28 +305,43 @@ if ($action === 'generate') {
         if (!mkdir($tmpdir, 0700, true)) throw new Exception('Gagal menyiapkan folder sementara.');
         $files = [];
         try {
-            for ($i = 0; $i < $jumlah; $i++) {
-                $seq = $mulai + $i;
-                $no_surat = sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode, $seq, $tahun);
-                $fname = preg_replace('/[^A-Za-z0-9\-]+/', '-', $no_surat) . '.docx';
-                $dst = $tmpdir . '/' . $fname;
-                kontrak_patch_docx($src, $dst);
-                $tp = new \PhpOffice\PhpWord\TemplateProcessor($dst);
-                foreach (['tunjangan_tetap' => $tun_tetap, 'tunjangan_tidak_tetap' => $tun_tidak] as $macro => $rows) {
-                    if ($rows) {
-                        $tp->setComplexBlock($macro, $tun_tabel($rows));
-                    } else {
-                        $tp->setValue($macro, '-');
+            $seq = $mulai;
+            foreach ($specs as $sp) {
+                $det = $sp['det'];
+                $tun = $sp['tun'];
+                $vars = $vars_bersama + [
+                    'jabatan' => kontrak_title($sp['nama_jabatan']),
+                    'gaji_pokok' => kontrak_rupiah($det['gaji_pokok'] ?? 0),
+                    'upah_lembur' => kontrak_rupiah($det['upah_lembur'] ?? 0),
+                    'izin' => kontrak_rupiah($det['potongan_izin'] ?? 0),
+                    'mangkir' => kontrak_rupiah($det['potongan_mangkir'] ?? 0),
+                    'bonus' => kontrak_rupiah($tun_nilai($tun, ['bonus kehadiran', 'bonus'])),
+                    'tunjangan_daerah' => kontrak_rupiah($tun_nilai($tun, ['tunjangan daerah'])),
+                    'tunjangan_hidup' => kontrak_rupiah($tun_nilai($tun, ['tunjangan hidup'])),
+                    'tunjangan_skill' => kontrak_rupiah($tun_nilai($tun, ['tunjangan skill'])),
+                    'tunjangan_uang_makan' => kontrak_rupiah_makan($tun_nilai($tun, ['tunjangan uang makan', 'tunjangan makan'])),
+                ];
+                for ($i = 0; $i < $sp['jumlah']; $i++, $seq++) {
+                    $no_surat = sprintf('TPJS-KONTRAK-%s/%04d/%s', $sp['kode'], $seq, $tahun);
+                    $fname = preg_replace('/[^A-Za-z0-9\-]+/', '-', $no_surat) . '.docx';
+                    $dst = $tmpdir . '/' . $fname;
+                    kontrak_patch_docx($sp['src'], $dst);
+                    $tp = new \PhpOffice\PhpWord\TemplateProcessor($dst);
+                    foreach (['tunjangan_tetap' => $sp['tun_tetap'], 'tunjangan_tidak_tetap' => $sp['tun_tidak']] as $macro => $rows) {
+                        if ($rows) {
+                            $tp->setComplexBlock($macro, $tun_tabel($rows));
+                        } else {
+                            $tp->setValue($macro, '-');
+                        }
                     }
+                    $vars['nomor_kontrak'] = $no_surat;
+                    $tp->setValues($vars);
+                    $tp->saveAs($dst);
+                    $files[] = $dst;
                 }
-                $vars = $vars_tetap;
-                $vars['nomor_kontrak'] = $no_surat;
-                $tp->setValues($vars);
-                $tp->saveAs($dst);
-                $files[] = $dst;
             }
 
-            $zip_name = sprintf('Kontrak-%s-%04d-sd-%04d-%s.zip', $kode, $mulai, $akhir, $tahun);
+            $zip_name = sprintf('Kontrak-Blanko-%04d-sd-%04d-%s.zip', $mulai, $akhir, $tahun);
             $zip_path = $tmpdir . '/' . $zip_name;
             $zip = new ZipArchive();
             if ($zip->open($zip_path, ZipArchive::CREATE) !== true) throw new Exception('Gagal membuat ZIP.');

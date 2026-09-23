@@ -9,35 +9,16 @@
             <div class="card-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> Untuk karyawan baru yang datanya belum diinput.
-                    Pilih <strong>jabatan</strong> → <strong>template</strong> → <strong>durasi</strong> → <strong>jumlah</strong>.
+                    Tambahkan <strong>baris per jabatan</strong> → pilih <strong>template</strong> → <strong>jumlah</strong> tiap baris.
+                    Periode (Tgl Mulai + Durasi) berlaku untuk semua baris.
                     Nomor kontrak berurutan langsung <strong>dikonsumsi</strong> dari counter
                     (<code>tb_nomor_urut</code>) dan tidak bisa dibatalkan.
-                    Isian personal (nama, NIK, alamat) berupa titik-titik, sedangkan
-                    periode kontrak terisi sesuai Tgl Mulai + Durasi pilihan.
+                    Isian personal (nama, NIK, alamat) berupa titik-titik.
                 </div>
 
                 <form id="formCetakKontrak" action="app/controller/act-cetak-kontrak.php" method="POST" target="_blank">
                     <input type="hidden" name="action" value="generate">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Jabatan <span class="text-danger">*</span></label>
-                            <select name="id_jabatan" id="cetakJabatan" class="form-control select-search" required>
-                                <option value="">-- Pilih Jabatan --</option>
-                                <?php
-                                $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
-                                while ($j = $jabatans->fetch_assoc()) {
-                                    $__kj = trim((string)($j['kode_jabatan'] ?? ''));
-                                    echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
-                                }
-                                ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Template <span class="text-danger">*</span></label>
-                            <select name="id_template" id="cetakTemplate" class="form-control" required>
-                                <option value="">-- Pilih jabatan terlebih dahulu --</option>
-                            </select>
-                        </div>
+                    <div class="row g-3 mb-3">
                         <div class="col-md-3">
                             <label class="form-label">Tgl Mulai</label>
                             <input type="date" name="tgl_mulai" id="cetakTglMulai" class="form-control" value="<?= date('Y-m-d') ?>" required>
@@ -58,15 +39,30 @@
                             <label class="form-label">Tahun Nomor</label>
                             <input type="number" name="tahun" id="cetakTahun" class="form-control" value="<?= date('Y') ?>" min="2000" max="2100" required>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Jumlah <small class="text-muted">(1–50)</small></label>
-                            <input type="number" name="jumlah" id="cetakJumlah" class="form-control" value="1" min="1" max="50" required>
-                        </div>
-                        <div class="col-md-9 d-flex align-items-end">
-                            <button type="submit" class="btn btn-success" id="btnCetakKontrak">
-                                <i class="fa fa-download"></i> Generate &amp; Unduh ZIP
-                            </button>
-                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold mb-0">Daftar Jabatan <small class="text-muted">(maks 10 baris, total maks 100 file)</small></label>
+                        <button type="button" class="btn btn-sm btn-primary" id="btnAddBaris">
+                            <i class="fa fa-plus"></i> Tambah Jabatan
+                        </button>
+                    </div>
+                    <div id="repeaterJabatan"></div>
+                    <select id="cetakJabatanSource" class="d-none" aria-hidden="true" tabindex="-1">
+                        <option value="">-- Pilih Jabatan --</option>
+                        <?php
+                        $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
+                        while ($j = $jabatans->fetch_assoc()) {
+                            $__kj = trim((string)($j['kode_jabatan'] ?? ''));
+                            echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
+                        }
+                        ?>
+                    </select>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-success" id="btnCetakKontrak">
+                            <i class="fa fa-download"></i> Generate &amp; Unduh ZIP
+                        </button>
                     </div>
                 </form>
 
@@ -75,7 +71,7 @@
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm w-100">
                         <tbody id="tbodyNomorInfo">
-                            <tr><td class="text-center text-muted">Pilih jabatan untuk melihat posisi nomor.</td></tr>
+                            <tr><td class="text-center text-muted">Memuat posisi nomor...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -88,14 +84,13 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const API = "app/controller/act-cetak-kontrak.php";
-        const selJab = document.getElementById("cetakJabatan");
-        const selTpl = document.getElementById("cetakTemplate");
         const inTahun = document.getElementById("cetakTahun");
-        const inJumlah = document.getElementById("cetakJumlah");
         const inMulai = document.getElementById("cetakTglMulai");
         const inDurasi = document.getElementById("cetakDurasi");
         const inSelesai = document.getElementById("cetakTglSelesai");
-        let infoData = null;
+        const boxRepeater = document.getElementById("repeaterJabatan");
+        const jabOptionsHTML = document.getElementById("cetakJabatanSource").innerHTML;
+        let globalNext = null;
 
         const NAMA_BULAN = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
             "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -134,61 +129,145 @@
                 .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
 
-        function refreshRange() {
-            const box = document.getElementById("cetakRangePreview");
-            if (!infoData || !infoData.kode_jabatan) { box.innerHTML = ""; return; }
-            let n = parseInt(inJumlah.value, 10) || 0;
+        function rowJumlah(row) {
+            const el = row.querySelector(".cetak-jumlah");
+            let n = parseInt(el.value, 10) || 0;
             if (n < 1) n = 1;
             if (n > 50) n = 50;
-            const mulai = infoData.berikutnya;
-            const akhir = mulai + n - 1;
-            const th = (inTahun.value || "").replace(/\D/g, "").slice(0, 4) || String(new Date().getFullYear());
-            const fmt = s => `TPJS-KONTRAK-${escHtml(infoData.kode_jabatan)}/${String(s).padStart(4, "0")}/${escHtml(th)}`;
+            return n;
+        }
+
+        function collectRows() {
+            return [...boxRepeater.querySelectorAll(".repeater-row")];
+        }
+
+        function tahunStr() {
+            return (inTahun.value || "").replace(/\D/g, "").slice(0, 4) || String(new Date().getFullYear());
+        }
+
+        function refreshRanges() {
+            const box = document.getElementById("cetakRangePreview");
+            const rows = collectRows();
+            let total = 0;
+            rows.forEach(r => { total += rowJumlah(r); });
+            if (globalNext == null) {
+                rows.forEach(r => {
+                    r.querySelector(".row-info").innerHTML = '<span class="text-muted">Menunggu info nomor...</span>';
+                });
+                box.innerHTML = `<div class="alert alert-info py-2 mb-0 mt-2">${rows.length} baris • ${total} file.</div>`;
+                return;
+            }
+            let cursor = globalNext;
+            const th = tahunStr();
+            rows.forEach(r => {
+                const n = rowJumlah(r);
+                const kode = r.dataset.kode || "";
+                const info = r.querySelector(".row-info");
+                if (!kode) {
+                    info.innerHTML = '<span class="text-muted">Pilih jabatan untuk melihat rentang nomor baris ini.</span>';
+                } else {
+                    const a = String(cursor).padStart(4, "0");
+                    const b = String(cursor + n - 1).padStart(4, "0");
+                    info.innerHTML = `Nomor: <strong>TPJS-KONTRAK-${escHtml(kode)}/${a}/${escHtml(th)}</strong>` +
+                        (n > 1 ? ` s/d <strong>TPJS-KONTRAK-${escHtml(kode)}/${b}/${escHtml(th)}</strong>` : ``) +
+                        ` <span class="text-muted">(${n} file)</span>`;
+                }
+                cursor += n;
+            });
+            const akhir = cursor - 1;
             box.innerHTML = `<div class="alert alert-warning py-2 mb-0 mt-2">` +
-                `<i class="fa fa-info-circle"></i> Akan memakai nomor <strong>${fmt(mulai)}</strong>` +
-                (n > 1 ? ` s/d <strong>${fmt(akhir)}</strong> (${n} nomor)` : ` (1 nomor)`) +
-                ` — counter maju ke <strong>${akhir}</strong>.<br>` +
+                `<i class="fa fa-info-circle"></i> Total <strong>${total} file</strong> dalam <strong>${rows.length} baris</strong>, ` +
+                `nomor ${globalNext} s/d ${akhir} — counter maju ke <strong>${akhir}</strong>.<br>` +
                 `<small>Periode: ${tglIndo(inMulai.value)} s/d ${tglIndo(hitungTglSelesai() || "")} ` +
                 `(${escHtml(inDurasi.options[inDurasi.selectedIndex].text)})</small></div>`;
         }
 
-        function loadInfo() {
-            const id = selJab.value;
-            infoData = null;
-            document.getElementById("tbodyNomorInfo").innerHTML =
-                `<tr><td class="text-center text-muted">Memuat...</td></tr>`;
-            document.getElementById("cetakRangePreview").innerHTML = "";
+        function loadRowInfo(row) {
+            const jabSel = row.querySelector(".cetak-jabatan");
+            const tplSel = row.querySelector(".cetak-template");
+            const id = jabSel.value;
+            row.dataset.kode = "";
             if (!id) {
-                selTpl.innerHTML = `<option value="">-- Pilih jabatan terlebih dahulu --</option>`;
-                document.getElementById("tbodyNomorInfo").innerHTML =
-                    `<tr><td class="text-center text-muted">Pilih jabatan untuk melihat posisi nomor.</td></tr>`;
+                tplSel.innerHTML = `<option value="">-- Pilih jabatan terlebih dahulu --</option>`;
+                refreshRanges();
                 return;
             }
+            tplSel.innerHTML = `<option value="">Memuat template...</option>`;
             const fd = new FormData();
             fd.append("action", "info");
             fd.append("id_jabatan", id);
             fetch(API, { method: "POST", body: fd })
-                .then(res => res.json())
+                .then(async res => {
+                    const text = await res.text();
+                    try { return JSON.parse(text); }
+                    catch (e) { throw new Error("Respon server tidak valid."); }
+                })
                 .then(res => {
-                    if (res.status !== "success") {
-                        throw new Error(res.msg || "Gagal memuat info.");
-                    }
-                    infoData = res;
+                    if (res.status !== "success") throw new Error(res.msg || "Gagal memuat info.");
+                    if (globalNext == null && res.berikutnya) { globalNext = res.berikutnya; }
+                    row.dataset.kode = res.kode_jabatan || "";
                     if (!res.templates.length) {
-                        selTpl.innerHTML = `<option value="">Belum ada template untuk jabatan ini</option>`;
+                        tplSel.innerHTML = `<option value="">Belum ada template untuk jabatan ini</option>`;
                     } else {
-                        selTpl.innerHTML = res.templates.map(t =>
+                        tplSel.innerHTML = res.templates.map(t =>
                             `<option value="${t.id_template}">${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}</option>`
                         ).join("");
                     }
-                    const kode = res.kode_jabatan ? escHtml(res.kode_jabatan) : '<span class="badge bg-danger">Kode kosong</span>';
+                    if (!res.kode_jabatan) {
+                        row.querySelector(".row-info").innerHTML =
+                            '<span class="badge bg-danger">Kode jabatan kosong — lengkapi dulu di Data Jabatan</span>';
+                    }
+                    refreshRanges();
+                })
+                .catch(err => {
+                    row.querySelector(".row-info").innerHTML =
+                        `<span class="text-danger">${escHtml(err.message || err)}</span>`;
+                });
+        }
+
+        function addRow() {
+            const rows = collectRows();
+            if (rows.length >= 10) {
+                showToast("Maksimal 10 baris per sekali cetak.", "warning");
+                return;
+            }
+            const div = document.createElement("div");
+            div.className = "repeater-row border rounded p-2 mb-2";
+            div.dataset.kode = "";
+            div.innerHTML =
+                `<div class="row g-2 align-items-end">` +
+                `<div class="col-md-5"><label class="form-label">Jabatan <span class="text-danger">*</span></label>` +
+                `<select name="id_jabatan[]" class="form-control select-search cetak-jabatan" required>${jabOptionsHTML}</select></div>` +
+                `<div class="col-md-4"><label class="form-label">Template <span class="text-danger">*</span></label>` +
+                `<select name="id_template[]" class="form-control cetak-template" required>` +
+                `<option value="">-- Pilih jabatan terlebih dahulu --</option></select></div>` +
+                `<div class="col-md-2"><label class="form-label">Jumlah</label>` +
+                `<input type="number" name="jumlah[]" class="form-control cetak-jumlah" value="1" min="1" max="50" required></div>` +
+                `<div class="col-md-1 text-end"><button type="button" class="btn btn-danger btn-sm btnDelBaris" title="Hapus baris">` +
+                `<i class="fa fa-trash"></i></button></div>` +
+                `</div><small class="row-info text-muted"></small>`;
+            boxRepeater.appendChild(div);
+            if (window.jQuery) {
+                $(div).find(".cetak-jabatan").select2({
+                    width: "100%", placeholder: "Pilih jabatan...", allowClear: true
+                });
+            }
+            refreshRanges();
+        }
+
+        function loadCounter() {
+            const fd = new FormData();
+            fd.append("action", "counter");
+            fetch(API, { method: "POST", body: fd })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status !== "success") throw new Error(res.msg || "Gagal memuat counter.");
+                    globalNext = res.berikutnya;
                     document.getElementById("tbodyNomorInfo").innerHTML =
-                        `<tr><th style="width:35%">Jabatan</th><td>${escHtml(res.nama_jabatan)} (${kode})</td></tr>` +
-                        `<tr><th>Template tersedia</th><td>${res.templates.length} template</td></tr>` +
-                        `<tr><th>Terakhir (counter)</th><td><strong>${res.terakhir_counter}</strong></td></tr>` +
+                        `<tr><th style="width:35%">Terakhir (counter)</th><td><strong>${res.terakhir_counter}</strong></td></tr>` +
                         `<tr><th>Terbesar (data)</th><td><strong>${res.terbesar_data}</strong></td></tr>` +
                         `<tr><th>Berikutnya</th><td><strong>${res.berikutnya}</strong></td></tr>`;
-                    refreshRange();
+                    refreshRanges();
                 })
                 .catch(err => {
                     document.getElementById("tbodyNomorInfo").innerHTML =
@@ -196,32 +275,75 @@
                 });
         }
 
-        // Pakai jQuery .on agar change dari Select2 ikut tertangkap
-        // (Select2 memicu 'change' jQuery yg tidak sampai ke addEventListener native).
+        // Event delegation: jQuery .on agar change Select2 ikut tertangkap.
         if (window.jQuery) {
-            $(selJab).on("change", loadInfo);
+            $(boxRepeater).on("change", ".cetak-jabatan", function() {
+                loadRowInfo($(this).closest(".repeater-row")[0]);
+            });
+            $(boxRepeater).on("change input", ".cetak-template, .cetak-jumlah", refreshRanges);
+            $(boxRepeater).on("click", ".btnDelBaris", function() {
+                if (collectRows().length <= 1) {
+                    showToast("Minimal satu baris.", "warning");
+                    return;
+                }
+                $(this).closest(".repeater-row").remove();
+                refreshRanges();
+            });
+            $("#btnAddBaris").on("click", addRow);
         } else {
-            selJab.addEventListener("change", loadInfo);
+            boxRepeater.addEventListener("change", e => {
+                if (e.target.classList.contains("cetak-jabatan")) loadRowInfo(e.target.closest(".repeater-row"));
+                else refreshRanges();
+            });
+            boxRepeater.addEventListener("input", refreshRanges);
+            boxRepeater.addEventListener("click", e => {
+                const del = e.target.closest(".btnDelBaris");
+                if (del) {
+                    if (collectRows().length <= 1) { showToast("Minimal satu baris.", "warning"); return; }
+                    del.closest(".repeater-row").remove();
+                    refreshRanges();
+                }
+            });
+            document.getElementById("btnAddBaris").addEventListener("click", addRow);
         }
-        inJumlah.addEventListener("input", refreshRange);
-        inTahun.addEventListener("input", refreshRange);
-        inMulai.addEventListener("change", () => { syncTahun(); hitungTglSelesai(); refreshRange(); });
-        inDurasi.addEventListener("change", () => { hitungTglSelesai(); refreshRange(); });
+        inTahun.addEventListener("input", refreshRangeCompat);
+        inMulai.addEventListener("change", () => { syncTahun(); hitungTglSelesai(); refreshRanges(); });
+        inDurasi.addEventListener("change", () => { hitungTglSelesai(); refreshRanges(); });
+        function refreshRangeCompat() { refreshRanges(); }
         hitungTglSelesai();
+        addRow();
+        loadCounter();
 
         document.getElementById("formCetakKontrak").addEventListener("submit", async function(e) {
-            if (!selJab.value) {
+            const rows = collectRows();
+            if (!rows.length) {
                 e.preventDefault();
-                showToast("Pilih jabatan terlebih dahulu.", "warning");
+                showToast("Tambahkan minimal satu baris jabatan.", "warning");
                 return;
             }
-            if (!selTpl.value) {
+            let total = 0;
+            for (let i = 0; i < rows.length; i++) {
+                const jab = rows[i].querySelector(".cetak-jabatan").value;
+                const tpl = rows[i].querySelector(".cetak-template").value;
+                if (!jab) {
+                    e.preventDefault();
+                    showToast(`Baris ${i + 1}: pilih jabatan terlebih dahulu.`, "warning");
+                    return;
+                }
+                if (!tpl) {
+                    e.preventDefault();
+                    showToast(`Baris ${i + 1}: pilih template terlebih dahulu.`, "warning");
+                    return;
+                }
+                total += rowJumlah(rows[i]);
+            }
+            if (total > 100) {
                 e.preventDefault();
-                showToast("Pilih template terlebih dahulu.", "warning");
+                showToast("Total file maksimal 100 per sekali cetak.", "warning");
                 return;
             }
             const ok = await confirmDialog(
-                "Nomor kontrak akan langsung dikonsumsi dan tidak bisa dibatalkan. Lanjutkan cetak?"
+                `Cetak ${total} file dalam ${rows.length} baris? Nomor kontrak akan langsung dikonsumsi dan tidak bisa dibatalkan.`
             );
             if (!ok) e.preventDefault();
         });
