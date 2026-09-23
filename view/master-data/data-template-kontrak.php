@@ -122,8 +122,9 @@
                                     <thead class="table-info">
                                         <tr>
                                             <th>Nama Tunjangan</th>
-                                            <th style="width:22%">Jenis</th>
-                                            <th style="width:28%">Jumlah (Rp)</th>
+                                            <th style="width:18%">Jenis</th>
+                                            <th style="width:22%">Jumlah (Rp)</th>
+                                            <th style="width:18%">Tampil</th>
                                             <th class="text-center" style="width:10%">Aksi</th>
                                         </tr>
                                     </thead>
@@ -264,7 +265,7 @@
                             <form id="formTplTunjangan" class="row g-2 align-items-end">
                                 <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
                                 <input type="hidden" name="id_tunjangan" id="tplTunjanganId">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label">Nama Tunjangan</label>
                                     <select name="nama_tunjangan" id="tplTunjanganNama" class="form-select" required>
                                         <option value="">-- Pilih Tunjangan --</option>
@@ -283,12 +284,19 @@
                                         <option value="tidak_tetap">Tidak Tetap</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="form-label">Jumlah (Rp)</label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
                                         <input type="text" name="jumlah_tunjangan" id="tplTunjanganJumlah" class="form-control nominal-mask" placeholder="0" required>
                                     </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Tampil di Template</label>
+                                    <select name="tampil_template" id="tplTunjanganTampil" class="form-select" required>
+                                        <option value="1">Ya, tampilkan</option>
+                                        <option value="0">Tidak</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-3 d-flex gap-1">
                                     <button type="submit" class="btn btn-success" id="btnTplTunjanganSubmit">
@@ -305,6 +313,7 @@
                                             <th class="text-center">Nama Tunjangan</th>
                                             <th class="text-center">Jenis</th>
                                             <th class="text-center">Jumlah (Rp)</th>
+                                            <th class="text-center">Tampil</th>
                                             <th class="text-center" style="width:15%">Aksi</th>
                                         </tr>
                                     </thead>
@@ -662,6 +671,7 @@
             document.getElementById("tplTunjanganNama").value = "";
             document.getElementById("tplTunjanganJenis").value = "tetap";
             document.getElementById("tplTunjanganJumlah").value = "";
+            document.getElementById("tplTunjanganTampil").value = "1";
             document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Simpan';
             document.getElementById("btnTplTunjanganCancel").classList.add("d-none");
         }
@@ -677,7 +687,7 @@
                 .then(res => {
                     const tbody = document.getElementById("tbodyTplTunjangan");
                     if (res.status !== "success" || !res.data.length) {
-                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada tunjangan.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada tunjangan.</td></tr>`;
                         return;
                     }
                     tbody.innerHTML = res.data.map((t, i) => `<tr>
@@ -686,12 +696,16 @@
                         <td class="text-center">${t.jenis_tunjangan === "tidak_tetap"
                             ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
                             : '<span class="badge bg-success">Tetap</span>'}</td>
-                        <td class="text-end">${fmtModalRp(t.jumlah_tunjangan)}</td>
+                        <td class="text-end">${fmtModalRp(t.jumlah_tunjangan)}${["tunjangan makan", "tunjangan uang makan"].includes(String(t.nama_tunjangan || "").toLowerCase().trim()) ? "/hari" : ""}</td>
+                        <td class="text-center">${String(t.tampil_template ?? "1") === "0"
+                            ? '<span class="badge bg-secondary">Tidak</span>'
+                            : '<span class="badge bg-info text-dark">Ya</span>'}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-warning btnTplTunjanganEdit"
                                 data-id="${t.id_tunjangan}" data-nama="${escHtml(t.nama_tunjangan)}"
                                 data-jenis="${escHtml(t.jenis_tunjangan || "tetap")}"
-                                data-jumlah="${escHtml(t.jumlah_tunjangan)}">Edit</button>
+                                data-jumlah="${escHtml(t.jumlah_tunjangan)}"
+                                data-tampil="${escHtml(t.tampil_template ?? "1")}">Edit</button>
                             <button class="btn btn-sm btn-danger btnTplTunjanganDel"
                                 data-id="${t.id_tunjangan}"><i class="fa fa-trash"></i></button>
                         </td>
@@ -699,7 +713,7 @@
                 })
                 .catch(() => {
                     document.getElementById("tbodyTplTunjangan").innerHTML =
-                        `<tr><td colspan="5" class="text-center text-danger">Gagal memuat.</td></tr>`;
+                        `<tr><td colspan="6" class="text-center text-danger">Gagal memuat.</td></tr>`;
                 });
         }
 
@@ -752,6 +766,7 @@
                 document.getElementById("tplTunjanganNama").value = btnET.dataset.nama || "";
                 document.getElementById("tplTunjanganJenis").value = btnET.dataset.jenis || "tetap";
                 document.getElementById("tplTunjanganJumlah").value = formatIndo(btnET.dataset.jumlah);
+                document.getElementById("tplTunjanganTampil").value = String(btnET.dataset.tampil ?? "1") === "0" ? "0" : "1";
                 document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Update';
                 document.getElementById("btnTplTunjanganCancel").classList.remove("d-none");
                 return;
@@ -844,6 +859,7 @@
             const tb = document.getElementById("tbodyUploadTunjangan");
             if (!tb) return;
             const jenis = d.jenis_tunjangan === "tidak_tetap" ? "tidak_tetap" : "tetap";
+            const tampil = String(d.tampil_template ?? "1") === "0" ? "0" : "1";
             const tr = document.createElement("tr");
             tr.innerHTML =
                 `<td><input type="text" name="tunjangan_nama[]" class="form-control form-control-sm" maxlength="25" placeholder="Nama tunjangan"></td>` +
@@ -851,6 +867,9 @@
                 `<option value="tetap"${jenis === "tetap" ? " selected" : ""}>Tetap</option>` +
                 `<option value="tidak_tetap"${jenis === "tidak_tetap" ? " selected" : ""}>Tidak Tetap</option></select></td>` +
                 `<td><input type="text" name="tunjangan_jumlah[]" class="form-control form-control-sm nominal-mask" placeholder="0"></td>` +
+                `<td><select name="tunjangan_tampil[]" class="form-select form-select-sm">` +
+                `<option value="1"${tampil === "1" ? " selected" : ""}>Ya</option>` +
+                `<option value="0"${tampil === "0" ? " selected" : ""}>Tidak</option></select></td>` +
                 `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
             tb.appendChild(tr);
         }

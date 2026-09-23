@@ -197,14 +197,17 @@ try {
                 $nama_arr = isset($_POST['tunjangan_nama']) && is_array($_POST['tunjangan_nama']) ? $_POST['tunjangan_nama'] : [];
                 $jenis_arr = isset($_POST['tunjangan_jenis']) && is_array($_POST['tunjangan_jenis']) ? $_POST['tunjangan_jenis'] : [];
                 $jumlah_arr = isset($_POST['tunjangan_jumlah']) && is_array($_POST['tunjangan_jumlah']) ? $_POST['tunjangan_jumlah'] : [];
-                $stmtT = $koneksi->prepare("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) VALUES (?,?,?,?)");
+                $tampil_arr = isset($_POST['tunjangan_tampil']) && is_array($_POST['tunjangan_tampil']) ? $_POST['tunjangan_tampil'] : [];
+                $stmtT = $koneksi->prepare("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) VALUES (?,?,?,?,?)");
                 foreach ($nama_arr as $i => $nm_raw) {
                     $nm = substr(trim((string)$nm_raw), 0, 25);
                     if ($nm === '') continue;
                     $jn = strtolower(trim((string)($jenis_arr[$i] ?? 'tetap')));
                     if (!in_array($jn, ['tetap', 'tidak_tetap'], true)) $jn = 'tetap';
                     $jm = (string)floatOrZero($jumlah_arr[$i] ?? '');
-                    $stmtT->bind_param("isss", $id_karier_baru, $nm, $jn, $jm);
+                    $tp = (int)($tampil_arr[$i] ?? 1);
+                    if (!in_array($tp, [0, 1], true)) $tp = 1;
+                    $stmtT->bind_param("isssi", $id_karier_baru, $nm, $jn, $jm, $tp);
                     if (!$stmtT->execute()) throw new Exception("Karier tersimpan, tetapi tunjangan gagal disimpan: " . $stmtT->error);
                     $n_tunjangan++;
                 }
@@ -236,8 +239,8 @@ try {
                 }
                 {
                     if ($koneksi->query(
-                        "INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) " .
-                        "SELECT '$id_karier_baru', nama_tunjangan, jenis_tunjangan, jumlah_tunjangan " .
+                        "INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) " .
+                        "SELECT '$id_karier_baru', nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template " .
                         "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail'"
                     )) {
                         $n_tunjangan = $koneksi->affected_rows;

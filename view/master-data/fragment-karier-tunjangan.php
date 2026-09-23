@@ -7,7 +7,7 @@
 <form id="formModalTunjangan" class="row g-2 align-items-end">
     <input type="hidden" name="id_tunjangan" id="modalTunjanganId">
     <input type="hidden" name="id_karier" id="modalTunjanganKarierEnc">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">Nama Tunjangan</label>
         <select name="nama_tunjangan" id="modalTunjanganNama" class="form-select" required>
             <option value="">-- Pilih Tunjangan --</option>
@@ -26,9 +26,16 @@
             <option value="tidak_tetap">Tidak Tetap</option>
         </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label class="form-label">Jumlah (Rp)</label>
         <input type="number" name="jumlah_tunjangan" id="modalTunjanganJumlah" class="form-control" placeholder="0" required>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Tampil di Template</label>
+        <select name="tampil_template" id="modalTunjanganTampil" class="form-select" required>
+            <option value="1">Ya</option>
+            <option value="0">Tidak</option>
+        </select>
     </div>
     <div class="col-md-3 d-flex gap-1">
         <button type="submit" class="btn btn-success" id="btnModalTunjanganSubmit">
@@ -46,6 +53,7 @@
                 <th class="text-center">Nama Tunjangan</th>
                 <th class="text-center">Jenis</th>
                 <th class="text-center">Jumlah (Rp)</th>
+                <th class="text-center">Tampil</th>
                 <th class="text-center" style="width:15%">Aksi</th>
             </tr>
         </thead>

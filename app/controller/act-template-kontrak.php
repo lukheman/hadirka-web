@@ -213,8 +213,9 @@ if ($action === 'upload') {
             $nama_arr = isset($_POST['tunjangan_nama']) && is_array($_POST['tunjangan_nama']) ? $_POST['tunjangan_nama'] : [];
             $jenis_arr = isset($_POST['tunjangan_jenis']) && is_array($_POST['tunjangan_jenis']) ? $_POST['tunjangan_jenis'] : [];
             $jumlah_arr = isset($_POST['tunjangan_jumlah']) && is_array($_POST['tunjangan_jumlah']) ? $_POST['tunjangan_jumlah'] : [];
+            $tampil_arr = isset($_POST['tunjangan_tampil']) && is_array($_POST['tunjangan_tampil']) ? $_POST['tunjangan_tampil'] : [];
             $stmtT = $koneksi->prepare(
-                "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) VALUES (?, ?, ?, ?)"
+                "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) VALUES (?, ?, ?, ?, ?)"
             );
             if (!$stmtT) throw new Exception("Gagal menyiapkan tunjangan: " . $koneksi->error);
             foreach ($nama_arr as $i => $nm_raw) {
@@ -223,7 +224,9 @@ if ($action === 'upload') {
                 $jn = strtolower(trim((string)($jenis_arr[$i] ?? 'tetap')));
                 if (!in_array($jn, ['tetap', 'tidak_tetap'], true)) $jn = 'tetap';
                 $jm = (string)tpl_float($jumlah_arr[$i] ?? 0);
-                $stmtT->bind_param("isss", $id_detail, $nm, $jn, $jm);
+                $tp = (int)($tampil_arr[$i] ?? 1);
+                if (!in_array($tp, [0, 1], true)) $tp = 1;
+                $stmtT->bind_param("isssi", $id_detail, $nm, $jn, $jm, $tp);
                 if (!$stmtT->execute()) throw new Exception("Gagal menyimpan tunjangan: " . $stmtT->error);
                 $n_tunjangan++;
             }
@@ -405,7 +408,7 @@ if ($action === 'list_tunjangan') {
     $id_detail = tpl_ensure_detail($koneksi, $id_template);
     $rows = [];
     $q = $koneksi->query(
-        "SELECT id_tunjangan_kontrak AS id_tunjangan, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan " .
+        "SELECT id_tunjangan_kontrak AS id_tunjangan, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template " .
         "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail' ORDER BY id_tunjangan_kontrak ASC"
     );
     if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
@@ -424,6 +427,8 @@ if ($action === 'save_tunjangan') {
     if ($jumlah_raw === '' || $jumlah_raw === null) tpl_json('error', 'Jumlah tunjangan wajib diisi.');
     $jenis_t = strtolower(trim($_POST['jenis_tunjangan'] ?? 'tetap'));
     if (!in_array($jenis_t, ['tetap', 'tidak_tetap'], true)) tpl_json('error', 'Jenis tunjangan tidak valid.');
+    $tampil = (int)($_POST['tampil_template'] ?? 1);
+    if (!in_array($tampil, [0, 1], true)) $tampil = 1;
     $jumlah = (string)tpl_float($jumlah_raw);
     $id_detail = tpl_ensure_detail($koneksi, $id_template);
     $nama = $koneksi->real_escape_string($nama_raw);
@@ -432,7 +437,7 @@ if ($action === 'save_tunjangan') {
     $id_tunjangan = (int)($_POST['id_tunjangan'] ?? 0);
     if ($id_tunjangan > 0) {
         $ok = $koneksi->query(
-            "UPDATE tb_tunjangan_kontrak SET nama_tunjangan = '$nama', jenis_tunjangan = '$jenis_t', jumlah_tunjangan = '$jumlah_esc' " .
+            "UPDATE tb_tunjangan_kontrak SET nama_tunjangan = '$nama', jenis_tunjangan = '$jenis_t', jumlah_tunjangan = '$jumlah_esc', tampil_template = '$tampil' " .
             "WHERE id_tunjangan_kontrak = '$id_tunjangan' AND id_detail_kontrak = '$id_detail'"
         );
         if (!$ok) tpl_json('error', 'Gagal mengupdate: ' . $koneksi->error);
@@ -440,8 +445,8 @@ if ($action === 'save_tunjangan') {
         tpl_json('success', 'Tunjangan berhasil diupdate.');
     } else {
         $ok = $koneksi->query(
-            "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) " .
-            "VALUES ('$id_detail', '$nama', '$jenis_t', '$jumlah_esc')"
+            "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) " .
+            "VALUES ('$id_detail', '$nama', '$jenis_t', '$jumlah_esc', '$tampil')"
         );
         if (!$ok) tpl_json('error', 'Gagal menyimpan: ' . $koneksi->error);
         tpl_json('success', 'Tunjangan berhasil ditambah.', ['id_tunjangan' => $koneksi->insert_id]);
@@ -555,7 +560,7 @@ if ($action === 'preview_info') {
             if ($detailRow && !empty($detailRow['id_detail'])) {
                 $id_det = (int)$detailRow['id_detail'];
                 $qt2 = $koneksi->query(
-                    "SELECT nama_tunjangan, jumlah_tunjangan FROM tb_tunjangan_kontrak " .
+                    "SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan_kontrak " .
                     "WHERE id_detail_kontrak = '$id_det' ORDER BY id_tunjangan_kontrak ASC"
                 );
                 if ($qt2) while ($x = $qt2->fetch_assoc()) $tr['tunjangan'][] = $x;

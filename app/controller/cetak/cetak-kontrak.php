@@ -84,10 +84,12 @@ $rp = function ($v) use ($num) {
 };
 
 // Tunjangan milik karier (dinormalkan per nama).
+// Hanya yang tampil_template=1 yang dirender di dokumen.
 $tunj = [];
-$q = $koneksi->query("SELECT nama_tunjangan, jumlah_tunjangan FROM tb_tunjangan WHERE id_karier = '$id_karier'");
+$q = $koneksi->query("SELECT nama_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan WHERE id_karier = '$id_karier'");
 if ($q) {
     while ($r = $q->fetch_assoc()) {
+        if ((int)($r['tampil_template'] ?? 1) !== 1) continue;
         $key = strtolower(trim((string)$r['nama_tunjangan']));
         $val = $num($r['jumlah_tunjangan']);
         $tunj[$key] = ($tunj[$key] ?? 0) + $val;
@@ -133,7 +135,7 @@ $vars = [
     'gaji_pokok'           => $rp($kar['gaji_pokok'] ?? 0),
     'tunjangan_daerah'     => $rp($cariTunj(['tunjangan daerah'])),
     'tunjangan_hidup'      => $rp($cariTunj(['tunjangan hidup'])),
-    'tunjangan_uang_makan' => $rp($cariTunj(['tunjangan uang makan', 'tunjangan makan'])),
+    'tunjangan_uang_makan' => $rp($cariTunj(['tunjangan uang makan', 'tunjangan makan'])) . '/hari',
     'tunjangan_skill'      => $rp($cariTunj(['tunjangan skill'])),
     'bonus'                => $rp($bonus),
     'upah_lembur'          => $rp($kar['lembur'] ?? 0),

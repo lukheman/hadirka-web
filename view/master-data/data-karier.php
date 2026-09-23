@@ -208,8 +208,9 @@
                                     <thead class="table-info">
                                         <tr>
                                             <th>Nama Tunjangan</th>
-                                            <th style="width:22%">Jenis</th>
-                                            <th style="width:28%">Jumlah (Rp)</th>
+                                            <th style="width:18%">Jenis</th>
+                                            <th style="width:22%">Jumlah (Rp)</th>
+                                            <th style="width:18%">Tampil</th>
                                             <th class="text-center" style="width:10%">Aksi</th>
                                         </tr>
                                     </thead>
@@ -535,7 +536,7 @@
             const tunjList = bacaTabTunjangan();
             const potList = bacaTabPotongan();
             const tunjCell = tunjList.length
-                ? tunjList.map(t => `${escPreview(t.nama_tunjangan)}${t.jenis_tunjangan === "tidak_tetap" ? " (Tidak Tetap)" : ""}: ${fmtRpTab(t.jumlah_tunjangan)}`).join("<br>")
+                ? tunjList.map(t => { const _m = ["tunjangan makan", "tunjangan uang makan"].includes(String(t.nama_tunjangan || "").toLowerCase().trim()); return `${escPreview(t.nama_tunjangan)}${t.jenis_tunjangan === "tidak_tetap" ? " (Tidak Tetap)" : ""}: ${fmtRpTab(t.jumlah_tunjangan)}${_m ? "/hari" : ""}${String(t.tampil_template ?? "1") === "0" ? ' <span class="badge bg-secondary">tidak tampil</span>' : ""}`; }).join("<br>")
                 : `<span class="text-muted">-</span>`;
             const potCell = potList.length
                 ? potList.map(p => `${escPreview(p.jenis_potongan)}: ${fmtRpTab(p.jumlah_potongan)}`).join("<br>")
@@ -717,6 +718,7 @@
             const tb = document.getElementById("tbodyAddTunjangan");
             if (!tb) return;
             const jenis = d.jenis_tunjangan === "tidak_tetap" ? "tidak_tetap" : "tetap";
+            const tampil = String(d.tampil_template ?? "1") === "0" ? "0" : "1";
             const tr = document.createElement("tr");
             tr.innerHTML =
                 `<td><input type="text" name="tunjangan_nama[]" class="form-control form-control-sm" maxlength="25" value="${escAttr(d.nama_tunjangan || "")}" placeholder="Nama tunjangan"></td>` +
@@ -724,6 +726,9 @@
                 `<option value="tetap"${jenis === "tetap" ? " selected" : ""}>Tetap</option>` +
                 `<option value="tidak_tetap"${jenis === "tidak_tetap" ? " selected" : ""}>Tidak Tetap</option></select></td>` +
                 `<td><input type="text" name="tunjangan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_tunjangan ?? "") === "" ? "" : formatIndo(d.jumlah_tunjangan)}" placeholder="0"></td>` +
+                `<td><select name="tunjangan_tampil[]" class="form-select form-select-sm" title="Tampilkan di template kontrak?">` +
+                `<option value="1"${tampil === "1" ? " selected" : ""}>Ya</option>` +
+                `<option value="0"${tampil === "0" ? " selected" : ""}>Tidak</option></select></td>` +
                 `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelAddRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
             tb.appendChild(tr);
         }
@@ -747,7 +752,7 @@
             if (!tbT || !tbP) return;
             if (force || tbT.rows.length === 0) {
                 tbT.innerHTML = "";
-                tunj.forEach(x => addRowTunjangan({ nama_tunjangan: x.nama_tunjangan, jenis_tunjangan: x.jenis_tunjangan || "tetap", jumlah_tunjangan: x.jumlah_tunjangan }));
+                tunj.forEach(x => addRowTunjangan({ nama_tunjangan: x.nama_tunjangan, jenis_tunjangan: x.jenis_tunjangan || "tetap", jumlah_tunjangan: x.jumlah_tunjangan, tampil_template: (x.tampil_template ?? "1") }));
             }
             if (force || tbP.rows.length === 0) {
                 tbP.innerHTML = "";
@@ -766,7 +771,8 @@
             return [...document.querySelectorAll("#tbodyAddTunjangan tr")].map(tr => ({
                 nama_tunjangan: tr.querySelector("input[name='tunjangan_nama[]']").value.trim(),
                 jenis_tunjangan: tr.querySelector("select[name='tunjangan_jenis[]']").value,
-                jumlah_tunjangan: tr.querySelector("input[name='tunjangan_jumlah[]']").value
+                jumlah_tunjangan: tr.querySelector("input[name='tunjangan_jumlah[]']").value,
+                tampil_template: tr.querySelector("select[name='tunjangan_tampil[]']").value
             })).filter(x => x.nama_tunjangan !== "");
         }
         function bacaTabPotongan() {

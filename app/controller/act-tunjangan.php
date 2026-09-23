@@ -41,6 +41,8 @@ try {
             throw new Exception("Jenis tunjangan tidak valid: [$jenis_raw]");
         }
         $jenis = $jenis_raw;
+        $tampil_raw = $_POST['tampil_template'] ?? '1';
+        $tampil = ($tampil_raw === '0' || $tampil_raw === 0 || $tampil_raw === false) ? 0 : 1;
 
         // Validasi nama tunjangan HANYA dilakukan saat add atau edit
         if ($action == "add" || $action == "edit") {
@@ -63,7 +65,7 @@ try {
             if ($action == "add") {
                 if (empty($id_kar)) throw new Exception("ID Karier tidak valid");
 
-                $q = $koneksi->query("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) VALUES ('$id_kar', '$nama', '$jenis', '$jumlah')");
+                $q = $koneksi->query("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) VALUES ('$id_kar', '$nama', '$jenis', '$jumlah', '$tampil')");
                 if ($q) {
                     $response = ["status" => "success", "message" => "Data berhasil ditambahkan"];
                 } else {
@@ -73,7 +75,7 @@ try {
             elseif ($action == "edit") {
                 if (empty($id_tun)) throw new Exception("ID Tunjangan tidak valid");
 
-                $q = $koneksi->query("UPDATE tb_tunjangan SET nama_tunjangan='$nama', jenis_tunjangan='$jenis', jumlah_tunjangan='$jumlah' WHERE id_tunjangan='$id_tun'");
+                $q = $koneksi->query("UPDATE tb_tunjangan SET nama_tunjangan='$nama', jenis_tunjangan='$jenis', jumlah_tunjangan='$jumlah', tampil_template='$tampil' WHERE id_tunjangan='$id_tun'");
                 if ($q) {
                     $response = ["status" => "success", "message" => "Data berhasil diupdate"];
                 } else {

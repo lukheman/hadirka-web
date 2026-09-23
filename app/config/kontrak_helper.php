@@ -89,6 +89,23 @@ if (!function_exists('kontrak_rupiah')) {
     }
 }
 
+if (!function_exists('kontrak_is_makan')) {
+    // Tunjangan makan dihitung harian -> nominal ditampilkan dengan akhiran "/hari".
+    function kontrak_is_makan($nama)
+    {
+        $k = strtolower(trim((string)$nama));
+        return in_array($k, ['tunjangan makan', 'tunjangan uang makan'], true);
+    }
+}
+
+if (!function_exists('kontrak_rupiah_makan')) {
+    // Rupiah + "/hari" khusus tunjangan makan.
+    function kontrak_rupiah_makan($val)
+    {
+        return kontrak_rupiah($val) . '/hari';
+    }
+}
+
 if (!function_exists('kontrak_alamat')) {
     // Gabungan alamat KTP + wilayah.
     function kontrak_alamat($row)
@@ -245,15 +262,21 @@ if (!function_exists('build_kontrak_docx')) {
         }
 
         // Tunjangan per nama (lowercase) + daftar per jenis (tetap / tidak_tetap).
+        // Hanya yang tampil_template=1 yang dirender di dokumen; yang disembunyikan
+        // tetap tersimpan (payroll) tapi tidak muncul di kontrak.
         // Tiap baris = [nama, rupiah] agar bisa dirender sebagai tabel Word (":" sejajar).
         $tun = [];
         $tun_tetap = [];
         $tun_tidak = [];
-        $qtun = $koneksi->query("SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan FROM tb_tunjangan WHERE id_karier = '$id_karier' ORDER BY id_tunjangan ASC");
+        $qtun = $koneksi->query("SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan WHERE id_karier = '$id_karier' ORDER BY id_tunjangan ASC");
         if ($qtun) {
             while ($t = $qtun->fetch_assoc()) {
+                if ((int)($t['tampil_template'] ?? 1) !== 1) continue;
                 $tun[strtolower(trim((string)$t['nama_tunjangan']))] = $t['jumlah_tunjangan'];
-                $baris = [trim((string)$t['nama_tunjangan']), kontrak_rupiah($t['jumlah_tunjangan'])];
+                $rupiah = kontrak_is_makan($t['nama_tunjangan'] ?? '')
+                    ? kontrak_rupiah_makan($t['jumlah_tunjangan'])
+                    : kontrak_rupiah($t['jumlah_tunjangan']);
+                $baris = [trim((string)$t['nama_tunjangan']), $rupiah];
                 if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
                     $tun_tidak[] = $baris;
                 } else {
@@ -321,7 +344,7 @@ if (!function_exists('build_kontrak_docx')) {
             'tunjangan_daerah' => kontrak_rupiah($tun_nilai(['tunjangan daerah'])),
             'tunjangan_hidup' => kontrak_rupiah($tun_nilai(['tunjangan hidup'])),
             'tunjangan_skill' => kontrak_rupiah($tun_nilai(['tunjangan skill'])),
-            'tunjangan_uang_makan' => kontrak_rupiah($tun_nilai(['tunjangan uang makan', 'tunjangan makan'])),
+            'tunjangan_uang_makan' => kontrak_rupiah_makan($tun_nilai(['tunjangan uang makan', 'tunjangan makan'])),
         ];
 
         $out_dir = __DIR__ . '/../uploads/kontrak/';
