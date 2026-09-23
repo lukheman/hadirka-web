@@ -262,8 +262,8 @@ if (!function_exists('build_kontrak_docx')) {
             $style->setBorderSize(0);
             $style->setBorderColor('FFFFFF');
             $style->setCellMargin(50);
-            // Geser tabel ke kanan (720 twips = 1,27 cm).
-            $style->setIndent(new \PhpOffice\PhpWord\ComplexType\TblWidth(720));
+            // Geser tabel ke kanan (3 cm = 1701 twips).
+            $style->setIndent(new \PhpOffice\PhpWord\ComplexType\TblWidth(1701));
             $table = new \PhpOffice\PhpWord\Element\Table($style);
             $font = ['name' => 'Times New Roman', 'size' => 11];
             foreach ($rows as $row) {
