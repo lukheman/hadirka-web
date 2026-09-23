@@ -148,6 +148,16 @@
             if (!jabSel.value || !t) { box.innerHTML = ""; return; }
             const d = t.detail || {};
             const tdRp = v => `<td class="text-end">${fmtRpPrev(v)}</td>`;
+            const th = tahunStr();
+            let nomorCell = '<span class="text-muted">—</span>';
+            if (row._mulai != null && row.dataset.kode) {
+                const a = String(row._mulai).padStart(4, "0");
+                const b = String(row._akhir).padStart(4, "0");
+                nomorCell = `<strong>TPJS-KONTRAK-${escHtml(row.dataset.kode)}/${a}/${escHtml(th)}</strong>` +
+                    (row._akhir > row._mulai
+                        ? ` s/d <strong>TPJS-KONTRAK-${escHtml(row.dataset.kode)}/${b}/${escHtml(th)}</strong>`
+                        : "");
+            }
             const tunjRows = (t.tunjangan || []).map(x => {
                 const jenis = x.jenis_tunjangan === "tidak_tetap"
                     ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
@@ -166,6 +176,7 @@
             box.innerHTML =
                 `<div class="table-responsive mt-1"><table class="table table-bordered table-sm mb-0">` +
                 `<tbody>` +
+                `<tr><th style="width:28%">Nomor Kontrak</th><td>${nomorCell}</td></tr>` +
                 `<tr><th style="width:28%">Jabatan</th><td>${escHtml(jabText)}</td></tr>` +
                 `<tr><th>Template</th><td>${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}</td></tr>` +
                 `<tr><th>Gaji Pokok</th>${tdRp(d.gaji_pokok)}</tr>` +
@@ -211,26 +222,26 @@
             rows.forEach(r => { total += rowJumlah(r); });
             if (globalNext == null) {
                 rows.forEach(r => {
-                    r.querySelector(".row-info").innerHTML = '<span class="text-muted">Menunggu info nomor...</span>';
+                    delete r._mulai;
+                    delete r._akhir;
+                    renderRowPreview(r);
                 });
                 box.innerHTML = `<div class="alert alert-info py-2 mb-0 mt-2">${rows.length} baris • ${total} file.</div>`;
                 return;
             }
             let cursor = globalNext;
-            const th = tahunStr();
             rows.forEach(r => {
                 const n = rowJumlah(r);
-                const kode = r.dataset.kode || "";
-                const info = r.querySelector(".row-info");
-                if (!kode) {
-                    info.innerHTML = '<span class="text-muted">Pilih jabatan untuk melihat rentang nomor baris ini.</span>';
+                if (!r.dataset.kode) {
+                    delete r._mulai;
+                    delete r._akhir;
+                    r.querySelector(".row-info").innerHTML = '<span class="text-muted">Pilih jabatan untuk melihat rentang nomor baris ini.</span>';
                 } else {
-                    const a = String(cursor).padStart(4, "0");
-                    const b = String(cursor + n - 1).padStart(4, "0");
-                    info.innerHTML = `Nomor: <strong>TPJS-KONTRAK-${escHtml(kode)}/${a}/${escHtml(th)}</strong>` +
-                        (n > 1 ? ` s/d <strong>TPJS-KONTRAK-${escHtml(kode)}/${b}/${escHtml(th)}</strong>` : ``) +
-                        ` <span class="text-muted">(${n} file)</span>`;
+                    r._mulai = cursor;
+                    r._akhir = cursor + n - 1;
+                    r.querySelector(".row-info").innerHTML = "";
                 }
+                renderRowPreview(r);
                 cursor += n;
             });
             const akhir = cursor - 1;
