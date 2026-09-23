@@ -180,7 +180,10 @@
                             <button class="nav-link" id="tab-et-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-et-nilai" type="button" role="tab" aria-controls="tab-et-nilai" aria-selected="false">Nilai Kontrak</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-et-tp-tab" data-bs-toggle="tab" data-bs-target="#tab-et-tp" type="button" role="tab" aria-controls="tab-et-tp" aria-selected="false">Tunjangan &amp; Potongan</button>
+                            <button class="nav-link" id="tab-et-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-et-tunjangan" type="button" role="tab" aria-controls="tab-et-tunjangan" aria-selected="false">Tunjangan</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-et-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-et-potongan" type="button" role="tab" aria-controls="tab-et-potongan" aria-selected="false">Potongan</button>
                         </li>
                     </ul>
                     <div class="tab-content pt-3">
@@ -214,6 +217,9 @@
                             </form>
                         </div>
                         <div class="tab-pane fade" id="tab-et-nilai" role="tabpanel" aria-labelledby="tab-et-nilai-tab">
+                            <div class="alert alert-info py-2 mb-2" id="infoNilaiSekarang">
+                                <i class="fas fa-info-circle"></i> <span>Nilai saat ini: -</span>
+                            </div>
                             <form id="formEditDetail">
                                 <input type="hidden" name="id_template">
                                 <div class="row g-2">
@@ -253,7 +259,7 @@
                                 </div>
                             </form>
                         </div>
-                        <div class="tab-pane fade" id="tab-et-tp" role="tabpanel" aria-labelledby="tab-et-tp-tab">
+                        <div class="tab-pane fade" id="tab-et-tunjangan" role="tabpanel" aria-labelledby="tab-et-tunjangan-tab">
                             <h6 class="fw-bold"><i class="fa fa-money-bill"></i> Tunjangan</h6>
                             <form id="formTplTunjangan" class="row g-2 align-items-end">
                                 <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
@@ -305,7 +311,8 @@
                                     <tbody id="tbodyTplTunjangan"></tbody>
                                 </table>
                             </div>
-                            <hr>
+                        </div>
+                        <div class="tab-pane fade" id="tab-et-potongan" role="tabpanel" aria-labelledby="tab-et-potongan-tab">
                             <h6 class="fw-bold"><i class="fa fa-scissors"></i> Potongan</h6>
                             <form id="formTplPotongan" class="row g-2 align-items-end">
                                 <input type="hidden" name="id_template" id="tplPotonganTemplateId">
@@ -465,7 +472,7 @@
             document.querySelectorAll(".chk-jabatan-edit").forEach(c => c.checked = this.checked);
         });
 
-        // Buka modal edit template (template, nilai kontrak, tunjangan & potongan) dengan prefill
+        // Buka modal edit template (template, nilai kontrak, tunjangan, potongan) dengan prefill
         document.addEventListener("click", e => {
             const btn = e.target.closest(".btnEditTemplate");
             if (!btn) return;
@@ -482,6 +489,14 @@
             formD.querySelector("input[name=potongan_izin]").value = formatIndo(btn.dataset.potonganIzin);
             formD.querySelector("input[name=potongan_mangkir]").value = formatIndo(btn.dataset.potonganMangkir);
             const fmtRpNow = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
+            const infoNow = document.getElementById("infoNilaiSekarang");
+            if (infoNow) {
+                infoNow.querySelector("span").innerHTML =
+                    `Nilai saat ini: Gaji <strong>${fmtRpNow(btn.dataset.gajiPokok)}</strong> • ` +
+                    `Lembur <strong>${fmtRpNow(btn.dataset.upahLembur)}</strong> • ` +
+                    `Pot Izin <strong>${fmtRpNow(btn.dataset.potonganIzin)}</strong> • ` +
+                    `Pot Mangkir <strong>${fmtRpNow(btn.dataset.potonganMangkir)}</strong>`;
+            }
             document.getElementById("tplTunjanganTemplateId").value = btn.dataset.id;
             document.getElementById("tplPotonganTemplateId").value = btn.dataset.id;
             resetTplTunjanganForm();
@@ -541,8 +556,13 @@
                         return;
                     }
                     tbody.innerHTML = res.data.map((r, i) => {
-                        const badges = (r.jabatan && r.jabatan.length)
-                            ? r.jabatan.map(j => `<span class="badge bg-primary me-1 mb-1">${escHtml(j.nama_jabatan)}</span>`).join("")
+                        const daftarJab = (r.jabatan && r.jabatan.length) ? r.jabatan : [];
+                        const maksTampil = 3;
+                        const badges = daftarJab.length
+                            ? daftarJab.slice(0, maksTampil).map(j => `<span class="badge bg-primary me-1 mb-1">${escHtml(j.nama_jabatan)}</span>`).join("") +
+                              (daftarJab.length > maksTampil
+                                  ? `<span class="badge bg-secondary me-1 mb-1" title="${escHtml(daftarJab.map(j => j.nama_jabatan).join(", "))}">+${daftarJab.length - maksTampil} lainnya</span>`
+                                  : "")
                             : '<span class="badge bg-secondary">Tanpa jabatan</span>';
                         const d = r.detail || {};
                         const fmtRp = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
