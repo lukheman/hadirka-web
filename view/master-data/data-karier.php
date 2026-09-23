@@ -66,6 +66,19 @@
                 </div>
 
                 <div class="modal-body">
+                    <ul class="nav nav-tabs" id="tabTambahKarier" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tab-add-data-tab" data-bs-toggle="tab" data-bs-target="#tab-add-data" type="button" role="tab" aria-controls="tab-add-data" aria-selected="true">Data Karier</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-add-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-add-tunjangan" type="button" role="tab" aria-controls="tab-add-tunjangan" aria-selected="false">Tunjangan</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-add-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-add-potongan" type="button" role="tab" aria-controls="tab-add-potongan" aria-selected="false">Potongan</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3">
+                        <div class="tab-pane fade show active" id="tab-add-data" role="tabpanel" aria-labelledby="tab-add-data-tab">
                     <div class="row g-3">
                         <!-- Site -->
                         <div class="col-md-4">
@@ -180,6 +193,47 @@
                                 <br><small class="text-muted">Kosongkan Nomor Urut untuk nomor otomatis.</small>
                             </div>
                             <div id="addNoSuratWarning"></div>
+                        </div>
+                        <!-- Penanda: tunjangan & potongan dikirim dari tab (otoritatif) -->
+                        <input type="hidden" name="tp_dari_tab" value="1">
+                    </div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-add-tunjangan" role="tabpanel" aria-labelledby="tab-add-tunjangan-tab">
+                            <div class="alert alert-info py-2">
+                                <i class="fa fa-info-circle"></i> Terisi otomatis dari template terpilih — tetap bisa diubah, dihapus, atau ditambah baris.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm w-100">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th>Nama Tunjangan</th>
+                                            <th style="width:22%">Jenis</th>
+                                            <th style="width:28%">Jumlah (Rp)</th>
+                                            <th class="text-center" style="width:10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyAddTunjangan"></tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success" id="btnAddRowTunjangan"><i class="fa fa-plus"></i> Tambah Tunjangan</button>
+                        </div>
+                        <div class="tab-pane fade" id="tab-add-potongan" role="tabpanel" aria-labelledby="tab-add-potongan-tab">
+                            <div class="alert alert-info py-2">
+                                <i class="fa fa-info-circle"></i> Terisi otomatis dari template terpilih — tetap bisa diubah, dihapus, atau ditambah baris.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm w-100">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th>Nama Potongan</th>
+                                            <th style="width:30%">Jumlah (Rp)</th>
+                                            <th class="text-center" style="width:10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyAddPotongan"></tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success" id="btnAddRowPotongan"><i class="fa fa-plus"></i> Tambah Potongan</button>
                         </div>
                     </div>
                 </div>
@@ -476,13 +530,13 @@
             const manualNo = composeManualNoSurat(form, info);
             const tpl = chosenTemplate(form, info);
             const fmtRpPrev = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
-            const tunjList = (tpl && Array.isArray(tpl.tunjangan)) ? tpl.tunjangan : [];
-            const potList = (tpl && Array.isArray(tpl.potongan)) ? tpl.potongan : [];
+            const tunjList = bacaTabTunjangan();
+            const potList = bacaTabPotongan();
             const tunjCell = tunjList.length
-                ? tunjList.map(t => `${escPreview(t.nama_tunjangan)}: ${fmtRpPrev(t.jumlah_tunjangan)}`).join("<br>")
+                ? tunjList.map(t => `${escPreview(t.nama_tunjangan)}${t.jenis_tunjangan === "tidak_tetap" ? " (Tidak Tetap)" : ""}: ${fmtRpTab(t.jumlah_tunjangan)}`).join("<br>")
                 : `<span class="text-muted">-</span>`;
             const potCell = potList.length
-                ? potList.map(p => `${escPreview(p.jenis_potongan)}: ${fmtRpPrev(p.jumlah_potongan)}`).join("<br>")
+                ? potList.map(p => `${escPreview(p.jenis_potongan)}: ${fmtRpTab(p.jumlah_potongan)}`).join("<br>")
                 : `<span class="text-muted">-</span>`;
             const tplCell = tpl
                 ? `<a href="app/uploads/kontrak/${encodeURIComponent(tpl.file)}" target="_blank">${escPreview(tpl.nama_kontrak || tpl.nama_asli || tpl.file)}</a>`
@@ -501,8 +555,8 @@
                 ["Upah Lembur", rp(fd.get("lembur"))],
                 ["Potongan Izin", rp(fd.get("pot_izin"))],
                 ["Potongan Mangkir", rp(fd.get("pot_mangkir"))],
-                ["Tunjangan (Template)", tunjCell],
-                ["Potongan (Template)", potCell],
+                ["Tunjangan", tunjCell],
+                ["Potongan", potCell],
                 ["Tgl Mulai", escPreview(fd.get("tgl_mulai"))],
                 ["Tgl Selesai", escPreview(fd.get("tgl_selesai"))],
                 ["No Surat", noCell],
@@ -648,6 +702,87 @@
             return karierTemplates.find(x => sel && String(x.id_template) === String(sel.value)) ||
                 karierTemplates[0] || (info && info.template) || null;
         }
+
+        // --- TAB TUNJANGAN & POTONGAN PADA MODAL TAMBAH ---
+        // Baris terisi otomatis dari template terpilih, tetap bisa diubah/dihapus/ditambah.
+        // Saat simpan, isi tab inilah yang dikirim (otoritatif) menggantikan salinan template.
+        function escAttr(s) {
+            return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+        function addRowTunjangan(d) {
+            d = d || {};
+            const tb = document.getElementById("tbodyAddTunjangan");
+            if (!tb) return;
+            const jenis = d.jenis_tunjangan === "tidak_tetap" ? "tidak_tetap" : "tetap";
+            const tr = document.createElement("tr");
+            tr.innerHTML =
+                `<td><input type="text" name="tunjangan_nama[]" class="form-control form-control-sm" maxlength="25" value="${escAttr(d.nama_tunjangan || "")}" placeholder="Nama tunjangan"></td>` +
+                `<td><select name="tunjangan_jenis[]" class="form-select form-select-sm">` +
+                `<option value="tetap"${jenis === "tetap" ? " selected" : ""}>Tetap</option>` +
+                `<option value="tidak_tetap"${jenis === "tidak_tetap" ? " selected" : ""}>Tidak Tetap</option></select></td>` +
+                `<td><input type="text" name="tunjangan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_tunjangan ?? "") === "" ? "" : formatIndo(d.jumlah_tunjangan)}" placeholder="0"></td>` +
+                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelAddRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
+            tb.appendChild(tr);
+        }
+        function addRowPotongan(d) {
+            d = d || {};
+            const tb = document.getElementById("tbodyAddPotongan");
+            if (!tb) return;
+            const tr = document.createElement("tr");
+            tr.innerHTML =
+                `<td><input type="text" name="potongan_nama[]" class="form-control form-control-sm" maxlength="25" value="${escAttr(d.jenis_potongan || "")}" placeholder="Nama potongan"></td>` +
+                `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_potongan ?? "") === "" ? "" : formatIndo(d.jumlah_potongan)}" placeholder="0"></td>` +
+                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelAddRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
+            tb.appendChild(tr);
+        }
+        function isiTabTunjanganPotongan(form, force) {
+            const t = chosenTemplate(form, null);
+            const tunj = (t && Array.isArray(t.tunjangan)) ? t.tunjangan : [];
+            const pot = (t && Array.isArray(t.potongan)) ? t.potongan : [];
+            const tbT = document.getElementById("tbodyAddTunjangan");
+            const tbP = document.getElementById("tbodyAddPotongan");
+            if (!tbT || !tbP) return;
+            if (force || tbT.rows.length === 0) {
+                tbT.innerHTML = "";
+                tunj.forEach(x => addRowTunjangan({ nama_tunjangan: x.nama_tunjangan, jenis_tunjangan: x.jenis_tunjangan || "tetap", jumlah_tunjangan: x.jumlah_tunjangan }));
+            }
+            if (force || tbP.rows.length === 0) {
+                tbP.innerHTML = "";
+                pot.forEach(x => addRowPotongan({ jenis_potongan: x.jenis_potongan, jumlah_potongan: x.jumlah_potongan }));
+            }
+        }
+        function resetTabTunjanganPotongan() {
+            const tbT = document.getElementById("tbodyAddTunjangan");
+            const tbP = document.getElementById("tbodyAddPotongan");
+            if (tbT) tbT.innerHTML = "";
+            if (tbP) tbP.innerHTML = "";
+            const tabData = document.querySelector('#tabTambahKarier button[data-bs-target="#tab-add-data"]');
+            if (tabData) bootstrap.Tab.getOrCreateInstance(tabData).show();
+        }
+        function bacaTabTunjangan() {
+            return [...document.querySelectorAll("#tbodyAddTunjangan tr")].map(tr => ({
+                nama_tunjangan: tr.querySelector("input[name='tunjangan_nama[]']").value.trim(),
+                jenis_tunjangan: tr.querySelector("select[name='tunjangan_jenis[]']").value,
+                jumlah_tunjangan: tr.querySelector("input[name='tunjangan_jumlah[]']").value
+            })).filter(x => x.nama_tunjangan !== "");
+        }
+        function bacaTabPotongan() {
+            return [...document.querySelectorAll("#tbodyAddPotongan tr")].map(tr => ({
+                jenis_potongan: tr.querySelector("input[name='potongan_nama[]']").value.trim(),
+                jumlah_potongan: tr.querySelector("input[name='potongan_jumlah[]']").value
+            })).filter(x => x.jenis_potongan !== "");
+        }
+        function fmtRpTab(v) {
+            const n = Number(String(v ?? "").replace(/[^0-9,-]/g, "").replace(/\./g, "").replace(",", "."));
+            return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
+        }
+        document.addEventListener("click", e => {
+            const del = e.target.closest(".btnDelAddRow");
+            if (del) { del.closest("tr").remove(); return; }
+            if (e.target.closest("#btnAddRowTunjangan")) { addRowTunjangan(); return; }
+            if (e.target.closest("#btnAddRowPotongan")) { addRowPotongan(); return; }
+        });
         // --- AUTO-ISI NILAI DARI DETAIL KONTRAK SAAT JABATAN DIPILIH ---
         function autoIsiNilaiKontrak() {
             const form = document.getElementById("formTambahKarier");
@@ -664,6 +799,7 @@
                     karierTemplates = Array.isArray(res.templates) ? res.templates : [];
                     renderTemplateOptions(form, false);
                     isiNilaiDariTemplate(form);
+                    isiTabTunjanganPotongan(form, false);
                 })
                 .catch(() => {});
         }
@@ -679,10 +815,14 @@
             });
             $(form).find("select[name=id_template]").on("change", () => {
                 isiNilaiDariTemplate(form, true);
+                isiTabTunjanganPotongan(form, true);
             });
             $(form).find("input[name=tgl_mulai]").on("change", refreshAddNoSurat);
             $(form).find("input[name=no_urut]").on("input", refreshAddNoSurat);
-            document.getElementById("modalTambahKarier").addEventListener("show.bs.modal", refreshAddNoSurat);
+            document.getElementById("modalTambahKarier").addEventListener("show.bs.modal", () => {
+                resetTabTunjanganPotongan();
+                refreshAddNoSurat();
+            });
         })();
 
         document.getElementById("formTambahKarier").addEventListener("submit", function(e) {
@@ -731,12 +871,13 @@
                     if (res.status == "success") {
                         loadKarier();
                         const salin = ((res.tunjangan || 0) + (res.potongan || 0) > 0) ?
-                            ` (${res.tunjangan || 0} tunjangan, ${res.potongan || 0} potongan tersalin)` : "";
+                            ` (${res.tunjangan || 0} tunjangan, ${res.potongan || 0} potongan tersimpan)` : "";
                         showToast("Karier berhasil ditambah!" + (res.no_surat ? " No: " + res.no_surat : "") + salin, "success");
                         // toastr.success("Berhasil menghapus!");
                         bootstrap.Modal.getInstance(document.getElementById("modalPreviewKarier")).hide();
                         bootstrap.Modal.getInstance(document.getElementById("modalTambahKarier")).hide();
                         document.getElementById("formTambahKarier").reset();
+                        resetTabTunjanganPotongan();
                         karierTemplates = [];
                         renderTemplateOptions(document.getElementById("formTambahKarier"), false);
                         $("#formTambahKarier select.select-search").val("").trigger("change");

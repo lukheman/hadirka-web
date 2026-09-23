@@ -187,11 +187,41 @@ try {
             $id_karier_baru = $stmt->insert_id;
             $stmt->close();
 
-            // Salin tunjangan & potongan dari template kontrak terpilih ke karier baru.
+            // Tunjangan & potongan: bila dikirim dari tab Tambah (tp_dari_tab),
+            // daftar itu otoritatif (sudah diedit user, boleh kosong) dan salinan
+            // template dilewati. Selain itu, salin dari template seperti semula.
             $id_template = intval($_POST['id_template'] ?? 0);
             $n_tunjangan = 0;
             $n_potongan = 0;
-            if ($id_template > 0) {
+            if (isset($_POST['tp_dari_tab'])) {
+                $nama_arr = isset($_POST['tunjangan_nama']) && is_array($_POST['tunjangan_nama']) ? $_POST['tunjangan_nama'] : [];
+                $jenis_arr = isset($_POST['tunjangan_jenis']) && is_array($_POST['tunjangan_jenis']) ? $_POST['tunjangan_jenis'] : [];
+                $jumlah_arr = isset($_POST['tunjangan_jumlah']) && is_array($_POST['tunjangan_jumlah']) ? $_POST['tunjangan_jumlah'] : [];
+                $stmtT = $koneksi->prepare("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) VALUES (?,?,?,?)");
+                foreach ($nama_arr as $i => $nm_raw) {
+                    $nm = substr(trim((string)$nm_raw), 0, 25);
+                    if ($nm === '') continue;
+                    $jn = strtolower(trim((string)($jenis_arr[$i] ?? 'tetap')));
+                    if (!in_array($jn, ['tetap', 'tidak_tetap'], true)) $jn = 'tetap';
+                    $jm = (string)floatOrZero($jumlah_arr[$i] ?? '');
+                    $stmtT->bind_param("isss", $id_karier_baru, $nm, $jn, $jm);
+                    if (!$stmtT->execute()) throw new Exception("Karier tersimpan, tetapi tunjangan gagal disimpan: " . $stmtT->error);
+                    $n_tunjangan++;
+                }
+                $stmtT->close();
+                $pot_nama_arr = isset($_POST['potongan_nama']) && is_array($_POST['potongan_nama']) ? $_POST['potongan_nama'] : [];
+                $pot_jumlah_arr = isset($_POST['potongan_jumlah']) && is_array($_POST['potongan_jumlah']) ? $_POST['potongan_jumlah'] : [];
+                $stmtP = $koneksi->prepare("INSERT INTO tb_potongan (id_karier, jenis_potongan, jumlah_potongan) VALUES (?,?,?)");
+                foreach ($pot_nama_arr as $i => $pn_raw) {
+                    $pn = substr(trim((string)$pn_raw), 0, 25);
+                    if ($pn === '') continue;
+                    $pm = (string)floatOrZero($pot_jumlah_arr[$i] ?? '');
+                    $stmtP->bind_param("iss", $id_karier_baru, $pn, $pm);
+                    if (!$stmtP->execute()) throw new Exception("Karier tersimpan, tetapi potongan gagal disimpan: " . $stmtP->error);
+                    $n_potongan++;
+                }
+                $stmtP->close();
+            } elseif ($id_template > 0) {
                 $qDet = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1");
                 $id_detail = ($qDet && $qDet->num_rows > 0) ? (int)$qDet->fetch_assoc()['id_detail'] : 0;
                 if ($id_detail <= 0) {
