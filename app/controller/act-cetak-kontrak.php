@@ -224,7 +224,7 @@ if ($action === 'generate') {
             'desa' => '........................',
             'kecamatan' => '........................',
             'kabupaten' => '........................',
-            'durasi' => kontrak_durasi($tgl_mulai, $tgl_selesai),
+            'durasi' => $durasi_bulan . ' (' . terbilang_id($durasi_bulan) . ') bulan',
             'tgl_mulai' => kontrak_tgl_id($tgl_mulai),
             'tgl_selesai' => kontrak_tgl_id($tgl_selesai),
             'nama' => $kosong_panjang,
