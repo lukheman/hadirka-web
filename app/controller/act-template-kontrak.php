@@ -67,7 +67,7 @@ function tpl_json($status, $msg, array $extra = [])
 // --- Daftar jabatan (untuk checkbox) ---
 if ($action === 'list_jabatan') {
     $rows = [];
-    $q = $koneksi->query("SELECT id_jabatan, nama_jabatan FROM tb_jabatan ORDER BY nama_jabatan ASC");
+    $q = $koneksi->query("SELECT id_jabatan, nama_jabatan, kode_jabatan FROM tb_jabatan ORDER BY nama_jabatan ASC");
     if (!$q) {
         tpl_json('error', 'Gagal mengambil data jabatan: ' . $koneksi->error);
     }
@@ -88,7 +88,7 @@ if ($action === 'list') {
         $id = (int)$r['id_template'];
         $jab = [];
         $qj = $koneksi->query(
-            "SELECT j.id_jabatan, j.nama_jabatan " .
+            "SELECT j.id_jabatan, j.nama_jabatan, j.kode_jabatan " .
             "FROM tb_template_kontrak_jabatan p " .
             "JOIN tb_jabatan j ON j.id_jabatan = p.id_jabatan " .
             "WHERE p.id_template = '$id' ORDER BY j.nama_jabatan ASC"

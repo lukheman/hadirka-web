@@ -375,6 +375,13 @@
                 .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
 
+        // Label jabatan: "Nama Jabatan (KODE)" bila kode ada, sederhanakan bila kosong.
+        function jabatanLabel(j) {
+            const nama = (j && j.nama_jabatan) || "-";
+            const kode = String((j && j.kode_jabatan) || "").trim();
+            return kode ? `${nama} (${kode})` : nama;
+        }
+
         // Checkbox daftar jabatan
         function loadJabatan() {
             const box = document.getElementById("listJabatan");
@@ -406,7 +413,7 @@
                         `<div class="form-check">
                             <input type="checkbox" class="form-check-input chk-jabatan" name="id_jabatan[]"
                                 value="${j.id_jabatan}" id="jab_${j.id_jabatan}">
-                            <label class="form-check-label" for="jab_${j.id_jabatan}">${escHtml(j.nama_jabatan)}</label>
+                            <label class="form-check-label" for="jab_${j.id_jabatan}">${escHtml(jabatanLabel(j))}</label>
                         </div>`
                     ).join("");
                     document.getElementById("checkAllJabatan").checked = false;
@@ -454,7 +461,7 @@
                         `<div class="form-check">
                             <input type="checkbox" class="form-check-input chk-jabatan-edit" name="id_jabatan[]"
                                 value="${j.id_jabatan}" id="jabedit_${j.id_jabatan}"${selected.has(String(j.id_jabatan)) ? " checked" : ""}>
-                            <label class="form-check-label" for="jabedit_${j.id_jabatan}">${escHtml(j.nama_jabatan)}</label>
+                            <label class="form-check-label" for="jabedit_${j.id_jabatan}">${escHtml(jabatanLabel(j))}</label>
                         </div>`
                     ).join("");
                     const all = box.querySelectorAll(".chk-jabatan-edit");
@@ -559,9 +566,9 @@
                         const daftarJab = (r.jabatan && r.jabatan.length) ? r.jabatan : [];
                         const maksTampil = 3;
                         const badges = daftarJab.length
-                            ? daftarJab.slice(0, maksTampil).map(j => `<span class="badge bg-primary me-1 mb-1">${escHtml(j.nama_jabatan)}</span>`).join("") +
+                            ? daftarJab.slice(0, maksTampil).map(j => `<span class="badge bg-primary me-1 mb-1">${escHtml(jabatanLabel(j))}</span>`).join("") +
                               (daftarJab.length > maksTampil
-                                  ? `<span class="badge bg-secondary me-1 mb-1" title="${escHtml(daftarJab.map(j => j.nama_jabatan).join(", "))}">+${daftarJab.length - maksTampil} lainnya</span>`
+                                  ? `<span class="badge bg-secondary me-1 mb-1" title="${escHtml(daftarJab.map(jabatanLabel).join(", "))}">+${daftarJab.length - maksTampil} lainnya</span>`
                                   : "")
                             : '<span class="badge bg-secondary">Tanpa jabatan</span>';
                         const d = r.detail || {};

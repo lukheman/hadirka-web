@@ -116,7 +116,8 @@
                                 <?php
                                 $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
                                 while ($j = $jabatans->fetch_assoc()) {
-                                    echo "<option value='{$j['id_jabatan']}'>{$j['nama_jabatan']}</option>";
+                                    $__kj = trim((string)($j['kode_jabatan'] ?? ''));
+                                    echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
                                 }
                                 ?>
                             </select>
@@ -308,7 +309,8 @@
                                 <?php
                                 $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
                                 while ($j = $jabatans->fetch_assoc()) {
-                                    echo "<option value='{$j['id_jabatan']}'>{$j['nama_jabatan']}</option>";
+                                    $__kj = trim((string)($j['kode_jabatan'] ?? ''));
+                                    echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
                                 }
                                 ?>
                             </select>
