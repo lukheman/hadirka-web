@@ -230,8 +230,15 @@
                 return;
             }
             let cursor = globalNext;
-            rows.forEach(r => {
+            rows.forEach((r, idx) => {
                 const n = rowJumlah(r);
+                const jabSel = r.querySelector(".cetak-jabatan");
+                const titleEl = r.querySelector(".card-title-text");
+                if (titleEl) {
+                    titleEl.textContent = (jabSel && jabSel.value && jabSel.selectedIndex >= 0)
+                        ? `${idx + 1}. ${jabSel.options[jabSel.selectedIndex].text}`
+                        : `Jabatan #${idx + 1}`;
+                }
                 if (!r.dataset.kode) {
                     delete r._mulai;
                     delete r._akhir;
@@ -304,21 +311,25 @@
                 return;
             }
             const div = document.createElement("div");
-            div.className = "repeater-row border rounded p-2 mb-2";
+            div.className = "card mb-3 repeater-row";
             div.dataset.kode = "";
             div.innerHTML =
-                `<div class="row g-2 align-items-end">` +
+                `<div class="card-header d-flex justify-content-between align-items-center py-2">` +
+                `<strong class="card-title-text">Jabatan</strong>` +
+                `<button type="button" class="btn btn-danger btn-sm btnDelBaris" title="Hapus kartu ini">` +
+                `<i class="fa fa-trash"></i></button></div>` +
+                `<div class="card-body">` +
+                `<div class="row g-2">` +
                 `<div class="col-md-5"><label class="form-label">Jabatan <span class="text-danger">*</span></label>` +
                 `<select name="id_jabatan[]" class="form-control select-search cetak-jabatan" required>${jabOptionsHTML}</select></div>` +
-                `<div class="col-md-4"><label class="form-label">Template <span class="text-danger">*</span></label>` +
+                `<div class="col-md-5"><label class="form-label">Template <span class="text-danger">*</span></label>` +
                 `<select name="id_template[]" class="form-control cetak-template" required>` +
                 `<option value="">-- Pilih jabatan terlebih dahulu --</option></select></div>` +
                 `<div class="col-md-2"><label class="form-label">Jumlah</label>` +
                 `<input type="number" name="jumlah[]" class="form-control cetak-jumlah" value="1" min="1" max="50" required></div>` +
-                `<div class="col-md-1 text-end"><button type="button" class="btn btn-danger btn-sm btnDelBaris" title="Hapus baris">` +
-                `<i class="fa fa-trash"></i></button></div>` +
                 `</div><small class="row-info text-muted"></small>` +
-                `<div class="row-preview mt-1"></div>`;
+                `<div class="row-preview mt-1"></div>` +
+                `</div>`;
             boxRepeater.appendChild(div);
             if (window.jQuery) {
                 $(div).find(".cetak-jabatan").select2({
@@ -359,7 +370,7 @@
             $(boxRepeater).on("change input", ".cetak-jumlah", refreshRanges);
             $(boxRepeater).on("click", ".btnDelBaris", function() {
                 if (collectRows().length <= 1) {
-                    showToast("Minimal satu baris.", "warning");
+                    showToast("Minimal satu kartu jabatan.", "warning");
                     return;
                 }
                 $(this).closest(".repeater-row").remove();
@@ -375,7 +386,7 @@
             boxRepeater.addEventListener("click", e => {
                 const del = e.target.closest(".btnDelBaris");
                 if (del) {
-                    if (collectRows().length <= 1) { showToast("Minimal satu baris.", "warning"); return; }
+                    if (collectRows().length <= 1) { showToast("Minimal satu kartu jabatan.", "warning"); return; }
                     del.closest(".repeater-row").remove();
                     refreshRanges();
                 }
