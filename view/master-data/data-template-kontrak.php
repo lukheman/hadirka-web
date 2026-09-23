@@ -44,6 +44,22 @@
                 </div>
 
                 <div class="modal-body">
+                    <ul class="nav nav-tabs" id="tabUploadTemplate" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tab-up-template-tab" data-bs-toggle="tab" data-bs-target="#tab-up-template" type="button" role="tab" aria-controls="tab-up-template" aria-selected="true">Template</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-up-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-up-nilai" type="button" role="tab" aria-controls="tab-up-nilai" aria-selected="false">Nilai Kontrak</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-up-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-up-tunjangan" type="button" role="tab" aria-controls="tab-up-tunjangan" aria-selected="false">Tunjangan</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-up-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-up-potongan" type="button" role="tab" aria-controls="tab-up-potongan" aria-selected="false">Potongan</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3">
+                        <div class="tab-pane fade show active" id="tab-up-template" role="tabpanel" aria-labelledby="tab-up-template-tab">
                     <div class="mb-3">
                         <label class="form-label">Nama Kontrak <span class="text-danger">*</span></label>
                         <input type="text" name="nama_kontrak" class="form-control" maxlength="150" placeholder="cth: Kontrak Kerja Operator 2026" required>
@@ -63,7 +79,8 @@
                             <span class="text-muted">Memuat jabatan...</span>
                         </div>
                     </div>
-                    <hr>
+                        </div>
+                        <div class="tab-pane fade" id="tab-up-nilai" role="tabpanel" aria-labelledby="tab-up-nilai-tab">
                     <label class="form-label fw-bold">Nilai Kontrak</label>
                     <div class="row g-2">
                         <div class="col-md-6">
@@ -93,6 +110,45 @@
                                 <span class="input-group-text">Rp</span>
                                 <input type="text" name="potongan_mangkir" class="form-control nominal-mask" value="0">
                             </div>
+                        </div>
+                    </div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-up-tunjangan" role="tabpanel" aria-labelledby="tab-up-tunjangan-tab">
+                            <div class="alert alert-info py-2">
+                                <i class="fa fa-info-circle"></i> Opsional — baris kosong tidak disimpan.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm w-100">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th>Nama Tunjangan</th>
+                                            <th style="width:22%">Jenis</th>
+                                            <th style="width:28%">Jumlah (Rp)</th>
+                                            <th class="text-center" style="width:10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyUploadTunjangan"></tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowTunjangan"><i class="fa fa-plus"></i> Tambah Tunjangan</button>
+                        </div>
+                        <div class="tab-pane fade" id="tab-up-potongan" role="tabpanel" aria-labelledby="tab-up-potongan-tab">
+                            <div class="alert alert-info py-2">
+                                <i class="fa fa-info-circle"></i> Opsional — baris kosong tidak disimpan.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm w-100">
+                                    <thead class="table-info">
+                                        <tr>
+                                            <th>Nama Potongan</th>
+                                            <th style="width:30%">Jumlah (Rp)</th>
+                                            <th class="text-center" style="width:10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyUploadPotongan"></tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowPotongan"><i class="fa fa-plus"></i> Tambah Potongan</button>
                         </div>
                     </div>
                 </div>
@@ -754,8 +810,52 @@
         document.getElementById("btnTplTunjanganCancel").addEventListener("click", resetTplTunjanganForm);
         document.getElementById("btnTplPotonganCancel").addEventListener("click", resetTplPotonganForm);
 
+        // --- BARIS TUNJANGAN & POTONGAN PADA MODAL UPLOAD ---
+        // Ikut terkirim bersama form (array), disimpan dalam transaksi upload yang sama.
+        function addUploadRowTunjangan(d) {
+            d = d || {};
+            const tb = document.getElementById("tbodyUploadTunjangan");
+            if (!tb) return;
+            const jenis = d.jenis_tunjangan === "tidak_tetap" ? "tidak_tetap" : "tetap";
+            const tr = document.createElement("tr");
+            tr.innerHTML =
+                `<td><input type="text" name="tunjangan_nama[]" class="form-control form-control-sm" maxlength="25" placeholder="Nama tunjangan"></td>` +
+                `<td><select name="tunjangan_jenis[]" class="form-select form-select-sm">` +
+                `<option value="tetap"${jenis === "tetap" ? " selected" : ""}>Tetap</option>` +
+                `<option value="tidak_tetap"${jenis === "tidak_tetap" ? " selected" : ""}>Tidak Tetap</option></select></td>` +
+                `<td><input type="text" name="tunjangan_jumlah[]" class="form-control form-control-sm nominal-mask" placeholder="0"></td>` +
+                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
+            tb.appendChild(tr);
+        }
+        function addUploadRowPotongan(d) {
+            d = d || {};
+            const tb = document.getElementById("tbodyUploadPotongan");
+            if (!tb) return;
+            const tr = document.createElement("tr");
+            tr.innerHTML =
+                `<td><input type="text" name="potongan_nama[]" class="form-control form-control-sm" maxlength="25" placeholder="Nama potongan"></td>` +
+                `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" placeholder="0"></td>` +
+                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
+            tb.appendChild(tr);
+        }
+        function resetUploadTpRows() {
+            const tbT = document.getElementById("tbodyUploadTunjangan");
+            const tbP = document.getElementById("tbodyUploadPotongan");
+            if (tbT) tbT.innerHTML = "";
+            if (tbP) tbP.innerHTML = "";
+            const tabFirst = document.querySelector('#tabUploadTemplate button[data-bs-target="#tab-up-template"]');
+            if (tabFirst) bootstrap.Tab.getOrCreateInstance(tabFirst).show();
+        }
+        document.addEventListener("click", e => {
+            const del = e.target.closest(".btnDelUploadRow");
+            if (del) { del.closest("tr").remove(); return; }
+            if (e.target.closest("#btnUploadRowTunjangan")) { addUploadRowTunjangan(); return; }
+            if (e.target.closest("#btnUploadRowPotongan")) { addUploadRowPotongan(); return; }
+        });
+
         document.getElementById("btnTambahTemplate").addEventListener("click", () => {
             document.getElementById("formUploadTemplate").reset();
+            resetUploadTpRows();
             loadJabatan();
             new bootstrap.Modal(document.getElementById("modalUploadTemplate")).show();
         });
@@ -776,7 +876,9 @@
                 const res = await fetch(API, { method: "POST", body: fd });
                 const data = await res.json();
                 if (data.status === "success") {
-                    showToast(data.msg || "Template berhasil diupload.", "success");
+                    const extra = ((data.tunjangan || 0) + (data.potongan || 0) > 0) ?
+                        ` (${data.tunjangan || 0} tunjangan, ${data.potongan || 0} potongan)` : "";
+                    showToast((data.msg || "Template berhasil diupload.") + extra, "success");
                     bootstrap.Modal.getInstance(document.getElementById("modalUploadTemplate")).hide();
                     loadTable();
                 } else {

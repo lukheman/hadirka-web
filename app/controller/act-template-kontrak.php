@@ -193,7 +193,45 @@ if ($action === 'upload') {
             if (!$stmt3) throw new Exception("Gagal menyiapkan detail: " . $koneksi->error);
             $stmt3->bind_param("idddd", $id_template, $gaji_pokok, $upah_lembur, $potongan_izin, $potongan_mangkir);
             if (!$stmt3->execute()) throw new Exception("Gagal menyimpan detail kontrak: " . $stmt3->error);
+            $id_detail = $stmt3->insert_id;
             $stmt3->close();
+
+            // Tunjangan & potongan dari tab Upload (opsional, boleh kosong).
+            $n_tunjangan = 0;
+            $nama_arr = isset($_POST['tunjangan_nama']) && is_array($_POST['tunjangan_nama']) ? $_POST['tunjangan_nama'] : [];
+            $jenis_arr = isset($_POST['tunjangan_jenis']) && is_array($_POST['tunjangan_jenis']) ? $_POST['tunjangan_jenis'] : [];
+            $jumlah_arr = isset($_POST['tunjangan_jumlah']) && is_array($_POST['tunjangan_jumlah']) ? $_POST['tunjangan_jumlah'] : [];
+            $stmtT = $koneksi->prepare(
+                "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan) VALUES (?, ?, ?, ?)"
+            );
+            if (!$stmtT) throw new Exception("Gagal menyiapkan tunjangan: " . $koneksi->error);
+            foreach ($nama_arr as $i => $nm_raw) {
+                $nm = substr(trim((string)$nm_raw), 0, 25);
+                if ($nm === '') continue;
+                $jn = strtolower(trim((string)($jenis_arr[$i] ?? 'tetap')));
+                if (!in_array($jn, ['tetap', 'tidak_tetap'], true)) $jn = 'tetap';
+                $jm = (string)tpl_float($jumlah_arr[$i] ?? 0);
+                $stmtT->bind_param("isss", $id_detail, $nm, $jn, $jm);
+                if (!$stmtT->execute()) throw new Exception("Gagal menyimpan tunjangan: " . $stmtT->error);
+                $n_tunjangan++;
+            }
+            $stmtT->close();
+
+            $pot_nama_arr = isset($_POST['potongan_nama']) && is_array($_POST['potongan_nama']) ? $_POST['potongan_nama'] : [];
+            $pot_jumlah_arr = isset($_POST['potongan_jumlah']) && is_array($_POST['potongan_jumlah']) ? $_POST['potongan_jumlah'] : [];
+            $stmtP = $koneksi->prepare(
+                "INSERT INTO tb_potongan_kontrak (id_detail_kontrak, jenis_potongan, jumlah_potongan) VALUES (?, ?, ?)"
+            );
+            if (!$stmtP) throw new Exception("Gagal menyiapkan potongan: " . $koneksi->error);
+            foreach ($pot_nama_arr as $i => $pn_raw) {
+                $pn = substr(trim((string)$pn_raw), 0, 25);
+                if ($pn === '') continue;
+                $pm = (string)tpl_float($pot_jumlah_arr[$i] ?? 0);
+                $stmtP->bind_param("iss", $id_detail, $pn, $pm);
+                if (!$stmtP->execute()) throw new Exception("Gagal menyimpan potongan: " . $stmtP->error);
+                $n_potongan++;
+            }
+            $stmtP->close();
 
             $koneksi->commit();
         } catch (Exception $e) {
@@ -204,6 +242,8 @@ if ($action === 'upload') {
 
         tpl_json('success', 'Template berhasil diupload untuk ' . count($ids) . ' jabatan.', [
             'id_template' => $id_template,
+            'tunjangan' => $n_tunjangan,
+            'potongan' => $n_potongan,
         ]);
     } catch (Exception $e) {
         tpl_json('error', $e->getMessage());
