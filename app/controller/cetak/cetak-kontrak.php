@@ -55,7 +55,12 @@ if ($id_jabatan > 0) {
 if (!$tpl) {
     exit('Belum ada template kontrak untuk jabatan ini. Upload dulu di menu Template Kontrak.');
 }
-$src = __DIR__ . '/../../uploads/kontrak/' . basename((string)$tpl['file']);
+$tpl_base = basename((string)$tpl['file']);
+$src = __DIR__ . '/../../uploads/template-kontrak/' . $tpl_base;
+if (!is_file($src)) {
+    $legacy_src = __DIR__ . '/../../uploads/kontrak/' . $tpl_base;
+    if (is_file($legacy_src)) $src = $legacy_src;
+}
 if (!is_file($src)) {
     exit('File template tidak ditemukan di server.');
 }

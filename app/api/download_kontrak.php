@@ -58,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 3. GENERATE URL FILE
     $file_name = $data_kontrak['file_kontrak'];
     
-    // Sesuaikan URL ini dengan struktur folder Anda (berdasarkan file data-kontrak.php Anda, file ada di app/uploads/kontrak/)
+    // Sesuaikan URL ini dengan struktur folder Anda (file kontrak hasil per karyawan ada di app/uploads/kontrak/,
+    // sedangkan template master ada di app/uploads/template-kontrak/)
     // Gunakan host dinamis agar fleksibel
     $host = $_SERVER['HTTP_HOST'];
     $file_url = "http://" . $host . "/uploads/kontrak/" . $file_name;

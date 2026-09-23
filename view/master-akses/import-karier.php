@@ -703,7 +703,7 @@
                 ? potList.map(p => `${escPreview(p.jenis_potongan)}: ${fmtRpTab(p.jumlah_potongan)}`).join("<br>")
                 : `<span class="text-muted">-</span>`;
             const tplCell = tpl
-                ? `<a href="app/uploads/kontrak/${encodeURIComponent(tpl.file)}" target="_blank">${escPreview(tpl.nama_kontrak || tpl.nama_asli || tpl.file)}</a>`
+                ? `<a href="app/uploads/template-kontrak/${encodeURIComponent(tpl.file)}" target="_blank">${escPreview(tpl.nama_kontrak || tpl.nama_asli || tpl.file)}</a>`
                 : `<span class="badge bg-warning text-dark">Belum ada template untuk jabatan ini</span>`;
             const noCell = manualNo
                 ? `<strong>${escPreview(manualNo)}</strong><br><small class="text-muted">Nomor urut manual</small>`

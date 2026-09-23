@@ -227,7 +227,13 @@ if (!function_exists('build_kontrak_docx')) {
         );
         if (!$qt || $qt->num_rows === 0) throw new Exception('Belum ada template kontrak untuk jabatan ini.');
         $tpl_file = $qt->fetch_assoc()['file'];
-        $src = __DIR__ . '/../uploads/kontrak/' . basename($tpl_file);
+        // Template master di template-kontrak/, fallback ke kontrak/ untuk file lama.
+        $tpl_base = basename((string)$tpl_file);
+        $src = __DIR__ . '/../uploads/template-kontrak/' . $tpl_base;
+        if (!is_file($src)) {
+            $legacy = __DIR__ . '/../uploads/kontrak/' . $tpl_base;
+            if (is_file($legacy)) $src = $legacy;
+        }
         if (!is_file($src)) throw new Exception('File template kontrak tidak ditemukan di server.');
 
         // Nomor surat: pakai yang ada, atau terbitkan baru.
@@ -319,6 +325,7 @@ if (!function_exists('build_kontrak_docx')) {
         ];
 
         $out_dir = __DIR__ . '/../uploads/kontrak/';
+        if (!is_dir($out_dir) && !mkdir($out_dir, 0755, true)) throw new Exception('Gagal menyiapkan folder kontrak.');
         $fname = preg_replace('/[^A-Za-z0-9\-]+/', '-', $no_surat) . '.docx';
         if (strlen($fname) < 6) $fname = 'kontrak-' . $id_karier . '.docx';
         $dst = $out_dir . $fname;

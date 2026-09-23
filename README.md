@@ -39,7 +39,7 @@ cp .env.example .env
 mysql -u user -p nama_db < struktur.sql
 
 # 4. Folder upload harus writable oleh web server
-mkdir -p app/uploads/{profil,kontrak,cuti,izin,pinjaman,sks,apd,bukti_transaksi} \
+mkdir -p app/uploads/{profil,template-kontrak,kontrak,cuti,izin,pinjaman,sks,apd,bukti_transaksi} \
          assets/img/user-pic
 chmod -R 775 app/uploads assets/img/user-pic
 

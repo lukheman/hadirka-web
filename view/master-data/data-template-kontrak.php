@@ -577,7 +577,7 @@
                             <td>${badges}<br><small class="text-muted">${r.jml_jabatan} jabatan</small></td>
                             <td>${nilai}</td>
                             <td class="text-center">
-                                <a href="app/uploads/kontrak/${escHtml(r.file)}" target="_blank"
+                                <a href="app/uploads/template-kontrak/${escHtml(r.file)}" target="_blank"
                                     class="btn btn-sm btn-info" title="Lihat file"><i class="fas fa-eye"></i></a>
                                 <button class="btn btn-sm btn-primary btnEditTemplate" data-id="${r.id_template}"
                                     data-nama-kontrak="${escHtml(r.nama_kontrak || "")}"

@@ -44,7 +44,19 @@ function tpl_ensure_detail($koneksi, $id_template)
 }
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
-$upload_dir = __DIR__ . '/../uploads/kontrak/';
+// Penyimpanan dipisah: template master di template-kontrak/, hasil kontrak per karyawan di kontrak/.
+// $legacy_upload_dir hanya fallback baca/hapus file lama yang belum dipindah.
+$upload_dir = __DIR__ . '/../uploads/template-kontrak/';
+$legacy_upload_dir = __DIR__ . '/../uploads/kontrak/';
+
+function tpl_template_path($file)
+{
+    global $upload_dir, $legacy_upload_dir;
+    $base = basename((string)$file);
+    if ($base === '') return $upload_dir;
+    if (is_file($upload_dir . $base)) return $upload_dir . $base;
+    return (is_file($legacy_upload_dir . $base) ? $legacy_upload_dir . $base : $upload_dir . $base);
+}
 
 function tpl_json($status, $msg, array $extra = [])
 {
@@ -348,8 +360,10 @@ if ($action === 'update') {
             throw $e;
         }
 
-        if ($new_file !== null && !empty($lama['file']) && file_exists($upload_dir . $lama['file'])) {
-            @unlink($upload_dir . $lama['file']);
+        if ($new_file !== null && !empty($lama['file'])) {
+            $old_base = basename((string)$lama['file']);
+            if ($old_base !== '' && file_exists($upload_dir . $old_base)) @unlink($upload_dir . $old_base);
+            if ($old_base !== '' && file_exists($legacy_upload_dir . $old_base)) @unlink($legacy_upload_dir . $old_base);
         }
         tpl_json('success', 'Template berhasil diperbarui.');
     } catch (Exception $e) {
@@ -600,8 +614,10 @@ if ($action === 'delete') {
         tpl_json('error', $e->getMessage());
     }
 
-    if (!empty($row['file']) && file_exists($upload_dir . $row['file'])) {
-        @unlink($upload_dir . $row['file']);
+    if (!empty($row['file'])) {
+        $del_base = basename((string)$row['file']);
+        if ($del_base !== '' && file_exists($upload_dir . $del_base)) @unlink($upload_dir . $del_base);
+        if ($del_base !== '' && file_exists($legacy_upload_dir . $del_base)) @unlink($legacy_upload_dir . $del_base);
     }
     tpl_json('success', 'Template berhasil dihapus.');
 }
