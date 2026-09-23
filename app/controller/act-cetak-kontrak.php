@@ -65,6 +65,8 @@ if ($action === 'info') {
             $tr['detail'] = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
             $tr['jml_tunjangan'] = 0;
             $tr['jml_potongan'] = 0;
+            $tr['tunjangan'] = [];
+            $tr['potongan'] = [];
             if ($tr['detail']) {
                 $qd2 = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1");
                 if ($qd2 && $qd2->num_rows > 0) {
@@ -73,6 +75,16 @@ if ($action === 'info') {
                     $cp = $koneksi->query("SELECT COUNT(*) n FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_det'");
                     if ($ct) $tr['jml_tunjangan'] = (int)$ct->fetch_assoc()['n'];
                     if ($cp) $tr['jml_potongan'] = (int)$cp->fetch_assoc()['n'];
+                    $qt2 = $koneksi->query(
+                        "SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template " .
+                        "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_det' ORDER BY id_tunjangan_kontrak ASC"
+                    );
+                    if ($qt2) while ($x = $qt2->fetch_assoc()) $tr['tunjangan'][] = $x;
+                    $qp2 = $koneksi->query(
+                        "SELECT jenis_potongan, jumlah_potongan " .
+                        "FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_det' ORDER BY id_potongan_kontrak ASC"
+                    );
+                    if ($qp2) while ($x = $qp2->fetch_assoc()) $tr['potongan'][] = $x;
                 }
             }
             $templates[] = $tr;

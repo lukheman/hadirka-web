@@ -129,6 +129,65 @@
                 .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
 
+        function fmtRpPrev(v) {
+            return "Rp " + Number(v || 0).toLocaleString("id-ID");
+        }
+
+        function isMakan(nama) {
+            return ["tunjangan makan", "tunjangan uang makan"].includes(String(nama || "").toLowerCase().trim());
+        }
+
+        // Preview nilai kontrak + tunjangan + jabatan langsung di baris (bentuk tabel).
+        function renderRowPreview(row) {
+            const box = row.querySelector(".row-preview");
+            const jabSel = row.querySelector(".cetak-jabatan");
+            const tplSel = row.querySelector(".cetak-template");
+            const jabText = jabSel.selectedIndex >= 0 ? jabSel.options[jabSel.selectedIndex].text : "-";
+            const tpls = row._templates || [];
+            const t = tpls.find(x => String(x.id_template) === String(tplSel.value));
+            if (!jabSel.value || !t) { box.innerHTML = ""; return; }
+            const d = t.detail || {};
+            const tdRp = v => `<td class="text-end">${fmtRpPrev(v)}</td>`;
+            const tunjRows = (t.tunjangan || []).map(x => {
+                const jenis = x.jenis_tunjangan === "tidak_tetap"
+                    ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
+                    : '<span class="badge bg-success">Tetap</span>';
+                const tampil = String(x.tampil_template ?? "1") === "0"
+                    ? '<span class="badge bg-secondary">Tidak</span>'
+                    : '<span class="badge bg-info text-dark">Ya</span>';
+                return `<tr><td>${escHtml(x.nama_tunjangan)}</td><td class="text-center">${jenis}</td>` +
+                    `<td class="text-end">${fmtRpPrev(x.jumlah_tunjangan)}${isMakan(x.nama_tunjangan) ? "/hari" : ""}</td>` +
+                    `<td class="text-center">${tampil}</td></tr>`;
+            }).join("");
+            const potRows = (t.potongan || []).map(x =>
+                `<tr><td>${escHtml(x.jenis_potongan)}</td>` +
+                `<td class="text-end">${fmtRpPrev(x.jumlah_potongan)}</td></tr>`
+            ).join("");
+            box.innerHTML =
+                `<div class="table-responsive mt-1"><table class="table table-bordered table-sm mb-0">` +
+                `<tbody>` +
+                `<tr><th style="width:28%">Jabatan</th><td>${escHtml(jabText)}</td></tr>` +
+                `<tr><th>Template</th><td>${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}</td></tr>` +
+                `<tr><th>Gaji Pokok</th>${tdRp(d.gaji_pokok)}</tr>` +
+                `<tr><th>Upah Lembur</th>${tdRp(d.upah_lembur)}</tr>` +
+                `<tr><th>Potongan Izin</th>${tdRp(d.potongan_izin)}</tr>` +
+                `<tr><th>Potongan Mangkir</th>${tdRp(d.potongan_mangkir)}</tr>` +
+                `<tr><th>Tunjangan (${(t.tunjangan || []).length})</th><td>` +
+                (tunjRows
+                    ? `<table class="table table-bordered table-sm mb-0"><thead class="table-info">` +
+                      `<tr><th>Nama</th><th class="text-center">Jenis</th><th class="text-end">Jumlah</th>` +
+                      `<th class="text-center">Tampil</th></tr></thead><tbody>${tunjRows}</tbody></table>`
+                    : '<span class="text-muted">-</span>') +
+                `</td></tr>` +
+                `<tr><th>Potongan (${(t.potongan || []).length})</th><td>` +
+                (potRows
+                    ? `<table class="table table-bordered table-sm mb-0"><thead class="table-info">` +
+                      `<tr><th>Nama</th><th class="text-end">Jumlah</th></tr></thead><tbody>${potRows}</tbody></table>`
+                    : '<span class="text-muted">-</span>') +
+                `</td></tr>` +
+                `</tbody></table></div>`;
+        }
+
         function rowJumlah(row) {
             const el = row.querySelector(".cetak-jumlah");
             let n = parseInt(el.value, 10) || 0;
@@ -206,6 +265,7 @@
                     if (res.status !== "success") throw new Error(res.msg || "Gagal memuat info.");
                     if (globalNext == null && res.berikutnya) { globalNext = res.berikutnya; }
                     row.dataset.kode = res.kode_jabatan || "";
+                    row._templates = res.templates || [];
                     if (!res.templates.length) {
                         tplSel.innerHTML = `<option value="">Belum ada template untuk jabatan ini</option>`;
                     } else {
@@ -213,6 +273,7 @@
                             `<option value="${t.id_template}">${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}</option>`
                         ).join("");
                     }
+                    renderRowPreview(row);
                     if (!res.kode_jabatan) {
                         row.querySelector(".row-info").innerHTML =
                             '<span class="badge bg-danger">Kode jabatan kosong — lengkapi dulu di Data Jabatan</span>';
@@ -245,7 +306,8 @@
                 `<input type="number" name="jumlah[]" class="form-control cetak-jumlah" value="1" min="1" max="50" required></div>` +
                 `<div class="col-md-1 text-end"><button type="button" class="btn btn-danger btn-sm btnDelBaris" title="Hapus baris">` +
                 `<i class="fa fa-trash"></i></button></div>` +
-                `</div><small class="row-info text-muted"></small>`;
+                `</div><small class="row-info text-muted"></small>` +
+                `<div class="row-preview mt-1"></div>`;
             boxRepeater.appendChild(div);
             if (window.jQuery) {
                 $(div).find(".cetak-jabatan").select2({
@@ -280,7 +342,10 @@
             $(boxRepeater).on("change", ".cetak-jabatan", function() {
                 loadRowInfo($(this).closest(".repeater-row")[0]);
             });
-            $(boxRepeater).on("change input", ".cetak-template, .cetak-jumlah", refreshRanges);
+            $(boxRepeater).on("change", ".cetak-template", function() {
+                renderRowPreview($(this).closest(".repeater-row")[0]);
+            });
+            $(boxRepeater).on("change input", ".cetak-jumlah", refreshRanges);
             $(boxRepeater).on("click", ".btnDelBaris", function() {
                 if (collectRows().length <= 1) {
                     showToast("Minimal satu baris.", "warning");
