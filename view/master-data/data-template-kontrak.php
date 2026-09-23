@@ -425,6 +425,7 @@
             formD.querySelector("input[name=upah_lembur]").value = formatIndo(btn.dataset.upahLembur);
             formD.querySelector("input[name=potongan_izin]").value = formatIndo(btn.dataset.potonganIzin);
             formD.querySelector("input[name=potongan_mangkir]").value = formatIndo(btn.dataset.potonganMangkir);
+            const fmtRpNow = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
             document.getElementById("tplTunjanganTemplateId").value = btn.dataset.id;
             document.getElementById("tplPotonganTemplateId").value = btn.dataset.id;
             resetTplTunjanganForm();
@@ -506,10 +507,10 @@
                                     data-nama-kontrak="${escHtml(r.nama_kontrak || "")}"
                                     data-file="${escHtml(r.nama_asli || r.file)}"
                                     data-jabatan-ids="${(r.jabatan || []).map(j => j.id_jabatan).join(",")}"
-                                    data-gaji_pokok="${escHtml(d.gaji_pokok ?? 0)}"
-                                    data-upah_lembur="${escHtml(d.upah_lembur ?? 0)}"
-                                    data-potongan_izin="${escHtml(d.potongan_izin ?? 0)}"
-                                    data-potongan_mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
+                                    data-gaji-pokok="${escHtml(d.gaji_pokok ?? 0)}"
+                                    data-upah-lembur="${escHtml(d.upah_lembur ?? 0)}"
+                                    data-potongan-izin="${escHtml(d.potongan_izin ?? 0)}"
+                                    data-potongan-mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
                                     title="Edit template, nilai & tunjangan"><i class="fas fa-pen"></i></button>
                                 <button class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
                                     data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}" title="Hapus template">
