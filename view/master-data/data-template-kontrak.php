@@ -860,9 +860,15 @@
             if (!tb) return;
             const jenis = d.jenis_tunjangan === "tidak_tetap" ? "tidak_tetap" : "tetap";
             const tampil = String(d.tampil_template ?? "1") === "0" ? "0" : "1";
+            const daftarNama = ["Tunjangan Daerah", "Tunjangan Hidup", "Tunjangan Makan",
+                "Tunjangan Skill", "Bonus Kehadiran", "Tunjangan Posisi"];
+            const namaDipilih = d.nama_tunjangan || "";
             const tr = document.createElement("tr");
             tr.innerHTML =
-                `<td><input type="text" name="tunjangan_nama[]" class="form-control form-control-sm" maxlength="25" placeholder="Nama tunjangan"></td>` +
+                `<td><select name="tunjangan_nama[]" class="form-select form-select-sm">` +
+                `<option value="">-- Pilih --</option>` +
+                daftarNama.map(nm => `<option value="${nm}"${nm === namaDipilih ? " selected" : ""}>${nm}</option>`).join("") +
+                `</select></td>` +
                 `<td><select name="tunjangan_jenis[]" class="form-select form-select-sm">` +
                 `<option value="tetap"${jenis === "tetap" ? " selected" : ""}>Tetap</option>` +
                 `<option value="tidak_tetap"${jenis === "tidak_tetap" ? " selected" : ""}>Tidak Tetap</option></select></td>` +
@@ -877,9 +883,14 @@
             d = d || {};
             const tb = document.getElementById("tbodyUploadPotongan");
             if (!tb) return;
+            const daftarPot = ["BPJS KESEHATAN 1%", "BPJS KETENAGAKERJAAN 2%", "PPH21"];
+            const potDipilih = d.jenis_potongan || "";
             const tr = document.createElement("tr");
             tr.innerHTML =
-                `<td><input type="text" name="potongan_nama[]" class="form-control form-control-sm" maxlength="25" placeholder="Nama potongan"></td>` +
+                `<td><select name="potongan_nama[]" class="form-select form-select-sm">` +
+                `<option value="">-- Pilih --</option>` +
+                daftarPot.map(nm => `<option value="${nm}"${nm === potDipilih ? " selected" : ""}>${nm}</option>`).join("") +
+                `</select></td>` +
                 `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" placeholder="0"></td>` +
                 `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
             tb.appendChild(tr);
@@ -892,6 +903,16 @@
             const tabFirst = document.querySelector('#tabUploadTemplate button[data-bs-target="#tab-up-template"]');
             if (tabFirst) bootstrap.Tab.getOrCreateInstance(tabFirst).show();
         }
+        // Baris bawaan agar pengguna tinggal mengatur nilainya (baris bisa dihapus bila tak perlu).
+        function seedUploadTpRows() {
+            ["Tunjangan Daerah", "Tunjangan Hidup", "Tunjangan Makan", "Tunjangan Skill",
+             "Bonus Kehadiran", "Tunjangan Posisi"].forEach(nm => {
+                addUploadRowTunjangan({ nama_tunjangan: nm, jenis_tunjangan: nm === "Bonus Kehadiran" ? "tidak_tetap" : "tetap" });
+            });
+            ["BPJS KESEHATAN 1%", "BPJS KETENAGAKERJAAN 2%", "PPH21"].forEach(nm => {
+                addUploadRowPotongan({ jenis_potongan: nm });
+            });
+        }
         document.addEventListener("click", e => {
             const del = e.target.closest(".btnDelUploadRow");
             if (del) { del.closest("tr").remove(); return; }
@@ -902,6 +923,7 @@
         document.getElementById("btnTambahTemplate").addEventListener("click", () => {
             document.getElementById("formUploadTemplate").reset();
             resetUploadTpRows();
+            seedUploadTpRows();
             loadJabatan();
             new bootstrap.Modal(document.getElementById("modalUploadTemplate")).show();
         });

@@ -369,7 +369,7 @@ if (!function_exists('build_kontrak_docx')) {
             'tempat_tanggal_lahir' => $ttl,
             'jabatan' => isset($r['nama_jabatan']) && trim((string)$r['nama_jabatan']) !== '' ? kontrak_title($r['nama_jabatan']) : '-',
             'gaji_pokok' => kontrak_rupiah($r['gaji_pokok'] ?? 0),
-            'upah_lembur' => kontrak_rupiah($r['lembur'] ?? 0),
+            'upah_lembur' => kontrak_rupiah($r['lembur'] ?? 0) . '/jam',
             'izin' => kontrak_rupiah($r['pot_izin'] ?? 0),
             'mangkir' => kontrak_rupiah($r['pot_mangkir'] ?? 0),
             'bonus' => kontrak_rupiah($tun_nilai(['bonus kehadiran', 'bonus'])),
