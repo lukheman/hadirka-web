@@ -215,8 +215,8 @@
                 <input type="file" name="file_excel" id="file_excel_ter" class="form-control" accept=".xls,.xlsx" required>
                 <a href="assets/template-csv/Format_Impor_Karyawan_Tereliminasi.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
                 <div class="alert alert-info py-2 mt-2 mb-0">
-                    Kolom template: <strong>No | NIK Karyawan | Nama Lengkap | Tanggal Keluar (Y-M-D) | Jenis Keluar | Alasan / Keterangan</strong><br>
-                    <small>Jenis Keluar: Habis Kontrak, Pensiun, PHK, Resign, Black List.</small>
+                    Kolom template: <strong>No | NIK Karyawan | Nama Lengkap | Tanggal Keluar | Jenis Keluar</strong><br>
+                    <small>Jenis Keluar: RESIGN, END KONTRAK, PHK, MENGUNDURKAN DIRI (tidak peka huruf besar/kecil).</small>
                 </div>
                 <div id="progressWrapperTer" class="progress mt-2" style="display:none;height:20px;">
                     <div id="progressBarTer" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>

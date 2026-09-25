@@ -1,8 +1,9 @@
 <?php
 // Import massal karyawan tereliminasi (eliminasi by NIK).
-// Template: No | NIK Karyawan | Nama Lengkap | Tanggal Keluar (Y-M-D) | Jenis Keluar | Alasan / Keterangan
+// Template: No | NIK Karyawan | Nama Lengkap | Tanggal Keluar | Jenis Keluar
 // NIK adalah kunci (wajib terdaftar di tb_karyawan). Nama hanya verifikasi.
-// Jenis Keluar wajib salah satu: Habis Kontrak, Pensiun, PHK, Resign, Black List.
+// Jenis Keluar yang diterima: RESIGN, END KONTRAK, PHK, MENGUNDURKAN DIRI,
+// MERAWAT ORANGTUA SAKIT (dipetakan ke Resign/PHK/Habis Kontrak).
 
 ini_set('memory_limit', '512M');
 ini_set('max_execution_time', '300');
@@ -51,6 +52,7 @@ if ($qJenis) while ($r = $qJenis->fetch_assoc()) $cache_jenis[$r['nama']] = $r;
 
 $alias_jenis = [
     'habis kontrak' => 'habis kontrak',
+    'end kontrak' => 'habis kontrak',
     'end contract' => 'habis kontrak',
     'kontrak habis' => 'habis kontrak',
     'pensiun' => 'pensiun',
@@ -60,6 +62,9 @@ $alias_jenis = [
     'resign' => 'resign',
     'resignation' => 'resign',
     'mengundurkan diri' => 'resign',
+    'megundurkan diri' => 'resign', // toleransi salah ketik di data
+    'merawat orangtua sakit' => 'resign',
+    'merawat orang tua sakit' => 'resign',
     'black list' => 'black list',
     'blacklist' => 'black list',
 ];
@@ -69,12 +74,11 @@ try {
     $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
     $expected_headers = [
-        'No', 'NIK Karyawan', 'Nama Lengkap', 'Tanggal Keluar (Y-M-D)',
-        'Jenis Keluar', 'Alasan / Keterangan'
+        'No', 'NIK Karyawan', 'Nama Lengkap', 'Tanggal Keluar', 'Jenis Keluar'
     ];
     $headers = array_values($sheet[1] ?? []);
-    if (count($headers) !== 6 || $headers !== $expected_headers) {
-        throw new Exception('Format template tidak sesuai. Gunakan template "Format_Impor_Karyawan_Tereliminasi.xlsx" (6 kolom A sampai F).');
+    if (count($headers) !== 5 || $headers !== $expected_headers) {
+        throw new Exception('Format template tidak sesuai. Gunakan template "Format_Impor_Karyawan_Tereliminasi.xlsx" (5 kolom: No | NIK Karyawan | Nama Lengkap | Tanggal Keluar | Jenis Keluar).');
     }
 
     foreach ($sheet as $rowNum => $row) {
@@ -89,7 +93,7 @@ try {
             $nama_file    = trim((string)($row['C'] ?? ''));
             $tgl_keluar   = Excel::parseDate($row['D'] ?? '');
             $jenis_raw    = trim((string)($row['E'] ?? ''));
-            $alasan       = Excel::esc($koneksi, $row['F'] ?? '');
+            $alasan       = '';
 
             if ($nik_karyawan === '') {
                 throw new Exception('NIK Karyawan kosong.');
@@ -101,12 +105,12 @@ try {
                 throw new Exception('Tanggal keluar wajib diisi.');
             }
             if ($jenis_raw === '') {
-                throw new Exception('Jenis keluar wajib diisi (Habis Kontrak / Pensiun / PHK / Resign / Black List).');
+                throw new Exception('Jenis keluar wajib diisi (RESIGN / END KONTRAK / PHK / MENGUNDURKAN DIRI).');
             }
 
             $key_jenis = $alias_jenis[strtolower($jenis_raw)] ?? strtolower($jenis_raw);
             if (!isset($cache_jenis[$key_jenis])) {
-                throw new Exception("Jenis keluar '$jenis_raw' tidak dikenal. Gunakan: Habis Kontrak, Pensiun, PHK, Resign, Black List.");
+                throw new Exception("Jenis keluar '$jenis_raw' tidak dikenal. Gunakan: RESIGN, END KONTRAK, PHK, MENGUNDURKAN DIRI.");
             }
             $id_jenis_keluar = $cache_jenis[$key_jenis]['id_jenis_keluar'];
             // status_karyawan mengikuti nama kategori master (konsisten dgn act-eliminasi.php)
