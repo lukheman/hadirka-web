@@ -77,15 +77,36 @@ if (!function_exists('kontrak_tgl_id')) {
     }
 }
 
+if (!function_exists('kontrak_parse_nominal')) {
+    // Parse angka dari format Indonesia ("1.500.000", "1.500.000,50") maupun
+    // format database ("5500000.00") menjadi float.
+    function kontrak_parse_nominal($val)
+    {
+        $s = trim((string)$val);
+        if ($s === '' || $s === null) return 0;
+        $hasDot = strpos($s, '.') !== false;
+        $hasComma = strpos($s, ',') !== false;
+        if ($hasDot && $hasComma) {
+            $s = str_replace('.', '', $s);   // titik = ribuan
+            $s = str_replace(',', '.', $s);  // koma = desimal
+        } elseif ($hasComma) {
+            $s = str_replace(',', '.', $s);
+        } elseif ($hasDot) {
+            if (substr_count($s, '.') > 1 || preg_match('/\.\d{3}$/', $s)) {
+                $s = str_replace('.', '', $s); // ribuan Indonesia
+            } // else: satu titik desimal ala database, biarkan
+        }
+        return is_numeric($s) ? floatval($s) : 0;
+    }
+}
+
 if (!function_exists('kontrak_rupiah')) {
-    // "5000000" / "5.000.000" / "5000000.00" -> "Rp 5.000.000".
+    // "5000000" / "5.000.000" / "5500000.00" -> "Rp 5.000.000,00" (2 desimal).
     function kontrak_rupiah($val)
     {
-        if ($val === null || $val === '') return 'Rp 0';
-        $s = str_replace('.', '', (string)$val);
-        $s = str_replace(',', '.', $s);
-        $n = is_numeric($s) ? floatval($s) : 0;
-        return 'Rp ' . number_format($n, 0, ',', '.');
+        if ($val === null || $val === '') return 'Rp 0,00';
+        $n = kontrak_parse_nominal($val);
+        return 'Rp ' . number_format($n, 2, ',', '.');
     }
 }
 
