@@ -89,7 +89,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $master_pages = ['data-karyawan', 'karier', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-template-kontrak', 'cetak-kontrak', 'data-bpjs-tk'];
+        $master_pages = ['data-karyawan', 'data-karyawan-tereliminasi', 'karier', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-template-kontrak', 'cetak-kontrak', 'data-bpjs-tk'];
         ?>
         <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>" data-menu="master">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -100,6 +100,11 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('data-karyawan', $current_page); ?>">
                     <a class="menu-link" href="?page=data-karyawan">
                         <div>Data Karyawan</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('data-karyawan-tereliminasi', $current_page); ?>">
+                    <a class="menu-link" href="?page=data-karyawan-tereliminasi">
+                        <div>Karyawan Tereliminasi</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('import-karier', $current_page); ?>">

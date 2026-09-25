@@ -23,6 +23,7 @@ if ($page === 'logout') {
 $routes = [
     // Master Data
     'data-karyawan'   => 'view/master-data/data-karyawan.php',
+    'data-karyawan-tereliminasi' => 'view/master-data/data-karyawan-tereliminasi.php',
     'data-site'       => 'view/master-data/data-site.php',
     'data-potongan-tidak-tetap' => 'view/penggajian/data-potongan-tidak-tetap.php',
     'data-departemen' => 'view/master-data/data-departemen.php',
@@ -93,6 +94,7 @@ $user_level = $_SESSION['level'] ?? 99;
 // 1. Modul HRD Umum (Hanya Master, Direktur, HRD, Supervisor, Admin)
 $hrd_pages = [
     'data-karyawan',
+    'data-karyawan-tereliminasi',
     'data-site',
     'data-departemen',
     'karier',

@@ -12,6 +12,51 @@ function input($data)
     return isset($_POST[$data]) ? $koneksi->real_escape_string(trim($_POST[$data])) : '';
 }
 
+if ($action == "get") { // Ambil data eliminasi untuk koreksi
+    $id_karyawan = isset($_POST['id_karyawan']) ? (int)$_POST['id_karyawan'] : 0;
+    if ($id_karyawan <= 0) {
+        echo json_encode(["status" => "error", "msg" => "ID Karyawan tidak valid"]);
+        exit;
+    }
+    $q = $koneksi->query("SELECT id_tereliminasi, id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar FROM tb_tereliminasi WHERE id_karyawan = '$id_karyawan' LIMIT 1");
+    if ($q && $q->num_rows > 0) {
+        echo json_encode(["status" => "ok", "data" => $q->fetch_assoc()]);
+    } else {
+        echo json_encode(["status" => "error", "msg" => "Data eliminasi tidak ditemukan"]);
+    }
+    exit;
+}
+
+if ($action == "reaktivasi") { // Kembalikan karyawan menjadi Aktif
+    $koneksi->begin_transaction();
+    try {
+        $id_karyawan = isset($_POST['id_karyawan']) ? (int)$_POST['id_karyawan'] : 0;
+        if ($id_karyawan <= 0) {
+            throw new Exception("ID Karyawan tidak valid.");
+        }
+
+        $cek = $koneksi->query("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'");
+        if (!$cek || $cek->num_rows === 0) {
+            throw new Exception("Karyawan tidak ditemukan.");
+        }
+        $nama = $cek->fetch_assoc()['nama_lengkap'];
+
+        if (!$koneksi->query("UPDATE tb_karyawan SET status_karyawan = 'Aktif' WHERE id_karyawan = '$id_karyawan'")) {
+            throw new Exception("Gagal mengaktifkan karyawan: " . $koneksi->error);
+        }
+        if (!$koneksi->query("DELETE FROM tb_tereliminasi WHERE id_karyawan = '$id_karyawan'")) {
+            throw new Exception("Gagal menghapus data eliminasi: " . $koneksi->error);
+        }
+
+        $koneksi->commit();
+        echo json_encode(["status" => "ok", "msg" => "Karyawan $nama berhasil diaktifkan kembali."]);
+    } catch (Exception $e) {
+        $koneksi->rollback();
+        echo json_encode(["status" => "error", "msg" => $e->getMessage()]);
+    }
+    exit;
+}
+
 if ($action == "eliminasi") { // Proses eliminasi
     $koneksi->begin_transaction();
 
