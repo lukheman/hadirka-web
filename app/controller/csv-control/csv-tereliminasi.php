@@ -19,6 +19,19 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 $mode = $_POST['action'] ?? 'import'; // preview = validasi saja (tanpa tulis DB), import = eksekusi
 
 /**
+ * Normalisasi input jenis keluar agar valid apa pun kapitalisasinya:
+ * huruf dikecilkan, non-breaking space/tab/newline jadi spasi biasa,
+ * spasi berlebih digabung menjadi satu.
+ */
+function normalisasiJenisKeluar($s)
+{
+    $s = (string)$s;
+    $s = str_replace(["\xC2\xA0", "\t", "\n", "\r"], ' ', $s);
+    $s = preg_replace('/\s+/', ' ', $s);
+    return strtolower(trim($s));
+}
+
+/**
  * Validasi satu baris Excel (dipakai mode preview & import).
  * Tidak menulis ke database.
  */
@@ -27,7 +40,7 @@ function validasiBarisTereliminasi($koneksi, $cache_jenis, $alias_jenis, $row)
     $nik_karyawan = Excel::esc($koneksi, $row['B'] ?? '');
     $nama_file    = trim((string)($row['C'] ?? ''));
     $tgl_raw      = trim((string)($row['D'] ?? ''));
-    $tgl_keluar   = Excel::parseDate($row['D'] ?? '');
+    $tgl_keluar   = Excel::parseDateFlexible($row['D'] ?? '');
     $jenis_raw    = trim((string)($row['E'] ?? ''));
 
     $r = [
@@ -53,7 +66,7 @@ function validasiBarisTereliminasi($koneksi, $cache_jenis, $alias_jenis, $row)
         return $r;
     }
     if ($tgl_raw !== '' && $tgl_keluar === null) {
-        $r['error'] = 'Tanggal keluar tidak valid. Gunakan format YYYY-MM-DD.';
+        $r['error'] = 'Tanggal keluar tidak dikenali. Contoh valid: 2026-09-20, "25 Februari 2025", 8/29/2026.';
         return $r;
     }
     if ($tgl_keluar === null) {
@@ -65,7 +78,7 @@ function validasiBarisTereliminasi($koneksi, $cache_jenis, $alias_jenis, $row)
         return $r;
     }
 
-    $key_jenis = $alias_jenis[strtolower($jenis_raw)] ?? strtolower($jenis_raw);
+    $key_jenis = $alias_jenis[normalisasiJenisKeluar($jenis_raw)] ?? normalisasiJenisKeluar($jenis_raw);
     if (!isset($cache_jenis[$key_jenis])) {
         $r['error'] = "Jenis keluar '$jenis_raw' tidak dikenal. Gunakan: RESIGN, END KONTRAK, PHK, MENGUNDURKAN DIRI.";
         return $r;
@@ -156,16 +169,42 @@ try {
     $spreadsheet = IOFactory::load($file);
     $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
-    $expected_headers = [
-        'No', 'NIK Karyawan', 'Nama Lengkap', 'Tanggal Keluar', 'Jenis Keluar'
-    ];
-    $headers = array_values($sheet[1] ?? []);
-    if (count($headers) !== 5 || $headers !== $expected_headers) {
-        throw new Exception('Format template tidak sesuai. Gunakan template "Format_Impor_Karyawan_Tereliminasi.xlsx" (5 kolom: No | NIK Karyawan | Nama Lengkap | Tanggal Keluar | Jenis Keluar).');
+    // Validasi header toleran: abaikan kapitalisasi & spasi berlebih,
+    // izinkan baris judul di atas header, abaikan kolom kosong di ujung.
+    $expected_headers = ['no', 'nik karyawan', 'nama lengkap', 'tanggal keluar', 'jenis keluar'];
+
+    $normHeader = function ($s) {
+        $s = str_replace(["\xC2\xA0", "\t", "\n", "\r"], ' ', (string)$s);
+        return strtolower(trim(preg_replace('/\s+/', ' ', $s)));
+    };
+
+    // Cari baris header (baris berisi kata NIK, maks. 5 baris pertama)
+    $headerRowNum = null;
+    $headers = [];
+    foreach ($sheet as $num => $row) {
+        if ($num > 5) break;
+        $cells = array_values($row ?? []);
+        if (stripos(implode(' ', $cells), 'nik') !== false) {
+            $headerRowNum = $num;
+            $headers = $cells;
+            break;
+        }
+    }
+    if ($headerRowNum === null) {
+        $seen = implode(' | ', array_values($sheet[1] ?? []));
+        throw new Exception('Baris header (yang berisi NIK) tidak ditemukan. Isi baris 1: [' . $seen . ']. Gunakan template "Format_Impor_Karyawan_Tereliminasi.xlsx".');
+    }
+
+    // Buang kolom kosong di ujung (sisa format Excel)
+    while (!empty($headers) && trim((string)end($headers)) === '') array_pop($headers);
+
+    $headersNorm = array_map($normHeader, array_slice($headers, 0, 5));
+    if (count($headersNorm) < 5 || $headersNorm !== $expected_headers) {
+        throw new Exception('Header tidak sesuai. Ditemukan: [' . implode(' | ', array_slice($headers, 0, 5)) . ']. Harus: No | NIK Karyawan | Nama Lengkap | Tanggal Keluar | Jenis Keluar.');
     }
 
     foreach ($sheet as $rowNum => $row) {
-        if ($rowNum == 1) continue; // header
+        if ($rowNum <= $headerRowNum) continue; // lewati judul & header
 
         // skip baris kosong (NIK dan Nama kosong)
         if (trim($row['B'] ?? '') === '' && trim($row['C'] ?? '') === '') continue;
