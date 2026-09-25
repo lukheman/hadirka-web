@@ -276,6 +276,48 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalPreviewTer" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title text-white"><i class="fa fa-search me-2"></i>Validasi Data Eliminasi</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning py-2">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    Periksa daftar di bawah sebelum dieksekusi. Hanya baris <strong class="text-success">Siap</strong> yang akan diproses — baris <strong class="text-danger">Bermasalah</strong> dilewati otomatis.
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                    <span class="badge bg-success fs-6">Siap: <span id="previewValidCountTer">0</span></span>
+                    <span class="badge bg-danger fs-6">Bermasalah: <span id="previewInvalidCountTer">0</span></span>
+                </div>
+                <div class="table-responsive" style="max-height:50vh;overflow-y:auto;">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-info sticky-top">
+                            <tr>
+                                <th class="text-center">Baris</th>
+                                <th class="text-center">NIK</th>
+                                <th class="text-center">Nama (File &rarr; Database)</th>
+                                <th class="text-center">Tgl Keluar</th>
+                                <th class="text-center">Jenis &rarr; Status</th>
+                                <th class="text-center">Hasil Validasi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewBodyTer"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" id="btnProsesTer">
+                    <i class="fa fa-user-slash"></i> Ya, Eliminasi Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modalLihatFotoTer" tabindex="-1" aria-hidden="true">    <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content bg-transparent border-0 shadow-none">
             <div class="modal-header border-0 p-0 justify-content-end">
@@ -486,36 +528,134 @@
             bootstrap.Modal.getOrCreateInstance(document.getElementById('importResultModalTer')).show();
         }
 
+        // Import Excel tereliminasi — 2 tahap: validasi (pratinjau) dulu, eksekusi setelah konfirmasi
+        let pendingImportFileTer = null;
+
+        function escPreviewTer(s) {
+            return String(s == null ? "" : s).replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function fmtTglTer(ymd) {
+            if (!ymd) return "-";
+            const p = String(ymd).split("-");
+            return p.length === 3 ? p[2] + "-" + p[1] + "-" + p[0] : ymd;
+        }
+
+        function renderPreviewTer(res) {
+            document.getElementById('previewValidCountTer').textContent = res.valid || 0;
+            document.getElementById('previewInvalidCountTer').textContent = res.invalid || 0;
+
+            const tb = document.getElementById('previewBodyTer');
+            const rows = res.rows || [];
+            if (!rows.length) {
+                tb.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada baris data di file.</td></tr>';
+            } else {
+                tb.innerHTML = rows.map(function(r) {
+                    let hasil;
+                    if (r.valid) {
+                        const aksi = r.sudah_tereliminasi
+                            ? 'Update data eliminasi'
+                            : escPreviewTer(r.status_saat_ini || 'Aktif') + ' &rarr; ' + escPreviewTer(r.status_baru);
+                        hasil = '<span class="badge bg-success">Siap</span><br><small class="text-muted">' + aksi + '</small>'
+                            + (r.warning ? '<br><small class="text-warning">' + escPreviewTer(r.warning) + '</small>' : '');
+                    } else {
+                        hasil = '<span class="badge bg-danger">Dilewati</span><br><small class="text-danger">' + escPreviewTer(r.error || '') + '</small>';
+                    }
+                    const namaCell = escPreviewTer(r.nama_file || '-')
+                        + (r.nama_db ? '<br><small class="text-muted">&rarr; ' + escPreviewTer(r.nama_db) + '</small>' : '');
+                    const jenisCell = escPreviewTer(r.jenis_raw || '-')
+                        + (r.jenis_mapped ? '<br><small class="text-muted">&rarr; ' + escPreviewTer(r.jenis_mapped) + '</small>' : '');
+                    return '<tr>'
+                        + '<td class="text-center">' + (r.baris || '') + '</td>'
+                        + '<td class="text-center">' + escPreviewTer(r.nik || '-') + '</td>'
+                        + '<td>' + namaCell + '</td>'
+                        + '<td class="text-center">' + fmtTglTer(r.tgl_keluar) + '</td>'
+                        + '<td class="text-center">' + jenisCell + '</td>'
+                        + '<td>' + hasil + '</td>'
+                        + '</tr>';
+                }).join('');
+            }
+
+            document.getElementById('btnProsesTer').disabled = !(res.valid > 0);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreviewTer')).show();
+        }
+
+        // Tahap 1: upload -> validasi -> tampilkan pratinjau (notifikasi)
         $("#formImportTer").on("submit", function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            const btn = $("#btnUploadTer");
+            const fileInput = $("#file_excel_ter")[0];
+            if (!fileInput.files.length) {
+                showToast("Pilih file Excel terlebih dahulu.", "warning");
+                return;
+            }
+            pendingImportFileTer = fileInput.files[0];
 
-            $("#progressWrapperTer").show();
-            btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+            const fd = new FormData();
+            fd.append("file_excel", pendingImportFileTer);
+            fd.append("action", "preview");
+
+            const btn = $("#btnUploadTer");
+            btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Memvalidasi...');
 
             $.ajax({
                 url: "app/controller/csv-control/csv-tereliminasi.php",
                 type: "POST",
                 dataType: "json",
-                data: formData,
+                data: fd,
                 contentType: false,
                 processData: false,
-                xhr: function() {
-                    var xhr = new window.XMLHttpRequest();
-                    xhr.upload.addEventListener("progress", function(evt) {
-                        if (evt.lengthComputable) {
-                            var percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                            $("#progressBarTer").css("width", percentComplete + "%").text(percentComplete + "%");
-                        }
-                    }, false);
-                    return xhr;
+                success: function(res) {
+                    if (res.success && res.preview) {
+                        $("#modalImportTer").modal("hide");
+                        renderPreviewTer(res);
+                    } else {
+                        showImportResultTer({
+                            berhasil: 0,
+                            dilewati: 0,
+                            gagal: 1,
+                            errors: [res.error || "Validasi gagal."]
+                        }, "Validasi Gagal");
+                    }
                 },
+                error: function(xhr, status, error) {
+                    console.error("Preview Error:", status, error, xhr.responseText);
+                    showToast("Gagal memvalidasi file. Cek console browser (F12).", "error");
+                },
+                complete: function() {
+                    btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
+                }
+            });
+        });
+
+        // Tahap 2: konfirmasi -> eksekusi eliminasi
+        $("#btnProsesTer").on("click", async function() {
+            if (!pendingImportFileTer) {
+                showToast("File tidak ditemukan, ulangi upload.", "warning");
+                return;
+            }
+            if (!(await confirmDialog("Eliminasi semua data yang berstatus Siap?\nBaris bermasalah akan dilewati.", { title: "Konfirmasi Eliminasi", confirmText: "Ya, Eliminasi", icon: "warning" }))) return;
+
+            const fd = new FormData();
+            fd.append("file_excel", pendingImportFileTer);
+            fd.append("action", "import");
+
+            const btn = $(this);
+            btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
+
+            $.ajax({
+                url: "app/controller/csv-control/csv-tereliminasi.php",
+                type: "POST",
+                dataType: "json",
+                data: fd,
+                contentType: false,
+                processData: false,
                 success: function(res) {
                     console.log("Import tereliminasi:", res);
                     if (res.success) {
-                        $("#modalImportTer").modal("hide");
+                        $("#modalPreviewTer").modal("hide");
                         $("#formImportTer")[0].reset();
+                        pendingImportFileTer = null;
                         tableTereliminasi.ajax.reload(null, false);
                         showImportResultTer(res);
                         if (res.gagal > 0) {
@@ -544,9 +684,7 @@
                     showToast("Terjadi kesalahan server!", "error");
                 },
                 complete: function() {
-                    $("#progressWrapperTer").hide();
-                    $("#progressBarTer").css("width", "0%").text("0%");
-                    btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
+                    btn.prop("disabled", false).html('<i class="fa fa-user-slash"></i> Ya, Eliminasi Sekarang');
                 }
             });
         });

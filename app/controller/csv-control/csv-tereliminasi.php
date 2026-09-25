@@ -16,6 +16,86 @@ require_once __DIR__ . '/../../config/Excel.php'; // Excel::parseDate()/esc() te
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+$mode = $_POST['action'] ?? 'import'; // preview = validasi saja (tanpa tulis DB), import = eksekusi
+
+/**
+ * Validasi satu baris Excel (dipakai mode preview & import).
+ * Tidak menulis ke database.
+ */
+function validasiBarisTereliminasi($koneksi, $cache_jenis, $alias_jenis, $row)
+{
+    $nik_karyawan = Excel::esc($koneksi, $row['B'] ?? '');
+    $nama_file    = trim((string)($row['C'] ?? ''));
+    $tgl_raw      = trim((string)($row['D'] ?? ''));
+    $tgl_keluar   = Excel::parseDate($row['D'] ?? '');
+    $jenis_raw    = trim((string)($row['E'] ?? ''));
+
+    $r = [
+        'nik' => $nik_karyawan,
+        'nama_file' => $nama_file,
+        'tgl_raw' => $tgl_raw,
+        'tgl_keluar' => $tgl_keluar,
+        'jenis_raw' => $jenis_raw,
+        'jenis_mapped' => null,
+        'id_jenis_keluar' => null,
+        'status_baru' => null,
+        'id_karyawan' => null,
+        'nama_db' => null,
+        'status_saat_ini' => null,
+        'sudah_tereliminasi' => false,
+        'valid' => false,
+        'error' => null,
+        'warning' => null,
+    ];
+
+    if ($nik_karyawan === '') {
+        $r['error'] = 'NIK Karyawan kosong.';
+        return $r;
+    }
+    if ($tgl_raw !== '' && $tgl_keluar === null) {
+        $r['error'] = 'Tanggal keluar tidak valid. Gunakan format YYYY-MM-DD.';
+        return $r;
+    }
+    if ($tgl_keluar === null) {
+        $r['error'] = 'Tanggal keluar wajib diisi.';
+        return $r;
+    }
+    if ($jenis_raw === '') {
+        $r['error'] = 'Jenis keluar wajib diisi (RESIGN / END KONTRAK / PHK / MENGUNDURKAN DIRI).';
+        return $r;
+    }
+
+    $key_jenis = $alias_jenis[strtolower($jenis_raw)] ?? strtolower($jenis_raw);
+    if (!isset($cache_jenis[$key_jenis])) {
+        $r['error'] = "Jenis keluar '$jenis_raw' tidak dikenal. Gunakan: RESIGN, END KONTRAK, PHK, MENGUNDURKAN DIRI.";
+        return $r;
+    }
+    $r['id_jenis_keluar'] = $cache_jenis[$key_jenis]['id_jenis_keluar'];
+    $r['jenis_mapped'] = $cache_jenis[$key_jenis]['nama_kategori'];
+    // status_karyawan mengikuti nama kategori master (konsisten dgn act-eliminasi.php)
+    $r['status_baru'] = $cache_jenis[$key_jenis]['nama_kategori'];
+
+    $cekKar = $koneksi->query("SELECT id_karyawan, nama_lengkap, status_karyawan FROM tb_karyawan WHERE nik_karyawan = '$nik_karyawan' LIMIT 1");
+    if (!$cekKar || $cekKar->num_rows === 0) {
+        $r['error'] = "NIK '$nik_karyawan' tidak terdaftar di database. Daftarkan dulu di Data Karyawan.";
+        return $r;
+    }
+    $kar = $cekKar->fetch_assoc();
+    $r['id_karyawan'] = $kar['id_karyawan'];
+    $r['nama_db'] = $kar['nama_lengkap'];
+    $r['status_saat_ini'] = $kar['status_karyawan'];
+
+    if ($nama_file !== '' && strtolower(trim($kar['nama_lengkap'])) !== strtolower($nama_file)) {
+        $r['warning'] = "Nama di file ('$nama_file') berbeda dengan database ('{$kar['nama_lengkap']}'), diproses berdasarkan NIK.";
+    }
+
+    $cekElim = $koneksi->query("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan = '{$kar['id_karyawan']}' LIMIT 1");
+    $r['sudah_tereliminasi'] = ($cekElim && $cekElim->num_rows > 0);
+
+    $r['valid'] = true;
+    return $r;
+}
+
 $response = [
     "success" => false,
     "berhasil" => 0,
@@ -23,7 +103,10 @@ $response = [
     "dilewati" => 0,
     "errors" => [],
     "debug" => [],
-    "error" => ""
+    "error" => "",
+    "rows" => [],
+    "valid" => 0,
+    "invalid" => 0
 ];
 
 if (!isset($_FILES['file_excel']) || $_FILES['file_excel']['error'] !== UPLOAD_ERR_OK) {
@@ -87,48 +170,39 @@ try {
         // skip baris kosong (NIK dan Nama kosong)
         if (trim($row['B'] ?? '') === '' && trim($row['C'] ?? '') === '') continue;
 
+        $v = validasiBarisTereliminasi($koneksi, $cache_jenis, $alias_jenis, $row);
+        $v['baris'] = $rowNum;
+
+        // MODE PREVIEW: kumpulkan hasil validasi saja, tanpa tulis DB
+        if ($mode === 'preview') {
+            $response['rows'][] = $v;
+            if ($v['valid']) {
+                $response['valid']++;
+            } else {
+                $response['invalid']++;
+            }
+            continue;
+        }
+
+        if (!$v['valid']) {
+            $response["gagal"]++;
+            $response["errors"][] = "Baris $rowNum: " . $v['error'];
+            continue;
+        }
+
+        $nik_karyawan    = $v['nik'];
+        $tgl_keluar      = $v['tgl_keluar'];
+        $id_jenis_keluar = $v['id_jenis_keluar'];
+        $status_baru     = $koneksi->real_escape_string($v['status_baru']);
+        $id_karyawan     = $v['id_karyawan'];
+        $alasan          = '';
+
+        if ($v['warning']) {
+            $response['debug'][] = "Baris $rowNum: Perhatian - " . $v['warning'];
+        }
+
         $transaction_started = false;
         try {
-            $nik_karyawan = Excel::esc($koneksi, $row['B'] ?? '');
-            $nama_file    = trim((string)($row['C'] ?? ''));
-            $tgl_keluar   = Excel::parseDate($row['D'] ?? '');
-            $jenis_raw    = trim((string)($row['E'] ?? ''));
-            $alasan       = '';
-
-            if ($nik_karyawan === '') {
-                throw new Exception('NIK Karyawan kosong.');
-            }
-            if (($row['D'] ?? '') !== '' && $tgl_keluar === null) {
-                throw new Exception('Tanggal keluar tidak valid. Gunakan format YYYY-MM-DD.');
-            }
-            if ($tgl_keluar === null) {
-                throw new Exception('Tanggal keluar wajib diisi.');
-            }
-            if ($jenis_raw === '') {
-                throw new Exception('Jenis keluar wajib diisi (RESIGN / END KONTRAK / PHK / MENGUNDURKAN DIRI).');
-            }
-
-            $key_jenis = $alias_jenis[strtolower($jenis_raw)] ?? strtolower($jenis_raw);
-            if (!isset($cache_jenis[$key_jenis])) {
-                throw new Exception("Jenis keluar '$jenis_raw' tidak dikenal. Gunakan: RESIGN, END KONTRAK, PHK, MENGUNDURKAN DIRI.");
-            }
-            $id_jenis_keluar = $cache_jenis[$key_jenis]['id_jenis_keluar'];
-            // status_karyawan mengikuti nama kategori master (konsisten dgn act-eliminasi.php)
-            $status_baru = $koneksi->real_escape_string($cache_jenis[$key_jenis]['nama_kategori']);
-
-            // Karyawan wajib sudah terdaftar (import ini hanya mengeliminasi, bukan menambah)
-            $cekKar = $koneksi->query("SELECT id_karyawan, nama_lengkap, status_karyawan FROM tb_karyawan WHERE nik_karyawan = '$nik_karyawan' LIMIT 1");
-            if (!$cekKar || $cekKar->num_rows === 0) {
-                throw new Exception("NIK '$nik_karyawan' tidak terdaftar di database. Daftarkan dulu di Data Karyawan.");
-            }
-            $kar = $cekKar->fetch_assoc();
-            $id_karyawan = $kar['id_karyawan'];
-
-            // Verifikasi nama (longgar): hanya peringatan, NIK tetap jadi kunci
-            if ($nama_file !== '' && strtolower(trim($kar['nama_lengkap'])) !== strtolower($nama_file)) {
-                $response['debug'][] = "Baris $rowNum: Perhatian - nama di file ('$nama_file') berbeda dengan database ('{$kar['nama_lengkap']}'), diproses berdasarkan NIK.";
-            }
-
             $koneksi->begin_transaction();
             $transaction_started = true;
 
@@ -159,7 +233,15 @@ try {
     }
 
     $response["success"] = true;
-    $response["message"] = "Import selesai. Berhasil: {$response['berhasil']}, Gagal: {$response['gagal']}";
+    if ($mode === 'preview') {
+        $response["preview"] = true;
+        $response["rows"] = $response["rows"] ?? [];
+        $response["valid"] = $response["valid"] ?? 0;
+        $response["invalid"] = $response["invalid"] ?? 0;
+        $response["message"] = "Validasi selesai. Siap diproses: {$response['valid']}, Bermasalah: {$response['invalid']}";
+    } else {
+        $response["message"] = "Import selesai. Berhasil: {$response['berhasil']}, Gagal: {$response['gagal']}";
+    }
 } catch (Exception $e) {
     $response["error"] = "Gagal membaca file Excel: " . $e->getMessage();
 }
