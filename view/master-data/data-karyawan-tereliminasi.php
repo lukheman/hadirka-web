@@ -61,32 +61,29 @@
         </div>
 
         <div class="pb-3">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div>
-                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalImportTer" title="Import eliminasi massal dari Excel">
-                        <i class="fa fa-upload"></i> Import Data
-                    </button>
-                    <button class="btn btn-sm btn-info" onclick="exportTereliminasi()" title="Export data tereliminasi ke Excel">
-                        <i class="fa fa-file-export"></i> Export Data
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="tableTereliminasi.ajax.reload(null,false)" title="Muat ulang data">
-                        <i class="fa fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <select id="filterSiteTer" class="form-select form-select-sm" title="Filter berdasarkan site">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalImportTer" title="Import eliminasi massal dari Excel">
+                    <i class="fa fa-upload"></i> Import Data
+                </button>
+                <button class="btn btn-sm btn-info" onclick="exportTereliminasi()" title="Export data tereliminasi ke Excel">
+                    <i class="fa fa-file-export"></i> Export Data
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="tableTereliminasi.ajax.reload(null,false)" title="Muat ulang data">
+                    <i class="fa fa-sync-alt"></i> Refresh
+                </button>
+                <select id="filterSiteTer" class="form-select form-select-sm w-auto" title="Filter berdasarkan site">
                         <option value="">-- Semua Site --</option>
                         <?php foreach (data_site() as $d) { ?>
                             <option value="<?= htmlspecialchars($d['id_site']) ?>"><?= htmlspecialchars($d['nama_site']) ?></option>
                         <?php } ?>
                     </select>
-                    <select id="filterJabatanTer" class="form-select form-select-sm" title="Filter berdasarkan jabatan">
+                    <select id="filterJabatanTer" class="form-select form-select-sm w-auto" title="Filter berdasarkan jabatan">
                         <option value="">-- Semua Jabatan --</option>
                         <?php foreach (data_jabatan() as $d) {
                             echo "<option value='" . htmlspecialchars($d['id_jabatan']) . "'>" . htmlspecialchars($d['nama_jabatan']) . "</option>";
                         } ?>
                     </select>
-                    <select id="filterJenisTer" class="form-select form-select-sm" title="Filter berdasarkan jenis keluar">
+                    <select id="filterJenisTer" class="form-select form-select-sm w-auto" title="Filter berdasarkan jenis keluar">
                         <option value="">-- Semua Jenis Keluar --</option>
                         <option value="Habis Kontrak">Habis Kontrak</option>
                         <option value="Pensiun">Pensiun</option>
@@ -94,7 +91,7 @@
                         <option value="Resign">Resign</option>
                         <option value="Black List">Black List</option>
                     </select>
-                    <select id="filterBulanTer" class="form-select form-select-sm" title="Filter bulan keluar (tahun berjalan)">
+                    <select id="filterBulanTer" class="form-select form-select-sm w-auto" title="Filter bulan keluar (tahun berjalan)">
                         <option value="">-- Semua Bulan Keluar --</option>
                         <option value="01">Januari</option>
                         <option value="02">Februari</option>
@@ -109,7 +106,6 @@
                         <option value="11">November</option>
                         <option value="12">Desember</option>
                     </select>
-                </div>
             </div>
         </div>
 
