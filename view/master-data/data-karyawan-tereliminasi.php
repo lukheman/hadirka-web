@@ -63,6 +63,9 @@
         <div class="pb-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalImportTer" title="Import eliminasi massal dari Excel">
+                        <i class="fa fa-upload"></i> Import Data
+                    </button>
                     <button class="btn btn-sm btn-info" onclick="exportTereliminasi()" title="Export data tereliminasi ke Excel">
                         <i class="fa fa-file-export"></i> Export Data
                     </button>
@@ -196,8 +199,84 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalLihatFotoTer" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
+<div class="modal fade" id="modalImportTer" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="formImportTer" class="modal-content" enctype="multipart/form-data">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fa fa-upload"></i> Import Karyawan Tereliminasi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    Unggah file Excel sesuai template untuk mengeliminasi banyak karyawan sekaligus.
+                    NIK harus sudah terdaftar di Data Karyawan — baris dengan NIK tak dikenal akan dilaporkan gagal.
+                </p>
+                <label for="file_excel_ter" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
+                <input type="file" name="file_excel" id="file_excel_ter" class="form-control" accept=".xls,.xlsx" required>
+                <a href="assets/template-csv/Format_Impor_Karyawan_Tereliminasi.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
+                <div class="alert alert-info py-2 mt-2 mb-0">
+                    Kolom template: <strong>No | NIK Karyawan | Nama Lengkap | Tanggal Keluar (Y-M-D) | Jenis Keluar | Alasan / Keterangan</strong><br>
+                    <small>Jenis Keluar: Habis Kontrak, Pensiun, PHK, Resign, Black List.</small>
+                </div>
+                <div id="progressWrapperTer" class="progress mt-2" style="display:none;height:20px;">
+                    <div id="progressBarTer" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" type="submit" id="btnUploadTer">
+                    <i class="fa fa-upload"></i> Upload
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="importResultModalTer" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="importResultModalTerLabel">
+                    <i class="fa fa-clipboard-check me-2"></i>Hasil Import
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card stat-card border-success h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Berhasil</div>
+                                <div class="stat-number text-success" id="importResultSuccessTer">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card border-info h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Dilewati</div>
+                                <div class="stat-number text-info" id="importResultSkippedTer">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card stat-card border-danger h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Gagal</div>
+                                <div class="stat-number text-danger" id="importResultFailedTer">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="importResultDetailsTer" class="small" style="max-height:240px;overflow-y:auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalLihatFotoTer" tabindex="-1" aria-hidden="true">    <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content bg-transparent border-0 shadow-none">
             <div class="modal-header border-0 p-0 justify-content-end">
                 <button type="button" class="btn-close btn-close-white fs-4" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -357,6 +436,118 @@
                     }
                 },
                 error: function() { showToast("Terjadi kesalahan server.", "error"); }
+            });
+        });
+
+        // Import Excel tereliminasi
+        function showImportResultTer(res, title) {
+            title = title || "Hasil Import";
+            document.getElementById('importResultModalTerLabel').innerHTML =
+                '<i class="fa fa-clipboard-check me-2"></i>' + title;
+            document.getElementById('importResultSuccessTer').textContent = res.berhasil || 0;
+            document.getElementById('importResultSkippedTer').textContent = res.dilewati || 0;
+            document.getElementById('importResultFailedTer').textContent = res.gagal || 0;
+
+            const details = document.getElementById('importResultDetailsTer');
+            details.innerHTML = '';
+
+            const sections = [
+                { title: 'Catatan', items: (res.debug || []).filter(item => item.includes('Perhatian')), className: 'text-warning' },
+                { title: 'Detail error', items: res.errors || [], className: 'text-danger' }
+            ];
+
+            sections.forEach(section => {
+                if (!section.items.length) return;
+                const heading = document.createElement('div');
+                heading.className = 'fw-bold mb-1 ' + section.className;
+                heading.textContent = section.title;
+                details.appendChild(heading);
+
+                const list = document.createElement('ul');
+                list.className = 'mb-3 ps-4';
+                section.items.slice(0, 20).forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    list.appendChild(li);
+                });
+                if (section.items.length > 20) {
+                    const more = document.createElement('div');
+                    more.className = 'text-muted mb-2';
+                    more.textContent = '... dan ' + (section.items.length - 20) + ' detail lainnya. Lihat console browser untuk detail lengkap.';
+                    details.appendChild(more);
+                }
+                details.appendChild(list);
+            });
+
+            if (!details.children.length) {
+                details.innerHTML = '<div class="text-success"><i class="fa fa-check-circle me-1"></i>Semua data berhasil diproses.</div>';
+            }
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('importResultModalTer')).show();
+        }
+
+        $("#formImportTer").on("submit", function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const btn = $("#btnUploadTer");
+
+            $("#progressWrapperTer").show();
+            btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+
+            $.ajax({
+                url: "app/controller/csv-control/csv-tereliminasi.php",
+                type: "POST",
+                dataType: "json",
+                data: formData,
+                contentType: false,
+                processData: false,
+                xhr: function() {
+                    var xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", function(evt) {
+                        if (evt.lengthComputable) {
+                            var percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                            $("#progressBarTer").css("width", percentComplete + "%").text(percentComplete + "%");
+                        }
+                    }, false);
+                    return xhr;
+                },
+                success: function(res) {
+                    console.log("Import tereliminasi:", res);
+                    if (res.success) {
+                        $("#modalImportTer").modal("hide");
+                        $("#formImportTer")[0].reset();
+                        tableTereliminasi.ajax.reload(null, false);
+                        showImportResultTer(res);
+                        if (res.gagal > 0) {
+                            showToast('Import selesai dengan ' + res.gagal + ' error. Cek detail!', "warning");
+                        } else {
+                            showToast('Semua ' + res.berhasil + ' data berhasil dieliminasi!', "success");
+                        }
+                    } else {
+                        showImportResultTer({
+                            berhasil: 0,
+                            dilewati: 0,
+                            gagal: 1,
+                            errors: [res.error || "Terjadi kesalahan tidak diketahui"]
+                        }, "Import Gagal");
+                        showToast("Import gagal! Cek detail.", "error");
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", status, error, xhr.responseText);
+                    showImportResultTer({
+                        berhasil: 0,
+                        dilewati: 0,
+                        gagal: 1,
+                        errors: ["Terjadi kesalahan server (" + status + "). Cek console browser (F12)."]
+                    }, "Kesalahan Server");
+                    showToast("Terjadi kesalahan server!", "error");
+                },
+                complete: function() {
+                    $("#progressWrapperTer").hide();
+                    $("#progressBarTer").css("width", "0%").text("0%");
+                    btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
+                }
             });
         });
 
