@@ -95,6 +95,14 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
             </button>
         </div>
         <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="searchKaryawan" class="form-label fw-bold text-primary">
+                        <i class="fa fa-search fa-lg"></i> Cari Nama / NIK / ID
+                    </label>
+                    <input type="search" id="searchKaryawan" class="form-control form-control-sm" placeholder="Contoh: tjs-00090" data-bs-toggle="tooltip" title="Ketik nama, NIK, atau ID karyawan untuk memfilter tabel">
+                </div>
+            </div>
             <!-- Spinner Loading -->
             <div class="text-center" id="loadingSpinner" style="display: none;">
                 <div class="spinner-border text-primary" role="status">
@@ -259,17 +267,27 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                     }
 
                     tabelBody.innerHTML = html;
-                    $(".MyTableAbsensi").DataTable({
+                    const dt = $(".MyTableAbsensi").DataTable({
                         responsive: true,
                         pageLength: 10,
                         destroy: true
                     });
+                    // Terapkan lagi kata kunci pencarian khusus (Nama/NIK/ID) setelah reload
+                    const kw = document.getElementById("searchKaryawan")?.value || "";
+                    if (kw) dt.search(kw).draw();
                 })
                 .finally(() => {
                     spinner.style.display = "none";
                 });
         };
 
+
+        // Pencarian khusus Nama / NIK / ID (contoh: tjs-00090)
+        document.getElementById("searchKaryawan").addEventListener("input", function() {
+            if ($.fn.DataTable.isDataTable(".MyTableAbsensi")) {
+                $(".MyTableAbsensi").DataTable().search(this.value).draw();
+            }
+        });
 
         // Auto load saat halaman terbuka jika filter lengkap
         if (filterSite.value && tglAwalInput.value && tglAkhirInput.value) {
