@@ -35,7 +35,7 @@ $allDates = dateRangeArray($tgl_a, $tgl_b);
 // Ambil semua absen di rentang sekaligus
 // -------------------------
 $absenAll = []; // [id_karyawan][tgl] => row
-$sqlAbs = "SELECT id_karyawan, tgl_absen, jam_kerja, ket_absen 
+$sqlAbs = "SELECT id_karyawan, tgl_absen, jam_kerja, ket_absen
            FROM tb_absen
            WHERE tgl_absen BETWEEN '$tgl_a' AND '$tgl_b'";
 $resAbs = mysqli_query($koneksi, $sqlAbs);
@@ -56,7 +56,7 @@ while ($r = mysqli_fetch_assoc($resAbs)) {
 $whereJab = $jabatan ? " AND kar.id_jabatan = '$jabatan' " : "";
 
 $sqlKar = "
-SELECT k.id_karyawan, k.nama_lengkap,
+SELECT k.id_karyawan, k.nik_karyawan, k.nama_lengkap,
        COALESCE(d.nama_departemen, '') AS nama_departemen,
        COALESCE(j.nama_jabatan, '') AS nama_jabatan,
        COALESCE(s.nama_site, '') AS nama_site,
@@ -186,10 +186,12 @@ while ($k = mysqli_fetch_assoc($qKar)) {
     } // end foreach dates
 
     // Cetak baris tabel sesuai kolom yang kamu mau (15 kolom)
+    $nama = htmlspecialchars($k['nama_lengkap'] ?? '-', ENT_QUOTES);
+    $nik = htmlspecialchars($k['nik_karyawan'] ?? '-', ENT_QUOTES);
     echo "
     <tr data-id='{$idk}'>
         <td class='text-center'>{$no}</td>
-        <td>{$k['nama_lengkap']}</td>
+        <td>{$nama}<br><small class='text-muted'>ID: {$nik}</small></td>
         <td>{$k['nama_departemen']}</td>
         <td>{$k['nama_jabatan']}</td>
         <td>{$k['nama_site']}</td>
