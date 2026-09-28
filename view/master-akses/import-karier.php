@@ -903,7 +903,10 @@
             if (!tb) return;
             const tr = document.createElement("tr");
             tr.innerHTML =
-                `<td><input type="text" name="potongan_nama[]" class="form-control form-control-sm" maxlength="25" value="${escAttr(d.jenis_potongan || "")}" placeholder="Nama potongan"></td>` +
+                `<td><select name="potongan_nama[]" class="form-select form-select-sm">` +
+                `<option value="">-- Pilih --</option>` +
+                ["PPH21", "BPJS KETENAGAKERJAAN 2%", "BPJS KESEHATAN 1%"].map(nm => `<option value="${nm}"${nm === (d.jenis_potongan || "") ? " selected" : ""}>${nm}</option>`).join("") +
+                `</select></td>` +
                 `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_potongan ?? "") === "" ? "" : formatIndo(d.jumlah_potongan)}" placeholder="0"></td>` +
                 `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelAddRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
             tb.appendChild(tr);

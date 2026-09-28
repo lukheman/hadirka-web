@@ -9,7 +9,12 @@
     <input type="hidden" name="id_karier" id="modalPotonganKarierEnc">
     <div class="col-md-6">
         <label class="form-label">Nama Potongan</label>
-        <input type="text" name="jenis_potongan" id="modalPotonganNama" class="form-control" placeholder="Contoh: BPJS" required>
+        <input type="text" name="jenis_potongan" id="modalPotonganNama" class="form-control" placeholder="Contoh: BPJS" required list="daftarPotonganBaku">
+        <datalist id="daftarPotonganBaku">
+            <option value="PPH21"></option>
+            <option value="BPJS KETENAGAKERJAAN 2%"></option>
+            <option value="BPJS KESEHATAN 1%"></option>
+        </datalist>
     </div>
     <div class="col-md-3">
         <label class="form-label">Jumlah (Rp)</label>
