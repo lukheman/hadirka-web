@@ -9,6 +9,7 @@ ini_set('log_errors', 1);
 require_once __DIR__ . '/../../config/koneksi.php';
 require '../../../vendor/autoload.php';
 
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -160,14 +161,14 @@ try {
 
     // Ambil kolom tanggal
     $colsTanggal = [];
-    $currentCol = $startCol;
-    while (true) {
+    $startIdx = Coordinate::columnIndexFromString($startCol);
+    $endIdx = Coordinate::columnIndexFromString($highestCol);
+    for ($colIdx = $startIdx; $colIdx <= $endIdx; $colIdx++) {
+        $currentCol = Coordinate::stringFromColumnIndex($colIdx);
         $cellValue = getCellValue($sheet, $currentCol . '1');
         if ($cellValue['value'] !== '') {
             $colsTanggal[] = $currentCol;
         }
-        if ($currentCol === $highestCol) break;
-        $currentCol++;
     }
 
     if (empty($colsTanggal)) {
