@@ -190,6 +190,23 @@ try {
     $debugLog[] = "Kolom tanggal: " . implode(', ', $colsTanggal);
 
     // ================================
+    // PREPARE SEKALI (di luar loop) + TRANSAKSI
+    // Mencegah timeout (293 baris x 31 kolom = ~9000 query)
+    // dan mencegah data setengah masuk saat script mati di tengah
+    // ================================
+    $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE nik_karyawan=?");
+    $stmtCheckM = $koneksi->prepare("SELECT id_absen FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
+    $stmtDel = $koneksi->prepare("DELETE FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
+    $stmtCheck = $koneksi->prepare("SELECT id_absen FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
+    $stmtInsert = $koneksi->prepare("INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen) VALUES (?,?,?,?)");
+    $stmtUpdate = $koneksi->prepare("UPDATE tb_absen SET jam_kerja=?, ket_absen=? WHERE id_karyawan=? AND tgl_absen=?");
+    if (!$stmtK || !$stmtCheckM || !$stmtDel || !$stmtCheck || !$stmtInsert || !$stmtUpdate) {
+        throw new Exception('Gagal prepare statement: ' . $koneksi->error);
+    }
+    $koneksi->begin_transaction();
+    $missingNik = [];
+
+    // ================================
     // LOOP PER BARIS
     // ================================
     for ($i = 2; $i <= $highestRow; $i++) {
@@ -202,19 +219,23 @@ try {
             continue;
         }
 
-        // Get ID Karyawan
-        $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE nik_karyawan=?");
+        // Get ID Karyawan (cek tegas: tanpa store_result, $id_karyawan bisa
+        // menyimpan nilai baris sebelumnya saat NIK tidak ditemukan)
+        $id_karyawan = null;
+        $nama_karyawan = null;
         $stmtK->bind_param("s", $nik_karyawan);
         $stmtK->execute();
-        $stmtK->bind_result($id_karyawan, $nama_karyawan);
-        $stmtK->fetch();
-        $stmtK->close();
-
-        if (!$id_karyawan) {
+        $stmtK->store_result();
+        if ($stmtK->num_rows === 0) {
+            $stmtK->free_result();
             $errorMessages[] = "NIK $nik_karyawan tidak ditemukan";
+            $missingNik[] = $nik_karyawan;
             $errorCount++;
             continue;
         }
+        $stmtK->bind_result($id_karyawan, $nama_karyawan);
+        $stmtK->fetch();
+        $stmtK->free_result();
 
         // Loop per kolom tanggal
         foreach ($colsTanggal as $col) {
@@ -279,21 +300,18 @@ try {
             // HANDLE M
             // ================================
             if ($nilaiUpper === 'M') {
-                $stmtCheckM = $koneksi->prepare("SELECT id_absen FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
                 $stmtCheckM->bind_param("is", $id_karyawan, $tgl);
                 $stmtCheckM->execute();
                 $stmtCheckM->store_result();
                 $adaDataLama = $stmtCheckM->num_rows;
-                $stmtCheckM->close();
+                $stmtCheckM->free_result();
 
                 if ($adaDataLama > 0) {
-                    $stmtDel = $koneksi->prepare("DELETE FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
                     $stmtDel->bind_param("is", $id_karyawan, $tgl);
                     if ($stmtDel->execute()) {
                         $deleteCount++;
                         $successCount++;
                     }
-                    $stmtDel->close();
                 }
                 continue;
             }
@@ -358,26 +376,27 @@ try {
             if ($isProcessed) {
                 try {
                     // Check existing
-                    $stmtCheck = $koneksi->prepare("SELECT id_absen FROM tb_absen WHERE id_karyawan=? AND tgl_absen=?");
                     $stmtCheck->bind_param("is", $id_karyawan, $tgl);
                     $stmtCheck->execute();
                     $stmtCheck->store_result();
                     $ada = $stmtCheck->num_rows;
-                    $stmtCheck->close();
+                    $stmtCheck->free_result();
 
                     if ($ada == 0) {
                         // INSERT
-                        $stmt = $koneksi->prepare("INSERT INTO tb_absen (id_karyawan, tgl_absen, jam_kerja, ket_absen) VALUES (?,?,?,?)");
-                        $stmt->bind_param("isss", $id_karyawan, $tgl, $jamKerja, $ket);
+                        $stmtInsert->bind_param("isss", $id_karyawan, $tgl, $jamKerja, $ket);
                         $action = "INSERT";
+                        $ok = $stmtInsert->execute();
+                        $stmtErr = $stmtInsert->error;
                     } else {
                         // UPDATE
-                        $stmt = $koneksi->prepare("UPDATE tb_absen SET jam_kerja=?, ket_absen=? WHERE id_karyawan=? AND tgl_absen=?");
-                        $stmt->bind_param("ssis", $jamKerja, $ket, $id_karyawan, $tgl);
+                        $stmtUpdate->bind_param("ssis", $jamKerja, $ket, $id_karyawan, $tgl);
                         $action = "UPDATE";
+                        $ok = $stmtUpdate->execute();
+                        $stmtErr = $stmtUpdate->error;
                     }
 
-                    if ($stmt->execute()) {
+                    if ($ok) {
                         $successCount++;
                         if ($action == "INSERT") $insertCount++;
                         if ($action == "UPDATE") $updateCount++;
@@ -386,9 +405,8 @@ try {
                         $debugLog[] = "✓ $action | NIK: $nik_karyawan | Tgl: $tgl | Jam: $jamKerja | Ket: '$ket' | Alasan: $reason";
                     } else {
                         $errorCount++;
-                        $errorMessages[] = "$action gagal NIK $nik_karyawan tgl $tgl: " . $stmt->error;
+                        $errorMessages[] = "$action gagal NIK $nik_karyawan tgl $tgl: " . $stmtErr;
                     }
-                    $stmt->close();
                 } catch (Exception $e) {
                     $errorCount++;
                     $errorMessages[] = "Exception NIK $nik_karyawan tgl $tgl: " . $e->getMessage();
@@ -398,6 +416,13 @@ try {
     }
 
     // Response dengan anomaly log
+    $koneksi->commit();
+    $stmtK->close();
+    $stmtCheckM->close();
+    $stmtDel->close();
+    $stmtCheck->close();
+    $stmtInsert->close();
+    $stmtUpdate->close();
     echo json_encode([
         'status' => $successCount > 0 ? 'success' : 'error',
         'message' => $successCount > 0 ? "Berhasil memproses $successCount data" : "Tidak ada data yang berhasil diproses",
@@ -408,13 +433,18 @@ try {
             'delete' => $deleteCount,
             'error' => $errorCount,
             'skipped' => $skipCount,
+            'missing_nik' => count($missingNik),
             'total_rows' => $highestRow - 1
         ],
+        'missing_nik_list' => array_slice(array_values(array_unique($missingNik)), 0, 50),
         'debug_log' => array_slice($debugLog, -100),
         'anomaly_log' => $anomalyLog, // LOG KHUSUS UNTUK CEK MASALAH
         'errors' => array_slice($errorMessages, 0, 20)
     ], JSON_PRETTY_PRINT);
 } catch (Exception $e) {
+    if (isset($koneksi) && $koneksi instanceof mysqli) {
+        try { $koneksi->rollback(); } catch (Throwable $t) {}
+    }
     error_log("Import Error: " . $e->getMessage());
     echo json_encode([
         'status' => 'error',
