@@ -330,10 +330,9 @@
                                     <label class="form-label">Nama Potongan</label>
                                     <select name="jenis_potongan" id="tplPotonganNama" class="form-select" required>
                                         <option value="">-- Pilih Potongan --</option>
-                                        <option value="BPJS Kesehatan">BPJS Kesehatan</option>
-                                        <option value="BPJS Ketenagakerjaan">BPJS Ketenagakerjaan</option>
-                                        <option value="JHT">JHT</option>
-                                        <option value="PPh 21">PPh 21</option>
+                                        <option value="PPH21">PPH21</option>
+                                        <option value="BPJS KETENAGAKERJAAN 2%">BPJS KETENAGAKERJAAN 2%</option>
+                                        <option value="BPJS KESEHATAN 1%">BPJS KESEHATAN 1%</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -891,7 +890,7 @@
                 `<option value="">-- Pilih --</option>` +
                 daftarPot.map(nm => `<option value="${nm}"${nm === potDipilih ? " selected" : ""}>${nm}</option>`).join("") +
                 `</select></td>` +
-                `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" placeholder="0"></td>` +
+                `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_potongan ?? "") === "" ? "" : (typeof formatIndo === "function" ? formatIndo(d.jumlah_potongan) : d.jumlah_potongan)}" placeholder="0"></td>` +
                 `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
             tb.appendChild(tr);
         }
@@ -909,8 +908,12 @@
              "Bonus Kehadiran", "Tunjangan Posisi"].forEach(nm => {
                 addUploadRowTunjangan({ nama_tunjangan: nm, jenis_tunjangan: nm === "Bonus Kehadiran" ? "tidak_tetap" : "tetap" });
             });
-            ["BPJS KESEHATAN 1%", "BPJS KETENAGAKERJAAN 2%", "PPH21"].forEach(nm => {
-                addUploadRowPotongan({ jenis_potongan: nm });
+            [
+                { jenis_potongan: "PPH21", jumlah_potongan: 0 },
+                { jenis_potongan: "BPJS KETENAGAKERJAAN 2%", jumlah_potongan: 110644 },
+                { jenis_potongan: "BPJS KESEHATAN 1%", jumlah_potongan: 36881 },
+            ].forEach(d => {
+                addUploadRowPotongan(d);
             });
         }
         document.addEventListener("click", e => {
