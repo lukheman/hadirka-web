@@ -89,27 +89,20 @@ while ($row = mysqli_fetch_assoc($q)) {
             </span>
         </td>
         <td class="text-center">
-            <div class="dropdown">
-                <button type="button" class="btn btn-sm btn-icon btn-outline-secondary rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="window">
-                    <i class="bx bx-dots-vertical-rounded"></i>
-                </button>
-                <div class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <div class="dropdown-header text-uppercase small fw-bold">Ubah Status</div>';
+            <div class="d-flex justify-content-center gap-1">';
 
-                    // Kondisi: Hanya tampilkan opsi yang statusnya BUKAN status saat ini
-                    if ($status != 'pending') {
-                        echo '<li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'pending\')"><i class="bx bx-time me-2 text-warning"></i> Set Pending</a></li>';
-                    }
+                    // Kondisi: Hanya tampilkan tombol yang statusnya BUKAN status saat ini
                     if ($status != 'disetujui') {
-                        echo '<li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'disetujui\')"><i class="bx bx-check-circle me-2 text-success"></i> Setujui</a></li>';
+                        echo '<button type="button" class="btn btn-sm btn-success" onclick="updateStatus('.$id.', \'disetujui\')" title="Setujui"><i class="bx bx-check me-1"></i>Setujui</button>';
                     }
                     if ($status != 'ditolak') {
-                        echo '<li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0)" onclick="updateStatus('.$id.', \'ditolak\')"><i class="bx bx-x-circle me-2 text-danger"></i> Tolak</a></li>';
+                        echo '<button type="button" class="btn btn-sm btn-warning" onclick="updateStatus('.$id.', \'ditolak\')" title="Tolak"><i class="bx bx-x me-1"></i>Tolak</button>';
+                    }
+                    if ($status != 'pending') {
+                        echo '<button type="button" class="btn btn-sm btn-secondary" onclick="updateStatus('.$id.', \'pending\')" title="Set Pending"><i class="bx bx-time me-1"></i>Pending</button>';
                     }
 
-                    echo '<div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item d-flex align-items-center text-danger" href="javascript:void(0)" onclick="deleteCuti('.$id.')"><i class="bx bx-trash me-2"></i> Hapus</a></li>
-                </div>
+                    echo '<button type="button" class="btn btn-sm btn-danger" onclick="deleteCuti('.$id.')" title="Hapus"><i class="bx bx-trash me-1"></i>Hapus</button>
             </div>
         </td>
     </tr>';

@@ -82,8 +82,8 @@ if ($result) {
         $btnAcc = "";
         if ($row['status_seleksi'] !== 'Diterima') {
             $btnAcc = "
-                <button class='btn btn-icon btn-sm btn-success btnAccPelamar' data-id='{$row['id_calon']}' data-nama='{$row['nama_lengkap']}' title='Terima Pelamar'>
-                    <i class='bx bx-check'></i>
+                <button class='btn btn-sm btn-success btnAccPelamar' data-id='{$row['id_calon']}' data-nama='{$row['nama_lengkap']}' title='Terima Pelamar'>
+                    <i class='bx bx-check me-1'></i>Terima
                 </button>";
         }
 
@@ -91,15 +91,15 @@ if ($result) {
         $btnTolak = "";
         if ($row['status_seleksi'] !== 'Ditolak') {
             $btnTolak = "
-                <button class='btn btn-icon btn-sm btn-warning btnTolakPelamar' data-id='{$row['id_calon']}' data-nama='{$row['nama_lengkap']}' title='Tolak Pelamar'>
-                    <i class='bx bx-x'></i>
+                <button class='btn btn-sm btn-warning btnTolakPelamar' data-id='{$row['id_calon']}' data-nama='{$row['nama_lengkap']}' title='Tolak Pelamar'>
+                    <i class='bx bx-x me-1'></i>Tolak
                 </button>";
         }
 
         // 3. Tombol Hapus (Selalu Muncul)
         $btnHapus = "
-            <button class='btn btn-icon btn-sm btn-danger btnDeletePelamar' data-id='{$row['id_calon']}' title='Hapus Permanen'>
-                <i class='bx bx-trash'></i>
+            <button class='btn btn-sm btn-danger btnDeletePelamar' data-id='{$row['id_calon']}' title='Hapus Permanen'>
+                <i class='bx bx-trash me-1'></i>Hapus
             </button>";
 
         // Gabungkan semua tombol

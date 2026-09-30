@@ -87,17 +87,19 @@ while ($row = mysqli_fetch_assoc($q)) {
     echo '</td>
         <td><span class="badge bg-label-'.$badge.' rounded-pill w-px-100">'.$status.'</span></td>
         <td>
-            <div class="dropdown text-center">
-                <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                    <i class="bx bx-dots-vertical-rounded"></i>
-                </button>
-                <div class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <a class="dropdown-item text-success" href="javascript:void(0)" onclick="updateStatusSKS('.$id.', \'Diterima\')"><i class="bx bx-check me-2"></i> Terima</a>
-                    <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="updateStatusSKS('.$id.', \'Ditolak\')"><i class="bx bx-x me-2"></i> Tolak</a>
-                    <a class="dropdown-item text-warning" href="javascript:void(0)" onclick="updateStatusSKS('.$id.', \'Pending\')"><i class="bx bx-time-five me-2"></i> Pending</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item text-muted" href="javascript:void(0)" onclick="deleteSKS('.$id.')"><i class="bx bx-trash me-2"></i> Hapus</a>
-                </div>
+            <div class="d-flex justify-content-center gap-1">';
+
+                    if ($status != 'Diterima') {
+                        echo '<button type="button" class="btn btn-sm btn-success" onclick="updateStatusSKS('.$id.', \'Diterima\')" title="Terima"><i class="bx bx-check me-1"></i>Terima</button>';
+                    }
+                    if ($status != 'Ditolak') {
+                        echo '<button type="button" class="btn btn-sm btn-warning" onclick="updateStatusSKS('.$id.', \'Ditolak\')" title="Tolak"><i class="bx bx-x me-1"></i>Tolak</button>';
+                    }
+                    if ($status != 'Pending') {
+                        echo '<button type="button" class="btn btn-sm btn-secondary" onclick="updateStatusSKS('.$id.', \'Pending\')" title="Pending"><i class="bx bx-time me-1"></i>Pending</button>';
+                    }
+
+                    echo '<button type="button" class="btn btn-sm btn-danger" onclick="deleteSKS('.$id.')" title="Hapus"><i class="bx bx-trash me-1"></i>Hapus</button>
             </div>
         </td>
     </tr>';
