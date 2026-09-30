@@ -259,7 +259,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-warning">Update Transaksi</button>
+                <button type="submit" class="btn btn-warning">Edit Transaksi</button>
             </div>
         </form>
     </div>

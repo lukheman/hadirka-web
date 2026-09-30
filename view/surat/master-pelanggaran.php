@@ -75,7 +75,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Update</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Edit</button>
                 </div>
             </form>
         </div>

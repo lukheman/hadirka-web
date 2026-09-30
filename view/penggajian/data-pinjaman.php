@@ -314,7 +314,7 @@
                 <input type="text" name="ket_pinjaman" class="form-control">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary">Update</button>
+                <button class="btn btn-primary">Edit</button>
             </div>
         </form>
     </div>

@@ -298,7 +298,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning" id="btnUpdate"><i class="bx bx-check me-1"></i> Update Baris Ini</button>
+                    <button type="submit" class="btn btn-warning" id="btnUpdate"><i class="bx bx-check me-1"></i> Edit Baris Ini</button>
                 </div>
             </form>
         </div>

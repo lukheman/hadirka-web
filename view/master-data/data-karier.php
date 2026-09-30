@@ -370,7 +370,7 @@
 
                     </div>
                             <div class="mt-2 text-end">
-                                <button class="btn btn-primary"><i class="fa fa-save"></i> Update</button>
+                                <button class="btn btn-primary"><i class="fa fa-save"></i> Edit</button>
                             </div>
                             </form>
                         </div>

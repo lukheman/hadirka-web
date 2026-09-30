@@ -71,7 +71,7 @@
                     <input type="text" name="lokasi" class="form-control" required>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary">Update</button>
+                    <button class="btn btn-primary">Edit</button>
                 </div>
             </form>
         </div>
