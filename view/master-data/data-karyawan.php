@@ -78,6 +78,21 @@
         max-height: 240px;
         overflow-y: auto;
     }
+
+    /* Bagian lipat-buka pada hasil & pratinjau import */
+    .collapse-toggle {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .collapse-toggle .caret {
+        display: inline-block;
+        transition: transform 200ms ease;
+    }
+
+    .collapse-toggle.collapsed .caret {
+        transform: rotate(-90deg);
+    }
 </style>
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y py-4">
@@ -876,16 +891,52 @@
         const details = document.getElementById('importResultDetails');
         details.innerHTML = '';
 
+        // Pembungkus lipat-buka: judul bisa diklik untuk buka/tutup isi.
+        function addResultSection(title, badge, textClass, open) {
+            const wrap = document.createElement('div');
+            wrap.className = 'mb-2';
+            const cid = 'resSec' + Math.random().toString(36).slice(2, 8);
+            const head = document.createElement('div');
+            head.className = `collapse-toggle fw-bold d-flex justify-content-between align-items-center ${textClass || ''}`;
+            head.setAttribute('data-bs-toggle', 'collapse');
+            head.setAttribute('data-bs-target', '#' + cid);
+            head.setAttribute('role', 'button');
+            const label = document.createElement('span');
+            const caret = document.createElement('span');
+            caret.className = 'caret me-1';
+            caret.textContent = '▾';
+            label.appendChild(caret);
+            label.appendChild(document.createTextNode(title));
+            head.appendChild(label);
+            const count = document.createElement('span');
+            count.className = 'badge bg-secondary';
+            count.textContent = badge;
+            head.appendChild(count);
+            const body = document.createElement('div');
+            body.className = 'collapse' + (open ? ' show' : '');
+            body.id = cid;
+            head.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (!open) head.classList.add('collapsed');
+            wrap.appendChild(head);
+            wrap.appendChild(body);
+            details.appendChild(wrap);
+            return body;
+        }
+
+        function appendMoreNote(parent, hidden) {
+            if (!hidden) return;
+            const more = document.createElement('div');
+            more.className = 'text-muted mb-2 small';
+            more.textContent = `... dan ${hidden} detail lainnya. Lihat console browser untuk detail lengkap.`;
+            parent.appendChild(more);
+        }
+
         // Data yang diupdate: tampilkan NIK + rincian field yang berubah.
         const updated = res.updated || [];
         if (updated.length) {
-            const heading = document.createElement('div');
-            heading.className = 'fw-bold mb-1 text-warning';
-            heading.textContent = 'Data diupdate';
-            details.appendChild(heading);
-
+            const body = addResultSection('Data diupdate', updated.length, 'text-warning', true);
             const list = document.createElement('ul');
-            list.className = 'mb-3 ps-4';
+            list.className = 'mb-1 ps-4 small';
             updated.slice(0, 20).forEach(item => {
                 const li = document.createElement('li');
                 const title = document.createElement('div');
@@ -905,42 +956,28 @@
                 }
                 list.appendChild(li);
             });
-            details.appendChild(list);
-            if (updated.length > 20) {
-                const more = document.createElement('div');
-                more.className = 'text-muted mb-2';
-                more.textContent = `... dan ${updated.length - 20} data terupdate lainnya. Lihat console browser untuk detail lengkap.`;
-                details.appendChild(more);
-            }
+            body.appendChild(list);
+            appendMoreNote(body, updated.length > 20 ? updated.length - 20 : 0);
         }
 
         const sections = [
-            { title: 'Jabatan baru ditambahkan', items: res.jabatan_ditambah || [], className: 'text-success' },
-            { title: 'Data dilewati', items: (res.debug || []).filter(item => item.includes('Dilewati')), className: 'text-info' },
-            { title: 'Detail error', items: res.errors || [], className: 'text-danger' }
+            { title: 'Jabatan baru ditambahkan', items: res.jabatan_ditambah || [], className: 'text-success', open: true },
+            { title: 'Data dilewati', items: (res.debug || []).filter(item => item.includes('Dilewati')), className: 'text-info', open: false },
+            { title: 'Detail error', items: res.errors || [], className: 'text-danger', open: true }
         ];
 
         sections.forEach(section => {
             if (!section.items.length) return;
-            const heading = document.createElement('div');
-            heading.className = `fw-bold mb-1 ${section.className}`;
-            heading.textContent = section.title;
-            details.appendChild(heading);
-
+            const body = addResultSection(section.title, section.items.length, section.className, section.open);
             const list = document.createElement('ul');
-            list.className = 'mb-3 ps-4';
+            list.className = 'mb-1 ps-4 small';
             section.items.slice(0, 20).forEach(item => {
                 const li = document.createElement('li');
                 li.textContent = item;
                 list.appendChild(li);
             });
-            if (section.items.length > 20) {
-                const more = document.createElement('div');
-                more.className = 'text-muted mb-2';
-                more.textContent = `... dan ${section.items.length - 20} detail lainnya. Lihat console browser untuk detail lengkap.`;
-                details.appendChild(more);
-            }
-            details.appendChild(list);
+            body.appendChild(list);
+            appendMoreNote(body, section.items.length > 20 ? section.items.length - 20 : 0);
         });
 
         if (!details.children.length) {
@@ -1667,6 +1704,17 @@
         }
 
         // Render pratinjau: belum ada perubahan database di tahap ini.
+        // Satu blok lipat-buka untuk pratinjau (string HTML).
+        function prevSection(id, title, badge, textClass, open, inner) {
+            return `<div class="mb-2">
+                <div class="collapse-toggle fw-bold d-flex justify-content-between align-items-center ${textClass}${open ? '' : ' collapsed'}" data-bs-toggle="collapse" data-bs-target="#${id}" role="button" aria-expanded="${open}">
+                    <span><span class="caret me-1">▾</span>${escHtml(title)}</span>
+                    <span class="badge bg-secondary">${badge}</span>
+                </div>
+                <div class="collapse${open ? ' show' : ''}" id="${id}">${inner}</div>
+            </div>`;
+        }
+
         function renderPreviewIPIP(res) {
             const box = $("#previewIPIP");
             let html = `<div class="alert alert-info py-2 mb-2">${escHtml(res.message || 'Pratinjau selesai.')}</div>`;
@@ -1688,31 +1736,34 @@
 
             const baru = res.baru_list || [];
             if (baru.length) {
-                html += `<div class="fw-bold text-success">Karyawan baru (${res.berhasil || 0}):</div><ul class="small mb-2 ps-4">`;
-                baru.slice(0, 20).forEach(function(b) { html += `<li>${escHtml(b.nik)} — ${escHtml(b.nama)}</li>`; });
-                if (baru.length > 20) html += `<li class="text-muted">... dan ${baru.length - 20} lainnya</li>`;
-                html += `</ul>`;
+                let inner = `<ul class="small mb-1 ps-4">`;
+                baru.slice(0, 20).forEach(function(b) { inner += `<li>${escHtml(b.nik)} — ${escHtml(b.nama)}</li>`; });
+                if (baru.length > 20) inner += `<li class="text-muted">... dan ${baru.length - 20} lainnya</li>`;
+                inner += `</ul>`;
+                html += prevSection('prevBaru', 'Karyawan baru', baru.length, 'text-success', true, inner);
             }
 
             const upd = res.updated || [];
             if (upd.length) {
-                html += `<div class="fw-bold text-warning">Data berubah (${res.diupdate || 0}):</div><ul class="small mb-2 ps-4">`;
+                let inner = `<ul class="small mb-1 ps-4">`;
                 upd.slice(0, 20).forEach(function(u) {
-                    html += `<li><strong>${escHtml(u.nik)} — ${escHtml(u.nama)} (${(u.perubahan || []).length} perubahan)</strong><ul class="ps-4">`;
-                    (u.perubahan || []).forEach(function(p) { html += `<li>${escHtml(p)}</li>`; });
-                    html += `</ul></li>`;
+                    inner += `<li><strong>${escHtml(u.nik)} — ${escHtml(u.nama)} (${(u.perubahan || []).length} perubahan)</strong><ul class="ps-4">`;
+                    (u.perubahan || []).forEach(function(p) { inner += `<li>${escHtml(p)}</li>`; });
+                    inner += `</ul></li>`;
                 });
-                if (upd.length > 20) html += `<li class="text-muted">... dan ${upd.length - 20} lainnya</li>`;
-                html += `</ul>`;
+                if (upd.length > 20) inner += `<li class="text-muted">... dan ${upd.length - 20} lainnya</li>`;
+                inner += `</ul>`;
+                html += prevSection('prevUpd', 'Data berubah', upd.length, 'text-warning', true, inner);
             }
 
             if ((res.dilewati || 0) > 0) html += `<div class="small text-info mb-1">Dilewati (tidak ada perubahan): ${res.dilewati}</div>`;
             if ((res.tertunda || 0) > 0) html += `<div class="small text-warning mb-1">Menunggu persetujuan jabatan: ${res.tertunda} baris</div>`;
             if ((res.gagal || 0) > 0) {
-                html += `<div class="fw-bold text-danger">Gagal (${res.gagal}):</div><ul class="small mb-2 ps-4 text-danger">`;
-                (res.errors || []).slice(0, 10).forEach(function(e) { html += `<li>${escHtml(e)}</li>`; });
-                if ((res.errors || []).length > 10) html += `<li>... dan ${(res.errors || []).length - 10} lainnya</li>`;
-                html += `</ul>`;
+                let inner = `<ul class="small mb-1 ps-4 text-danger">`;
+                (res.errors || []).slice(0, 10).forEach(function(e) { inner += `<li>${escHtml(e)}</li>`; });
+                if ((res.errors || []).length > 10) inner += `<li>... dan ${(res.errors || []).length - 10} lainnya</li>`;
+                inner += `</ul>`;
+                html += prevSection('prevGagal', 'Gagal', res.gagal, 'text-danger', true, inner);
             }
 
             box.html(html).show();
