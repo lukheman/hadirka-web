@@ -202,8 +202,9 @@ final class Excel
 
         $value = preg_replace('/\s+/', ' ', strtolower(trim((string)$value)));
 
-        // "25 Februari 2025" / "25 Feb 25"
-        if (preg_match('/^(\d{1,2})\s+([a-z]+)\s+(\d{2,4})$/', $value, $m)) {
+        // "25 Februari 2025" / "25 Feb 25" / "15-Feb-25" / "15/Feb/2025"
+        // (pemisah spasi, slash, titik, atau strip; bulan teks Indo/Inggris).
+        if (preg_match('/^(\d{1,2})[\s\/\-.]+([a-z]+)[\s\/\-.]+(\d{2,4})$/', $value, $m)) {
             $tgl = (int)$m[1];
             $thn = self::tahun4Digit($m[3]);
             $bln = $bulan[$m[2]] ?? null;

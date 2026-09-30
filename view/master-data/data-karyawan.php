@@ -90,8 +90,11 @@
                     <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalTambahKaryawan">
                         <i class="fa fa-plus"></i> Tambah Karyawan
                     </button>
-                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#ModalImport" title="Klik untuk mengimpor data karyawan dari file Excel">
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#ModalImport" title="Klik untuk mengimpor data karyawan dari file Excel (template lama 44 kolom)">
                         <i class="fa fa-upload"></i> Import Data
+                    </button>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#ModalImportIPIP" title="Klik untuk mengimpor data karyawan dari template baru IPIP (header baris 5, data mulai baris 8)">
+                        <i class="fa fa-upload"></i> Import IPIP
                     </button>
                     <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel">
                         <i class="fa fa-file-export"></i> Export Data
@@ -204,7 +207,8 @@
                 </p>
                 <label for="file_excel" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
                 <input type="file" name="file_excel" id="file_excel" class="form-control" accept=".xls,.xlsx" required data-bs-toggle="tooltip" title="Pilih file Excel untuk import data karyawan">
-                <a href="assets/template-csv/Format_Impor_Database_Karyawan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
+                <a href="assets/template-csv/Format_Impor_Database_Karyawan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx (Lama)</a>
+                <div class="form-text">Template lama: 44 kolom, header baris 1. Untuk template baru IPIP, tutup dialog ini lalu klik <strong>Import IPIP</strong>.</div>
                 <div id="progressWrapper" class="progress mt-2" style="display:none;height:20px;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
                 </div>
@@ -213,6 +217,36 @@
             <div class="modal-footer">
                 <button class="btn btn-success" type="submit" id="btnUpload" data-bs-toggle="tooltip" title="Klik untuk mengupload dan memproses file">
                     <i class="fa fa-upload"></i> Upload
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="ModalImportIPIP" tabindex="-1" aria-labelledby="ModalImportIPIPLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="formImportIPIP" class="modal-content" enctype="multipart/form-data">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white" id="ModalImportIPIPLabel"><i class="fa fa-upload"></i> Upload Karyawan Excel (Template IPIP)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="instruction-text mb-3">
+                    Unggah file Excel template baru IPIP (judul baris 2-4, header baris 5, data mulai baris 8, kolom A-CQ).
+                    NIK yang sudah terdaftar otomatis dilewati.
+                </p>
+                <label for="file_excel_ipip" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
+                <input type="file" name="file_excel" id="file_excel_ipip" class="form-control" accept=".xls,.xlsx" required data-bs-toggle="tooltip" title="Pilih file Excel template IPIP">
+                <a href="assets/template-csv/Format_Impor_Database_Karyawan_IPIP.xlsx" style="font-size: 2vh;">Download Template IPIP .xlsx</a>
+                <div class="form-text">Pemetaan: B NIK, C Nama, D Jenis Kelamin, E/O Site, F Departemen, H Jabatan, P/Q Tgl Masuk, V/W Lahir, AC-AE Pendidikan, AF-AH Bank, AJ-AL Identitas, AS-AT Kontak, AU-AZ Darurat, BC-BG Dokumen, CF-CJ Status Keluar.</div>
+                <div id="progressWrapperIPIP" class="progress mt-2" style="display:none;height:20px;">
+                    <div id="progressBarIPIP" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="submit" id="btnUploadIPIP" data-bs-toggle="tooltip" title="Klik untuk mengupload dan memproses file IPIP">
+                    <i class="fa fa-upload"></i> Upload IPIP
                 </button>
             </div>
         </form>
@@ -1498,6 +1532,81 @@
                     $("#progressWrapper").hide();
                     $("#progressBar").css("width", "0%").text("0%");
                     btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload');
+                }
+            });
+        });
+
+        // 12b. ACTION: IMPORT EXCEL TEMPLATE IPIP (service baru)
+        $("#formImportIPIP").on("submit", function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const btn = $("#btnUploadIPIP");
+
+            $("#progressWrapperIPIP").show();
+            btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+
+            $.ajax({
+                url: "app/controller/csv-control/csv-karyawan-ipip.php",
+                type: "POST",
+                dataType: "json",
+                data: formData,
+                contentType: false,
+                processData: false,
+
+                xhr: function() {
+                    var xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", function(evt) {
+                        if (evt.lengthComputable) {
+                            var percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                            $("#progressBarIPIP").css("width", percentComplete + "%").text(percentComplete + "%");
+                        }
+                    }, false);
+                    return xhr;
+                },
+
+                success: function(res) {
+                    console.log("=== Import IPIP Response ===", res);
+
+                    if (res.success) {
+                        $("#ModalImportIPIP").modal("hide");
+                        $("#formImportIPIP")[0].reset();
+                        tableKaryawan.ajax.reload(null, false);
+                        showImportResult(res, "Hasil Import IPIP");
+
+                        if (res.gagal > 0) {
+                            showToast(`Import IPIP selesai dengan ${res.gagal} error. Cek detail!`, "warning");
+                        } else if ((res.dilewati || 0) > 0) {
+                            showToast(`Import IPIP selesai. ${res.dilewati} data dilewati karena NIK sudah terdaftar.`, "info");
+                        } else {
+                            showToast(`Semua ${res.berhasil} data IPIP berhasil diimport!`, "success");
+                        }
+                    } else {
+                        showImportResult({
+                            berhasil: 0,
+                            dilewati: 0,
+                            gagal: 1,
+                            errors: [res.error || "Terjadi kesalahan tidak diketahui"]
+                        }, "Import IPIP Gagal");
+                        showToast("Import IPIP gagal! Cek console untuk detail.", "danger");
+                        console.error("=== Import IPIP Error ===", res);
+                    }
+                },
+
+                error: function(xhr, status, error) {
+                    console.error("=== AJAX Error (IPIP) ===", status, error, xhr.responseText);
+                    showImportResult({
+                        berhasil: 0,
+                        dilewati: 0,
+                        gagal: 1,
+                        errors: [`Terjadi kesalahan server: ${status} - ${error}`]
+                    }, "Kesalahan Server (IPIP)");
+                    showToast("Terjadi kesalahan server!", "danger");
+                },
+
+                complete: function() {
+                    $("#progressWrapperIPIP").hide();
+                    $("#progressBarIPIP").css("width", "0%").text("0%");
+                    btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload IPIP');
                 }
             });
         });
