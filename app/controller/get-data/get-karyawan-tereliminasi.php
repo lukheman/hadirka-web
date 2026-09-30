@@ -214,15 +214,15 @@ try {
         ";
 
         $action = "
-            <div class='btn-group' role='group'>
+            <div class='d-flex justify-content-center gap-1'>
                 <button class='btn btn-sm btn-info btnDetailTer' title='Lihat Detail'>
-                    <i class='fa fa-eye'></i>
+                    <i class='fa fa-eye me-1'></i>Detail
                 </button>
                 <button class='btn btn-sm btn-warning btnKoreksiTer' data-id='" . $row['kar_id_karyawan'] . "' title='Koreksi Data Eliminasi'>
-                    <i class='fa fa-edit'></i>
+                    <i class='fa fa-edit me-1'></i>Koreksi
                 </button>
                 <button class='btn btn-sm btn-success btnReaktivasi' data-id='" . $row['kar_id_karyawan'] . "' data-nama='" . htmlspecialchars($row['nama_lengkap']) . "' title='Kembalikan menjadi Aktif'>
-                    <i class='fa fa-undo'></i>
+                    <i class='fa fa-undo me-1'></i>Reaktivasi
                 </button>
             </div>
         ";
