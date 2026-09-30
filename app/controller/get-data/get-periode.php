@@ -30,12 +30,14 @@ if (mysqli_num_rows($query) == 0) {
                 </button>
             </td>
             <td class="text-center">
-                <button class="btn btn-sm btn-icon btn-label-primary rounded-pill me-1" onclick="editData(' . $row['id_priode'] . ')">
-                    <i class="bx bx-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-icon btn-label-danger rounded-pill" onclick="deleteData(' . $row['id_priode'] . ')">
-                    <i class="bx bx-trash"></i>
-                </button>
+                <div class="d-flex justify-content-center gap-1">
+                    <button class="btn btn-sm btn-primary" onclick="editData(' . $row['id_priode'] . ')" title="Edit">
+                        <i class="bx bx-edit me-1"></i>Edit
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteData(' . $row['id_priode'] . ')" title="Hapus">
+                        <i class="bx bx-trash me-1"></i>Hapus
+                    </button>
+                </div>
             </td>
         </tr>';
     }
