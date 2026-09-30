@@ -12,6 +12,101 @@ $tglAwal = date("$tahun_lalu-$bulan_lalu-21");
 $tglAkhir = date("$tahun_ini-$bulan_ini-20");
 ?>
 
+<style>
+    .kal-scroll {
+        overflow-x: auto;
+    }
+    .kal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        min-width: 720px;
+    }
+    .kal-head {
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: #566a7f;
+        padding: 6px 0;
+        background: #f0f2f4;
+        border-radius: 6px;
+    }
+    .kal-month {
+        grid-column: 1 / -1;
+        font-weight: 700;
+        color: #fff;
+        background: #696cff;
+        border-radius: 6px;
+        padding: 4px 12px;
+        margin-top: 4px;
+        font-size: 0.85rem;
+    }
+    .kal-day {
+        min-height: 88px;
+        border-radius: 8px;
+        padding: 6px;
+        border: 1px solid #e3e6ea;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .kal-day.empty {
+        background: transparent;
+        border-style: dashed;
+    }
+    .kal-date {
+        font-weight: 700;
+        font-size: 0.95rem;
+        line-height: 1;
+    }
+    .kal-date small {
+        font-weight: 400;
+        color: #8592a3;
+    }
+    .kal-status {
+        font-size: 0.68rem;
+        font-weight: 700;
+        border-radius: 20px;
+        padding: 1px 8px;
+        display: inline-block;
+        width: fit-content;
+    }
+    .kal-jam {
+        font-size: 0.7rem;
+        color: #566a7f;
+        line-height: 1.3;
+    }
+    .kal-Masuk { background: #e8fadf; border-color: #71dd37; }
+    .kal-Masuk .kal-status { background: #71dd37; color: #fff; }
+    .kal-SPL { background: #fff2d6; border-color: #ffab00; }
+    .kal-SPL .kal-status { background: #ffab00; color: #fff; }
+    .kal-OFF { background: #f1f2f4; border-color: #d9dee3; }
+    .kal-OFF .kal-status { background: #8592a3; color: #fff; }
+    .kal-Izin { background: #e7e7ff; border-color: #696cff; }
+    .kal-Izin .kal-status { background: #696cff; color: #fff; }
+    .kal-Sakit { background: #d7f5fc; border-color: #03c3ec; }
+    .kal-Sakit .kal-status { background: #03c3ec; color: #fff; }
+    .kal-Cuti { background: #ede4f7; border-color: #6f42c1; }
+    .kal-Cuti .kal-status { background: #6f42c1; color: #fff; }
+    .kal-Mangkir { background: #ffe0db; border-color: #ff3e1d; }
+    .kal-Mangkir .kal-status { background: #ff3e1d; color: #fff; }
+    .kal-Resign, .kal-New { background: #e9eaec; border-color: #8592a3; }
+    .kal-Resign .kal-status, .kal-New .kal-status { background: #566a7f; color: #fff; }
+    .kal-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .kal-legend span {
+        font-size: 0.7rem;
+        font-weight: 700;
+        border-radius: 20px;
+        padding: 2px 10px;
+        color: #fff;
+    }
+</style>
+
 <div class="container-xxl mt-3 fade-in">
 
     <h4 class="fw-bold mb-3">
@@ -129,6 +224,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                             <th class="text-center"><i class="fa fa-exclamation-triangle text-warning"></i> Izin</th>
                             <th class="text-center"><i class="fa fa-medkit text-info"></i> Sakit</th>
                             <th class="text-center"><i class="fa fa-plane text-purple"></i> Cuti</th>
+                            <th class="text-center"><i class="fa fa-calendar text-primary"></i> Kalender</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -206,6 +302,31 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
     </div>
 </div>
 
+<!-- Modal Kalender Rekap Bulanan -->
+<div class="modal fade" id="modalKalenderAbsensi" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white"><i class="fa fa-calendar"></i> Rekap Kalender — <span id="kalNama">-</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <div class="small text-muted" id="kalPeriode">-</div>
+                    <div class="kal-legend" id="kalLegend"></div>
+                </div>
+                <div class="alert alert-info py-2 mb-3 small" id="kalSummary">Memuat...</div>
+                <div class="kal-scroll">
+                    <div class="kal-grid" id="kalGrid"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Scripts -->
 <script>
     let currentIdKaryawan = null;
@@ -222,6 +343,13 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
 
         // Event delegation untuk klik row
         tabelBody.addEventListener("click", function(e) {
+            // Tombol kalender: buka kalender, jangan buka detail
+            const btnCal = e.target.closest(".btnKalender");
+            if (btnCal) {
+                openKalender(btnCal.dataset.id);
+                return;
+            }
+
             const tr = e.target.closest("tr");
             if (!tr || !tr.dataset.id) return;
 
@@ -366,9 +494,98 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         tglAkhirInput.addEventListener("change", loadAbsensi);
 
 
+        // ============ KALENDER REKAP BULANAN ============
+        const kalGrid = document.getElementById("kalGrid");
+        const kalModal = new bootstrap.Modal(document.getElementById("modalKalenderAbsensi"));
+        const KAL_COLOR = {
+            "Masuk": "#71dd37", "SPL": "#ffab00", "OFF": "#8592a3",
+            "Izin": "#696cff", "Sakit": "#03c3ec", "Cuti": "#6f42c1",
+            "Mangkir": "#ff3e1d", "Resign": "#566a7f", "New": "#566a7f"
+        };
+        const KAL_NAMA_HARI = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+        const KAL_NAMA_BULAN = {
+            "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
+            "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
+            "09": "September", "10": "Oktober", "11": "November", "12": "Desember"
+        };
+
+        function kalStatusKey(ket) {
+            if (ket.indexOf("Izin") === 0) return "Izin";
+            if (ket.indexOf("Sakit") === 0) return "Sakit";
+            return ket;
+        }
+
+        window.openKalender = function(idKaryawan) {
+            document.getElementById("kalNama").textContent = "Memuat...";
+            document.getElementById("kalPeriode").textContent = "-";
+            document.getElementById("kalSummary").textContent = "Memuat data kalender...";
+            kalGrid.innerHTML = `<div class="text-center py-4" style="grid-column:1/-1"><div class="spinner-border text-primary"></div></div>`;
+            kalModal.show();
+
+            const url = `app/controller/get-data/get-absensi-kalender.php?id_karyawan=${idKaryawan}&tgl_a=${tglAwalInput.value}&tgl_b=${tglAkhirInput.value}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status !== "success") {
+                        kalGrid.innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">${res.message || "Gagal memuat data"}</div>`;
+                        return;
+                    }
+                    renderKalender(res);
+                })
+                .catch(() => {
+                    kalGrid.innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">Terjadi kesalahan sistem.</div>`;
+                });
+        };
+
+        function renderKalender(res) {
+            document.getElementById("kalNama").textContent = `${res.nama} (${res.nik})`;
+            document.getElementById("kalPeriode").textContent = `Periode ${res.periode.dari} s/d ${res.periode.sampai} • ${res.jabatan}`;
+
+            const t = res.totals;
+            document.getElementById("kalSummary").innerHTML =
+                `Hadir: <b>${t.hadir_hari} hari (${t.hadir_jam} jam)</b> • ` +
+                `SPL: <b>${t.spl_hari} hari (${t.spl_jam} jam)</b> • ` +
+                `OT1: <b>${t.ot1}</b> • OT2: <b>${t.ot2}</b> • ` +
+                `Mangkir: <b>${t.mangkir}</b> • Izin: <b>${t.izin}</b> • ` +
+                `Sakit: <b>${t.sakit}</b> • Cuti: <b>${t.cuti}</b>`;
+
+            document.getElementById("kalLegend").innerHTML = Object.keys(KAL_COLOR)
+                .map(k => `<span style="background:${KAL_COLOR[k]}">${k}</span>`).join("");
+
+            let html = KAL_NAMA_HARI.map(h => `<div class="kal-head">${h}</div>`).join("");
+            let lastMonth = "";
+
+            res.days.forEach((d, idx) => {
+                // Pembatas bulan saat ganti bulan
+                if (d.month_key !== lastMonth) {
+                    const [y, m] = d.month_key.split("-");
+                    html += `<div class="kal-month">${KAL_NAMA_BULAN[m]} ${y}</div>`;
+                    lastMonth = d.month_key;
+                }
+                // Sel kosong penyelarasan minggu pertama tiap bulan
+                if (idx === 0 || res.days[idx - 1].month_key !== d.month_key) {
+                    for (let i = 1; i < d.weekday; i++) html += `<div class="kal-day empty"></div>`;
+                }
+
+                const key = kalStatusKey(d.ket);
+                const jamInfo = (d.ket === "Masuk" || d.ket === "SPL")
+                    ? `<div class="kal-jam">${d.normal} jam${d.ot1 > 0 ? ` • OT1 ${d.ot1}` : ""}${d.ot2 > 0 ? ` • OT2 ${d.ot2}` : ""}</div>`
+                    : "";
+                const title = `${d.day} ${d.month} — ${d.ket}` +
+                    ((d.ket === "Masuk" || d.ket === "SPL") ? ` (${d.jam} jam, normal ${d.normal}, OT1 ${d.ot1}, OT2 ${d.ot2})` : "");
+
+                html += `<div class="kal-day kal-${key}" title="${title}">
+                    <div class="kal-date">${d.day} <small>${d.month}</small></div>
+                    <span class="kal-status">${d.ket}</span>
+                    ${jamInfo}
+                </div>`;
+            });
+
+            kalGrid.innerHTML = html;
+        }
+
         // Reload Detail Absensi
-        function loadDetailAbsensi() {
-            if (!currentIdKaryawan) return;
+        function loadDetailAbsensi() {            if (!currentIdKaryawan) return;
 
             modalBody.innerHTML = `
                 <div class="text-center">

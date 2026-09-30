@@ -8,7 +8,7 @@
 debug_*.log
 
 # Dump database jangan di-commit (simpan di luar repo / backup terpisah)
-*.sql
+# *.sql
 *.dump
 
 # Log runtime (ditulis aplikasi, bukan source)

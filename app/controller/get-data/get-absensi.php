@@ -74,7 +74,7 @@ ORDER BY k.nama_lengkap ASC
 
 $qKar = mysqli_query($koneksi, $sqlKar);
 if (!$qKar) {
-    echo "<tr><td colspan='15' class='text-center text-danger'>Query karyawan error: " . mysqli_error($koneksi) . "</td></tr>";
+    echo "<tr><td colspan='16' class='text-center text-danger'>Query karyawan error: " . mysqli_error($koneksi) . "</td></tr>";
     exit;
 }
 
@@ -211,6 +211,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
         <td class='text-center'>{$izin}</td>
         <td class='text-center'>{$sakit}</td>
         <td class='text-center'>{$cuti}</td>
+        <td class='text-center'><button type='button' class='btn btn-sm btn-primary btnKalender' data-id='{$idk}' data-nama='{$nama}' title='Lihat rekap kalender'><i class='fa fa-calendar'></i> Kalender</button></td>
     </tr>
     ";
 
