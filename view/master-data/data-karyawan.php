@@ -233,20 +233,30 @@
             <div class="modal-body">
                 <p class="instruction-text mb-3">
                     Unggah file Excel template baru IPIP (judul baris 2-4, header baris 5, data mulai baris 8, kolom A-CQ).
-                    NIK yang sudah terdaftar otomatis dilewati.
+                    Tahap 1 menampilkan pratinjau (data baru, perubahan, jabatan baru);
+                    database hanya berubah setelah Anda menekan Konfirmasi.
                 </p>
                 <label for="file_excel_ipip" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
                 <input type="file" name="file_excel" id="file_excel_ipip" class="form-control" accept=".xls,.xlsx" required data-bs-toggle="tooltip" title="Pilih file Excel template IPIP">
+                <label for="sheet_ipip" class="form-label mt-3"><i class="fa fa-table"></i> Sheet / Halaman yang diproses</label>
+                <select name="sheet" id="sheet_ipip" class="form-control" data-bs-toggle="tooltip" title="Pilih sheet yang berisi data karyawan">
+                    <option value="">-- Pilih file dulu --</option>
+                </select>
+                <div class="form-text">File multi-sheet: pilih halaman yang berisi template IPIP (header baris 5, data mulai baris 8).</div>
                 <a href="assets/template-csv/Format_Impor_Database_Karyawan_IPIP.xlsx" style="font-size: 2vh;">Download Template IPIP .xlsx</a>
                 <div class="form-text">Pemetaan: B NIK, C Nama, D Jenis Kelamin, E/O Site, F Departemen, H Jabatan, P/Q Tgl Masuk, V/W Lahir, AC-AE Pendidikan, AF-AH Bank, AJ-AL Identitas, AS-AT Kontak, AU-AZ Darurat, BC-BG Dokumen, CF-CJ Status Keluar.</div>
                 <div id="progressWrapperIPIP" class="progress mt-2" style="display:none;height:20px;">
                     <div id="progressBarIPIP" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
                 </div>
+                <div id="previewIPIP" class="mt-3" style="display:none;"></div>
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-primary" type="submit" id="btnUploadIPIP" data-bs-toggle="tooltip" title="Klik untuk mengupload dan memproses file IPIP">
-                    <i class="fa fa-upload"></i> Upload IPIP
+                <button class="btn btn-primary" type="submit" id="btnPreviewIPIP" data-bs-toggle="tooltip" title="Cek pratinjau dulu tanpa mengubah database">
+                    <i class="fa fa-search"></i> Cek Pratinjau
+                </button>
+                <button class="btn btn-success" type="button" id="btnApplyIPIP" style="display:none;" data-bs-toggle="tooltip" title="Terapkan semua perubahan ke database">
+                    <i class="fa fa-check"></i> Konfirmasi &amp; Terapkan
                 </button>
             </div>
         </form>
@@ -266,7 +276,7 @@
             </div>
             <div class="modal-body">
                 <div class="row g-3 mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card import-summary-card border-success h-100">
                             <div class="card-body">
                                 <div class="text-muted small">Berhasil</div>
@@ -274,7 +284,15 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <div class="card import-summary-card border-warning h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Diupdate</div>
+                                <div class="import-summary-number text-warning" id="importResultUpdated">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="card import-summary-card border-info h-100">
                             <div class="card-body">
                                 <div class="text-muted small">Dilewati</div>
@@ -282,7 +300,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card import-summary-card border-danger h-100">
                             <div class="card-body">
                                 <div class="text-muted small">Gagal</div>
@@ -851,13 +869,53 @@
         document.getElementById('importResultModalLabel').innerHTML =
             `<i class="fa fa-clipboard-check me-2"></i>${title}`;
         document.getElementById('importResultSuccess').textContent = res.berhasil || 0;
+        document.getElementById('importResultUpdated').textContent = res.diupdate || 0;
         document.getElementById('importResultSkipped').textContent = res.dilewati || 0;
         document.getElementById('importResultFailed').textContent = res.gagal || 0;
 
         const details = document.getElementById('importResultDetails');
         details.innerHTML = '';
 
+        // Data yang diupdate: tampilkan NIK + rincian field yang berubah.
+        const updated = res.updated || [];
+        if (updated.length) {
+            const heading = document.createElement('div');
+            heading.className = 'fw-bold mb-1 text-warning';
+            heading.textContent = 'Data diupdate';
+            details.appendChild(heading);
+
+            const list = document.createElement('ul');
+            list.className = 'mb-3 ps-4';
+            updated.slice(0, 20).forEach(item => {
+                const li = document.createElement('li');
+                const title = document.createElement('div');
+                title.className = 'fw-bold';
+                const n = (item.perubahan || []).length;
+                title.textContent = `${item.nik} — ${item.nama} (${n} perubahan)`;
+                li.appendChild(title);
+                if (n) {
+                    const sub = document.createElement('ul');
+                    sub.className = 'ps-4 fw-normal';
+                    item.perubahan.forEach(p => {
+                        const sli = document.createElement('li');
+                        sli.textContent = p;
+                        sub.appendChild(sli);
+                    });
+                    li.appendChild(sub);
+                }
+                list.appendChild(li);
+            });
+            details.appendChild(list);
+            if (updated.length > 20) {
+                const more = document.createElement('div');
+                more.className = 'text-muted mb-2';
+                more.textContent = `... dan ${updated.length - 20} data terupdate lainnya. Lihat console browser untuk detail lengkap.`;
+                details.appendChild(more);
+            }
+        }
+
         const sections = [
+            { title: 'Jabatan baru ditambahkan', items: res.jabatan_ditambah || [], className: 'text-success' },
             { title: 'Data dilewati', items: (res.debug || []).filter(item => item.includes('Dilewati')), className: 'text-info' },
             { title: 'Detail error', items: res.errors || [], className: 'text-danger' }
         ];
@@ -1537,13 +1595,144 @@
         });
 
         // 12b. ACTION: IMPORT EXCEL TEMPLATE IPIP (service baru)
+        // Isi dropdown sheet setiap kali file dipilih.
+        $("#file_excel_ipip").on("change", function() {
+            const fileInput = this;
+            const sheetSelect = $("#sheet_ipip");
+            sheetSelect.html('<option value="">Memuat daftar sheet...</option>');
+
+            if (!fileInput.files || !fileInput.files.length) {
+                sheetSelect.html('<option value="">-- Pilih file dulu --</option>');
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append("file_excel", fileInput.files[0]);
+
+            $.ajax({
+                url: "app/controller/csv-control/sheets-karyawan-ipip.php",
+                type: "POST",
+                dataType: "json",
+                data: fd,
+                contentType: false,
+                processData: false,
+                success: function(res) {
+                    if (res.success && res.sheets && res.sheets.length) {
+                        let opts = '';
+                        res.sheets.forEach(function(nm) {
+                            const aktif = (nm === res.active) ? ' (aktif)' : '';
+                            const sel = (nm === res.active) ? ' selected' : '';
+                            // escape via text(): bangun option aman dari nama sheet
+                            opts += `<option value="${$('<div>').text(nm).html()}"${sel}>${$('<div>').text(nm + aktif).html()}</option>`;
+                        });
+                        sheetSelect.html(opts);
+                    } else {
+                        sheetSelect.html('<option value="">Otomatis (sheet aktif)</option>');
+                        if (res.error) showToast(res.error, "warning");
+                    }
+                },
+                error: function() {
+                    sheetSelect.html('<option value="">Otomatis (sheet aktif)</option>');
+                    showToast("Gagal membaca daftar sheet, dipakai sheet aktif.", "warning");
+                }
+            });
+        });
+
+        // Reset pilihan file & sheet setiap modal IPIP dibuka.
+        $('#ModalImportIPIP').on('hidden.bs.modal', function() {
+            $("#formImportIPIP")[0].reset();
+            $("#sheet_ipip").html('<option value="">-- Pilih file dulu --</option>');
+            resetPreviewIPIP();
+        });
+
+        function resetPreviewIPIP() {
+            $("#previewIPIP").hide().html('');
+            $("#btnApplyIPIP").hide();
+        }
+
+        function ipipProgress(done) {
+            const btn = $("#btnPreviewIPIP");
+            if (done) {
+                $("#progressWrapperIPIP").hide();
+                $("#progressBarIPIP").css("width", "0%").text("0%");
+                btn.prop("disabled", false).html('<i class="fa fa-search"></i> Cek Pratinjau');
+            } else {
+                $("#progressWrapperIPIP").show();
+                btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+            }
+        }
+
+        function escHtml(s) {
+            return $('<div>').text(s == null ? '' : String(s)).html();
+        }
+
+        // Render pratinjau: belum ada perubahan database di tahap ini.
+        function renderPreviewIPIP(res) {
+            const box = $("#previewIPIP");
+            let html = `<div class="alert alert-info py-2 mb-2">${escHtml(res.message || 'Pratinjau selesai.')}</div>`;
+
+            const jab = res.jabatan_baru || [];
+            if (jab.length) {
+                html += `<div class="alert alert-warning py-2 mb-2"><strong><i class="fa fa-plus-circle"></i> Jabatan baru (${jab.length}) — centang untuk disetujui. Tulisan Cina sudah dibuang otomatis:</strong><div class="mt-1">`;
+                jab.forEach(function(j, i) {
+                    const baris = (j.baris || []).slice(0, 10).join(', ');
+                    const lebih = (j.baris || []).length > 10 ? ` (+${j.baris.length - 10} baris lain)` : '';
+                    html += `<div class="form-check">
+                        <input class="form-check-input jab-approve" type="checkbox" value="${escHtml(j.nama)}" id="jabApr${i}" checked>
+                        <label class="form-check-label" for="jabApr${i}"><strong>${escHtml(j.nama)}</strong>
+                        <span class="text-muted">— dari "${escHtml(j.contoh)}" (${j.jumlah} baris: ${escHtml(baris)}${escHtml(lebih)})</span></label>
+                    </div>`;
+                });
+                html += `</div><div class="form-text">Baris dengan jabatan yang tidak dicentang akan gagal saat diterapkan.</div></div>`;
+            }
+
+            const baru = res.baru_list || [];
+            if (baru.length) {
+                html += `<div class="fw-bold text-success">Karyawan baru (${res.berhasil || 0}):</div><ul class="small mb-2 ps-4">`;
+                baru.slice(0, 20).forEach(function(b) { html += `<li>${escHtml(b.nik)} — ${escHtml(b.nama)}</li>`; });
+                if (baru.length > 20) html += `<li class="text-muted">... dan ${baru.length - 20} lainnya</li>`;
+                html += `</ul>`;
+            }
+
+            const upd = res.updated || [];
+            if (upd.length) {
+                html += `<div class="fw-bold text-warning">Data berubah (${res.diupdate || 0}):</div><ul class="small mb-2 ps-4">`;
+                upd.slice(0, 20).forEach(function(u) {
+                    html += `<li><strong>${escHtml(u.nik)} — ${escHtml(u.nama)} (${(u.perubahan || []).length} perubahan)</strong><ul class="ps-4">`;
+                    (u.perubahan || []).forEach(function(p) { html += `<li>${escHtml(p)}</li>`; });
+                    html += `</ul></li>`;
+                });
+                if (upd.length > 20) html += `<li class="text-muted">... dan ${upd.length - 20} lainnya</li>`;
+                html += `</ul>`;
+            }
+
+            if ((res.dilewati || 0) > 0) html += `<div class="small text-info mb-1">Dilewati (tidak ada perubahan): ${res.dilewati}</div>`;
+            if ((res.tertunda || 0) > 0) html += `<div class="small text-warning mb-1">Menunggu persetujuan jabatan: ${res.tertunda} baris</div>`;
+            if ((res.gagal || 0) > 0) {
+                html += `<div class="fw-bold text-danger">Gagal (${res.gagal}):</div><ul class="small mb-2 ps-4 text-danger">`;
+                (res.errors || []).slice(0, 10).forEach(function(e) { html += `<li>${escHtml(e)}</li>`; });
+                if ((res.errors || []).length > 10) html += `<li>... dan ${(res.errors || []).length - 10} lainnya</li>`;
+                html += `</ul>`;
+            }
+
+            box.html(html).show();
+
+            const bisaTerapkan = ((res.berhasil || 0) + (res.diupdate || 0)) > 0;
+            const applyBtn = $("#btnApplyIPIP");
+            if (bisaTerapkan) {
+                applyBtn.show().html(`<i class="fa fa-check"></i> Konfirmasi &amp; Terapkan (${res.berhasil || 0} baru, ${res.diupdate || 0} update${jab.length ? `, ${jab.length} jabatan` : ''})`);
+            } else {
+                applyBtn.hide();
+            }
+        }
+
+        // Tahap 1: pratinjau (dry-run, tanpa tulis database).
         $("#formImportIPIP").on("submit", function(e) {
             e.preventDefault();
+            resetPreviewIPIP();
             const formData = new FormData(this);
-            const btn = $("#btnUploadIPIP");
-
-            $("#progressWrapperIPIP").show();
-            btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+            formData.set("mode", "preview");
+            ipipProgress(false);
 
             $.ajax({
                 url: "app/controller/csv-control/csv-karyawan-ipip.php",
@@ -1565,20 +1754,85 @@
                 },
 
                 success: function(res) {
-                    console.log("=== Import IPIP Response ===", res);
+                    console.log("=== Import IPIP Preview ===", res);
+                    if (res.success) {
+                        renderPreviewIPIP(res);
+                    } else {
+                        showImportResult({
+                            berhasil: 0,
+                            dilewati: 0,
+                            gagal: 1,
+                            errors: [res.error || "Terjadi kesalahan tidak diketahui"]
+                        }, "Pratinjau IPIP Gagal");
+                        showToast("Pratinjau gagal! Cek console untuk detail.", "danger");
+                        console.error("=== Import IPIP Preview Error ===", res);
+                    }
+                },
+
+                error: function(xhr, status, error) {
+                    console.error("=== AJAX Error (IPIP) ===", status, error, xhr.responseText);
+                    showToast("Terjadi kesalahan server!", "danger");
+                },
+
+                complete: function() {
+                    ipipProgress(true);
+                }
+            });
+        });
+
+        // Ganti file = pratinjau lama tidak berlaku lagi.
+        $("#file_excel_ipip, #sheet_ipip").on("change", function() {
+            resetPreviewIPIP();
+        });
+
+        // Tahap 2: terapkan setelah konfirmasi (tulis database).
+        $("#btnApplyIPIP").on("click", function() {
+            const fileInput = $("#file_excel_ipip")[0];
+            if (!fileInput.files || !fileInput.files.length) {
+                showToast("Pilih file dulu.", "warning");
+                return;
+            }
+            const approved = [];
+            $(".jab-approve:checked").each(function() { approved.push($(this).val()); });
+
+            const formData = new FormData();
+            formData.append("file_excel", fileInput.files[0]);
+            formData.append("sheet", $("#sheet_ipip").val() || '');
+            formData.append("mode", "apply");
+            formData.append("confirm", "1");
+            formData.append("jabatan_disetujui", JSON.stringify(approved));
+
+            const btn = $(this);
+            $("#progressWrapperIPIP").show();
+            btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Menerapkan...');
+
+            $.ajax({
+                url: "app/controller/csv-control/csv-karyawan-ipip.php",
+                type: "POST",
+                dataType: "json",
+                data: formData,
+                contentType: false,
+                processData: false,
+
+                success: function(res) {
+                    console.log("=== Import IPIP Apply ===", res);
 
                     if (res.success) {
                         $("#ModalImportIPIP").modal("hide");
                         $("#formImportIPIP")[0].reset();
+                        $("#sheet_ipip").html('<option value="">-- Pilih file dulu --</option>');
+                        resetPreviewIPIP();
                         tableKaryawan.ajax.reload(null, false);
-                        showImportResult(res, "Hasil Import IPIP");
+                        showImportResult(res, "Hasil Import IPIP" + (res.sheet ? " — " + res.sheet : ""));
 
                         if (res.gagal > 0) {
                             showToast(`Import IPIP selesai dengan ${res.gagal} error. Cek detail!`, "warning");
-                        } else if ((res.dilewati || 0) > 0) {
-                            showToast(`Import IPIP selesai. ${res.dilewati} data dilewati karena NIK sudah terdaftar.`, "info");
+                        } else if ((res.diupdate || 0) > 0 || (res.berhasil || 0) > 0) {
+                            let msg = `Import IPIP diterapkan: ${res.berhasil} baru, ${res.diupdate} update`;
+                            if ((res.jabatan_ditambah || []).length) msg += `, ${(res.jabatan_ditambah || []).length} jabatan baru`;
+                            showToast(msg + `. Cek rincian!`, "success");
                         } else {
-                            showToast(`Semua ${res.berhasil} data IPIP berhasil diimport!`, "success");
+                            showToast(`Tidak ada perubahan yang diterapkan.`, "info");
                         }
                     } else {
                         showImportResult({
@@ -1606,7 +1860,7 @@
                 complete: function() {
                     $("#progressWrapperIPIP").hide();
                     $("#progressBarIPIP").css("width", "0%").text("0%");
-                    btn.prop("disabled", false).html('<i class="fa fa-upload"></i> Upload IPIP');
+                    btn.prop("disabled", false).html('<i class="fa fa-check"></i> Konfirmasi &amp; Terapkan');
                 }
             });
         });
