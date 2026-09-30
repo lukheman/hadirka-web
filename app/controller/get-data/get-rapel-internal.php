@@ -21,7 +21,7 @@ $no = 1;
 
 while ($r = $q->fetch_assoc()) {
     $btn = "
-        <button class='btn btn-sm btn-primary btnEditRapel' data-id='{$r['id_rapel']}' data-karyawan='{$r['id_karyawan_internal']}' data-tgl='" . date('Y-m-d', strtotime($r['tgl_rapel'])) . "' data-nominal='{$r['nominal']}' data-ket='{$r['ket_rapel']}'><i class='fa fa-edit'></i></button>
+        <button class='btn btn-sm btn-warning btnEditRapel' data-id='{$r['id_rapel']}' data-karyawan='{$r['id_karyawan_internal']}' data-tgl='" . date('Y-m-d', strtotime($r['tgl_rapel'])) . "' data-nominal='{$r['nominal']}' data-ket='{$r['ket_rapel']}'><i class='fa fa-edit'></i></button>
         <button class='btn btn-sm btn-danger btnDeleteRapel' data-id='{$r['id_rapel']}'><i class='fa fa-trash'></i></button>
     ";
 

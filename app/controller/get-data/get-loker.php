@@ -17,7 +17,7 @@ while ($r = $q->fetch_assoc()) {
         <td>{$r['nama_jabatan']}</td>
         <td class='text-center'><span class='badge {$badge}'>{$r['status_loker']}</span></td>
         <td class='text-center'>
-            <button class='btn btn-primary btn-sm btnEditLoker' 
+            <button class='btn btn-warning btn-sm btnEditLoker' 
                 data-id='{$r['id_loker']}' 
                 data-jabatan='{$r['id_jabatan']}' 
                 data-status='{$r['status_loker']}'>

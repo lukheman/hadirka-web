@@ -9,7 +9,7 @@ while ($r = $q->fetch_assoc()) {
         <td>{$r['nama_akun']}</td>
         <td>{$r['kelompok']}</td>
         <td class='text-center'>
-            <button class='btn btn-primary btn-sm btnEditCOA' 
+            <button class='btn btn-warning btn-sm btnEditCOA' 
                 data-id='{$r['id_kategori']}' data-kode='{$r['kode_akun']}' 
                 data-nama='{$r['nama_akun']}' data-kelompok='{$r['kelompok']}'>Edit</button>
             <button class='btn btn-danger btn-sm btnDeleteCOA' data-id='{$r['id_kategori']}'>Hapus</button>

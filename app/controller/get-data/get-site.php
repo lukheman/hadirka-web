@@ -12,7 +12,7 @@ while ($r = mysqli_fetch_assoc($q)) {
         <td>{$r['nama_site']}</td>
         <td>{$r['lokasi']}</td>
         <td class='text-center'>
-            <button class='btn btn-sm btn-primary btnEdit'
+            <button class='btn btn-sm btn-warning btnEdit'
                 data-id='{$r['id_site']}'
                 data-nama='{$r['nama_site']}'
                 data-lokasi='{$r['lokasi']}'>Edit</button>

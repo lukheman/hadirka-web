@@ -10,7 +10,7 @@
                             <p class="mb-4">
                                 Terus tingkatkan <span class="fw-bold">produktivitas hari ini.</span> Lihat perkembangan data dan aktivitas terbaru di dashboard.
                             </p>
-                            <a href="javascript:;" class="btn btn-sm btn-outline-primary">View Badges</a>
+                            <a href="javascript:;" class="btn btn-sm btn-primary">View Badges</a>
                         </div>
                     </div>
                     <div class="col-sm-5 text-center text-sm-left">

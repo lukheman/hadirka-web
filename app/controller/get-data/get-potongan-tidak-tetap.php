@@ -50,7 +50,7 @@ if (mysqli_num_rows($result) == 0) {
         echo "<td>Rp " . number_format($row['nominal_potongan'], 0, ",", ".") . "</td>"; 
         echo "<td>{$row['ket_potongan']}</td>";
         echo "<td class='text-center'>
-                <button class='btn btn-primary btn-sm btnEdit'
+                <button class='btn btn-warning btn-sm btnEdit'
                     data-id='{$row['id_potongan_tidak_tetap']}'
                     data-idkaryawan='{$row['id_karyawan']}'
                     data-tglpotongan='{$row['tgl_potongan']}'

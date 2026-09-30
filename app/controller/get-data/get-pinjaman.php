@@ -42,7 +42,7 @@ if (mysqli_num_rows($result) == 0) {
         echo "<td>Rp " . number_format($row['nominal_pinjaman'], 0, ",", ".") . "</td>"; // Saya tambahkan format 'Rp' agar lebih rapi
         echo "<td>{$row['ket_pinjaman']}</td>";
         echo "<td class='text-center'>
-                <button class='btn btn-primary btn-sm btnEdit'
+                <button class='btn btn-warning btn-sm btnEdit'
                     data-id='{$row['id_pinjaman']}'
                     data-idkaryawan='{$row['id_karyawan']}'
                     data-tglpinjaman='{$row['tgl_pinjaman']}'

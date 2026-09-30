@@ -408,7 +408,7 @@
 
             const baseUrl = 'http://api-hris.triputrajayasultra.com/';
             const fotoWajah = row.foto_wajah ? `<a href='${baseUrl}${row.foto_wajah}' target='_blank' class='btn btn-xs btn-outline-info mb-1 py-1 px-2' style='font-size:0.75rem'>Cek Wajah</a><br>` : '';
-            const fotoId = row.foto_id_card ? `<a href='${baseUrl}${row.foto_id_card}' target='_blank' class='btn btn-xs btn-outline-primary py-1 px-2' style='font-size:0.75rem'>Cek ID</a>` : '';
+            const fotoId = row.foto_id_card ? `<a href='${baseUrl}${row.foto_id_card}' target='_blank' class='btn btn-xs btn-primary py-1 px-2' style='font-size:0.75rem'>Cek ID</a>` : '';
 
             let infoRekening = `<span class='text-muted'><small>Belum disetting</small></span>`;
             if (row.nama_bank && row.no_rek) {

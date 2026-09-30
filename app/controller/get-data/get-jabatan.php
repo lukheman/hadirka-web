@@ -14,7 +14,7 @@ while ($r = $q->fetch_assoc()) {
         <td>{$nama}</td>
         <td class='text-center'>
             <div class='d-flex justify-content-center gap-1'>
-                <button type='button' class='btn btn-sm btn-primary btnEditJabatan'
+                <button type='button' class='btn btn-sm btn-warning btnEditJabatan'
                     data-id='{$r['id_jabatan']}'
                     data-kode='{$kode}'
                     data-nama='{$nama}'

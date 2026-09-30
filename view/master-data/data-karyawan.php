@@ -484,7 +484,7 @@
                                 aria-label="Tampilkan password" title="Tampilkan password">
                                 <i class="bx bx-hide"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-primary" id="btn_generate_password_add"
+                            <button type="button" class="btn btn-primary" id="btn_generate_password_add"
                                 title="Buatkan password otomatis (8 karakter)">
                                 <i class="bx bx-refresh"></i> Generate
                             </button>
@@ -715,7 +715,7 @@
                                 aria-label="Tampilkan password" title="Tampilkan password">
                                 <i class="bx bx-hide"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-primary" id="btn_generate_password"
+                            <button type="button" class="btn btn-primary" id="btn_generate_password"
                                 title="Buatkan password otomatis (8 karakter)">
                                 <i class="bx bx-refresh"></i> Generate
                             </button>

@@ -77,7 +77,7 @@ require_once __DIR__ . '/../../app/config/koneksi.php';
 
                 <!-- Grup Tombol Aksi -->
                 <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-primary shadow-sm w-100 text-nowrap"><i class="bx bx-printer me-1"></i> Cetak</button>
+                    <button class="btn btn-sm btn-primary shadow-sm w-100 text-nowrap"><i class="bx bx-printer me-1"></i> Cetak</button>
                     <button class="btn btn-sm btn-primary shadow-sm w-100 text-nowrap"><i class="bx bx-download me-1"></i> Export Excel</button>
                 </div>
             </div>

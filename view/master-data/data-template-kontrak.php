@@ -595,7 +595,7 @@
                                 <div class="d-flex justify-content-center gap-1">
                                 <a href="app/uploads/template-kontrak/${escHtml(r.file)}" target="_blank"
                                     class="btn btn-sm btn-info" title="Lihat file"><i class="bx bx-show me-1"></i>Lihat</a>
-                                <button type="button" class="btn btn-sm btn-primary btnEditTemplate" data-id="${r.id_template}"
+                                <button type="button" class="btn btn-sm btn-warning btnEditTemplate" data-id="${r.id_template}"
                                     data-nama-kontrak="${escHtml(r.nama_kontrak || "")}"
                                     data-file="${escHtml(r.nama_asli || r.file)}"
                                     data-jabatan-ids="${(r.jabatan || []).map(j => j.id_jabatan).join(",")}"

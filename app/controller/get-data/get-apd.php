@@ -32,7 +32,7 @@ if ($total == 0) {
             <td><span class="badge bg-label-primary fw-bold">' . $row['stok'] . ' Pcs</span></td>
             <td><span class="badge ' . $badge . '">' . $row['status_aktif'] . '</span></td>
             <td class="text-center">
-                <button class="btn btn-sm btn-icon" onclick="editAPD(' . $row['id_apd'] . ')"><i class="bx bx-edit text-primary"></i></button>
+                <button class="btn btn-sm btn-warning" onclick="editAPD(' . $row['id_apd'] . ')" title="Edit"><i class="bx bx-edit"></i></button>
                 <button class="btn btn-sm btn-icon" onclick="deleteAPD(' . $row['id_apd'] . ')"><i class="bx bx-trash text-danger"></i></button>
             </td>
         </tr>';

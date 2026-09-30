@@ -110,7 +110,7 @@ while ($r = $q->fetch_assoc()) { ?>
             </button>
             <?php } ?>
             
-            <button class="btn btn-primary btn-sm btnEditKarier"
+            <button class="btn btn-warning btn-sm btnEditKarier"
                 data-id="<?= $r['id_karier'] ?>"
                 data-id-karier-enc="<?= htmlspecialchars(encrypt($r['id_karier']), ENT_QUOTES) ?>"
                 data-nama="<?= htmlspecialchars($r['nama_lengkap'], ENT_QUOTES) ?>"

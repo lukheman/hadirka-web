@@ -15,7 +15,7 @@ while ($r = $q->fetch_assoc()) {
         <td>{$nama}</td>
         <td><small>{$ket_singkat}...</small></td>
         <td class='text-center'>
-            <button class='btn btn-primary btn-sm btnEditPel' 
+            <button class='btn btn-warning btn-sm btnEditPel' 
                 data-id='{$r['id_pelanggaran']}'
                 data-nama='{$nama}'
                 data-ket='{$ket_full}' title='Edit'><i class='fa fa-edit'></i></button>

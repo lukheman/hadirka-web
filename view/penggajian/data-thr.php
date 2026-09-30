@@ -511,7 +511,7 @@
                     <td class='text-end fw-bold text-success'>Rp ${formatRupiah(row.nominal_thr)}</td>
                     <td class='text-center'>
                         <div class='btn-group btn-group-sm'>
-                            <button class='btn btn-outline-primary btnEdit' 
+                            <button class='btn btn-warning btnEdit' 
                                 data-id='${row.id_thr}' data-karyawan='${row.id_karyawan}'
                                 data-mulai='${row.tgl_mulai}' data-raya='${row.tgl_hari_raya}'
                                 data-gapok='${row.gaji_pokok}' data-lokasi='${row.tunjangan_lokasi}'

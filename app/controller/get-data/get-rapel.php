@@ -109,7 +109,7 @@ while ($row = $result->fetch_assoc()) {
             </td>
             <td class='text-center'>
                 <div class='btn-group btn-group-sm' role='group'>
-                    <button class='btn btn-outline-primary btnEdit' 
+                    <button class='btn btn-warning btnEdit' 
                             data-id='{$id_rapel}'
                             data-karyawan='{$id_karyawan}'
                             data-tgl='{$tgl_edit}'

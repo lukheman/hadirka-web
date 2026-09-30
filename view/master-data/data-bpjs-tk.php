@@ -279,7 +279,7 @@
                     <td>${jabatanBadge}${siteInfo}</td>
                     <td>${bpjsDisplay}</td>
                     <td class='text-center'>
-                        <button class='btn btn-outline-primary btn-sm btnEdit' 
+                        <button class='btn btn-warning btn-sm btnEdit' 
                             data-id='${row.id_karyawan}' 
                             data-nama='${row.nama_lengkap}'
                             data-bpjs='${row.bpjs_tk || ''}' 

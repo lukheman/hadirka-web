@@ -31,7 +31,7 @@ if (mysqli_num_rows($query) == 0) {
             </td>
             <td class="text-center">
                 <div class="d-flex justify-content-center gap-1">
-                    <button class="btn btn-sm btn-primary" onclick="editData(' . $row['id_priode'] . ')" title="Edit">
+                    <button class="btn btn-sm btn-warning" onclick="editData(' . $row['id_priode'] . ')" title="Edit">
                         <i class="bx bx-edit me-1"></i>Edit
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteData(' . $row['id_priode'] . ')" title="Hapus">
