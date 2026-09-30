@@ -8,6 +8,16 @@
 //
 // TIDAK ada perubahan database: hanya kolom yang punya padanan
 // di tabel existing yang diambil, sisanya diabaikan.
+//
+// Pembersihan sebelum import (spasi & simbol tidak penting dibuang):
+//   - Semua kolom teks: trim + spasi ganda/tab/newline jadi satu spasi.
+//   - NIK Karyawan, RT/RW: seluruh whitespace dibuang (strip tetap ada).
+//   - NIK KTP, No KK, NPWP, BPJS TK/KES, No Rekening: digit murni
+//     ("74.011.812.039.900.001", "09.123.456.7-890.000" -> digit saja).
+//   - Telepon: buang spasi/koma/titik/strip/kurung, "+62" -> "0",
+//     "O822..." -> "0822...", "812..." -> "0812...".
+//   - Email: buang spasi + huruf kecil semua.
+//   - Jabatan: tulisan Cina dibuang ("Op.Grader/..." -> "OPERATOR GRADER").
 // Pemetaan (notasi baris 8 = baris data pertama):
 //   A8 No -> diabaikan
 //   B8 NIK Karyawan -> tb_karyawan.nik_karyawan (duplikat -> dilewati)
@@ -97,8 +107,12 @@ function ipipBersihMaster($value)
             }
         }
     }
-    // Buang karakter CJK (Han/Hiragana/Katakana/Hangul) yang menempel tanpa spasi.
-    $v = preg_replace('/[\x{4E00}-\x{9FFF}\x{3400}-\x{4DBF}\x{20000}-\x{2A6DF}\x{3040}-\x{30FF}\x{AC00}-\x{D7AF}]/u', '', $v);
+    // Buang karakter CJK: Han/Hiragana/Katakana/Hangul yang menempel tanpa spasi,
+    // plus blok simbol & tanda baca CJK (、。，〈〉《》 dsb., U+3000-303F) dan
+    // bentuk fullwidth (：，．（） dsb., U+FF00-FFEF).
+    $v = preg_replace('/[\x{2E80}-\x{2EFF}\x{2F00}-\x{2FDF}\x{3000}-\x{303F}\x{3200}-\x{32FF}\x{3400}-\x{4DBF}\x{4E00}-\x{9FFF}\x{20000}-\x{2A6DF}\x{3040}-\x{30FF}\x{31F0}-\x{31FF}\x{AC00}-\x{D7AF}\x{FF00}-\x{FFEF}]/u', '', $v);
+    // Buang simbol sisa di ujung (mis. "NAMA 、" -> "NAMA").
+    $v = preg_replace('/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/u', '', $v);
     return trim(preg_replace('/\s+/', ' ', $v));
 }
 
@@ -151,12 +165,47 @@ function ipipAgama($value)
 function ipipTelepon($value)
 {
     $t = trim(preg_replace('/\s+/', '', (string)$value));
-    $t = str_replace(',', '', $t); // sisa format ribuan Excel ("81,234..."->"81234...")
+    // Buang simbol format: ribuan Excel, titik/strip/kurung ("(0821) 435-210" -> "0821435210").
+    $t = str_replace([',', '.', '-', '(', ')'], '', $t);
+    // Prefix internasional -> lokal ("+62812..." -> "0812...").
+    if (str_starts_with($t, '+62')) $t = '0' . substr($t, 3);
+    elseif (str_starts_with($t, '+')) $t = substr($t, 1);
     // Typo umum di template: "O822..." (huruf O) maksudnya "0822..."
     if (preg_match('/^[Oo](\d+)$/', $t, $m)) $t = '0' . $m[1];
     // Nomor HP yang kehilangan nol depan saat diketik di Excel (0812...->812...)
     if (preg_match('/^8\d{8,12}$/', $t)) $t = '0' . $t;
     return $t;
+}
+
+/**
+ * Rapikan teks: buang spasi depan/belakang + ciutkan run whitespace
+ * (spasi ganda, tab, newline dari sel Excel) menjadi satu spasi.
+ */
+function ipipRapikanTeks($value)
+{
+    return trim((string)preg_replace('/\s+/u', ' ', (string)$value));
+}
+
+/** Escape + rapikan untuk kolom teks bebas. */
+function ipipEsc($koneksi, $value)
+{
+    return Excel::esc($koneksi, ipipRapikanTeks($value));
+}
+
+/**
+ * Bersihkan nomor dokumen menjadi digit murni.
+ * Buang spasi, titik/strip ribuan, koma, dan simbol lain
+ * ("74.011.812.039.900.001", "09.123.456.7-890.000" -> digit saja).
+ */
+function ipipBersihId($value)
+{
+    return preg_replace('/\D+/', '', (string)$value);
+}
+
+/** Buang seluruh whitespace (untuk NIK karyawan, RT/RW, email). */
+function ipipTanpaSpasi($value)
+{
+    return preg_replace('/\s+/u', '', (string)$value);
 }
 
 /**
@@ -384,8 +433,8 @@ try {
 
         $transaction_started = false;
         try {
-            $nik_karyawan = Excel::esc($koneksi, $row['B'] ?? '');
-            $nama_lengkap = Excel::esc($koneksi, $row['C'] ?? '');
+            $nik_karyawan = Excel::esc($koneksi, ipipTanpaSpasi($row['B'] ?? ''));
+            $nama_lengkap = ipipEsc($koneksi, $row['C'] ?? '');
 
             // NIK sudah ada -> bandingkan & update bila berubah (di bawah).
             // NIK baru -> insert. Sel kosong pada baris update = pertahankan data lama.
@@ -451,47 +500,47 @@ try {
             $join_ipip      = Excel::parseDateFlexible($row['Q'] ?? '');
             $tgl_mulai = $tgl_masuk_site ?: $join_ipip;
 
-            $tempat_lahir = Excel::esc($koneksi, $row['V'] ?? '');
+            $tempat_lahir = ipipEsc($koneksi, $row['V'] ?? '');
             $tgl_lahir    = Excel::parseDateFlexible($row['W'] ?? '');
 
-            $nationality = Excel::esc($koneksi, $row['AA'] ?? '');
-            $agama       = Excel::esc($koneksi, ipipAgama($row['AB'] ?? ''));
+            $nationality = ipipEsc($koneksi, $row['AA'] ?? '');
+            $agama       = ipipEsc($koneksi, ipipAgama($row['AB'] ?? ''));
 
-            $education_level = Excel::esc($koneksi, $row['AC'] ?? '');
-            $last_education  = Excel::esc($koneksi, $row['AD'] ?? '');
-            $major           = Excel::esc($koneksi, $row['AE'] ?? '');
+            $education_level = ipipEsc($koneksi, $row['AC'] ?? '');
+            $last_education  = ipipEsc($koneksi, $row['AD'] ?? '');
+            $major           = ipipEsc($koneksi, $row['AE'] ?? '');
 
-            $atas_nama_rek = Excel::esc($koneksi, $row['AF'] ?? '');
-            $no_rek        = Excel::esc($koneksi, $row['AG'] ?? '');
-            $nama_bank     = Excel::esc($koneksi, $row['AH'] ?? '');
+            $atas_nama_rek = ipipEsc($koneksi, $row['AF'] ?? '');
+            $no_rek        = Excel::esc($koneksi, ipipBersihId($row['AG'] ?? ''));
+            $nama_bank     = ipipEsc($koneksi, $row['AH'] ?? '');
 
-            $nama_ibu = Excel::esc($koneksi, $row['AI'] ?? '');
-            $nik_ktp  = Excel::esc($koneksi, $row['AJ'] ?? '');
+            $nama_ibu = ipipEsc($koneksi, $row['AI'] ?? '');
+            $nik_ktp  = Excel::esc($koneksi, ipipBersihId($row['AJ'] ?? ''));
 
-            $alamat_ktp = Excel::esc($koneksi, $row['AL'] ?? '');
-            $rt_rw      = Excel::esc($koneksi, $row['AM'] ?? '');
-            $desa       = Excel::esc($koneksi, $row['AN'] ?? '');
-            $kecamatan  = Excel::esc($koneksi, $row['AO'] ?? '');
-            $kabupaten  = Excel::esc($koneksi, $row['AP'] ?? '');
-            $provinsi   = Excel::esc($koneksi, $row['AQ'] ?? '');
+            $alamat_ktp = ipipEsc($koneksi, $row['AL'] ?? '');
+            $rt_rw      = Excel::esc($koneksi, ipipTanpaSpasi($row['AM'] ?? ''));
+            $desa       = ipipEsc($koneksi, $row['AN'] ?? '');
+            $kecamatan  = ipipEsc($koneksi, $row['AO'] ?? '');
+            $kabupaten  = ipipEsc($koneksi, $row['AP'] ?? '');
+            $provinsi   = ipipEsc($koneksi, $row['AQ'] ?? '');
 
-            $email_pribadi = Excel::esc($koneksi, $row['AS'] ?? '');
-            $no_telp       = Excel::esc($koneksi, ipipTelepon($row['AT'] ?? ''));
+            $email_pribadi = Excel::esc($koneksi, strtolower(ipipTanpaSpasi($row['AS'] ?? '')));
+            $no_telp       = ipipEsc($koneksi, ipipTelepon($row['AT'] ?? ''));
 
-            $nama_kontak1     = Excel::esc($koneksi, $row['AU'] ?? '');
-            $hubungan1        = Excel::esc($koneksi, $row['AV'] ?? '');
-            $no_telp_darurat1 = Excel::esc($koneksi, ipipTelepon($row['AW'] ?? ''));
+            $nama_kontak1     = ipipEsc($koneksi, $row['AU'] ?? '');
+            $hubungan1        = ipipEsc($koneksi, $row['AV'] ?? '');
+            $no_telp_darurat1 = ipipEsc($koneksi, ipipTelepon($row['AW'] ?? ''));
 
-            $nama_kontak2     = Excel::esc($koneksi, $row['AX'] ?? '');
-            $hubungan2        = Excel::esc($koneksi, $row['AY'] ?? '');
-            $no_telp_darurat2 = Excel::esc($koneksi, ipipTelepon($row['AZ'] ?? ''));
+            $nama_kontak2     = ipipEsc($koneksi, $row['AX'] ?? '');
+            $hubungan2        = ipipEsc($koneksi, $row['AY'] ?? '');
+            $no_telp_darurat2 = ipipEsc($koneksi, ipipTelepon($row['AZ'] ?? ''));
 
-            $npwp     = Excel::esc($koneksi, $row['BC'] ?? '');
-            $bpjs_tk  = Excel::esc($koneksi, $row['BD'] ?? '');
-            $bpjs_kes = Excel::esc($koneksi, $row['BE'] ?? '');
+            $npwp     = Excel::esc($koneksi, ipipBersihId($row['BC'] ?? ''));
+            $bpjs_tk  = Excel::esc($koneksi, ipipBersihId($row['BD'] ?? ''));
+            $bpjs_kes = Excel::esc($koneksi, ipipBersihId($row['BE'] ?? ''));
 
-            $status_pernikahan = Excel::esc($koneksi, ipipStatusPernikahan($row['BF'] ?? ''));
-            $kk_number         = Excel::esc($koneksi, $row['BG'] ?? '');
+            $status_pernikahan = ipipEsc($koneksi, ipipStatusPernikahan($row['BF'] ?? ''));
+            $kk_number         = Excel::esc($koneksi, ipipBersihId($row['BG'] ?? ''));
 
             // Status: CJ "Aktif" vs "Non Aktif". Data exit (CF/CI) ikut menentukan.
             $raw_cf = $row['CF'] ?? '';
@@ -526,8 +575,8 @@ try {
                 if ($tgl_keluar === null) {
                     throw new Exception("Karyawan Non Aktif tapi tanggal keluar kosong (kolom CF/CG-CH).");
                 }
-                $alasan_keluar = Excel::esc($koneksi, trim($raw_ci . ($raw_cl !== '' ? ' | ' . $raw_cl : '')));
-                if ($alasan_keluar === '') $alasan_keluar = Excel::esc($koneksi, 'Non Aktif (template IPIP)');
+                $alasan_keluar = ipipEsc($koneksi, trim($raw_ci . ($raw_cl !== '' ? ' | ' . $raw_cl : '')));
+                if ($alasan_keluar === '') $alasan_keluar = ipipEsc($koneksi, 'Non Aktif (template IPIP)');
             } else {
                 $status_karyawan = 'Aktif';
                 $alasan_keluar = '';
