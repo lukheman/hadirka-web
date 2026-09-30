@@ -195,7 +195,7 @@
 </div>
 
 <div class="modal fade" id="ModalImport" tabindex="-1" aria-labelledby="ModalImportLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <form id="formImport" class="modal-content" enctype="multipart/form-data">
             <div class="modal-header bg-warning text-white">
                 <h5 class="modal-title text-white" id="ModalImportLabel"><i class="fa fa-upload"></i> Upload Karyawan Excel</h5>
@@ -224,7 +224,7 @@
 </div>
 
 <div class="modal fade" id="ModalImportIPIP" tabindex="-1" aria-labelledby="ModalImportIPIPLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <form id="formImportIPIP" class="modal-content" enctype="multipart/form-data">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title text-white" id="ModalImportIPIPLabel"><i class="fa fa-upload"></i> Upload Karyawan Excel (Template IPIP)</h5>
