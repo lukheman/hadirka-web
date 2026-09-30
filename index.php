@@ -279,10 +279,55 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
         }
 
         /* Branding Fix */
+        .app-brand.demo {
+            justify-content: center;
+            height: 96px;
+            margin-top: 0;
+            padding: 12px 0;
+        }
+        .app-brand-link {
+            overflow: hidden;
+            max-width: 100%;
+        }
         .app-brand-link img {
-            padding-left: 70px;
-            max-width: 180px;
+            padding-left: 0;
+            margin: 0 auto;
+            max-width: 210px;
+            width: auto;
+            height: 72px !important;
+            max-height: 72px;
             object-fit: contain;
+        }
+
+        /* Sidebar menu icons: jangan terpotong */
+        .menu-vertical .menu-inner > .menu-item .menu-link {
+            overflow: visible;
+        }
+        .menu-vertical .menu-icon {
+            flex-shrink: 0;
+            width: 1.5rem;
+            text-align: center;
+            line-height: 1;
+            overflow: visible;
+        }
+        .menu-vertical .menu-icon.bx,
+        .menu-vertical .menu-icon.tf-icons {
+            font-size: 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Mode collapsed: icon tetap di tengah, tidak kepotong */
+        .menu-collapsed:not(:hover) .menu-inner > .menu-item > .menu-link {
+            padding-left: 0;
+            padding-right: 0;
+            justify-content: center;
+        }
+        .menu-collapsed:not(:hover) .menu-inner > .menu-item > .menu-link .menu-icon {
+            margin-left: 0;
+            margin-right: 0;
+            width: 100%;
+            text-align: center;
         }
 
         /* SweetAlert2 harus selalu di paling depan, di atas modal Bootstrap
@@ -301,7 +346,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
                 <div class="app-brand demo">
                     <a href="?page=home" class="app-brand-link">
-                        <img src="assets/img/logo/tjs-done.png" alt="Logo TJS" style="height: 11vh;">
+                        <img src="assets/img/logo/tjs-done.png" alt="Logo TJS">
                     </a>
                     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
                         <i class="bx bx-chevron-left bx-sm align-middle"></i>
@@ -528,17 +573,11 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             }
             message = String(message);
 
-            const icons = {
-                success: "✅",
-                error: "❌",
-                warning: "⚠️",
-                info: "ℹ️"
-            };
             const backgrounds = {
-                success: "linear-gradient(135deg, #28a745, #20c997)",
-                error: "linear-gradient(135deg, #dc3545, #f86c6b)",
-                warning: "linear-gradient(135deg, #ffc107, #ffdb58)",
-                info: "linear-gradient(135deg, #17a2b8, #36b9cc)"
+                success: "#71dd37",
+                error: "#ff3e1d",
+                warning: "#ffab00",
+                info: "#03c3ec"
             };
 
             const positions = {
@@ -586,8 +625,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             `;
 
             toast.innerHTML = `
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-size:20px;">${icons[type]}</span>
+                <div style="display:flex; align-items:center;">
                     <span>${message}</span>
                 </div>
                 <span class="closeToast" style="cursor:pointer; font-weight:bold; padding-left:10px;">✕</span>
