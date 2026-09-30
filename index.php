@@ -289,6 +289,16 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             opacity: 0.6;
         }
 
+        /* Command palette pencarian menu (Ninja Keys) */
+        ninja-keys {
+            --ninja-accent-color: #696cff;
+            --ninja-z-index: 9999;
+        }
+
+        #navbarMenuSearch {
+            cursor: pointer;
+        }
+
         /* Branding Fix */
         .app-brand.demo {
             justify-content: center;
@@ -384,9 +394,9 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
 
                     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
                         <div class="navbar-nav align-items-center">
-                            <div class="nav-item d-flex align-items-center">
+                            <div class="nav-item d-flex align-items-center" title="Klik atau tekan Ctrl+K untuk mencari menu">
                                 <i class="bx bx-search fs-4 lh-0"></i>
-                                <input type="text" class="form-control border-0 shadow-none" placeholder="Search..." aria-label="Search..." />
+                                <input type="text" id="navbarMenuSearch" class="form-control border-0 shadow-none" placeholder="Cari menu... (Ctrl+K)" aria-label="Cari menu" readonly />
                             </div>
                         </div>
 
@@ -470,6 +480,9 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
         <div class="layout-overlay layout-menu-toggle"></div>
     </div>
 
+    <!-- Command palette pencarian menu (Ninja Keys, dibuka via Ctrl+K / klik search) -->
+    <ninja-keys id="menuPalette" placeholder="Ketik nama menu..."></ninja-keys>
+
     <!-- Template lokal (tidak ada padanan CDN-nya): perfect-scrollbar, menu, apexcharts -->
     <script src="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="assets/vendor/js/menu.js"></script>
@@ -510,6 +523,72 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
         })();
     </script>
 
+    <script type="module">
+        // Pencarian menu via Ninja Keys (command palette, Ctrl+K).
+        // Data aksi dibangun dari DOM sidebar yang ter-render, sehingga
+        // otomatis hanya berisi menu yang boleh diakses role user aktif.
+        import 'https://unpkg.com/ninja-keys?module';
+
+        function sectionUntukLink(a) {
+            const li = a.closest('li.menu-item');
+            // Sub-menu: pakai judul grup induknya.
+            const sub = a.closest('ul.menu-sub');
+            if (sub) {
+                const grup = sub.closest('li.menu-item');
+                const toggle = grup ? grup.querySelector(':scope > a.menu-link div') : null;
+                if (toggle) return toggle.textContent.trim().replace(/\s+/g, ' ');
+            }
+            // Menu atas: pakai menu-header terdekat di atasnya.
+            if (li && li.parentElement) {
+                let el = li.previousElementSibling;
+                while (el) {
+                    if (el.classList && el.classList.contains('menu-header')) {
+                        const t = el.querySelector('.menu-header-text');
+                        return ((t ? t.textContent : el.textContent) || '').trim();
+                    }
+                    el = el.previousElementSibling;
+                }
+            }
+            return 'Menu';
+        }
+
+        function bangunAksiMenu() {
+            const aksi = [];
+            document.querySelectorAll('.menu-inner a.menu-link[href]').forEach(a => {
+                const href = (a.getAttribute('href') || '').trim();
+                if (!href || href.startsWith('javascript')) return; // toggle grup, bukan navigasi
+                const judul = (a.textContent || '').trim().replace(/\s+/g, ' ');
+                if (!judul) return;
+                const ikon = a.querySelector('i.menu-icon');
+                const target = (a.getAttribute('target') || '').trim();
+                aksi.push({
+                    id: href + '|' + judul,
+                    title: judul,
+                    section: sectionUntukLink(a),
+                    keywords: judul,
+                    icon: ikon ? `<i class="${ikon.className}"></i>` : undefined,
+                    handler: () => {
+                        if (target === '_blank') window.open(href, '_blank');
+                        else window.location.href = href;
+                    },
+                });
+            });
+            return aksi;
+        }
+
+        const ninja = document.getElementById('menuPalette');
+        if (ninja) {
+            ninja.data = bangunAksiMenu();
+            const pemicu = document.getElementById('navbarMenuSearch');
+            if (pemicu) {
+                pemicu.addEventListener('focus', () => {
+                    ninja.open();
+                    pemicu.blur();
+                });
+            }
+        }
+    </script>
+
     <script>
         $(document).ready(function() {
             // Initialize Select2
@@ -526,32 +605,9 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
                 $(".date-picker").flatpickr();
             }
 
-            // Live Sidebar Menu Search
-            $('.navbar-nav input[placeholder="Search..."]').on('keyup', function() {
-                let filter = $(this).val().toLowerCase();
-
-                if (filter === '') {
-                    // Reset tampilan jika input kosong
-                    $('.menu-inner .menu-item').show();
-                    $('.menu-inner .menu-item').removeClass('open');
-                    return;
-                }
-
-                $('.menu-inner .menu-item').each(function() {
-                    let menuText = $(this).text().toLowerCase();
-
-                    if (menuText.includes(filter)) {
-                        $(this).show();
-                        // Pastikan parent dropdown tetap terbuka jika sub-menunya cocok
-                        $(this).parents('.menu-item').show().addClass('open');
-                    } else {
-                        // Sembunyikan menu yang tidak cocok, kecuali ia memiliki child yang cocok
-                        if ($(this).find('.menu-item:visible').length === 0) {
-                            $(this).hide();
-                        }
-                    }
-                });
-            });
+            // Live Sidebar Menu Search -> digantikan command palette Ninja Keys
+            // (lihat modul ninja-keys di bawah: Ctrl+K / klik kolom search navbar).
+            // Filter substring manual dihapus agar tidak bentrok dengan palette.
         });
 
         /**
