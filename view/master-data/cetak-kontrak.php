@@ -13,6 +13,7 @@
                     Periode (Tgl Mulai + Durasi) berlaku untuk semua baris.
                     Nomor kontrak berurutan langsung <strong>dikonsumsi</strong> dari counter
                     (<code>tb_nomor_urut</code>) dan tidak bisa dibatalkan.
+                    Nomor mulai terisi otomatis mengikuti nomor berikutnya, tetapi bisa diubah manual.
                     Isian personal (nama, NIK, alamat) berupa titik-titik.
                 </div>
 
@@ -40,11 +41,18 @@
                             <input type="number" name="tahun" id="cetakTahun" class="form-control" value="<?= date('Y') ?>" min="2000" max="2100" required>
                         </div>
                     </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Nomor Mulai <small class="text-muted">(berikutnya, bisa diubah)</small></label>
+                            <input type="number" name="nomor_mulai" id="cetakNomorMulai" class="form-control" min="1" max="999999" placeholder="—">
+                            <small class="text-muted" id="cetakNomorHint">Terisi otomatis dari counter; kosongkan untuk otomatis.</small>
+                        </div>
+                    </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label fw-bold mb-0">Daftar Jabatan <small class="text-muted">(maks 10 baris, total maks 100 file)</small></label>
                         <button type="button" class="btn btn-sm btn-primary" id="btnAddBaris">
-                            <i class="fa fa-plus"></i> Tambah Jabatan
+                            <i class="bx bx-plus me-1"></i> Tambah Jabatan
                         </button>
                     </div>
                     <div id="repeaterJabatan"></div>
@@ -61,7 +69,7 @@
 
                     <div class="mt-3">
                         <button type="submit" class="btn btn-success" id="btnCetakKontrak">
-                            <i class="fa fa-download"></i> Generate &amp; Unduh ZIP
+                            <i class="bx bx-download me-1"></i> Generate &amp; Unduh ZIP
                         </button>
                     </div>
                 </form>
@@ -215,12 +223,27 @@
             return (inTahun.value || "").replace(/\D/g, "").slice(0, 4) || String(new Date().getFullYear());
         }
 
+        // Nomor mulai efektif: isi manual bila valid (>=1), selain itu default counter.
+        function manualStartVal() {
+            const v = parseInt((document.getElementById("cetakNomorMulai") || {}).value, 10);
+            return (v >= 1 && v <= 999999) ? v : 0;
+        }
+        function isManualStart() {
+            return manualStartVal() > 0;
+        }
+        function effectiveStart() {
+            const manual = manualStartVal();
+            if (manual > 0) return manual;
+            return globalNext;
+        }
+
         function refreshRanges() {
             const box = document.getElementById("cetakRangePreview");
             const rows = collectRows();
             let total = 0;
             rows.forEach(r => { total += rowJumlah(r); });
-            if (globalNext == null) {
+            const mulaiPakai = effectiveStart();
+            if (mulaiPakai == null) {
                 rows.forEach(r => {
                     delete r._mulai;
                     delete r._akhir;
@@ -229,7 +252,7 @@
                 box.innerHTML = `<div class="alert alert-info py-2 mb-0 mt-2">${rows.length} baris • ${total} file.</div>`;
                 return;
             }
-            let cursor = globalNext;
+            let cursor = mulaiPakai;
             rows.forEach((r, idx) => {
                 const n = rowJumlah(r);
                 const jabSel = r.querySelector(".cetak-jabatan");
@@ -252,10 +275,14 @@
                 cursor += n;
             });
             const akhir = cursor - 1;
-            box.innerHTML = `<div class="alert alert-warning py-2 mb-0 mt-2">` +
+            const manual = isManualStart();
+            const rawan = manual && globalNext != null && mulaiPakai < globalNext;
+            box.innerHTML = `<div class="alert ${rawan ? "alert-danger" : "alert-warning"} py-2 mb-0 mt-2">` +
                 `<i class="fa fa-info-circle"></i> Total <strong>${total} file</strong> dalam <strong>${rows.length} baris</strong>, ` +
-                `nomor ${globalNext} s/d ${akhir} — counter maju ke <strong>${akhir}</strong>.<br>` +
-                `<small>Periode: ${tglIndo(inMulai.value)} s/d ${tglIndo(hitungTglSelesai() || "")} ` +
+                `nomor ${mulaiPakai} s/d ${akhir} (counter menyesuaikan, tidak mundur).` +
+                (manual ? `<br><small>Nomor mulai diubah manual dari default ${globalNext}.</small>` : "") +
+                (rawan ? `<br><small><strong>Perhatian:</strong> mulai di bawah nomor berikutnya (${globalNext}) — berisiko duplikat dengan nomor yang sudah terpakai.</small>` : "") +
+                `<br><small>Periode: ${tglIndo(inMulai.value)} s/d ${tglIndo(hitungTglSelesai() || "")} ` +
                 `(${escHtml(inDurasi.options[inDurasi.selectedIndex].text)})</small></div>`;
         }
 
@@ -317,7 +344,7 @@
                 `<div class="card-header d-flex justify-content-between align-items-center py-2">` +
                 `<strong class="card-title-text">Jabatan</strong>` +
                 `<button type="button" class="btn btn-danger btn-sm btnDelBaris" title="Hapus kartu ini">` +
-                `<i class="fa fa-trash"></i></button></div>` +
+                `<i class="bx bx-trash me-1"></i>Hapus</button></div>` +
                 `<div class="card-body">` +
                 `<div class="row g-2">` +
                 `<div class="col-md-5"><label class="form-label">Jabatan <span class="text-danger">*</span></label>` +
@@ -347,6 +374,10 @@
                 .then(res => {
                     if (res.status !== "success") throw new Error(res.msg || "Gagal memuat counter.");
                     globalNext = res.berikutnya;
+                    const inNomor = document.getElementById("cetakNomorMulai");
+                    if (inNomor && !inNomor.value) inNomor.value = res.berikutnya;
+                    document.getElementById("cetakNomorHint").textContent =
+                        "Default " + res.berikutnya + " (counter " + res.terakhir_counter + " / data " + res.terbesar_data + "). Kosongkan untuk otomatis.";
                     document.getElementById("tbodyNomorInfo").innerHTML =
                         `<tr><th style="width:35%">Terakhir (counter)</th><td><strong>${res.terakhir_counter}</strong></td></tr>` +
                         `<tr><th>Terbesar (data)</th><td><strong>${res.terbesar_data}</strong></td></tr>` +
@@ -394,6 +425,7 @@
             document.getElementById("btnAddBaris").addEventListener("click", addRow);
         }
         inTahun.addEventListener("input", refreshRangeCompat);
+        document.getElementById("cetakNomorMulai").addEventListener("input", refreshRanges);
         inMulai.addEventListener("change", () => { syncTahun(); hitungTglSelesai(); refreshRanges(); });
         inDurasi.addEventListener("change", () => { hitungTglSelesai(); refreshRanges(); });
         function refreshRangeCompat() { refreshRanges(); }
@@ -427,6 +459,12 @@
             if (total > 100) {
                 e.preventDefault();
                 showToast("Total file maksimal 100 per sekali cetak.", "warning");
+                return;
+            }
+            const noMulai = (document.getElementById("cetakNomorMulai").value || "").trim();
+            if (noMulai !== "" && (!/^\d+$/.test(noMulai) || parseInt(noMulai, 10) < 1 || parseInt(noMulai, 10) > 999999)) {
+                e.preventDefault();
+                showToast("Nomor Mulai harus angka 1 s/d 999999, atau dikosongkan.", "warning");
                 return;
             }
             const ok = await confirmDialog(

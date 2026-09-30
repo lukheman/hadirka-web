@@ -13,18 +13,20 @@ while ($r = $q->fetch_assoc()) {
         <td class='text-center'>{$no}</td>
         <td>{$r['nama_departemen']}</td>
         <td class='text-center'>
-            <button class='btn btn-primary btn-sm btnEditDepart'
-                data-id='{$r['id_departemen']}'
-                data-nama='{$r['nama_departemen']}'
-                title='Edit departemen'>
-                <i class='fa fa-pen'></i>
-            </button>
+            <div class='d-flex justify-content-center gap-1'>
+                <button type='button' class='btn btn-sm btn-primary btnEditDepart'
+                    data-id='{$r['id_departemen']}'
+                    data-nama='{$r['nama_departemen']}'
+                    title='Edit departemen'>
+                    <i class='bx bx-edit me-1'></i>Edit
+                </button>
 
-            <button class='btn btn-danger btn-sm btnDeleteDepart'
-                data-id='{$r['id_departemen']}'
-                title='Hapus departemen'>
-                <i class='fa fa-trash'></i>
-            </button>
+                <button type='button' class='btn btn-sm btn-danger btnDeleteDepart'
+                    data-id='{$r['id_departemen']}'
+                    title='Hapus departemen'>
+                    <i class='bx bx-trash me-1'></i>Hapus
+                </button>
+            </div>
         </td>
     </tr>";
     $no++;

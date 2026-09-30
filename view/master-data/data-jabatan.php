@@ -6,8 +6,8 @@
         </h4>
 
         <div class="pb-3">
-            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahJabatan">
-                <i class="fa fa-plus"></i> Tambah Jabatan
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahJabatan">
+                <i class="bx bx-plus me-1"></i> Tambah Jabatan
             </button>
         </div>
 
@@ -48,7 +48,8 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-success">Simpan</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button class="btn btn-primary">Simpan</button>
                 </div>
             </form>
         </div>
@@ -73,6 +74,7 @@
                 </div>
 
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                     <button class="btn btn-primary">Update</button>
                 </div>
             </form>

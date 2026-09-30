@@ -12,7 +12,7 @@
 // - info     (POST id_jabatan) : kode jabatan, daftar template yg berlaku,
 //              nomor terakhir (counter), terbesar (data), berikutnya.
 // - generate (POST form langsung, target _blank) :
-//              id_jabatan + id_template + jumlah (1-50) + tahun
+//              id_jabatan + id_template + jumlah (1-50) + tahun + nomor_mulai opsional
 //              -> reservasi N nomor berurutan -> bangun N docx -> unduh ZIP.
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_WARNING);
@@ -253,6 +253,10 @@ if ($action === 'generate') {
         };
 
         // Reservasi TOTAL nomor berurutan sekaligus (satu transaksi counter untuk semua baris).
+        // Bila user mengatur Nomor Mulai, pakai itu; selain itu lanjut dari terbesar+1.
+        // Counter tidak pernah dimundurkan (GREATEST).
+        $override = (int)($_POST['nomor_mulai'] ?? 0);
+        if ($override < 0 || $override > 999999) throw new Exception('Nomor Mulai harus 1 s/d 999999.');
         $koneksi->begin_transaction();
         try {
             $koneksi->query("INSERT IGNORE INTO tb_nomor_urut (nama, terakhir) VALUES ('kontrak', 0)");
@@ -265,9 +269,9 @@ if ($action === 'generate') {
             );
             if (!$qm) throw new Exception('Gagal membaca nomor terakhir: ' . $koneksi->error);
             $mx = (int)$qm->fetch_assoc()['mx'];
-            $mulai = max($last, $mx) + 1;
+            $mulai = $override > 0 ? $override : (max($last, $mx) + 1);
             $akhir = $mulai + $total - 1;
-            if (!$koneksi->query("UPDATE tb_nomor_urut SET terakhir = '$akhir' WHERE nama = 'kontrak'")) {
+            if (!$koneksi->query("UPDATE tb_nomor_urut SET terakhir = GREATEST(terakhir, '$akhir') WHERE nama = 'kontrak'")) {
                 throw new Exception('Gagal mencatat nomor surat: ' . $koneksi->error);
             }
             $koneksi->commit();
