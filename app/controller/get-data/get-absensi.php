@@ -88,6 +88,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
     $ot1 = 0;
     $ot2 = 0;
     $spl = 0;
+    $spl_hari = 0;
     $ot1_spl = 0;
     $ot2_spl = 0;
     $mangkir = 0;
@@ -125,6 +126,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
                 if (floatval($jamRaw) > 0) {
                     // case off marked in ket_absen with numeric jam in jam_kerja
                     $jk = floatval($jamRaw);
+                    $spl_hari++;
                     $spl += min($jk, 7);
                     $ot1_spl += ($jk >= 8) ? 1 : 0;
                     $ot2_spl += ($jk >= 9) ? ($jk - 8) : 0;
@@ -201,7 +203,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
         <td class='text-center'>{$hadir_hari} hari ({$hadir} jam)</td>
         <td class='text-center'>{$ot1}</td>
         <td class='text-center'>{$ot2}</td>
-        <td class='text-center'>{$spl}</td>
+        <td class='text-center'>{$spl_hari} hari ({$spl} jam)</td>
         <td class='text-center'>{$ot1_spl}</td>
         <td class='text-center'>{$ot2_spl}</td>
 
