@@ -190,7 +190,7 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+<!-- jQuery global via CDN di <head> index.php -->
 
 <script>
     const api_get_cuti = 'app/controller/get-data/get-pengajuan-cuti.php';

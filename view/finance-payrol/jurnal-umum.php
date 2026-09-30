@@ -1,5 +1,5 @@
 <?php require_once __DIR__ . '/../../app/config/koneksi.php'; ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<!-- DataTables CSS global via CDN di <head> index.php -->
 
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="row align-items-center mb-4">
@@ -58,9 +58,7 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<!-- jQuery/DataTables global via CDN di <head> index.php -->
 
 <script>
     async function loadJurnalUmum() {
@@ -110,7 +108,7 @@
                     pageLength: 25,
                     ordering: false,
                     language: {
-                        url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
+                        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
                     }
                 });
             }

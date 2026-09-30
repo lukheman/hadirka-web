@@ -806,11 +806,9 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
-<!-- SENGAJA tanpa bootstrap.bundle ganda: index.php sudah memuat vendor
-     bootstrap.js. Dua instance Bootstrap menangani data-bs-toggle/modal
-     bersamaan sehingga backdrop ganda dan overlay nyangkut (sudah terbukti
-     via uji headless: 2 backdrop saat open, sisa 1 setelah hide). -->
+<!-- jQuery/Bootstrap/DataTables/Select2/Swal global via CDN di <head> index.php.
+     Tidak ada lib yang dimuat ulang di sini (dulu double-load Bootstrap
+     menyebabkan backdrop ganda). -->
 <script>
     // showToast: pakai definisi global di index.php (P1-JS-4, jangan definisikan ulang).
 

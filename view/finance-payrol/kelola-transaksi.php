@@ -16,9 +16,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
 }
 ?>
 
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<!-- Select2/DataTables CSS global via CDN di <head> index.php -->
 <style>
     .dataTables_wrapper .row {
         margin-bottom: 0.5rem;
@@ -307,11 +305,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- jQuery/DataTables/Select2 global via CDN di <head> index.php -->
 
 <script>
     $(document).ready(function() {
@@ -527,7 +521,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
                             pageLength: 10,
                             responsive: true,
                             language: {
-                                url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
+                                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
                             },
                             drawCallback: function() {
                                 let totalMasuk = 0;

@@ -1,7 +1,3 @@
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-
     <style>
         .hover-lift {
             transition: all 0.3s ease;
@@ -330,25 +326,8 @@
         </div>
     </div>
 
-    <!-- ============================================
-     URUTAN SCRIPT YANG BENAR - JANGAN DIUBAH!
-     ============================================ -->
-
-    <!-- 1. jQuery (HARUS PALING ATAS) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <!-- 2. Bootstrap Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- 3. DataTables -->
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-
-    <!-- 4. Select2 -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    <!-- 5. SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Lib global (jQuery/Bootstrap/DataTables/Select2/Swal) sudah dimuat via CDN
+         di <head> index.php — jangan dimuat ulang di sini. -->
 
     <!-- 6. SCRIPT UTAMA -->
     <script>
