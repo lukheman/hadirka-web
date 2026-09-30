@@ -635,6 +635,7 @@
                         data = JSON.parse(text);
                     } catch (error) {
                         showToast("Response bukan JSON!", "error");
+                        console.error("Import karier non-JSON (200 char pertama):", text.slice(0, 200));
                         importResult.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan format response server.</div>`;
                         return;
                     }

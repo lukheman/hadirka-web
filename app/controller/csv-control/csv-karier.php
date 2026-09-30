@@ -1,13 +1,45 @@
 <?php
+// Response HARUS JSON murni. Di hosting, 3 hal ini merusak response
+// (lokal lolos karena limit longgar & display_errors mati):
+//  1. display_errors=1 -> notice/warning ikut tercetak ke body JSON.
+//  2. ob_clean() tanpa buffer aktif -> notice "No buffer to delete".
+//  3. Limit hosting ketat (128M/30 dtk) -> fatal memory/timeout = halaman HTML.
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ob_clean();
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('memory_limit', '1024M');
+ini_set('max_execution_time', '300');
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 
 header("Content-Type: application/json");
+
+// Plumbing terakhir: fatal apa pun (OOM/timeout/require gagal) tetap JSON.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    $fatal = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if ($err && in_array($err['type'] ?? 0, $fatal, true)) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode([
+            'success' => false,
+            'berhasil' => 0,
+            'gagal' => 0,
+            'errors' => [],
+            'error' => 'Server error: ' . ($err['message'] ?? 'fatal'),
+        ]);
+    }
+});
+
 require __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../config/Excel.php'; // Excel::cleanRupiah()/parseDate() terpusat
 require_once __DIR__ . '/../../config/nomor_surat.php'; // generate_no_surat()
-require '../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
