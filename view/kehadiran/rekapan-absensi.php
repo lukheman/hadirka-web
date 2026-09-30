@@ -211,6 +211,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                         <tr>
                             <th class="text-center"><i class="fa fa-hashtag"></i> No</th>
                             <th class="text-center"><i class="fa fa-user"></i> Nama Lengkap</th>
+                            <th class="text-center"><i class="fa fa-calendar text-primary"></i> Kalender</th>
                             <th class="text-center"><i class="fa fa-building"></i> Departemen</th>
                             <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
                             <th class="text-center"><i class="fa fa-map-marker"></i> Site</th>
@@ -224,7 +225,6 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                             <th class="text-center"><i class="fa fa-exclamation-triangle text-warning"></i> Izin</th>
                             <th class="text-center"><i class="fa fa-medkit text-info"></i> Sakit</th>
                             <th class="text-center"><i class="fa fa-plane text-purple"></i> Cuti</th>
-                            <th class="text-center"><i class="fa fa-calendar text-primary"></i> Kalender</th>
                         </tr>
                     </thead>
                     <tbody></tbody>

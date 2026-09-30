@@ -196,6 +196,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
     <tr data-id='{$idk}'>
         <td class='text-center'>{$no}</td>
         <td>{$nama}<br><small class='text-muted'>ID: {$nik}</small></td>
+        <td class='text-center'><button type='button' class='btn btn-sm btn-primary btnKalender' data-id='{$idk}' data-nama='{$nama}' title='Lihat rekap kalender'><i class='fa fa-calendar'></i> Kalender</button></td>
         <td>{$k['nama_departemen']}</td>
         <td>{$k['nama_jabatan']}</td>
         <td>{$k['nama_site']}</td>
@@ -211,7 +212,6 @@ while ($k = mysqli_fetch_assoc($qKar)) {
         <td class='text-center'>{$izin}</td>
         <td class='text-center'>{$sakit}</td>
         <td class='text-center'>{$cuti}</td>
-        <td class='text-center'><button type='button' class='btn btn-sm btn-primary btnKalender' data-id='{$idk}' data-nama='{$nama}' title='Lihat rekap kalender'><i class='fa fa-calendar'></i> Kalender</button></td>
     </tr>
     ";
 
