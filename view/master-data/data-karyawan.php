@@ -75,7 +75,7 @@
     }
 
     #importResultDetails {
-        max-height: 240px;
+        max-height: 55vh;
         overflow-y: auto;
     }
 
@@ -923,21 +923,13 @@
             return body;
         }
 
-        function appendMoreNote(parent, hidden) {
-            if (!hidden) return;
-            const more = document.createElement('div');
-            more.className = 'text-muted mb-2 small';
-            more.textContent = `... dan ${hidden} detail lainnya. Lihat console browser untuk detail lengkap.`;
-            parent.appendChild(more);
-        }
-
-        // Data yang diupdate: tampilkan NIK + rincian field yang berubah.
+        // Data yang diupdate: tampilkan NIK + rincian field yang berubah (lengkap).
         const updated = res.updated || [];
         if (updated.length) {
             const body = addResultSection('Data diupdate', updated.length, 'text-warning', true);
             const list = document.createElement('ul');
             list.className = 'mb-1 ps-4 small';
-            updated.slice(0, 20).forEach(item => {
+            updated.forEach(item => {
                 const li = document.createElement('li');
                 const title = document.createElement('div');
                 title.className = 'fw-bold';
@@ -957,7 +949,6 @@
                 list.appendChild(li);
             });
             body.appendChild(list);
-            appendMoreNote(body, updated.length > 20 ? updated.length - 20 : 0);
         }
 
         const sections = [
@@ -971,13 +962,12 @@
             const body = addResultSection(section.title, section.items.length, section.className, section.open);
             const list = document.createElement('ul');
             list.className = 'mb-1 ps-4 small';
-            section.items.slice(0, 20).forEach(item => {
+            section.items.forEach(item => {
                 const li = document.createElement('li');
                 li.textContent = item;
                 list.appendChild(li);
             });
             body.appendChild(list);
-            appendMoreNote(body, section.items.length > 20 ? section.items.length - 20 : 0);
         });
 
         if (!details.children.length) {
@@ -1723,12 +1713,11 @@
             if (jab.length) {
                 html += `<div class="alert alert-warning py-2 mb-2"><strong><i class="fa fa-plus-circle"></i> Jabatan baru (${jab.length}) — centang untuk disetujui. Tulisan Cina sudah dibuang otomatis:</strong><div class="mt-1">`;
                 jab.forEach(function(j, i) {
-                    const baris = (j.baris || []).slice(0, 10).join(', ');
-                    const lebih = (j.baris || []).length > 10 ? ` (+${j.baris.length - 10} baris lain)` : '';
+                    const baris = (j.baris || []).join(', ');
                     html += `<div class="form-check">
                         <input class="form-check-input jab-approve" type="checkbox" value="${escHtml(j.nama)}" id="jabApr${i}" checked>
                         <label class="form-check-label" for="jabApr${i}"><strong>${escHtml(j.nama)}</strong>
-                        <span class="text-muted">— dari "${escHtml(j.contoh)}" (${j.jumlah} baris: ${escHtml(baris)}${escHtml(lebih)})</span></label>
+                        <span class="text-muted">— dari "${escHtml(j.contoh)}" (${j.jumlah} baris: ${escHtml(baris)})</span></label>
                     </div>`;
                 });
                 html += `</div><div class="form-text">Baris dengan jabatan yang tidak dicentang akan gagal saat diterapkan.</div></div>`;
@@ -1737,8 +1726,7 @@
             const baru = res.baru_list || [];
             if (baru.length) {
                 let inner = `<ul class="small mb-1 ps-4">`;
-                baru.slice(0, 20).forEach(function(b) { inner += `<li>${escHtml(b.nik)} — ${escHtml(b.nama)}</li>`; });
-                if (baru.length > 20) inner += `<li class="text-muted">... dan ${baru.length - 20} lainnya</li>`;
+                baru.forEach(function(b) { inner += `<li>${escHtml(b.nik)} — ${escHtml(b.nama)}</li>`; });
                 inner += `</ul>`;
                 html += prevSection('prevBaru', 'Karyawan baru', baru.length, 'text-success', true, inner);
             }
@@ -1746,12 +1734,11 @@
             const upd = res.updated || [];
             if (upd.length) {
                 let inner = `<ul class="small mb-1 ps-4">`;
-                upd.slice(0, 20).forEach(function(u) {
+                upd.forEach(function(u) {
                     inner += `<li><strong>${escHtml(u.nik)} — ${escHtml(u.nama)} (${(u.perubahan || []).length} perubahan)</strong><ul class="ps-4">`;
                     (u.perubahan || []).forEach(function(p) { inner += `<li>${escHtml(p)}</li>`; });
                     inner += `</ul></li>`;
                 });
-                if (upd.length > 20) inner += `<li class="text-muted">... dan ${upd.length - 20} lainnya</li>`;
                 inner += `</ul>`;
                 html += prevSection('prevUpd', 'Data berubah', upd.length, 'text-warning', true, inner);
             }
@@ -1760,8 +1747,7 @@
             if ((res.tertunda || 0) > 0) html += `<div class="small text-warning mb-1">Menunggu persetujuan jabatan: ${res.tertunda} baris</div>`;
             if ((res.gagal || 0) > 0) {
                 let inner = `<ul class="small mb-1 ps-4 text-danger">`;
-                (res.errors || []).slice(0, 10).forEach(function(e) { inner += `<li>${escHtml(e)}</li>`; });
-                if ((res.errors || []).length > 10) inner += `<li>... dan ${(res.errors || []).length - 10} lainnya</li>`;
+                (res.errors || []).forEach(function(e) { inner += `<li>${escHtml(e)}</li>`; });
                 inner += `</ul>`;
                 html += prevSection('prevGagal', 'Gagal', res.gagal, 'text-danger', true, inner);
             }
