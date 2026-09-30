@@ -8,7 +8,7 @@
             <h5 class="card-header d-flex justify-content-between align-items-center">
                 Daftar Template Kontrak
                 <button class="btn btn-sm btn-primary" id="btnTambahTemplate">
-                    <i class="fas fa-upload"></i> Upload Template
+                    <i class="bx bx-upload me-1"></i> Upload Template
                 </button>
             </h5>
             <div class="card-body">
@@ -39,7 +39,7 @@
         <div class="modal-dialog modal-lg">
             <form id="formUploadTemplate" class="modal-content" enctype="multipart/form-data">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title text-white"><i class="fas fa-upload"></i> Upload Template Kontrak</h5>
+                    <h5 class="modal-title text-white"><i class="bx bx-upload me-1"></i> Upload Template Kontrak</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
@@ -131,7 +131,7 @@
                                     <tbody id="tbodyUploadTunjangan"></tbody>
                                 </table>
                             </div>
-                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowTunjangan"><i class="fa fa-plus"></i> Tambah Tunjangan</button>
+                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowTunjangan"><i class="bx bx-plus me-1"></i> Tambah Tunjangan</button>
                         </div>
                         <div class="tab-pane fade" id="tab-up-potongan" role="tabpanel" aria-labelledby="tab-up-potongan-tab">
                             <div class="alert alert-info py-2">
@@ -149,15 +149,15 @@
                                     <tbody id="tbodyUploadPotongan"></tbody>
                                 </table>
                             </div>
-                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowPotongan"><i class="fa fa-plus"></i> Tambah Potongan</button>
+                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowPotongan"><i class="bx bx-plus me-1"></i> Tambah Potongan</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary" id="btnSaveTemplate">
-                        <i class="fas fa-save"></i> Upload
+                        <i class="bx bx-save me-1"></i> Upload
                     </button>
                 </div>
             </form>
@@ -168,7 +168,7 @@
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title"><i class="fas fa-pen"></i> Edit Template Kontrak</h5>
+                    <h5 class="modal-title"><i class="bx bx-edit me-1"></i> Edit Template Kontrak</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
@@ -212,7 +212,7 @@
                                 </div>
                                 <div class="text-end">
                                     <button type="submit" class="btn btn-warning" id="btnUpdateTemplate">
-                                        <i class="fas fa-save"></i> Simpan Template
+                                        <i class="bx bx-save me-1"></i> Simpan Template
                                     </button>
                                 </div>
                             </form>
@@ -255,7 +255,7 @@
                                 </div>
                                 <div class="mt-2 text-end">
                                     <button type="submit" class="btn btn-warning" id="btnSaveDetail">
-                                        <i class="fas fa-save"></i> Simpan Nilai
+                                        <i class="bx bx-save me-1"></i> Simpan Nilai
                                     </button>
                                 </div>
                             </form>
@@ -300,9 +300,9 @@
                                 </div>
                                 <div class="col-md-3 d-flex gap-1">
                                     <button type="submit" class="btn btn-success" id="btnTplTunjanganSubmit">
-                                        <i class="fa fa-save"></i> Simpan
+                                        <i class="bx bx-save me-1"></i> Simpan
                                     </button>
-                                    <button type="button" class="btn btn-secondary d-none" id="btnTplTunjanganCancel">Batal</button>
+                                    <button type="button" class="btn btn-outline-secondary d-none" id="btnTplTunjanganCancel">Batal</button>
                                 </div>
                             </form>
                             <div class="table-responsive mt-2">
@@ -344,9 +344,9 @@
                                 </div>
                                 <div class="col-md-3 d-flex gap-1">
                                     <button type="submit" class="btn btn-success" id="btnTplPotonganSubmit">
-                                        <i class="fa fa-save"></i> Simpan
+                                        <i class="bx bx-save me-1"></i> Simpan
                                     </button>
-                                    <button type="button" class="btn btn-secondary d-none" id="btnTplPotonganCancel">Batal</button>
+                                    <button type="button" class="btn btn-outline-secondary d-none" id="btnTplPotonganCancel">Batal</button>
                                 </div>
                             </form>
                             <div class="table-responsive mt-2">
@@ -592,9 +592,10 @@
                             <td>${badges}<br><small class="text-muted">${r.jml_jabatan} jabatan</small></td>
                             <td>${nilai}</td>
                             <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
                                 <a href="app/uploads/template-kontrak/${escHtml(r.file)}" target="_blank"
-                                    class="btn btn-sm btn-info" title="Lihat file"><i class="fas fa-eye"></i></a>
-                                <button class="btn btn-sm btn-primary btnEditTemplate" data-id="${r.id_template}"
+                                    class="btn btn-sm btn-info" title="Lihat file"><i class="bx bx-show me-1"></i>Lihat</a>
+                                <button type="button" class="btn btn-sm btn-primary btnEditTemplate" data-id="${r.id_template}"
                                     data-nama-kontrak="${escHtml(r.nama_kontrak || "")}"
                                     data-file="${escHtml(r.nama_asli || r.file)}"
                                     data-jabatan-ids="${(r.jabatan || []).map(j => j.id_jabatan).join(",")}"
@@ -602,11 +603,12 @@
                                     data-upah-lembur="${escHtml(d.upah_lembur ?? 0)}"
                                     data-potongan-izin="${escHtml(d.potongan_izin ?? 0)}"
                                     data-potongan-mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
-                                    title="Edit template, nilai & tunjangan"><i class="fas fa-pen"></i></button>
-                                <button class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
+                                    title="Edit template, nilai & tunjangan"><i class="bx bx-edit me-1"></i>Edit</button>
+                                <button type="button" class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
                                     data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}" title="Hapus template">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="bx bx-trash me-1"></i>Hapus
                                 </button>
+                                </div>
                             </td>
                         </tr>`;
                     }).join("");
@@ -671,7 +673,7 @@
             document.getElementById("tplTunjanganJenis").value = "tetap";
             document.getElementById("tplTunjanganJumlah").value = "";
             document.getElementById("tplTunjanganTampil").value = "1";
-            document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Simpan';
+            document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Simpan';
             document.getElementById("btnTplTunjanganCancel").classList.add("d-none");
         }
 
@@ -700,13 +702,15 @@
                             ? '<span class="badge bg-secondary">Tidak</span>'
                             : '<span class="badge bg-info text-dark">Ya</span>'}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-warning btnTplTunjanganEdit"
+                            <div class="d-flex justify-content-center gap-1">
+                            <button type="button" class="btn btn-sm btn-warning btnTplTunjanganEdit"
                                 data-id="${t.id_tunjangan}" data-nama="${escHtml(t.nama_tunjangan)}"
                                 data-jenis="${escHtml(t.jenis_tunjangan || "tetap")}"
                                 data-jumlah="${escHtml(t.jumlah_tunjangan)}"
-                                data-tampil="${escHtml(t.tampil_template ?? "1")}">Edit</button>
-                            <button class="btn btn-sm btn-danger btnTplTunjanganDel"
-                                data-id="${t.id_tunjangan}"><i class="fa fa-trash"></i></button>
+                                data-tampil="${escHtml(t.tampil_template ?? "1")}"><i class="bx bx-edit me-1"></i>Edit</button>
+                            <button type="button" class="btn btn-sm btn-danger btnTplTunjanganDel"
+                                data-id="${t.id_tunjangan}"><i class="bx bx-trash me-1"></i>Hapus</button>
+                            </div>
                         </td>
                     </tr>`).join("");
                 })
@@ -721,7 +725,7 @@
             document.getElementById("tplPotonganId").value = "";
             document.getElementById("tplPotonganNama").value = "";
             document.getElementById("tplPotonganJumlah").value = "";
-            document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="fa fa-save"></i> Simpan';
+            document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Simpan';
             document.getElementById("btnTplPotonganCancel").classList.add("d-none");
         }
 
@@ -744,11 +748,13 @@
                         <td>${escHtml(p.jenis_potongan)}</td>
                         <td class="text-end">${fmtModalRp(p.jumlah_potongan)}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-warning btnTplPotonganEdit"
+                            <div class="d-flex justify-content-center gap-1">
+                            <button type="button" class="btn btn-sm btn-warning btnTplPotonganEdit"
                                 data-id="${p.id_potongan}" data-nama="${escHtml(p.jenis_potongan)}"
-                                data-jumlah="${escHtml(p.jumlah_potongan)}">Edit</button>
-                            <button class="btn btn-sm btn-danger btnTplPotonganDel"
-                                data-id="${p.id_potongan}"><i class="fa fa-trash"></i></button>
+                                data-jumlah="${escHtml(p.jumlah_potongan)}"><i class="bx bx-edit me-1"></i>Edit</button>
+                            <button type="button" class="btn btn-sm btn-danger btnTplPotonganDel"
+                                data-id="${p.id_potongan}"><i class="bx bx-trash me-1"></i>Hapus</button>
+                            </div>
                         </td>
                     </tr>`).join("");
                 })
@@ -766,7 +772,7 @@
                 document.getElementById("tplTunjanganJenis").value = btnET.dataset.jenis || "tetap";
                 document.getElementById("tplTunjanganJumlah").value = formatIndo(btnET.dataset.jumlah);
                 document.getElementById("tplTunjanganTampil").value = String(btnET.dataset.tampil ?? "1") === "0" ? "0" : "1";
-                document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="fa fa-save"></i> Update';
+                document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Update';
                 document.getElementById("btnTplTunjanganCancel").classList.remove("d-none");
                 return;
             }
@@ -775,7 +781,7 @@
                 document.getElementById("tplPotonganId").value = btnEP.dataset.id;
                 document.getElementById("tplPotonganNama").value = btnEP.dataset.nama || "";
                 document.getElementById("tplPotonganJumlah").value = formatIndo(btnEP.dataset.jumlah);
-                document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="fa fa-save"></i> Update';
+                document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Update';
                 document.getElementById("btnTplPotonganCancel").classList.remove("d-none");
                 return;
             }
@@ -875,7 +881,7 @@
                 `<td><select name="tunjangan_tampil[]" class="form-select form-select-sm">` +
                 `<option value="1"${tampil === "1" ? " selected" : ""}>Ya</option>` +
                 `<option value="0"${tampil === "0" ? " selected" : ""}>Tidak</option></select></td>` +
-                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
+                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="bx bx-trash me-1"></i>Hapus</button></td>`;
             tb.appendChild(tr);
         }
         function addUploadRowPotongan(d) {
@@ -891,7 +897,7 @@
                 daftarPot.map(nm => `<option value="${nm}"${nm === potDipilih ? " selected" : ""}>${nm}</option>`).join("") +
                 `</select></td>` +
                 `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_potongan ?? "") === "" ? "" : (typeof formatIndo === "function" ? formatIndo(d.jumlah_potongan) : d.jumlah_potongan)}" placeholder="0"></td>` +
-                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
+                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="bx bx-trash me-1"></i>Hapus</button></td>`;
             tb.appendChild(tr);
         }
         function resetUploadTpRows() {
@@ -939,7 +945,7 @@
             }
             const btn = document.getElementById("btnSaveTemplate");
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengupload...';
+            btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Mengupload...';
 
             try {
                 const fd = new FormData(this);
@@ -959,7 +965,7 @@
                 showToast("Terjadi kesalahan sistem.", "error");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Upload';
+                btn.innerHTML = '<i class="bx bx-save me-1"></i> Upload';
             }
         });
 
