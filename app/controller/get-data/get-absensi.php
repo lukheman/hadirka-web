@@ -84,6 +84,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
 
     // Inisialisasi counters
     $hadir = 0;
+    $hadir_hari = 0;
     $ot1 = 0;
     $ot2 = 0;
     $spl = 0;
@@ -147,6 +148,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
 
                 // hitung hadir
                 $hadir += min($jk, $normal_hours);
+                $hadir_hari++;
 
                 // hitung WL & OT2 sama persis dengan function-slip.php
                 $wl = 0;
@@ -196,7 +198,7 @@ while ($k = mysqli_fetch_assoc($qKar)) {
         <td>{$k['nama_jabatan']}</td>
         <td>{$k['nama_site']}</td>
 
-        <td class='text-center'>{$hadir}</td>
+        <td class='text-center'>{$hadir_hari} hari ({$hadir} jam)</td>
         <td class='text-center'>{$ot1}</td>
         <td class='text-center'>{$ot2}</td>
         <td class='text-center'>{$spl}</td>
