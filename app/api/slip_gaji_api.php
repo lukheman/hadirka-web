@@ -36,17 +36,22 @@ if (!function_exists('generateSlipGaji')) {
             }
         }
 
-        // ================= 2) Get Karier Aktif =================
+        // ================= 2) Get Karier terbaru (tanpa pengecekan aktif periode, sama seperti sistem) =================
         $sqlKarier = "SELECT kar.*, jab.nama_jabatan
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
             WHERE kar.id_karyawan = '$id_karyawan'
-            AND kar.tgl_mulai <= '$endDate'
-            AND (kar.tgl_selesai IS NULL OR kar.tgl_selesai >= '$startDate')
             ORDER BY kar.tgl_mulai DESC LIMIT 1";
         $qk = mysqli_query($koneksi, $sqlKarier);
         $karier = mysqli_fetch_assoc($qk);
-        if (!$karier) return ['error' => 'Karier aktif tidak ditemukan'];
+        if (!$karier) return ['error' => 'Data karier karyawan tidak ditemukan'];
+
+        $gaji_pokok = $karier['gaji_pokok'] ?? null;
+        if ($gaji_pokok === null || $gaji_pokok === '' || (float)$gaji_pokok <= 0) {
+            return [
+                'error' => 'Slip gaji tidak dapat dibuat karena gaji pokok karyawan belum terisi.'
+            ];
+        }
 
         $tgl_mulai_karier = $karier['tgl_mulai'];
         $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
