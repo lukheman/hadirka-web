@@ -162,7 +162,7 @@ require_once 'app/controller/read.php';
             color: var(--muted);
         }
 
-        /* Absensi table */
+        /* Tampilan lama: tabel absensi */
         #absenTable thead th {
             background: #0b5ed7;
             color: #fff;
@@ -180,7 +180,7 @@ require_once 'app/controller/read.php';
             padding: 6px;
         }
 
-        /* highlight cells */
+        /* highlight cells (tampilan lama) */
         .off {
             background: var(--highlight-yellow);
         }
@@ -200,6 +200,128 @@ require_once 'app/controller/read.php';
             background-color: #ffe342ff;
         }
 
+        /* Toggle tampilan absen */
+        .absen-toggle {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .absen-toggle button {
+            padding: 5px 12px;
+            font-size: 12px;
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .absen-toggle button.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* Kalender absensi (sama seperti rekapitulasi bulanan) */
+        .kal-scroll {
+            overflow-x: auto;
+        }
+        .kal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            min-width: 720px;
+        }
+        .kal-head {
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #566a7f;
+            padding: 6px 0;
+            background: #f0f2f4;
+            border-radius: 6px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .kal-month {
+            grid-column: 1 / -1;
+            font-weight: 700;
+            color: #fff;
+            background: #0b5ed7;
+            border-radius: 6px;
+            padding: 4px 12px;
+            margin-top: 4px;
+            font-size: 0.85rem;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .kal-day {
+            min-height: 78px;
+            border-radius: 8px;
+            padding: 6px;
+            border: 1px solid #e3e6ea;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .kal-day.empty {
+            background: transparent;
+            border-style: dashed;
+        }
+        .kal-date {
+            font-weight: 700;
+            font-size: 0.9rem;
+            line-height: 1;
+        }
+        .kal-date small {
+            font-weight: 400;
+            color: #8592a3;
+        }
+        .kal-status {
+            font-size: 0.65rem;
+            font-weight: 700;
+            border-radius: 20px;
+            padding: 1px 8px;
+            display: inline-block;
+            width: fit-content;
+        }
+        .kal-jam {
+            font-size: 0.68rem;
+            color: #566a7f;
+            line-height: 1.3;
+        }
+        .kal-Masuk { background: #e8fadf; border-color: #71dd37; }
+        .kal-Masuk .kal-status { background: #71dd37; color: #fff; }
+        .kal-SPL { background: #fff2d6; border-color: #ffab00; }
+        .kal-SPL .kal-status { background: #ffab00; color: #fff; }
+        .kal-OFF { background: #f1f2f4; border-color: #d9dee3; }
+        .kal-OFF .kal-status { background: #8592a3; color: #fff; }
+        .kal-Izin { background: #e7e7ff; border-color: #696cff; }
+        .kal-Izin .kal-status { background: #696cff; color: #fff; }
+        .kal-Sakit { background: #d7f5fc; border-color: #03c3ec; }
+        .kal-Sakit .kal-status { background: #03c3ec; color: #fff; }
+        .kal-Cuti { background: #ede4f7; border-color: #6f42c1; }
+        .kal-Cuti .kal-status { background: #6f42c1; color: #fff; }
+        .kal-Mangkir { background: #ffe0db; border-color: #ff3e1d; }
+        .kal-Mangkir .kal-status { background: #ff3e1d; color: #fff; }
+        .kal-Resign, .kal-New { background: #e9eaec; border-color: #8592a3; }
+        .kal-Resign .kal-status, .kal-New .kal-status { background: #566a7f; color: #fff; }
+        .kal-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .kal-legend span {
+            font-size: 0.68rem;
+            font-weight: 700;
+            border-radius: 20px;
+            padding: 2px 10px;
+            color: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
         /* signature */
         .signature {
             margin-top: 24px;
@@ -216,6 +338,10 @@ require_once 'app/controller/read.php';
             .wrap {
                 border: 0;
                 box-shadow: none;
+            }
+
+            .no-print {
+                display: none !important;
             }
         }
 
@@ -427,24 +553,31 @@ require_once 'app/controller/read.php';
             WL: WAJIB LEMBUR · OT: OVER TIME · SPL: MINGGU & TANGGAL MERAH LIBUR NASIONAL
         </p>
 
-        <!-- Absensi panjang -->
+        <!-- Absensi: tampilan lama (tabel) + tampilan kalender, default kalender -->
         <div style="margin-top:10px;">
-            <table id="absenTable">
-                <thead>
-                    <tr>
-                        <th rowspan="2" style="width:40px">NO</th>
-                        <th rowspan="2">HARI DAN TANGGAL</th>
-                        <th colspan="3">HARI BIASA / SPL</th>
-                        <!-- <th rowspan="2" style="width:90px">KET / JAM KERJA</th> -->
-                    </tr>
-                    <!-- <tr>
-                        <th>WAJIB / 1-7</th>
-                        <th>WL</th>
-                        <th>OT</th>
-                    </tr> -->
-                </thead>
-                <tbody id="absenBody"></tbody>
-            </table>
+            <h5 style="margin:0 0 6px 0;font-size:13px;">REKAP ABSENSI</h5>
+            <div class="absen-toggle no-print" data-html2canvas-ignore="true">
+                <button type="button" id="btnAbsenKalender" class="active" onclick="setAbsenView('kalender')">Kalender</button>
+                <button type="button" id="btnAbsenTabel" class="secondary" onclick="setAbsenView('tabel')">Tabel</button>
+            </div>
+            <div id="absenKalenderWrap">
+                <div class="kal-legend" id="kalLegend"></div>
+                <div class="kal-scroll">
+                    <div class="kal-grid" id="absenKalGrid"></div>
+                </div>
+            </div>
+            <div id="absenTabelWrap" style="display:none;">
+                <table id="absenTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="width:40px">NO</th>
+                            <th rowspan="2">HARI DAN TANGGAL</th>
+                            <th colspan="3">HARI BIASA / SPL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="absenBody"></tbody>
+                </table>
+            </div>
         </div>
 
         <div class="signature">
@@ -645,14 +778,41 @@ require_once 'app/controller/read.php';
             document.getElementById('total_jam_kurang').textContent = data.total_jam_kurang || 0;
 
             // =============================
-            //        TABEL ABSENSI
+            //  ABSENSI: render dua tampilan (tabel lama + kalender), default kalender
             // =============================
+            renderAbsenTabel(data.absen || []);
+            renderAbsenKalender(data.absen || []);
+            applyAbsenView();
+        }
+
+        // Default tampilan kalender
+        var absenView = 'kalender';
+
+        function setAbsenView(view) {
+            absenView = (view === 'tabel') ? 'tabel' : 'kalender';
+            applyAbsenView();
+        }
+
+        function applyAbsenView() {
+            const kalWrap = document.getElementById("absenKalenderWrap");
+            const tabelWrap = document.getElementById("absenTabelWrap");
+            const btnKal = document.getElementById("btnAbsenKalender");
+            const btnTabel = document.getElementById("btnAbsenTabel");
+            const isKal = absenView !== 'tabel';
+            if (kalWrap) kalWrap.style.display = isKal ? "" : "none";
+            if (tabelWrap) tabelWrap.style.display = isKal ? "none" : "";
+            if (btnKal) btnKal.classList.toggle("active", isKal);
+            if (btnTabel) btnTabel.classList.toggle("active", !isKal);
+        }
+
+        // Tampilan lama: tabel absensi
+        function renderAbsenTabel(absenList) {
             const absBody = document.getElementById("absenBody");
+            if (!absBody) return;
             absBody.innerHTML = "";
 
-            if (Array.isArray(data.absen)) {
-                // 1. Tambahkan parameter 'index' di dalam forEach
-                data.absen.forEach((r, index) => { 
+            if (Array.isArray(absenList)) {
+                absenList.forEach((r, index) => {
                     let cls = "";
                     const ket = String(r.ket).toUpperCase();
 
@@ -665,7 +825,6 @@ require_once 'app/controller/read.php';
                         weekday: "long",
                     }).toUpperCase();
 
-                    // 2. Buat variabel nomor urut (index dimulai dari 0, jadi ditambah 1)
                     const nomorUrut = index + 1;
 
                     absBody.innerHTML += `
@@ -680,6 +839,92 @@ require_once 'app/controller/read.php';
             `;
                 });
             }
+        }
+
+        // Mapping ket slip -> status kalender rekap
+        function mapKetKalender(ketRaw) {
+            const k = String(ketRaw || '').toUpperCase();
+            if (k === 'HADIR') return 'Masuk';
+            if (k === 'SPL') return 'SPL';
+            if (k === 'OFF') return 'OFF';
+            if (k === 'IZIN') return 'Izin';
+            if (k === 'SAKIT') return 'Sakit';
+            if (k === 'CUTI') return 'Cuti';
+            if (k === 'MANGKIR') return 'Mangkir';
+            if (k === 'RESIGN' || k === 'R') return 'Resign';
+            if (k === 'NEW') return 'New';
+            return 'Mangkir';
+        }
+
+        function renderAbsenKalender(absenList) {
+            const grid = document.getElementById("absenKalGrid");
+            const legend = document.getElementById("kalLegend");
+            if (!grid) return;
+            const KAL_COLOR = {
+                "Masuk": "#71dd37", "SPL": "#ffab00", "OFF": "#8592a3",
+                "Izin": "#696cff", "Sakit": "#03c3ec", "Cuti": "#6f42c1",
+                "Mangkir": "#ff3e1d", "Resign": "#566a7f", "New": "#566a7f"
+            };
+            if (legend) {
+                legend.innerHTML = Object.keys(KAL_COLOR)
+                    .map(k => `<span style="background:${KAL_COLOR[k]}">${k}</span>`).join("");
+            }
+            const NAMA_HARI = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+            const NAMA_BULAN = {
+                "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
+                "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
+                "09": "September", "10": "Oktober", "11": "November", "12": "Desember"
+            };
+            const NAMA_BULAN_SINGKAT = { "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu", "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des" };
+
+            let html = NAMA_HARI.map(h => `<div class="kal-head">${h}</div>`).join("");
+            let lastMonth = "";
+
+            // Pastikan urut tanggal
+            const rows = [...absenList].sort((a, b) => String(a.tanggal).localeCompare(String(b.tanggal)));
+
+            rows.forEach((r, idx) => {
+                const tglStr = String(r.tanggal || '');
+                const parts = tglStr.split('-');
+                if (parts.length !== 3) return;
+                const [y, m, dNum] = parts;
+                const monthKey = `${y}-${m}`;
+                const dt = new Date(y, parseInt(m, 10) - 1, parseInt(dNum, 10));
+                let weekday = dt.getDay(); // 0=Min .. 6=Sab
+                weekday = weekday === 0 ? 7 : weekday; // 1=Sen .. 7=Min
+
+                if (monthKey !== lastMonth) {
+                    html += `<div class="kal-month">${NAMA_BULAN[m] || m} ${y}</div>`;
+                    lastMonth = monthKey;
+                }
+                if (idx === 0 || String(rows[idx - 1].tanggal || '').substring(0, 7) !== monthKey) {
+                    for (let i = 1; i < weekday; i++) html += `<div class="kal-day empty"></div>`;
+                }
+
+                const status = mapKetKalender(r.ket);
+                const jam = parseFloat(r.jam) || 0;
+                const jamInfo = (status === "Masuk" || status === "SPL") && jam > 0
+                    ? `<div class="kal-jam">${jam} jam</div>`
+                    : "";
+                const title = `${dNum} ${NAMA_BULAN[m] || m} — ${status}${jam > 0 ? ` (${jam} jam)` : ""}`;
+
+                html += `<div class="kal-day kal-${status}" title="${title}">
+                    <div class="kal-date">${parseInt(dNum, 10)} <small>${NAMA_BULAN_SINGKAT[m] || ""}</small></div>
+                    <span class="kal-status">${status}</span>
+                    ${jamInfo}
+                </div>`;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        function clearAbsenKalender() {
+            const grid = document.getElementById("absenKalGrid");
+            if (grid) grid.innerHTML = "";
+            const legend = document.getElementById("kalLegend");
+            if (legend) legend.innerHTML = "";
+            const absBody = document.getElementById("absenBody");
+            if (absBody) absBody.innerHTML = "";
         }
 
         function showSlipAlert(message) {
@@ -744,7 +989,7 @@ require_once 'app/controller/read.php';
                     document.getElementById('gajiBersih').textContent = 'Rp -';
                     document.getElementById("pendapatanBody").innerHTML = "";
                     document.getElementById("potonganBody").innerHTML = "";
-                    document.getElementById("absenBody").innerHTML = "";
+                    if (typeof clearAbsenKalender === 'function') clearAbsenKalender();
                     return; // Hentikan proses render
                 }
 
