@@ -164,7 +164,7 @@ if (!function_exists('generateSlipGaji')) {
         $basic = floatval($karier['gaji_pokok']);
         $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
         $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
-        $total_pot_pkwt = ($new_count > 0) ? ($basic / 31) * $new_count : 0;
+        $total_pot_pkwt = ($new_count > 0) ? ($basic / 25) * $new_count : 0;
 
         $kelebihan_hari = ($hari_kerja_count > 31) ? ($hari_kerja_count - 31) : 0;
         $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 31);

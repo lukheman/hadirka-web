@@ -419,12 +419,12 @@ if (!function_exists('generateSlipGaji')) {
         // PKWT potongan untuk hari NEW
         $total_pot_pkwt = 0;
         if ($new_count > 0) {
-            $total_pot_pkwt = (($total_tunjangan_db + $basic) / 31) * $new_count;
+            $total_pot_pkwt = (($total_tunjangan_db + $basic) / 25) * $new_count;
         }
 
         // PKWT potongan untuk hari RESIGN
         if ($resign_count > 0) {
-            $total_pot_pkwt += (($total_tunjangan_db + $basic) / 31) * $resign_count;
+            $total_pot_pkwt += (($total_tunjangan_db + $basic) / 25) * $resign_count;
         }
 
         // Kelebihan hari kerja (jika hari kerja > 25)
