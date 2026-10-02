@@ -11,3 +11,6 @@ if (!isset($_SESSION['id_user'])) {
     header('Location: login.php');
     exit;
 }
+// Cegah tombol Back menampilkan dashboard dari cache setelah logout.
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');

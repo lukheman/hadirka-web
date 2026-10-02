@@ -416,7 +416,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
                                     <li>
                                         <div class="dropdown-divider"></div>
                                     </li>
-                                    <li><a class="dropdown-item" href="logout"><i class="bx bx-power-off me-2"></i> Log Out</a></li>
+                                    <li><a class="dropdown-item" href="?page=logout"><i class="bx bx-power-off me-2"></i> Log Out</a></li>
                                 </ul>
                             </li>
                         </ul>
