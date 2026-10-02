@@ -1,0 +1,175 @@
+/* ipm-theme.css — Override tema Sneat/Bootstrap ke palet Logo IPM.
+ * Biru utama #1D5C96 (primary), Oranye #F2921D (aksen/warning).
+ * Dimuat SETELAH core.css + theme-default.css + demo.css, jadi menang tanpa ubah vendor.
+ */
+:root {
+  --ipm-blue: #1D5C96;
+  --ipm-blue-light: #2E7BB8;
+  --ipm-blue-dark: #123F68;
+  --ipm-blue-soft: #CFE3F2;
+  --ipm-orange: #F2921D;
+  --ipm-orange-light: #F7A94A;
+  --ipm-orange-dark: #D97706;
+  --ipm-orange-soft: #FDE6C6;
+  --ipm-bg: #F5F5F5;
+  --ipm-muted: #8C8C8C;
+  --ipm-ink: #1A1A1A;
+  --bs-primary: #1D5C96;
+  --bs-primary-rgb: 29, 92, 150;
+  --bs-link-color: #1D5C96;
+  --bs-link-hover-color: #123F68;
+  --bs-warning: #F2921D;
+  --bs-warning-rgb: 242, 146, 29;
+}
+
+body { background-color: var(--ipm-bg); color: var(--ipm-ink); }
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 { color: var(--ipm-ink); }
+.text-muted { color: var(--ipm-muted) !important; }
+a { color: var(--ipm-blue); }
+a:hover { color: var(--ipm-blue-dark); }
+
+/* --- Primary: tombol, badge, alert, tabel, list, pagination, progress --- */
+.text-primary { color: var(--ipm-blue) !important; }
+.bg-primary { background-color: var(--ipm-blue) !important; }
+a.bg-primary:hover, a.bg-primary:focus { background-color: var(--ipm-blue-dark) !important; }
+.border-primary { border-color: var(--ipm-blue) !important; }
+
+.btn-primary {
+  background-color: var(--ipm-blue);
+  border-color: var(--ipm-blue);
+  box-shadow: 0 0.125rem 0.25rem 0 rgba(29, 92, 150, 0.4);
+}
+.btn-primary:hover {
+  background-color: var(--ipm-blue-dark);
+  border-color: var(--ipm-blue-dark);
+}
+.btn-check:focus + .btn-primary, .btn-primary:focus, .btn-primary.focus {
+  background-color: var(--ipm-blue-dark);
+  border-color: var(--ipm-blue-dark);
+}
+.btn-check:checked + .btn-primary, .btn-check:active + .btn-primary,
+.btn-primary:active, .btn-primary.active, .show > .btn-primary.dropdown-toggle {
+  background-color: var(--ipm-blue-dark);
+  border-color: var(--ipm-blue-dark);
+}
+.btn-outline-primary { color: var(--ipm-blue); border-color: var(--ipm-blue); }
+.btn-outline-primary:hover, .btn-check:focus + .btn-outline-primary, .btn-outline-primary:focus {
+  background-color: var(--ipm-blue);
+  border-color: var(--ipm-blue);
+}
+.btn-check:checked + .btn-outline-primary, .btn-check:active + .btn-outline-primary,
+.btn-outline-primary:active, .btn-outline-primary.active, .btn-outline-primary.dropdown-toggle.show {
+  background-color: var(--ipm-blue-dark);
+  border-color: var(--ipm-blue-dark);
+}
+.bg-label-primary { background-color: var(--ipm-blue-soft) !important; color: var(--ipm-blue) !important; }
+.border-label-primary { border-color: var(--ipm-blue-light) !important; }
+
+.alert-primary { background-color: var(--ipm-blue-soft); border-color: var(--ipm-blue-light); color: var(--ipm-blue-dark); }
+.alert-primary .alert-link { color: var(--ipm-blue-dark); }
+
+.table-primary {
+  --bs-table-bg: var(--ipm-blue-soft);
+  --bs-table-striped-bg: #c3d9ec;
+  --bs-table-active-bg: #b6d0e7;
+  --bs-table-hover-bg: #cbdfef;
+  color: var(--ipm-blue-dark);
+  border-color: #b6d0e7;
+}
+.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus {
+  border-color: var(--ipm-blue); background-color: var(--ipm-blue);
+}
+.list-group-item-primary { background-color: var(--ipm-blue-soft); color: var(--ipm-blue) !important; }
+
+.page-item.active .page-link, .page-item.active .page-link:hover, .page-item.active .page-link:focus,
+.pagination li.active > a:not(.page-link),
+.pagination li.active > a:not(.page-link):hover,
+.pagination li.active > a:not(.page-link):focus {
+  border-color: var(--ipm-blue); background-color: var(--ipm-blue);
+  box-shadow: 0 0.125rem 0.25rem rgba(29, 92, 150, 0.4);
+}
+.page-link { color: var(--ipm-blue); }
+.progress-bar { background-color: var(--ipm-blue); box-shadow: 0 2px 4px 0 rgba(29, 92, 150, 0.4); }
+
+.dropdown-item:not(.disabled).active, .dropdown-item:not(.disabled):active,
+.dropdown-menu > li.active:not(.disabled) > a:not(.dropdown-item) {
+  background-color: rgba(29, 92, 150, 0.08); color: var(--ipm-blue) !important;
+}
+.dropdown-notifications-item:not(.mark-as-read) .dropdown-notifications-read span { background-color: var(--ipm-blue); }
+.nav .nav-link:hover, .nav .nav-link:focus { color: var(--ipm-blue-dark); }
+.nav-pills .nav-link.active, .nav-pills .nav-link.active:hover, .nav-pills .nav-link.active:focus {
+  background-color: var(--ipm-blue); box-shadow: 0 2px 4px 0 rgba(29, 92, 150, 0.4);
+}
+
+.form-control:focus, .form-select:focus,
+.input-group:focus-within .form-control, .input-group:focus-within .input-group-text,
+.form-check-input:focus { border-color: var(--ipm-blue); }
+.form-check-input:focus { box-shadow: 0 2px 4px 0 rgba(29, 92, 150, 0.4); }
+.form-check-input:checked, .form-check-input[type=checkbox]:indeterminate {
+  background-color: var(--ipm-blue); border-color: var(--ipm-blue);
+  box-shadow: 0 2px 4px 0 rgba(29, 92, 150, 0.4);
+}
+.form-switch .form-check-input:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%231D5C96'/%3e%3c/svg%3e");
+}
+.custom-option.checked { border-color: var(--ipm-blue); }
+.divider.divider-primary .divider-text:before, .divider.divider-primary .divider-text:after { border-color: var(--ipm-blue); }
+
+/* --- Sidebar menu aktif (oranye) --- */
+.bg-menu-theme .menu-inner > .menu-item.active > .menu-link {
+  color: var(--ipm-orange-dark) !important;
+  background-color: rgba(242, 146, 29, 0.16) !important;
+}
+.bg-menu-theme .menu-inner > .menu-item.active:before { background: var(--ipm-orange); }
+.bg-menu-theme .menu-inner .menu-sub > .menu-item.active > .menu-link.menu-toggle {
+  background-color: rgba(242, 146, 29, 0.12);
+}
+.bg-menu-theme .menu-inner .menu-sub > .menu-item.active .menu-icon { color: var(--ipm-orange-dark); }
+/* Submenu terpilih: link-nya juga oranye (vendor memaksa putih/abu) */
+.bg-menu-theme .menu-sub > .menu-item.active > .menu-link:not(.menu-toggle) {
+  color: var(--ipm-orange-dark) !important;
+  background-color: rgba(242, 146, 29, 0.16) !important;
+}
+.bg-menu-theme .menu-sub > .menu-item.active > .menu-link:not(.menu-toggle):hover {
+  background-color: rgba(242, 146, 29, 0.24) !important;
+}
+.bg-menu-theme .menu-sub > .menu-item.active > .menu-link:not(.menu-toggle):before {
+  background-color: var(--ipm-orange) !important;
+  border: 3px solid var(--ipm-orange-soft) !important;
+}
+.bg-menu-theme .menu-header { color: var(--ipm-blue); }
+.bg-menu-theme .menu-header:before { background-color: var(--ipm-blue-light) !important; }
+.app-brand .layout-menu-toggle { background-color: var(--ipm-blue); border-color: var(--ipm-blue-soft); }
+
+/* --- Aksen oranye (warning) --- */
+.text-warning { color: var(--ipm-orange-dark) !important; }
+.bg-warning { background-color: var(--ipm-orange) !important; }
+.btn-warning {
+  background-color: var(--ipm-orange); border-color: var(--ipm-orange); color: #fff;
+  box-shadow: 0 0.125rem 0.25rem 0 rgba(242, 146, 29, 0.4);
+}
+.btn-warning:hover { background-color: var(--ipm-orange-dark); border-color: var(--ipm-orange-dark); color: #fff; }
+.btn-outline-warning { color: var(--ipm-orange-dark); border-color: var(--ipm-orange); }
+.btn-outline-warning:hover { background-color: var(--ipm-orange); border-color: var(--ipm-orange); color: #fff; }
+.bg-label-warning { background-color: var(--ipm-orange-soft) !important; color: var(--ipm-orange-dark) !important; }
+.alert-warning { background-color: var(--ipm-orange-soft); border-color: var(--ipm-orange-light); color: var(--ipm-orange-dark); }
+
+/* --- Komponen pihak ketiga --- */
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: var(--ipm-blue) !important;
+}
+.select2-container--default.select2-container--focus .select2-selection,
+.select2-container--default.select2-container--open .select2-selection { border-color: var(--ipm-blue) !important; }
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange,
+.flatpickr-day.selected:hover { background: var(--ipm-blue); border-color: var(--ipm-blue); }
+table.dataTable thead th { color: var(--ipm-blue-dark); }
+.swal2-confirm, div:where(.swal2-container) button:where(.swal2-styled):where(.swal2-confirm) {
+  background-color: var(--ipm-blue) !important;
+}
+.swal2-confirm:focus { box-shadow: 0 0 0 3px rgba(29, 92, 150, 0.4) !important; }
+#navbarMenuSearch { color: var(--ipm-ink); }
+
+/* --- Footer --- */
+.bg-footer-theme { background-color: #fff !important; color: var(--ipm-muted); border-top: 3px solid var(--ipm-orange); }
+.bg-footer-theme .footer-link { color: var(--ipm-blue); }
+.content-wrapper { background-color: var(--ipm-bg); }

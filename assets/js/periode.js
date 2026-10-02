@@ -1,9 +1,6 @@
 // assets/js/periode.js
 // Helper periode bulan terpusat (DRY).
-// Menggantikan 6x definisi identik getPeriodeBulan() + blok default-bulan
-// (tgl 1-5 → bulan lalu) di view/internal/*:
-// data-gaji-internal, data-bonus-internal, data-potongan-internal,
-// data-rapel-internal, data-pinjaman-internal, slip-gaji-internal.
+// Dipakai view dengan filter <input type="month"> (tgl 1-5 → bulan lalu).
 //
 // Catatan: fungsi memakai jQuery ($) HANYA saat dipanggil (event time),
 // jadi file ini aman dimuat setelah jQuery di index.php.

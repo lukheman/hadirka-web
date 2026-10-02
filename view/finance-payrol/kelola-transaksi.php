@@ -33,7 +33,7 @@ while ($row = mysqli_fetch_assoc($qKasBank)) {
     }
 
     .select2-container--bootstrap-5.select2-container--focus .select2-selection {
-        border-color: #696cff !important;
+        border-color: #1D5C96 !important;
         box-shadow: 0 0 0 0.25rem rgba(105, 108, 255, 0.25) !important;
     }
 </style>

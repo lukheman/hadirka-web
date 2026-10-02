@@ -283,7 +283,7 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
     <div class="wrap" id="slip">
         <div class="header">
             <div class="company" style="display:flex; align-items:center; gap:15px;">
-                <img src="assets/img/logo/tjs-done.png" alt="Logo Perusahaan" style="height:60px; object-fit:contain;">
+                <img src="assets/img/logo/ipm-logo.png" alt="Logo Perusahaan" style="height:60px; object-fit:contain;">
                 <div>
                     <div style="font-size:18px; font-weight:900;">PT. TRIPUTRA JAYASULTRA</div>
                     <small>JL. EKONOMI · TLP/WA 0852-5526-4538</small>

@@ -28,60 +28,6 @@ function isMenuOpen($pages_array, $current_page)
         </li>
     <?php endif; ?>
 
-    <?php if (in_array($user_level, [0, 1])): ?>
-        <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">Data Internal</span>
-        </li>
-
-        <?php
-        // PERBAIKAN: Penambahan array untuk accordion menu internal
-        $internal_pages = ['karyawan-internal', 'bonus-internal', 'potongan-internal', 'rapel-internal', 'pinjaman-internal', 'gaji-internal', 'slip-internal'];
-        ?>
-        <li class="menu-item <?= isMenuOpen($internal_pages, $current_page); ?>" data-menu="internal">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-lock-alt"></i>
-                <div data-i18n="Data Internal">Data Internal</div>
-            </a>
-            <ul class="menu-sub">
-                <li class="menu-item <?= isActive('karyawan-internal', $current_page); ?>">
-                    <a class="menu-link" href="?page=karyawan-internal">
-                        <div>Karyawan Internal</div>
-                    </a>
-                </li>
-                <li class="menu-item <?= isActive('bonus-internal', $current_page); ?>">
-                    <a class="menu-link" href="?page=bonus-internal">
-                        <div>Bonus Karyawan</div>
-                    </a>
-                </li>
-                <li class="menu-item <?= isActive('potongan-internal', $current_page); ?>">
-                    <a class="menu-link" href="?page=potongan-internal">
-                        <div>Potongan Internal</div>
-                    </a>
-                </li>
-                <li class="menu-item <?= isActive('rapel-internal', $current_page); ?>">
-                    <a class="menu-link" href="?page=rapel-internal">
-                        <div>Rapel Internal</div>
-                    </a>
-                </li>
-                <li class="menu-item <?= isActive('pinjaman-internal', $current_page); ?>">
-                    <a class="menu-link" href="?page=pinjaman-internal">
-                        <div>Pinjaman Internal</div>
-                    </a>
-                </li>
-                <li class="menu-item <?= isActive('gaji-internal', $current_page); ?>">
-                    <a class="menu-link" href="?page=gaji-internal">
-                        <div>Penggajian Internal</div>
-                    </a>
-                </li>
-                <li class="menu-item <?= isActive('slip-internal', $current_page); ?>">
-                    <a class="menu-link" href="?page=slip-internal">
-                        <div>Slip Gaji Internal</div>
-                    </a>
-                </li>
-            </ul>
-        </li>
-    <?php endif; ?>
-
     <!-- Hanya Tampil jika Master, Direktur, HRD, Supervisor, Admin -->
     <?php if (in_array($user_level, [0, 1, 2, 3, 5])): ?>
         <li class="menu-header small text-uppercase">

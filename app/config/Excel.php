@@ -2,8 +2,8 @@
 // app/config/Excel.php
 // Helper terpusat untuk import/export Excel/CSV (DRY).
 // Menggantikan definisi lokal yang duplikat di app/controller/csv-control/*:
-// - cleanRupiah()      (6x: csv-potongan-tidak-tetap, csv-pinjaman, csv-rapel,
-//                       csv-thr, csv-karier, csv-pinjaman-internal)
+// - cleanRupiah()      (5x: csv-potongan-tidak-tetap, csv-pinjaman, csv-rapel,
+//                       csv-thr, csv-karier)
 // - sendJsonResponse() (3x: csv-rapel, csv-thr, csv-bpjs-tk)
 // - formatTanggal()    (3x: csv-karyawan [strict], csv-karier, csv-transaksi-apd)
 // - escapeString()     (2x: csv-karyawan, csv-transaksi-apd)

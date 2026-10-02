@@ -1,12 +1,12 @@
 <style>
     td.dt-control {
         cursor: pointer;
-        color: #696cff; 
+        color: #1D5C96; 
         transition: 0.3s;
     }
 
     td.dt-control:hover {
-        color: #5f61e6;
+        color: #123F68;
         transform: scale(1.1);
     }
 

@@ -164,7 +164,7 @@
     <div id="pdfTemplate" style="max-width: 680px; box-sizing: border-box; padding: 40px; background: #fff; font-family: 'Times New Roman', Times, serif; color: #000; position: relative;">
         <!-- Header Kop Surat -->
         <div style="position: relative; text-align: center; padding-bottom: 10px;">
-            <img src="assets/img/logo/tjs-done.png" style="position: absolute; left: 0; top: 0; height: 85px;">
+            <img src="assets/img/logo/ipm-logo.png" style="position: absolute; left: 0; top: 0; height: 85px;">
             <h4 style="margin: 0; color: #000000; font-weight: bold; font-size: 26px; letter-spacing: 0.5px;">PT. TRIPUTRA JAYA SULTRA</h4>
             <p style="margin: 3px 0; font-size: 15px; font-weight: bold;">KONTRAKTOR DAN PERDAGANGAN UMUM PUSAT POMALAA</p>
             <p style="margin: 0; font-size: 14px;">Jl. Nusantara No.82 Pomalaa, 93562, Kolaka - Sulawesi Tenggara</p>

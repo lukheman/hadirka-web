@@ -8,7 +8,7 @@ Project ini adalah aplikasi HRIS untuk perusahaan outsourcing. Fitur utama:
 - Manajemen karier, site, departemen, divisi, jabatan, dan kontrak.
 - Absensi, izin, cuti, sakit, libur, dan bukti SKS.
 - Payroll, slip gaji, THR, rapel, tunjangan, dan potongan.
-- Pinjaman karyawan dan pinjaman internal.
+- Pinjaman karyawan.
 - Finance dan akuntansi sederhana.
 - Manajemen APD/K3.
 - Pengumuman dan surat peringatan.
@@ -172,13 +172,13 @@ Helper umum, antara lain:
 
 ### `app/controller/`
 
-Berisi proses bisnis dan endpoint internal aplikasi web.
+Berisi proses bisnis dan endpoint aplikasi web.
 
 Kelompok controller:
 
 - `act-*.php`: proses tambah, ubah, hapus, dan approval.
 - `get-data/`: mengambil data untuk DataTables/AJAX.
-- `get-slip/`: mengambil data slip gaji dan slip internal.
+- `get-slip/`: mengambil data slip gaji.
 - `export/`: export data ke file.
 - `csv-control/`: import data dari template Excel/CSV.
 - `surat/`: proses surat peringatan dan pelanggaran.
@@ -223,7 +223,6 @@ Modul utama:
 - `view/kehadiran/`: absensi, izin, cuti, sakit, dan SKS.
 - `view/penggajian/`: payroll, THR, rapel, potongan, dan pinjaman.
 - `view/finance-payrol/`: COA, jurnal, buku besar, neraca, laporan keuangan.
-- `view/internal/`: data dan payroll karyawan internal.
 - `view/k3/`: APD dan transaksi K3.
 - `view/surat/`: pelanggaran dan surat peringatan.
 - `view/broadcast/`: pengumuman.
@@ -309,7 +308,7 @@ Mapping role:
 | Level | Role | Akses utama |
 |---:|---|---|
 | 0 | Master | Semua modul dan user management |
-| 1 | Direktur | HRD, finance, internal, K3 |
+| 1 | Direktur | HRD, finance, K3 |
 | 2 | HRD | HRD dan finance/payroll |
 | 3 | Supervisor | HRD dan K3 |
 | 4 | Safety | K3 |
@@ -379,13 +378,8 @@ Kelompok tabel:
 - `tb_pengajuan_apd`
 - `pengambilan_apd`
 
-### Internal dan surat
+### Surat
 
-- `tb_karyawan_internal`
-- `tb_bonus_internal`
-- `tb_rapel_internal`
-- `tb_potongan_internal`
-- `tb_pinjaman_internal`
 - `m_jenis_pelanggaran`
 - `m_jenis_keluar`
 - `tb_tereliminasi`

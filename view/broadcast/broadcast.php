@@ -20,7 +20,7 @@
         <form id="formPengumuman" class="modal-content">
             <input type="hidden" name="id" id="id_pengumuman">
 
-            <input type="hidden" name="warna_kode" id="warna_kode_hex" value="#696cff">
+            <input type="hidden" name="warna_kode" id="warna_kode_hex" value="#1D5C96">
 
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title text-white" id="modalTitle">Form Pengumuman</h5>
@@ -49,16 +49,16 @@
                     <div class="col-md-5 mb-3">
                         <label class="form-label fw-bold">Tema Warna</label>
                         <select id="select_warna_tampilan" class="form-select" onchange="updateHexColor(this)">
-                            <option value="primary" data-hex="#696cff">Biru (Primary)</option>
+                            <option value="primary" data-hex="#1D5C96">Biru IPM (Primary)</option>
                             <option value="success" data-hex="#71dd37">Hijau (Success)</option>
                             <option value="danger" data-hex="#ff3e1d">Merah (Danger)</option>
-                            <option value="warning" data-hex="#ffab00">Kuning (Warning)</option>
-                            <option value="info" data-hex="#03c3ec">Cyan (Info)</option>
-                            <option value="dark" data-hex="#233446">Hitam (Dark)</option>
+                            <option value="warning" data-hex="#F2921D">Oranye (Aksen)</option>
+                            <option value="info" data-hex="#2E7BB8">Biru Terang (Info)</option>
+                            <option value="dark" data-hex="#123F68">Biru Gelap (Dark)</option>
                         </select>
                         <div class="mt-3 d-flex align-items-center p-2 border rounded">
                             <small class="text-muted me-2">Preview:</small>
-                            <div id="color-preview" style="width: 100%; height: 20px; border-radius: 4px; background: #696cff; border: 1px solid #ddd;"></div>
+                            <div id="color-preview" style="width: 100%; height: 20px; border-radius: 4px; background: #1D5C96; border: 1px solid #ddd;"></div>
                         </div>
                     </div>
                 </div>
@@ -91,15 +91,15 @@
     }
 
     .icon-option:hover {
-        border-color: #696cff;
-        color: #696cff;
+        border-color: #1D5C96;
+        color: #1D5C96;
     }
 
     .icon-option.active {
-        background: #696cff;
+        background: #1D5C96;
         color: white;
-        border-color: #696cff;
-        box-shadow: 0 2px 4px rgba(105, 108, 255, 0.4);
+        border-color: #1D5C96;
+        box-shadow: 0 2px 4px rgba(29, 92, 150, 0.4);
     }
 
     .material-symbols-rounded {

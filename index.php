@@ -40,15 +40,6 @@ $routes = [
     'master-pelanggaran' => 'view/surat/master-pelanggaran.php',
     'surat-peringatan'   => 'view/surat/surat-peringatan.php',
 
-    // Internal
-    'karyawan-internal' => 'view/internal/data-karyawan-internal.php',
-    'bonus-internal'    => 'view/internal/data-bonus-internal.php',
-    'potongan-internal' => 'view/internal/data-potongan-internal.php',
-    'rapel-internal'    => 'view/internal/data-rapel-internal.php',
-    'pinjaman-internal' => 'view/internal/data-pinjaman-internal.php',
-    'gaji-internal' => 'view/internal/data-gaji-internal.php',
-    'slip-internal' => 'view/internal/slip-gaji-internal.php',
-
     // Kehadiran
     'rekapan-absensi' => 'view/kehadiran/rekapan-absensi.php',
     'dayli-absen'     => 'view/kehadiran/dayli-absen.php',
@@ -142,13 +133,6 @@ if (!in_array($user_level, [0, 1, 2, 6]) && in_array($page, $finance_pages)) {
     exit;
 }
 
-// 1.c Modul Data Internal (Hanya Master dan Direktur)
-$internal_pages = ['karyawan-internal', 'bonus-internal', 'potongan-internal', 'rapel-internal', 'pinjaman-internal', 'gaji-internal', 'slip-internal'];
-if (!in_array($user_level, [0, 1]) && in_array($page, $internal_pages)) {
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Modul Data Internal khusus Master dan Direktur.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
-    exit;
-}
-
 // 2. Modul K3 (Hanya Master, Direktur, Safety, Supervisor)
 $k3_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
 if (!in_array($user_level, [0, 1, 3, 4]) && in_array($page, $k3_pages)) {
@@ -188,7 +172,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
 
     <title>Dashboard | Outsourcing System</title>
 
-    <link rel="icon" type="image/x-icon" href="assets/img/logo/tjs-nobg.png" />
+    <link rel="icon" type="image/x-icon" href="assets/img/logo/ipm-logo.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -199,6 +183,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
     <link rel="stylesheet" href="assets/vendor/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
     <link rel="stylesheet" href="assets/css/demo.css" />
+    <link rel="stylesheet" href="assets/css/ipm-theme.css?v=<?= filemtime('assets/css/ipm-theme.css') ?>" />
 
     <link rel="stylesheet" href="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
     <link rel="stylesheet" href="assets/vendor/libs/apex-charts/apex-charts.css" />
@@ -291,7 +276,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
 
         /* Command palette pencarian menu (Ninja Keys) */
         ninja-keys {
-            --ninja-accent-color: #696cff;
+            --ninja-accent-color: #1D5C96;
             --ninja-z-index: 9999;
         }
 
@@ -302,9 +287,9 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
         /* Branding Fix */
         .app-brand.demo {
             justify-content: center;
-            height: 96px;
+            height: 132px;
             margin-top: 0;
-            padding: 12px 0;
+            padding: 10px 0;
         }
         .app-brand-link {
             overflow: hidden;
@@ -313,10 +298,10 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
         .app-brand-link img {
             padding-left: 0;
             margin: 0 auto;
-            max-width: 210px;
+            max-width: 240px;
             width: auto;
-            height: 72px !important;
-            max-height: 72px;
+            height: 108px !important;
+            max-height: 108px;
             object-fit: contain;
         }
 
@@ -367,7 +352,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
                 <div class="app-brand demo">
                     <a href="?page=home" class="app-brand-link">
-                        <img src="assets/img/logo/tjs-done.png" alt="Logo TJS">
+                        <img src="assets/img/logo/ipm-logo.png" alt="Logo TJS">
                     </a>
                     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
                         <i class="bx bx-chevron-left bx-sm align-middle"></i>
@@ -637,8 +622,8 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             const backgrounds = {
                 success: "#71dd37",
                 error: "#ff3e1d",
-                warning: "#ffab00",
-                info: "#03c3ec"
+                warning: "#F2921D",
+                info: "#2E7BB8"
             };
 
             const positions = {

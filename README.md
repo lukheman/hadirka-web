@@ -2,8 +2,8 @@
 
 Sistem informasi outsourcing **PT Triputra Jaya Sultra**: database karyawan & kandidat,
 kehadiran (absensi, izin, cuti, SKS), penggajian (payroll, pinjaman, rapel, THR, potongan),
-keuangan (kas, jurnal, buku besar, laporan), K3/APD, surat peringatan, plus modul
-gaji internal dan REST API untuk aplikasi mobile karyawan.
+keuangan (kas, jurnal, buku besar, laporan), K3/APD, surat peringatan, plus REST API
+untuk aplikasi mobile karyawan.
 
 ## Tech Stack
 
@@ -69,7 +69,7 @@ app/
   api/                     # REST API mobile (login OTP, absensi, pengajuan, slip)
 view/                      # halaman per modul (di-include index.php)
   master-data/ master-akses/ kehadiran/ penggajian/
-  finance-payrol/ internal/ k3/ surat/ broadcast/
+  finance-payrol/ k3/ surat/ broadcast/
 layout/menu.php            # sidebar + daftar halaman per level
 assets/js/periode.js       # getPeriodeBulan()/setDefaultBulan() terpusat
 docs/                      # arsitektur, rencana refactor, spec lama
@@ -80,13 +80,13 @@ docs/                      # arsitektur, rencana refactor, spec lama
 Navigasi memakai `?page=<key>` sesuai `$routes` di `index.php`. Level user
 (`tb_user.level`): `0` Master, `1` Direktur, `2` HRD, `3` Supervisor,
 `4` Safety/K3, `5` Admin, `6` Finance. Modul sensitif dicek di `index.php`
-(HRD, Finance, Data Internal, K3, Sistem) — user tak berhak mendapat dialog
+(HRD, Finance, K3, Sistem) — user tak berhak mendapat dialog
 penolakan + redirect ke home.
 
 Modul utama: Data Karyawan/Site/Jabatan/Karier/Kontrak/BPJS/Loker, Rekapan
 Absensi, Pengajuan Izin/Cuti/SKS, Payroll + Pinjaman + Rapel + THR + Potongan,
 Periode + COA + Kelola Transaksi + Jurnal/Buku Besar/Neraca/Laporan Keuangan,
-Gaji Internal, Master & Transaksi APD, Surat Peringatan, Pengumuman, Users.
+Master & Transaksi APD, Surat Peringatan, Pengumuman, Users.
 
 ## Konvensi Kode (wajib diikuti)
 
@@ -95,7 +95,7 @@ Gaji Internal, Master & Transaksi APD, Surat Peringatan, Pengumuman, Users.
 * **Konfirmasi:** `await confirmDialog('Yakin hapus?')` → `true/false`
   (SweetAlert2, selalu di atas modal via CSS `.swal2-container`).
   Jangan pakai `confirm()` native.
-* **Periode internal:** `getPeriodeBulan()` / `setDefaultBulan()` dari
+* **Periode:** `getPeriodeBulan()` / `setDefaultBulan()` dari
   `assets/js/periode.js`. Jangan definisikan ulang di view.
 * **Import CSV:** pakai `Excel::cleanRupiah()`, `Excel::parseDate()`,
   `Excel::esc()`, `Excel::json()` dari `app/config/Excel.php`.

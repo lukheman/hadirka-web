@@ -35,7 +35,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         grid-column: 1 / -1;
         font-weight: 700;
         color: #fff;
-        background: #696cff;
+        background: #1D5C96;
         border-radius: 6px;
         padding: 4px 12px;
         margin-top: 4px;
@@ -62,7 +62,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
     }
     .kal-date small {
         font-weight: 400;
-        color: #8592a3;
+        color: #8C8C8C;
     }
     .kal-status {
         font-size: 0.68rem;
@@ -79,19 +79,19 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
     }
     .kal-Masuk { background: #e8fadf; border-color: #71dd37; }
     .kal-Masuk .kal-status { background: #71dd37; color: #fff; }
-    .kal-SPL { background: #fff2d6; border-color: #ffab00; }
-    .kal-SPL .kal-status { background: #ffab00; color: #fff; }
+    .kal-SPL { background: #FDE6C6; border-color: #F2921D; }
+    .kal-SPL .kal-status { background: #F2921D; color: #fff; }
     .kal-OFF { background: #f1f2f4; border-color: #d9dee3; }
-    .kal-OFF .kal-status { background: #8592a3; color: #fff; }
-    .kal-Izin { background: #e7e7ff; border-color: #696cff; }
-    .kal-Izin .kal-status { background: #696cff; color: #fff; }
-    .kal-Sakit { background: #d7f5fc; border-color: #03c3ec; }
-    .kal-Sakit .kal-status { background: #03c3ec; color: #fff; }
+    .kal-OFF .kal-status { background: #8C8C8C; color: #fff; }
+    .kal-Izin { background: #CFE3F2; border-color: #1D5C96; }
+    .kal-Izin .kal-status { background: #1D5C96; color: #fff; }
+    .kal-Sakit { background: #CFE3F2; border-color: #2E7BB8; }
+    .kal-Sakit .kal-status { background: #2E7BB8; color: #fff; }
     .kal-Cuti { background: #ede4f7; border-color: #6f42c1; }
     .kal-Cuti .kal-status { background: #6f42c1; color: #fff; }
     .kal-Mangkir { background: #ffe0db; border-color: #ff3e1d; }
     .kal-Mangkir .kal-status { background: #ff3e1d; color: #fff; }
-    .kal-Resign, .kal-New { background: #e9eaec; border-color: #8592a3; }
+    .kal-Resign, .kal-New { background: #e9eaec; border-color: #8C8C8C; }
     .kal-Resign .kal-status, .kal-New .kal-status { background: #566a7f; color: #fff; }
     .kal-legend {
         display: flex;
@@ -498,8 +498,8 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         const kalGrid = document.getElementById("kalGrid");
         const kalModal = new bootstrap.Modal(document.getElementById("modalKalenderAbsensi"));
         const KAL_COLOR = {
-            "Masuk": "#71dd37", "SPL": "#ffab00", "OFF": "#8592a3",
-            "Izin": "#696cff", "Sakit": "#03c3ec", "Cuti": "#6f42c1",
+            "Masuk": "#71dd37", "SPL": "#F2921D", "OFF": "#8C8C8C",
+            "Izin": "#1D5C96", "Sakit": "#2E7BB8", "Cuti": "#6f42c1",
             "Mangkir": "#ff3e1d", "Resign": "#566a7f", "New": "#566a7f"
         };
         const KAL_NAMA_HARI = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];

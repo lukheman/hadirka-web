@@ -35,11 +35,11 @@ while ($row = $q->fetch_assoc()) {
     if (!empty($foto)) {
         $foto_url = $base_url . 'assets/img/user-pic/' . $foto;
     } else {
-        $foto_url = $base_url . 'assets/img/logo/tjs-nobg.png';
+        $foto_url = $base_url . 'assets/img/logo/ipm-logo.png';
     }
     
     $foto_url_esc = htmlspecialchars($foto_url);
-    $default_logo_esc = htmlspecialchars($base_url . 'assets/img/logo/tjs-nobg.png');
+    $default_logo_esc = htmlspecialchars($base_url . 'assets/img/logo/ipm-logo.png');
 
     // data attributes untuk modal edit (Agar saat edit, preview fotonya juga muncul)
     $data_attrs = "data-id=\"{$id}\" data-username=\"{$username}\" data-nama=\"{$nama}\" data-jabatan=\"{$jabatan}\" data-site=\"{$row['site']}\" data-level=\"{$row['level']}\" data-foto-url=\"{$foto_url_esc}\"";

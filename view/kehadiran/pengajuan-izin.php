@@ -8,7 +8,7 @@
 
     .preview-thumbnail:hover {
         transform: scale(1.1);
-        border-color: #696cff !important;
+        border-color: #1D5C96 !important;
         box-shadow: 0 0.25rem 0.5rem rgba(105, 108, 255, 0.4) !important;
     }
 
