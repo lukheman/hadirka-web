@@ -3,15 +3,19 @@ error_reporting(0);
 header('Content-Type: application/json');
 require_once __DIR__ . '/../../config/koneksi.php';
 
-$id_priode = isset($_GET['id_priode']) && $_GET['id_priode'] !== 'semua' ? mysqli_real_escape_string($koneksi, $_GET['id_priode']) : '';
+$raw_priode = isset($_GET['id_priode']) ? (string)$_GET['id_priode'] : '';
+$id_priode = ($raw_priode !== 'semua' && preg_match('/^\d{4}-\d{2}$/', $raw_priode) === 1) ? $raw_priode : '';
 $where = "";
+$params = [];
 
 if (!empty($id_priode)) {
-    $startDate = $id_priode . '-01'; 
-    $endDate = date('Y-m-t', strtotime($startDate)); 
-    
+    $startDate = $id_priode . '-01';
+    $endDate = date('Y-m-t', strtotime($startDate));
+
     // Sesuaikan prefix tabel (t.) sesuai file masing-masing
-    $where = "WHERE t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'";
+    $where = "WHERE t.tanggal_transaksi BETWEEN ? AND ?";
+    $params[] = $startDate;
+    $params[] = $endDate;
 }
 
 $sql = "SELECT t.*, k.nama_akun, k.kode_akun 
@@ -20,10 +24,12 @@ $sql = "SELECT t.*, k.nama_akun, k.kode_akun
         $where 
         ORDER BY t.tanggal_transaksi ASC, t.id_transaksi ASC";
 
-$query = mysqli_query($koneksi, $sql);
+$stJurnal = $koneksi->prepare($sql);
+$stJurnal->execute($params);
+$query = $stJurnal;
 $data = [];
 
-while ($row = mysqli_fetch_assoc($query)) {
+while ($row = $query->fetch()) {
     $isDebit = ($row['tipe_neraca'] === 'debit');
     $data[] = [
         'tanggal' => date('d/m/Y', strtotime($row['tanggal_transaksi'])),

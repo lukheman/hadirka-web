@@ -188,7 +188,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $payroll_pages = ['data-periode', 'payroll', 'data-pengajuan-pinjaman', 'data-pinjaman', 'data-potongan-tidak-tetap', 'data-rapel', 'data-thr'];
+        $payroll_pages = ['data-periode', 'payroll', 'data-thr'];
         ?>
         <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>" data-menu="payroll">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -211,6 +211,7 @@ function isMenuOpen($pages_array, $current_page)
                         <div>Slip Gaji Karyawan</div>
                     </a>
                 </li>
+                <!-- DISEMBUNYIKAN (tabel di-drop pada penyederhanaan gaji Okt 2026)
                 <li class="menu-item <?= isActive('data-pengajuan-pinjaman', $current_page); ?>">
                     <a class="menu-link" href="?page=data-pengajuan-pinjaman">
                         <div>Pengajuan Pinjaman Dana</div>
@@ -221,6 +222,8 @@ function isMenuOpen($pages_array, $current_page)
                         <div>Pinjaman Dana</div>
                     </a>
                 </li>
+                -->
+                <!-- DISEMBUNYIKAN (penyederhanaan gaji Okt 2026: hanya hadir x gaji pokok)
                 <li class="menu-item <?= isActive('data-potongan-tidak-tetap', $current_page); ?>">
                     <a class="menu-link" href="?page=data-potongan-tidak-tetap">
                         <div>Potongan Tidak Tetap</div>
@@ -231,6 +234,7 @@ function isMenuOpen($pages_array, $current_page)
                         <div>Kalkulasi Rapel</div>
                     </a>
                 </li>
+                -->
                 <li class="menu-item <?= isActive('data-thr', $current_page); ?>">
                     <a class="menu-link" href="?page=data-thr">
                         <div>Sub THR Karyawan</div>

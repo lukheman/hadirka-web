@@ -6,7 +6,8 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../../config/koneksi.php';
 
 // Cek apakah ada filter id_priode yang dikirim
-$id_priode = isset($_GET['id_priode']) ? mysqli_real_escape_string($koneksi, $_GET['id_priode']) : '';
+$raw_priode = isset($_GET['id_priode']) ? (string)$_GET['id_priode'] : '';
+$id_priode = (preg_match('/^\d{4}-\d{2}$/', $raw_priode) === 1) ? $raw_priode : '';
 $bulanIndo = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
 
 if (!empty($id_priode) && $id_priode !== 'semua') {
@@ -30,38 +31,29 @@ if (!empty($id_priode) && $id_priode !== 'semua') {
 // =========================================================================================
 
 // Total Pendapatan
-$q_pendapatan = mysqli_query($koneksi, "SELECT SUM(t.nominal) as total FROM tb_transaksi_keuangan t JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori WHERE k.kelompok = 'Pendapatan' AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'");
-$pendapatan = (int)(mysqli_fetch_assoc($q_pendapatan)['total'] ?? 0);
+$q_pendapatan = $koneksi->query("SELECT SUM(t.nominal) as total FROM tb_transaksi_keuangan t JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori WHERE k.kelompok = 'Pendapatan' AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'");
+$pendapatan = (int)($q_pendapatan->fetch()['total'] ?? 0);
 
 // Total Beban Operasional Lainnya (Kecuali Gaji - 4001)
-$q_operasional = mysqli_query($koneksi, "SELECT SUM(t.nominal) as total FROM tb_transaksi_keuangan t JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori WHERE k.kelompok = 'Beban' AND k.kode_akun != '4001' AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'");
-$operasional = (int)(mysqli_fetch_assoc($q_operasional)['total'] ?? 0);
+$q_operasional = $koneksi->query("SELECT SUM(t.nominal) as total FROM tb_transaksi_keuangan t JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori WHERE k.kelompok = 'Beban' AND k.kode_akun != '4001' AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'");
+$operasional = (int)($q_operasional->fetch()['total'] ?? 0);
 
 // Total Beban Gaji Bersih (Langsung dari hasil Auto-Posting Payroll akun 4001)
-$q_gaji = mysqli_query($koneksi, "SELECT SUM(t.nominal) as total FROM tb_transaksi_keuangan t JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori WHERE k.kode_akun = '4001' AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'");
-$gaji_hr_bersih = (int)(mysqli_fetch_assoc($q_gaji)['total'] ?? 0);
+$q_gaji = $koneksi->query("SELECT SUM(t.nominal) as total FROM tb_transaksi_keuangan t JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori WHERE k.kode_akun = '4001' AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'");
+$gaji_hr_bersih = (int)($q_gaji->fetch()['total'] ?? 0);
 
 // =========================================================================================
 // 2. KASBON & POTONGAN (Diambil dari tabel pinjaman, tidak masuk mutasi Bank)
 // =========================================================================================
 
-// Pencairan Dana Kasbon Riil
-$sql_pinjaman_keluar = "SELECT SUM(nominal_pinjaman) as total FROM tb_pinjaman WHERE tgl_pinjaman BETWEEN '$startDate' AND '$endDate'";
-$q_pinjaman = mysqli_query($koneksi, $sql_pinjaman_keluar);
-$pinjaman_keluar = (int)(mysqli_fetch_assoc($q_pinjaman)['total'] ?? 0);
+// Tabel tb_pinjaman dihapus (penyederhanaan gaji Okt 2026): kasbon/piutang = 0.
+$pinjaman_keluar = 0;
 
 // Cicilan Masuk & Pemotongan Gaji
-$q_pelunasan = mysqli_query($koneksi, "SELECT SUM(nominal_pinjaman) as total FROM tb_pinjaman WHERE tgl_bayar_pinjaman BETWEEN '$startDate' AND '$endDate'");
-$pelunasan_masuk = (int)(mysqli_fetch_assoc($q_pelunasan)['total'] ?? 0);
+$pelunasan_masuk = 0;
 
 // Piutang Berjalan (Belum Lunas & Sudah Dicairkan)
-$q_piutang = mysqli_query($koneksi, "
-    SELECT SUM(nominal_pinjaman) as total 
-    FROM tb_pinjaman 
-    WHERE tgl_pinjaman <= '$endDate' 
-    AND (tgl_bayar_pinjaman IS NULL OR tgl_bayar_pinjaman > '$endDate')
-");
-$piutang_berjalan = (int)(mysqli_fetch_assoc($q_piutang)['total'] ?? 0);
+$piutang_berjalan = 0;
 
 // =========================================================================================
 // 3. REKAPITULASI AKHIR (LABA RUGI, ARUS KAS & SALDO BANK SPESIFIK)
@@ -75,7 +67,7 @@ $laba_bersih = $pendapatan - $total_beban;
 $akun_kas_bank = "('1001', '1002', '1003', '1004', '1005')";
 
 // -- MENGHITUNG SALDO AWAL DINAMIS (HANYA DARI KAS/BANK) --
-$q_awal_masuk = mysqli_query($koneksi, "
+$q_awal_masuk = $koneksi->query("
     SELECT SUM(t.nominal) as total 
     FROM tb_transaksi_keuangan t 
     JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori 
@@ -83,9 +75,9 @@ $q_awal_masuk = mysqli_query($koneksi, "
     AND k.kode_akun IN $akun_kas_bank 
     AND t.tanggal_transaksi < '$startDate'
 ");
-$awal_masuk = (int)(mysqli_fetch_assoc($q_awal_masuk)['total'] ?? 0);
+$awal_masuk = (int)($q_awal_masuk->fetch()['total'] ?? 0);
 
-$q_awal_keluar = mysqli_query($koneksi, "
+$q_awal_keluar = $koneksi->query("
     SELECT SUM(t.nominal) as total 
     FROM tb_transaksi_keuangan t 
     JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori 
@@ -93,11 +85,11 @@ $q_awal_keluar = mysqli_query($koneksi, "
     AND k.kode_akun IN $akun_kas_bank 
     AND t.tanggal_transaksi < '$startDate'
 ");
-$awal_keluar = (int)(mysqli_fetch_assoc($q_awal_keluar)['total'] ?? 0);
+$awal_keluar = (int)($q_awal_keluar->fetch()['total'] ?? 0);
 $saldo_awal_bulan = $awal_masuk - $awal_keluar;
 
 // -- MENGHITUNG PERGERAKAN BULAN INI SAJA (HANYA DARI KAS/BANK) --
-$q_masuk = mysqli_query($koneksi, "
+$q_masuk = $koneksi->query("
     SELECT SUM(t.nominal) as total 
     FROM tb_transaksi_keuangan t 
     JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori 
@@ -105,9 +97,9 @@ $q_masuk = mysqli_query($koneksi, "
     AND k.kode_akun IN $akun_kas_bank 
     AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'
 ");
-$total_uang_masuk_bulan_ini = (int)(mysqli_fetch_assoc($q_masuk)['total'] ?? 0);
+$total_uang_masuk_bulan_ini = (int)($q_masuk->fetch()['total'] ?? 0);
 
-$q_keluar = mysqli_query($koneksi, "
+$q_keluar = $koneksi->query("
     SELECT SUM(t.nominal) as total 
     FROM tb_transaksi_keuangan t 
     JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori 
@@ -115,13 +107,13 @@ $q_keluar = mysqli_query($koneksi, "
     AND k.kode_akun IN $akun_kas_bank 
     AND t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'
 ");
-$total_uang_keluar_bulan_ini = (int)(mysqli_fetch_assoc($q_keluar)['total'] ?? 0);
+$total_uang_keluar_bulan_ini = (int)($q_keluar->fetch()['total'] ?? 0);
 
 // Saldo Bank Global Keseluruhan
 $saldo_bank = $saldo_awal_bulan + $total_uang_masuk_bulan_ini - $total_uang_keluar_bulan_ini;
 
 // -- MENGAMBIL SALDO SPESIFIK AKUN KAS DAN BANK (1001, 1002, 1003, 1004, 1005) --
-$q_bank_spesifik = mysqli_query($koneksi, "
+$q_bank_spesifik = $koneksi->query("
     SELECT 
         k.kode_akun, 
         k.nama_akun,
@@ -135,7 +127,7 @@ $q_bank_spesifik = mysqli_query($koneksi, "
 ");
 
 $rincian_bank = [];
-while($b = mysqli_fetch_assoc($q_bank_spesifik)) {
+while($b = $q_bank_spesifik->fetch()) {
     $saldo_akun = (int)$b['total_masuk'] - (int)$b['total_keluar'];
     $rincian_bank[] = [
         'kode_akun' => $b['kode_akun'],
@@ -150,7 +142,7 @@ while($b = mysqli_fetch_assoc($q_bank_spesifik)) {
 // =========================================================================================
 
 // Data Grafik Pendapatan
-$q_grafik_pendapatan = mysqli_query($koneksi, "
+$q_grafik_pendapatan = $koneksi->query("
     SELECT k.nama_akun, SUM(t.nominal) as total 
     FROM tb_transaksi_keuangan t 
     JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori 
@@ -159,13 +151,13 @@ $q_grafik_pendapatan = mysqli_query($koneksi, "
     ORDER BY total DESC
 ");
 $chart_pendapatan = ['labels' => [], 'data' => []];
-while($r = mysqli_fetch_assoc($q_grafik_pendapatan)) {
+while($r = $q_grafik_pendapatan->fetch()) {
     $chart_pendapatan['labels'][] = $r['nama_akun'];
     $chart_pendapatan['data'][] = (int)$r['total'];
 }
 
 // Data Grafik Beban (Pengeluaran)
-$q_grafik_beban = mysqli_query($koneksi, "
+$q_grafik_beban = $koneksi->query("
     SELECT k.nama_akun, SUM(t.nominal) as total 
     FROM tb_transaksi_keuangan t 
     JOIN tb_kategori_keuangan k ON t.id_kategori = k.id_kategori 
@@ -174,7 +166,7 @@ $q_grafik_beban = mysqli_query($koneksi, "
     ORDER BY total DESC
 ");
 $chart_beban = ['labels' => [], 'data' => []];
-while($r = mysqli_fetch_assoc($q_grafik_beban)) {
+while($r = $q_grafik_beban->fetch()) {
     $chart_beban['labels'][] = $r['nama_akun'];
     $chart_beban['data'][] = (int)$r['total'];
 }

@@ -262,20 +262,23 @@ if (!function_exists('build_kontrak_docx')) {
             LEFT JOIN tb_site s ON s.id_site = k.id_site
             LEFT JOIN tb_departemen d ON d.id_departemen = k.id_departemen
             LEFT JOIN tb_identitas i ON i.id_karyawan = kr.id_karyawan
-            WHERE k.id_karier = '$id_karier' LIMIT 1";
-        $q = $koneksi->query($sql);
-        if (!$q || $q->num_rows === 0) throw new Exception('Data karier tidak ditemukan.');
-        $r = $q->fetch_assoc();
+            WHERE k.id_karier = ? LIMIT 1";
+        $stKar = $koneksi->prepare($sql);
+        $stKar->execute([$id_karier]);
+        $r = $stKar->fetch();
+        if (!$r) throw new Exception('Data karier tidak ditemukan.');
 
         // Template terbaru yang berlaku untuk jabatan ini.
         $id_jabatan = (int)($r['id_jabatan'] ?? 0);
-        $qt = $koneksi->query(
+        $stTpl = $koneksi->prepare(
             "SELECT t.`file` FROM tb_template_kontrak_jabatan p " .
             "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-            "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC LIMIT 1"
+            "WHERE p.id_jabatan = ? ORDER BY t.id_template DESC LIMIT 1"
         );
-        if (!$qt || $qt->num_rows === 0) throw new Exception('Belum ada template kontrak untuk jabatan ini.');
-        $tpl_file = $qt->fetch_assoc()['file'];
+        $stTpl->execute([$id_jabatan]);
+        $tplRow = $stTpl->fetch();
+        if (!$tplRow) throw new Exception('Belum ada template kontrak untuk jabatan ini.');
+        $tpl_file = $tplRow['file'];
         // Template master di template-kontrak/, fallback ke kontrak/ untuk file lama.
         $tpl_base = basename((string)$tpl_file);
         $src = __DIR__ . '/../uploads/template-kontrak/' . $tpl_base;
@@ -289,8 +292,8 @@ if (!function_exists('build_kontrak_docx')) {
         $no_surat = trim((string)($r['no_surat'] ?? ''));
         if ($no_surat === '') {
             $no_surat = generate_no_surat($koneksi, $r['kode_jabatan'] ?? '', $r['tgl_mulai'] ?? '');
-            $ns_esc = $koneksi->real_escape_string($no_surat);
-            $koneksi->query("UPDATE tb_karier SET no_surat = '$ns_esc' WHERE id_karier = '$id_karier'");
+            $stUpdNo = $koneksi->prepare("UPDATE tb_karier SET no_surat = ? WHERE id_karier = ?");
+            $stUpdNo->execute([$no_surat, $id_karier]);
         }
 
         // Tunjangan per nama (lowercase) + daftar per jenis (tetap / tidak_tetap).
@@ -300,22 +303,7 @@ if (!function_exists('build_kontrak_docx')) {
         $tun = [];
         $tun_tetap = [];
         $tun_tidak = [];
-        $qtun = $koneksi->query("SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan WHERE id_karier = '$id_karier' ORDER BY id_tunjangan ASC");
-        if ($qtun) {
-            while ($t = $qtun->fetch_assoc()) {
-                if ((int)($t['tampil_template'] ?? 1) !== 1) continue;
-                $tun[strtolower(trim((string)$t['nama_tunjangan']))] = $t['jumlah_tunjangan'];
-                $rupiah = kontrak_is_makan($t['nama_tunjangan'] ?? '')
-                    ? kontrak_rupiah_makan($t['jumlah_tunjangan'])
-                    : kontrak_rupiah($t['jumlah_tunjangan']);
-                $baris = [kontrak_title($t['nama_tunjangan']), $rupiah];
-                if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
-                    $tun_tidak[] = $baris;
-                } else {
-                    $tun_tetap[] = $baris;
-                }
-            }
-        }
+        // Tabel tb_tunjangan dihapus (penyederhanaan gaji Okt 2026): tidak ada tunjangan.
         // Tabel Word 2 kolom (nama | ": Rp ...") agar ":" sejajar vertikal.
         // Dipakai via setComplexBlock karena placeholder berdiri sendiri satu paragraf.
         $tun_tabel = function ($rows) {
@@ -400,8 +388,8 @@ if (!function_exists('build_kontrak_docx')) {
         $tp->setValues($vars);
         $tp->saveAs($dst);
 
-        $f_esc = $koneksi->real_escape_string($fname);
-        $koneksi->query("UPDATE tb_karier SET file_kontrak = '$f_esc' WHERE id_karier = '$id_karier'");
+        $stUpdFile = $koneksi->prepare("UPDATE tb_karier SET file_kontrak = ? WHERE id_karier = ?");
+        $stUpdFile->execute([$fname, $id_karier]);
 
         return ['docx' => $dst, 'file' => $fname, 'no_surat' => $no_surat];
     }

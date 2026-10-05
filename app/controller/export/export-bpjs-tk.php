@@ -18,6 +18,7 @@ $statusFilter = isset($_GET['status']) ? $_GET['status'] : ''; // Ini Status BPJ
 $statusKarFilter = isset($_GET['status_kar']) ? $_GET['status_kar'] : 'AKTIF'; // Ini Status Karyawan
 
 $where = [];
+$params = [];
 
 // Logika Status Karyawan
 if ($statusKarFilter === 'AKTIF') {
@@ -27,8 +28,8 @@ if ($statusKarFilter === 'AKTIF') {
 }
 
 // Logika Filter Lainnya
-if ($siteFilter !== '') $where[] = "s.nama_site = '" . $koneksi->real_escape_string($siteFilter) . "'";
-if ($jabatanFilter !== '') $where[] = "j.nama_jabatan = '" . $koneksi->real_escape_string($jabatanFilter) . "'";
+if ($siteFilter !== '') { $where[] = "s.nama_site = ?"; $params[] = $siteFilter; }
+if ($jabatanFilter !== '') { $where[] = "j.nama_jabatan = ?"; $params[] = $jabatanFilter; }
 if ($statusFilter === 'SUDAH') $where[] = "(i.bpjs_tk IS NOT NULL AND TRIM(i.bpjs_tk) != '' AND TRIM(i.bpjs_tk) != '-')";
 if ($statusFilter === 'BELUM') $where[] = "(i.bpjs_tk IS NULL OR TRIM(i.bpjs_tk) = '' OR TRIM(i.bpjs_tk) = '-')";
 
@@ -44,7 +45,8 @@ $sql = "SELECT k.nik_karyawan, k.nama_lengkap, s.nama_site, j.nama_jabatan, i.bp
         WHERE $whereClause
         ORDER BY k.nama_lengkap ASC";
 
-$result = $koneksi->query($sql);
+$result = $koneksi->prepare($sql);
+$result->execute($params);
 
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
@@ -62,7 +64,7 @@ $sheet->setCellValue('G1', 'No BPJS Ketenagakerjaan'); // Bergeser dari F ke G
 // Data
 $rowNum = 2;
 $no = 1;
-while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch()) {
     $bpjs = ($row['bpjs_tk'] && trim($row['bpjs_tk']) !== '' && trim($row['bpjs_tk']) !== '-') ? $row['bpjs_tk'] : 'BELUM TERDAFTAR';
     
     $sheet->setCellValue('A' . $rowNum, $no++);

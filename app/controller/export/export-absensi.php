@@ -49,9 +49,10 @@ $allDates = dateRangeArray($tgl_a, $tgl_b);
 $absenAll = [];
 $sqlAbs = "SELECT id_karyawan, tgl_absen, jam_kerja, ket_absen 
            FROM tb_absen
-           WHERE tgl_absen BETWEEN '$tgl_a' AND '$tgl_b'";
-$resAbs = mysqli_query($koneksi, $sqlAbs);
-while ($r = mysqli_fetch_assoc($resAbs)) {
+           WHERE tgl_absen BETWEEN ? AND ?";
+$stAbs = $koneksi->prepare($sqlAbs);
+$stAbs->execute([$tgl_a, $tgl_b]);
+while ($r = $stAbs->fetch()) {
     $id = $r['id_karyawan'];
     $tgl = $r['tgl_absen'];
     $absenAll[$id][$tgl] = $r;
@@ -60,7 +61,9 @@ while ($r = mysqli_fetch_assoc($resAbs)) {
 // -------------------------
 // Ambil Karyawan (Sesuai Site & Jabatan)
 // -------------------------
-$whereJab = $jabatan ? " AND kar.id_jabatan = '$jabatan' " : "";
+$paramsKar = [$site];
+$whereJab = "";
+if ($jabatan !== '') { $whereJab = " AND kar.id_jabatan = ? "; $paramsKar[] = $jabatan; }
 $sqlKar = "
 SELECT k.id_karyawan, k.nik_karyawan, k.nama_lengkap,
        COALESCE(j.nama_jabatan, '-') AS nama_jabatan,
@@ -69,13 +72,14 @@ FROM tb_karyawan k
 LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan
 LEFT JOIN tb_jabatan j ON j.id_jabatan = kar.id_jabatan
 LEFT JOIN tb_site s ON s.id_site = kar.id_site
-WHERE kar.id_site = '$site'
+WHERE kar.id_site = ?
 $whereJab
 GROUP BY k.id_karyawan
 ORDER BY k.nama_lengkap ASC
 ";
 
-$qKar = mysqli_query($koneksi, $sqlKar);
+$qKar = $koneksi->prepare($sqlKar);
+$qKar->execute($paramsKar);
 
 // -------------------------
 // Inisialisasi PhpSpreadsheet
@@ -152,7 +156,7 @@ $yellowStyle = [
     ]
 ];
 
-while ($k = mysqli_fetch_assoc($qKar)) {
+while ($k = $qKar->fetch()) {
     $idk = $k['id_karyawan'];
 
     // Info Karyawan

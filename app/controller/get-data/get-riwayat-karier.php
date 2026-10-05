@@ -26,17 +26,16 @@ $stmt = $koneksi->prepare("SELECT k.*, s.nama_site, d.nama_departemen, j.nama_ja
     LEFT JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
     WHERE k.id_karyawan = ?
     ORDER BY k.tgl_mulai DESC, k.id_karier DESC");
-$stmt->bind_param("i", $id_karyawan);
-$stmt->execute();
-$q = $stmt->get_result();
+$stmt->execute([$id_karyawan]);
+$rowsKarier = $stmt->fetchAll();
 
-if ($q->num_rows === 0) {
+if (count($rowsKarier) === 0) {
     echo "<tr><td colspan='8' class='text-center'>Belum ada riwayat karier</td></tr>";
     exit;
 }
 
 $no = 1;
-while ($r = $q->fetch_assoc()) {
+foreach ($rowsKarier as $r) {
     $tgl_mulai = !empty($r['tgl_mulai']) ? date('d-m-Y', strtotime($r['tgl_mulai'])) : '-';
     $tgl_selesai = !empty($r['tgl_selesai']) ? date('d-m-Y', strtotime($r['tgl_selesai'])) : '-';
     $badge = $no === 1

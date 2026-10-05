@@ -60,7 +60,7 @@
                         <option value="">-- Pilih Jabatan --</option>
                         <?php
                         $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
-                        while ($j = $jabatans->fetch_assoc()) {
+                        while ($j = $jabatans->fetch()) {
                             $__kj = trim((string)($j['kode_jabatan'] ?? ''));
                             echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
                         }
@@ -141,11 +141,7 @@
             return "Rp " + Number(v || 0).toLocaleString("id-ID");
         }
 
-        function isMakan(nama) {
-            return ["tunjangan makan", "tunjangan uang makan"].includes(String(nama || "").toLowerCase().trim());
-        }
-
-        // Preview nilai kontrak + tunjangan + jabatan langsung di baris (bentuk tabel).
+        // Preview nilai kontrak + jabatan langsung di baris (bentuk tabel).
         function renderRowPreview(row) {
             const box = row.querySelector(".row-preview");
             const jabSel = row.querySelector(".cetak-jabatan");
@@ -166,21 +162,6 @@
                         ? ` s/d <strong>TPJS-KONTRAK-${escHtml(row.dataset.kode)}/${b}/${escHtml(th)}</strong>`
                         : "");
             }
-            const tunjRows = (t.tunjangan || []).map(x => {
-                const jenis = x.jenis_tunjangan === "tidak_tetap"
-                    ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
-                    : '<span class="badge bg-success">Tetap</span>';
-                const tampil = String(x.tampil_template ?? "1") === "0"
-                    ? '<span class="badge bg-secondary">Tidak</span>'
-                    : '<span class="badge bg-info text-dark">Ya</span>';
-                return `<tr><td>${escHtml(x.nama_tunjangan)}</td><td class="text-center">${jenis}</td>` +
-                    `<td class="text-end">${fmtRpPrev(x.jumlah_tunjangan)}${isMakan(x.nama_tunjangan) ? "/hari" : ""}</td>` +
-                    `<td class="text-center">${tampil}</td></tr>`;
-            }).join("");
-            const potRows = (t.potongan || []).map(x =>
-                `<tr><td>${escHtml(x.jenis_potongan)}</td>` +
-                `<td class="text-end">${fmtRpPrev(x.jumlah_potongan)}</td></tr>`
-            ).join("");
             box.innerHTML =
                 `<div class="table-responsive mt-1"><table class="table table-bordered table-sm mb-0">` +
                 `<tbody>` +
@@ -188,22 +169,6 @@
                 `<tr><th style="width:28%">Jabatan</th><td>${escHtml(jabText)}</td></tr>` +
                 `<tr><th>Template</th><td>${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}</td></tr>` +
                 `<tr><th>Gaji Pokok</th>${tdRp(d.gaji_pokok)}</tr>` +
-                `<tr><th>Upah Lembur</th>${tdRp(d.upah_lembur)}</tr>` +
-                `<tr><th>Potongan Izin</th>${tdRp(d.potongan_izin)}</tr>` +
-                `<tr><th>Potongan Mangkir</th>${tdRp(d.potongan_mangkir)}</tr>` +
-                `<tr><th>Tunjangan (${(t.tunjangan || []).length})</th><td>` +
-                (tunjRows
-                    ? `<table class="table table-bordered table-sm mb-0"><thead class="table-info">` +
-                      `<tr><th>Nama</th><th class="text-center">Jenis</th><th class="text-end">Jumlah</th>` +
-                      `<th class="text-center">Tampil</th></tr></thead><tbody>${tunjRows}</tbody></table>`
-                    : '<span class="text-muted">-</span>') +
-                `</td></tr>` +
-                `<tr><th>Potongan (${(t.potongan || []).length})</th><td>` +
-                (potRows
-                    ? `<table class="table table-bordered table-sm mb-0"><thead class="table-info">` +
-                      `<tr><th>Nama</th><th class="text-end">Jumlah</th></tr></thead><tbody>${potRows}</tbody></table>`
-                    : '<span class="text-muted">-</span>') +
-                `</td></tr>` +
                 `</tbody></table></div>`;
         }
 

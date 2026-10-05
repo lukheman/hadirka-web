@@ -2,16 +2,16 @@
 require_once __DIR__ . '/../../app/config/koneksi.php';
 
 // Ambil data kategori utama untuk modal agar dinamis
-$qKategori = mysqli_query($koneksi, "SELECT * FROM tb_kategori_keuangan ORDER BY kelompok ASC, kode_akun ASC");
+$qKategori = $koneksi->query("SELECT * FROM tb_kategori_keuangan ORDER BY kelompok ASC, kode_akun ASC");
 $kategoriGroups = [];
-while ($row = mysqli_fetch_assoc($qKategori)) {
+while ($row = $qKategori->fetch()) {
     $kategoriGroups[$row['kelompok']][] = $row;
 }
 
 // Ambil KHUSUS data Kas dan Bank untuk Dropdown Lawan Transaksi
-$qKasBank = mysqli_query($koneksi, "SELECT * FROM tb_kategori_keuangan WHERE kode_akun IN ('1001', '1002', '1003', '1004', '1005') ORDER BY kode_akun ASC");
+$qKasBank = $koneksi->query("SELECT * FROM tb_kategori_keuangan WHERE kode_akun IN ('1001', '1002', '1003', '1004', '1005') ORDER BY kode_akun ASC");
 $kasBankList = [];
-while ($row = mysqli_fetch_assoc($qKasBank)) {
+while ($row = $qKasBank->fetch()) {
     $kasBankList[] = $row;
 }
 ?>

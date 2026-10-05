@@ -96,7 +96,7 @@
                                 <option value="">-- Pilih Pelanggaran --</option>
                                 <?php
                                 $qPel = $koneksi->query("SELECT * FROM m_jenis_pelanggaran ORDER BY nama_pelanggaran ASC");
-                                while ($p = $qPel->fetch_assoc()) {
+                                while ($p = $qPel->fetch()) {
                                     echo "<option value='{$p['id_pelanggaran']}' data-ket='{$p['keterangan_default']}'>{$p['nama_pelanggaran']}</option>";
                                 }
                                 ?>

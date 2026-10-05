@@ -411,9 +411,9 @@ require_once 'app/controller/read.php';
             <option value="">-- Semua Site --</option>
             <?php
             // Ambil daftar site unik langsung dari database
-            $qSite = mysqli_query($koneksi, "SELECT DISTINCT nama_site FROM tb_site WHERE nama_site IS NOT NULL ORDER BY nama_site ASC");
+            $qSite = $koneksi->query("SELECT DISTINCT nama_site FROM tb_site WHERE nama_site IS NOT NULL ORDER BY nama_site ASC");
             if($qSite) {
-                while($s = mysqli_fetch_assoc($qSite)){
+                while($s = $qSite->fetch()){
                     echo '<option value="'.htmlspecialchars($s['nama_site']).'">'.htmlspecialchars($s['nama_site']).'</option>';
                 }
             }
@@ -426,9 +426,9 @@ require_once 'app/controller/read.php';
             
             // Mapping Site untuk memastikan info site tersedia pada dropdown karyawan
             $siteMapping = [];
-            $qMapping = mysqli_query($koneksi, "SELECT k.nik_karyawan, s.nama_site FROM tb_karyawan k LEFT JOIN tb_karier kr ON k.id_karyawan = kr.id_karyawan LEFT JOIN tb_site s ON kr.id_site = s.id_site");
+            $qMapping = $koneksi->query("SELECT k.nik_karyawan, s.nama_site FROM tb_karyawan k LEFT JOIN tb_karier kr ON k.id_karyawan = kr.id_karyawan LEFT JOIN tb_site s ON kr.id_site = s.id_site");
             if($qMapping) {
-                while($rowM = mysqli_fetch_assoc($qMapping)) {
+                while($rowM = $qMapping->fetch()) {
                     $siteMapping[$rowM['nik_karyawan']] = $rowM['nama_site'];
                 }
             }
@@ -516,41 +516,29 @@ require_once 'app/controller/read.php';
             <div class="right">
                 <table>
                     <tr>
-                        <td>Wajib Lembur</td>
-                        <td id="total_jam_wl">0 Jam</td>
-                        <td>HARI KERJA</td>
+                        <td>HADIR</td>
                         <td class="right" id="hariKerja">0 Hari</td>
-                    </tr>
-                    <tr>
-                        <td>Overtime</td>
-                        <td id="total_jam_ot">0 Jam</td>
                         <td>SAKIT</td>
                         <td class="right" id="sakit">0 Hari</td>
                     </tr>
                     <tr>
-                        <td>SPL 1-7</td>
-                        <td id="total_jam_spl_1_7">0 Jam</td>
                         <td>IZIN</td>
                         <td class="right" id="izin">0 Hari</td>
+                        <td>CUTI</td>
+                        <td class="right" id="cuti">0 Hari</td>
                     </tr>
                     <tr>
-                        <td>SPL Jam Ke-8</td>
-                        <td id="total_jam_spl_8">0 Jam</td>
                         <td>MANGKIR</td>
                         <td class="right" id="mangkir">0 Hari</td>
-                    </tr>
-                    <tr>
-                        <td>SPL Jam 9+</td>
-                        <td id="total_jam_spl_9_up">0 Jam</td>
-                        <td>Kurang Jam</td>
-                        <td class="right" id="total_jam_kurang">0 Jam</td>
+                        <td>OFF</td>
+                        <td class="right" id="offHari">0 Hari</td>
                     </tr>
                 </table>
             </div>
         </div>
 
         <p class="notes">
-            WL: WAJIB LEMBUR · OT: OVER TIME · SPL: MINGGU & TANGGAL MERAH LIBUR NASIONAL
+            GAJI = JUMLAH HADIR &times; GAJI POKOK HARIAN (termasuk hari SPL, tanpa multiplier)
         </p>
 
         <!-- Absensi: tampilan lama (tabel) + tampilan kalender, default kalender -->
@@ -612,79 +600,24 @@ require_once 'app/controller/read.php';
             document.getElementById('nikDisplay').textContent = data.nik || '-';
             document.getElementById('nama').textContent = data.nama || '-';
             document.getElementById('jabatan').textContent = data.jabatan || '-';
-            document.getElementById('total_jam_wl').textContent = data.total_jam_wl || '-';
-            document.getElementById('total_jam_ot').textContent = data.total_jam_ot || '-';
-            document.getElementById('total_jam_spl_1_7').textContent = data.total_jam_spl_1_7 || '-';
-            document.getElementById('total_jam_spl_8').textContent = data.total_jam_spl_8 || '-';
-            document.getElementById('total_jam_spl_9_up').textContent = data.total_jam_spl_9_up || '-';
 
             // =======================================================
-            // ===============   SUSUN ULANG PENDAPATAN   ===============
+            // ===============   PENDAPATAN (hadir x gaji pokok)  ===============
             // =======================================================
             const pendBody = document.getElementById("pendapatanBody");
             pendBody.innerHTML = "";
 
-            // 1) BASIC
+            // 1) GAJI POKOK HARIAN
             pendBody.innerHTML += `
-        <tr><td>BASIC</td><td class="right">${fmt(data.basic)}</td></tr>
+        <tr><td>GAJI POKOK (HARIAN)</td><td class="right">${fmt(data.basic)}</td></tr>
     `;
 
-            // 2) TUNJANGAN DINAMIS
-            if (Array.isArray(data.tunjangan_pendapatan)) {
-                data.tunjangan_pendapatan.forEach(t => {
-                    pendBody.innerHTML += `
-                <tr><td style="text-transform:uppercase;">${t.nama}</td><td class="right">${fmt(t.jumlah)}</td></tr>
-            `;
-                });
-            }
+            // 2) JUMLAH HADIR (termasuk SPL, tanpa multiplier)
+            pendBody.innerHTML += `
+        <tr><td>HADIR (${data.hari_kerja || 0} HARI)</td><td class="right">${data.hari_kerja || 0} HARI</td></tr>
+    `;
 
-            // 3) LEMBUR & SPL
-            const lemburList = [{
-                    key: "total_lembur",
-                    label: "OT PERTAMA"
-                },
-                {
-                    key: "total_overtime",
-                    label: "OT KEDUA"
-                },
-                {
-                    key: "total_spl_1_7",
-                    label: "SPL 1–7"
-                },
-                {
-                    key: "total_spl_8",
-                    label: "SPL 8"
-                },
-                {
-                    key: "total_spl_9_up",
-                    label: "SPL 9+"
-                }
-            ];
-
-            lemburList.forEach(l => {
-                let val = data[l.key] || 0;
-                pendBody.innerHTML += `
-            <tr><td>${l.label}</td><td class="right">${fmt(val)}</td></tr>
-        `;
-            });
-
-            // // 5) KELEBIHAN HARI
-            // if (data.hari_kerja > 25) {
-            //     pendBody.innerHTML += `
-            //      <tr><td>KELEBIHAN HARI (${data.kelebihan_hari} Hari)</td><td class="right">${fmt(data.pendapatan_kelebihan_hari)}</td></tr>
-            //  `;
-            // }
-
-            // 6) RAPEL
-            if (Array.isArray(data.rapel)) {
-                data.rapel.forEach(r => {
-                    pendBody.innerHTML += `
-                <tr><td>RAPEL - ${r.nama} (${r.tanggal})</td><td class="right">${fmt(r.jumlah)}</td></tr>
-            `;
-                });
-            }
-
-            // 7) TOTAL PENDAPATAN
+            // 3) TOTAL PENDAPATAN = HADIR x GAJI POKOK
             pendBody.innerHTML += `
         <tr class="bold">
             <td>JUMLAH PENDAPATAN</td>
@@ -693,73 +626,12 @@ require_once 'app/controller/read.php';
     `;
 
             // =======================================================
-            // ===============     SUSUN ULANG POTONGAN     ===============
+            // ===============     POTONGAN (tidak ada)     ===============
             // =======================================================
             const potBody = document.getElementById("potonganBody");
             potBody.innerHTML = "";
 
-            // 1) POTONGAN DINAMIS (BPJS, JHT DLL)
-            if (Array.isArray(data.potongan_tunjangan)) {
-                data.potongan_tunjangan.forEach(p => {
-                    potBody.innerHTML += `
-                <tr><td>${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
-            `;
-                });
-            }
-
-            // 2) POTONGAN TETAP
-            const potTetap = [{
-                    key: "pot_pkwt",
-                    label: "POTONGAN PKWT"
-                },
-                {
-                    key: "pot_izin",
-                    label: "POTONGAN IZIN"
-                },
-                {
-                    key: "pot_mangkir",
-                    label: "POTONGAN MANGKIR"
-                },
-                {
-                    key: "potongan_perjam",
-                    label: "KE-KURANGAN JAM NORMAL"
-                },
-                {
-                    key: "potongan_cuti_khusus", // <--- TAMBAHKAN KEY BARU
-                    label: "POTONGAN CUTI HARIAN"
-                }
-            ];
-
-            potTetap.forEach(p => {
-                let val = data[p.key] || 0;
-                // Logika: Tampilkan jika bukan potongan_cuti_khusus, ATAU jika potongan_cuti_khusus ada nilainya (> 0)
-                if (p.key !== "potongan_cuti_khusus" || val > 0) {
-                    potBody.innerHTML += `
-                    <tr><td>${p.label}</td><td class="right">${fmt(val)}</td></tr>
-                    `;
-                }
-            });
-
-
-            // 3) PINJAMAN (Kasbon & Cicilan SIO)
-            if (Array.isArray(data.pinjaman)) {
-                data.pinjaman.forEach(p => {
-                    potBody.innerHTML += `
-                <tr><td style="text-transform:uppercase;">${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
-            `;
-                });
-            }
-
-            // 4) POTONGAN TIDAK TETAP (Denda, Sumbangan, dll)
-            if (Array.isArray(data.potongan_lain)) {
-                data.potongan_lain.forEach(p => {
-                    potBody.innerHTML += `
-                <tr><td style="text-transform:uppercase;">${p.nama}</td><td class="right">${fmt(p.jumlah)}</td></tr>
-            `;
-                });
-            }
-
-            // 5) TOTAL POTONGAN
+            // TOTAL POTONGAN
             potBody.innerHTML += `
         <tr class="bold">
             <td>JUMLAH POTONGAN</td>
@@ -771,11 +643,12 @@ require_once 'app/controller/read.php';
             //        RENDER RINGKASAN
             // =============================
             document.getElementById('gajiBersih').textContent = fmt(data.gaji_bersih);
-            document.getElementById('hariKerja').textContent = data.hari_kerja || 0;
-            document.getElementById('sakit').textContent = data.sakit || 0;
-            document.getElementById('izin').textContent = data.izin || 0;
-            document.getElementById('mangkir').textContent = data.mangkir || 0;
-            document.getElementById('total_jam_kurang').textContent = data.total_jam_kurang || 0;
+            document.getElementById('hariKerja').textContent = (data.hari_kerja || 0) + ' Hari';
+            document.getElementById('sakit').textContent = (data.sakit || 0) + ' Hari';
+            document.getElementById('izin').textContent = (data.izin || 0) + ' Hari';
+            document.getElementById('mangkir').textContent = (data.mangkir || 0) + ' Hari';
+            document.getElementById('cuti').textContent = (data.cuti || 0) + ' Hari';
+            document.getElementById('offHari').textContent = (data.off || 0) + ' Hari';
 
             // =============================
             //  ABSENSI: render dua tampilan (tabel lama + kalender), default kalender

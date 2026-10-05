@@ -27,11 +27,13 @@ $allDates = dateRange($tgl_a, $tgl_b);
 
 // Ambil semua absen karyawan ( termasuk id_absen )
 $absenAll = [];
-$absenQ = $koneksi->query("SELECT id_absen, tgl_absen, jam_kerja, ket_absen 
-                           FROM tb_absen 
-                           WHERE id_karyawan='$id_karyawan' 
-                           AND tgl_absen BETWEEN '$tgl_a' AND '$tgl_b'");
-while ($a = $absenQ->fetch_assoc()) {
+$stAbsen = $koneksi->prepare("SELECT id_absen, tgl_absen, jam_kerja, ket_absen
+                           FROM tb_absen
+                           WHERE id_karyawan = ?
+                           AND tgl_absen BETWEEN ? AND ?");
+$stAbsen->execute([$id_karyawan, $tgl_a, $tgl_b]);
+$absenQ = $stAbsen;
+while ($a = $absenQ->fetch()) {
     $absenAll[$a['tgl_absen']] = $a;
 }
 
@@ -43,7 +45,7 @@ while ($a = $absenQ->fetch_assoc()) {
 //         FROM tb_$table WHERE id_karyawan='$id_karyawan' 
 //         AND tgl_awal_$table <= '$tgl_b' 
 //         AND tgl_akhir_$table >= '$tgl_a'");
-//     while ($r = $q->fetch_assoc()) $arr[] = $r;
+//     while ($r = $q->fetch()) $arr[] = $r;
 //     return $arr;
 // }
 // $izinAll  = loadRange('izin',  $id_karyawan, $tgl_a, $tgl_b, $koneksi);
@@ -54,17 +56,19 @@ $sakitAll = [];
 
 // ================= AMBIL DATA IZIN =================
 // Asumsi tabel pengajuan izin bernama 'tb_pengajuan_izin' seperti gambar sebelumnya
-$qIzin = $koneksi->query("
-    SELECT DATE(tgl_izin) as tanggal 
-    FROM tb_pengajuan_izin 
-    WHERE id_karyawan='$id_karyawan' 
-    AND DATE(tgl_izin) <= '$tgl_b' 
-    AND DATE(tgl_izin) >= '$tgl_a'
+$stIzin = $koneksi->prepare("
+    SELECT DATE(tgl_izin) as tanggal
+    FROM tb_pengajuan_izin
+    WHERE id_karyawan = ?
+    AND DATE(tgl_izin) <= ?
+    AND DATE(tgl_izin) >= ?
     AND status_izin = 'disetujui'
 ");
+$stIzin->execute([$id_karyawan, $tgl_b, $tgl_a]);
+$qIzin = $stIzin;
 
 if ($qIzin) {
-    while ($r = $qIzin->fetch_assoc()) {
+    while ($r = $qIzin->fetch()) {
         $tgl = $r['tanggal'];
         // Jadikan tgl awal dan akhir sama karena strukturnya hanya 1 tanggal
         $izinAll[] = ['awal' => $tgl, 'akhir' => $tgl];
@@ -73,27 +77,31 @@ if ($qIzin) {
 
 // ================= AMBIL DATA SAKIT =================
 // Menyesuaikan dengan struktur tb_sakit di gambar terbaru
-$qSakit = $koneksi->query("
-    SELECT tgl_awal_sakit, tgl_akhir_sakit 
-    FROM tb_sakit 
-    WHERE id_karyawan='$id_karyawan' 
-    AND tgl_awal_sakit <= '$tgl_b' 
-    AND tgl_akhir_sakit >= '$tgl_a'
+$stSakit = $koneksi->prepare("
+    SELECT tgl_awal_sakit, tgl_akhir_sakit
+    FROM tb_sakit
+    WHERE id_karyawan = ?
+    AND tgl_awal_sakit <= ?
+    AND tgl_akhir_sakit >= ?
     AND status_sakit = 'disetujui'
 ");
+$stSakit->execute([$id_karyawan, $tgl_b, $tgl_a]);
+$qSakit = $stSakit;
 
 if ($qSakit) {
-    while ($r = $qSakit->fetch_assoc()) {
+    while ($r = $qSakit->fetch()) {
         $sakitAll[] = ['awal' => $r['tgl_awal_sakit'], 'akhir' => $r['tgl_akhir_sakit']];
     }
 }
 
 // Ambil data karyawan
-$karyawanQ = $koneksi->query("SELECT * FROM tb_karyawan
+$stKaryawan = $koneksi->prepare("SELECT * FROM tb_karyawan
 JOIN tb_karier ON tb_karyawan.id_karyawan=tb_karier.id_karyawan
 JOIN tb_jabatan ON tb_karier.id_jabatan=tb_jabatan.id_jabatan
-WHERE tb_karyawan.id_karyawan='$id_karyawan'");
-$karyawan = $karyawanQ->fetch_assoc();
+WHERE tb_karyawan.id_karyawan = ?");
+$stKaryawan->execute([$id_karyawan]);
+$karyawanQ = $stKaryawan;
+$karyawan = $karyawanQ->fetch();
 ?>
 
 <div class="table-responsive">

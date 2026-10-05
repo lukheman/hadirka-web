@@ -8,13 +8,13 @@ function hex2rgba($color, $opacity = 0.1)
     return "rgba($r, $g, $b, $opacity)";
 }
 
-$q = mysqli_query($koneksi, "SELECT * FROM tb_pengumuman ORDER BY waktu_buat DESC");
+$rowsPengumuman = $koneksi->query("SELECT * FROM tb_pengumuman ORDER BY waktu_buat DESC")->fetchAll();
 
-if (mysqli_num_rows($q) == 0) {
+if (count($rowsPengumuman) == 0) {
     echo '<div class="col-12 text-center py-5 text-muted">Belum ada pengumuman.</div>';
 }
 
-while ($row = mysqli_fetch_assoc($q)) {
+foreach ($rowsPengumuman as $row) {
     $hex = $row['warna_kode'];
     $bg  = hex2rgba($hex, 0.15);
     echo '

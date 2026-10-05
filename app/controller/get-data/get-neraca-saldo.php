@@ -3,16 +3,19 @@ error_reporting(0);
 header('Content-Type: application/json');
 require_once __DIR__ . '/../../config/koneksi.php';
 
-$id_priode = isset($_GET['id_priode']) && $_GET['id_priode'] !== 'semua' ? mysqli_real_escape_string($koneksi, $_GET['id_priode']) : '';
+$raw_priode = isset($_GET['id_priode']) ? (string)$_GET['id_priode'] : '';
+$id_priode = ($raw_priode !== 'semua' && preg_match('/^\d{4}-\d{2}$/', $raw_priode) === 1) ? $raw_priode : '';
 
 $whereClause = "";
+$params = [];
 
 if (!empty($id_priode)) {
-    $startDate = $id_priode . '-01'; 
-    $endDate = date('Y-m-t', strtotime($startDate)); 
-    
+    $startDate = $id_priode . '-01';
+    $endDate = date('Y-m-t', strtotime($startDate));
+
     // Sesuaikan prefix tabel (t.)
-    $whereClause = "AND t.tanggal_transaksi <= '$endDate'";
+    $whereClause = "AND t.tanggal_transaksi <= ?";
+    $params[] = $endDate;
 }
 
 // Group & Sum mutasi Debit/Kredit per Akun menggunakan Conditional Aggregation
@@ -29,10 +32,12 @@ $sql = "
     ORDER BY k.kode_akun ASC
 ";
 
-$query = mysqli_query($koneksi, $sql);
+$stNeraca = $koneksi->prepare($sql);
+$stNeraca->execute($params);
+$query = $stNeraca;
 $data = [];
 
-while ($row = mysqli_fetch_assoc($query)) {
+while ($row = $query->fetch()) {
     $deb = (int)$row['total_debit'];
     $kre = (int)$row['total_kredit'];
     $finalDebit = 0;

@@ -7,7 +7,7 @@ require '../../config/koneksi.php';
 $q = $koneksi->query("SELECT * FROM tb_departemen ORDER BY id_departemen DESC");
 $no = 1;
 
-while ($r = $q->fetch_assoc()) {
+while ($r = $q->fetch()) {
     echo "
     <tr>
         <td class='text-center'>{$no}</td>

@@ -9,7 +9,7 @@ $q = $koneksi->query("
 ");
 $no = 1;
 
-while ($r = $q->fetch_assoc()) {
+while ($r = $q->fetch()) {
     $badge = $r['status_loker'] == 'Aktif' ? 'bg-success' : 'bg-danger';
     echo "
     <tr>

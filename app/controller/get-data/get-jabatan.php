@@ -4,7 +4,7 @@ require __DIR__.'/../../config/koneksi.php';
 $q = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY id_jabatan DESC");
 $no = 1;
 
-while ($r = $q->fetch_assoc()) {
+while ($r = $q->fetch()) {
     $kode = htmlspecialchars($r['kode_jabatan'] ?? '', ENT_QUOTES);
     $nama = htmlspecialchars($r['nama_jabatan'] ?? '', ENT_QUOTES);
     echo "

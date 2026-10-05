@@ -8,13 +8,12 @@
 // - list_jabatan  : daftar jabatan untuk checkbox modal (GET/POST)
 // - upload        : nama_kontrak (wajib, maks 150) + file_pdf (Word, maks 2MB)
 //                   + id_jabatan[] (min 1)
-//                   + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (opsional, default 0)
+//                   + gaji_pokok harian (opsional, default 0)
 // - rename        : id_template + nama_kontrak (ubah nama kontrak)
 // - update        : id_template + nama_kontrak + id_jabatan[] (min 1)
 //                   + file_pdf opsional (pengganti, Word maks 2MB)
-// - save_detail   : id_template + gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir (upsert)
-// - list_tunjangan / save_tunjangan / delete_tunjangan   : tunjangan milik detail kontrak (tb_tunjangan_kontrak)
-// - list_potongan / save_potongan / delete_potongan       : potongan milik detail kontrak (tb_potongan_kontrak)
+// - save_detail   : id_template + gaji_pokok harian (upsert)
+// (Aksi tunjangan/potongan kontrak dihapus bersama tabelnya pada penyederhanaan gaji Okt 2026.)
 // - delete        : id_template (hapus pivot + detail (cascade: tunjangan/potongan kontrak ikut terhapus) + baris + file fisik)
 
 header("Content-Type: application/json; charset=utf-8");
@@ -34,13 +33,13 @@ function tpl_float($val)
 function tpl_ensure_detail($koneksi, $id_template)
 {
     $id_template = (int)$id_template;
-    $q = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1");
-    if ($q && $q->num_rows > 0) return (int)$q->fetch_assoc()['id_detail'];
-    $koneksi->query(
-        "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) " .
-        "VALUES ('$id_template', 0, 0, 0, 0)"
-    );
-    return (int)$koneksi->insert_id;
+    $q = $koneksi->prepare("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = ? LIMIT 1");
+    $q->execute([$id_template]);
+    $row = $q->fetch();
+    if ($row) return (int)$row['id_detail'];
+    $ins = $koneksi->prepare("INSERT INTO tb_detail_kontrak (id_template, gaji_pokok) VALUES (?, 0)");
+    $ins->execute([$id_template]);
+    return (int)$koneksi->lastInsertId();
 }
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
@@ -67,11 +66,13 @@ function tpl_json($status, $msg, array $extra = [])
 // --- Daftar jabatan (untuk checkbox) ---
 if ($action === 'list_jabatan') {
     $rows = [];
-    $q = $koneksi->query("SELECT id_jabatan, nama_jabatan, kode_jabatan FROM tb_jabatan ORDER BY nama_jabatan ASC");
-    if (!$q) {
-        tpl_json('error', 'Gagal mengambil data jabatan: ' . $koneksi->error);
+    try {
+        $q = $koneksi->query("SELECT id_jabatan, nama_jabatan, kode_jabatan FROM tb_jabatan ORDER BY nama_jabatan ASC");
+        while ($r = $q->fetch()) $rows[] = $r;
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal mengambil data jabatan.');
     }
-    while ($r = $q->fetch_assoc()) $rows[] = $r;
     echo json_encode(['status' => 'success', 'data' => $rows]);
     exit;
 }
@@ -79,42 +80,38 @@ if ($action === 'list_jabatan') {
 // --- Daftar template + jabatan tertaut ---
 if ($action === 'list') {
     $data = [];
-    $q = $koneksi->query(
-        "SELECT id_template, nama_kontrak, `file`, nama_asli, ukuran, created_at " .
-        "FROM tb_template_kontrak ORDER BY id_template DESC"
-    );
-    if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
-    while ($r = $q->fetch_assoc()) {
-        $id = (int)$r['id_template'];
-        $jab = [];
-        $qj = $koneksi->query(
-            "SELECT j.id_jabatan, j.nama_jabatan, j.kode_jabatan " .
-            "FROM tb_template_kontrak_jabatan p " .
-            "JOIN tb_jabatan j ON j.id_jabatan = p.id_jabatan " .
-            "WHERE p.id_template = '$id' ORDER BY j.nama_jabatan ASC"
+    try {
+        $q = $koneksi->query(
+            "SELECT id_template, nama_kontrak, `file`, nama_asli, ukuran, created_at " .
+            "FROM tb_template_kontrak ORDER BY id_template DESC"
         );
-        if ($qj) {
-            while ($jr = $qj->fetch_assoc()) $jab[] = $jr;
-        }
-        $r['jabatan'] = $jab;
-        $r['jml_jabatan'] = count($jab);
-        $qd = $koneksi->query(
-            "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
-            "FROM tb_detail_kontrak WHERE id_template = '$id' LIMIT 1"
-        );
-        $detail = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
-        $r['detail'] = $detail;
-        if ($detail) {
-            $id_detail = (int)$detail['id_detail'];
-            $qt = $koneksi->query("SELECT COUNT(*) AS n FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail'");
-            $qp = $koneksi->query("SELECT COUNT(*) AS n FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_detail'");
-            $r['jml_tunjangan'] = $qt ? (int)$qt->fetch_assoc()['n'] : 0;
-            $r['jml_potongan'] = $qp ? (int)$qp->fetch_assoc()['n'] : 0;
-        } else {
+        while ($r = $q->fetch()) {
+            $id = (int)$r['id_template'];
+            $jab = [];
+            $qj = $koneksi->prepare(
+                "SELECT j.id_jabatan, j.nama_jabatan, j.kode_jabatan " .
+                "FROM tb_template_kontrak_jabatan p " .
+                "JOIN tb_jabatan j ON j.id_jabatan = p.id_jabatan " .
+                "WHERE p.id_template = ? ORDER BY j.nama_jabatan ASC"
+            );
+            $qj->execute([$id]);
+            while ($jr = $qj->fetch()) $jab[] = $jr;
+            $r['jabatan'] = $jab;
+            $r['jml_jabatan'] = count($jab);
+            $qd = $koneksi->prepare(
+                "SELECT id_detail, gaji_pokok " .
+                "FROM tb_detail_kontrak WHERE id_template = ? LIMIT 1"
+            );
+            $qd->execute([$id]);
+            $detail = $qd->fetch();
+            $r['detail'] = $detail === false ? null : $detail;
             $r['jml_tunjangan'] = 0;
             $r['jml_potongan'] = 0;
+            $data[] = $r;
         }
-        $data[] = $r;
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal mengambil data.');
     }
     echo json_encode(['status' => 'success', 'data' => $data]);
     exit;
@@ -147,7 +144,7 @@ if ($action === 'upload') {
         // Validasi jabatan benar-benar ada
         $in = implode(',', $ids);
         $cek = $koneksi->query("SELECT COUNT(*) AS n FROM tb_jabatan WHERE id_jabatan IN ($in)");
-        $n = $cek ? (int)$cek->fetch_assoc()['n'] : 0;
+        $n = $cek ? (int)$cek->fetch()['n'] : 0;
         if ($n !== count($ids)) {
             throw new Exception("Ada jabatan yang tidak valid.");
         }
@@ -174,83 +171,37 @@ if ($action === 'upload') {
         }
 
         $gaji_pokok      = tpl_float($_POST['gaji_pokok'] ?? 0);
-        $upah_lembur     = tpl_float($_POST['upah_lembur'] ?? 0);
-        $potongan_izin   = tpl_float($_POST['potongan_izin'] ?? 0);
-        $potongan_mangkir = tpl_float($_POST['potongan_mangkir'] ?? 0);
 
-        $koneksi->begin_transaction();
+        $koneksi->beginTransaction();
         try {
             $stmt = $koneksi->prepare(
                 "INSERT INTO tb_template_kontrak (nama_kontrak, `file`, nama_asli, ukuran) VALUES (?, ?, ?, ?)"
             );
-            if (!$stmt) throw new Exception("Gagal menyiapkan data: " . $koneksi->error);
-            $stmt->bind_param("sssi", $nama_kontrak, $new_file, $file_name, $file_size);
-            if (!$stmt->execute()) throw new Exception("Gagal menyimpan template: " . $stmt->error);
-            $id_template = $stmt->insert_id;
-            $stmt->close();
+            $stmt->execute([$nama_kontrak, $new_file, $file_name, $file_size]);
+            $id_template = (int)$koneksi->lastInsertId();
 
             $stmt2 = $koneksi->prepare(
                 "INSERT IGNORE INTO tb_template_kontrak_jabatan (id_template, id_jabatan) VALUES (?, ?)"
             );
-            if (!$stmt2) throw new Exception("Gagal menyiapkan relasi: " . $koneksi->error);
             foreach ($ids as $id_jab) {
-                $stmt2->bind_param("ii", $id_template, $id_jab);
-                if (!$stmt2->execute()) throw new Exception("Gagal menautkan jabatan: " . $stmt2->error);
+                $stmt2->execute([$id_template, $id_jab]);
             }
-            $stmt2->close();
 
             $stmt3 = $koneksi->prepare(
-                "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) VALUES (?, ?, ?, ?, ?)"
+                "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok) VALUES (?, ?)"
             );
-            if (!$stmt3) throw new Exception("Gagal menyiapkan detail: " . $koneksi->error);
-            $stmt3->bind_param("idddd", $id_template, $gaji_pokok, $upah_lembur, $potongan_izin, $potongan_mangkir);
-            if (!$stmt3->execute()) throw new Exception("Gagal menyimpan detail kontrak: " . $stmt3->error);
-            $id_detail = $stmt3->insert_id;
-            $stmt3->close();
-
-            // Tunjangan & potongan dari tab Upload (opsional, boleh kosong).
+            $stmt3->execute([$id_template, $gaji_pokok]);
             $n_tunjangan = 0;
-            $nama_arr = isset($_POST['tunjangan_nama']) && is_array($_POST['tunjangan_nama']) ? $_POST['tunjangan_nama'] : [];
-            $jenis_arr = isset($_POST['tunjangan_jenis']) && is_array($_POST['tunjangan_jenis']) ? $_POST['tunjangan_jenis'] : [];
-            $jumlah_arr = isset($_POST['tunjangan_jumlah']) && is_array($_POST['tunjangan_jumlah']) ? $_POST['tunjangan_jumlah'] : [];
-            $tampil_arr = isset($_POST['tunjangan_tampil']) && is_array($_POST['tunjangan_tampil']) ? $_POST['tunjangan_tampil'] : [];
-            $stmtT = $koneksi->prepare(
-                "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) VALUES (?, ?, ?, ?, ?)"
-            );
-            if (!$stmtT) throw new Exception("Gagal menyiapkan tunjangan: " . $koneksi->error);
-            foreach ($nama_arr as $i => $nm_raw) {
-                $nm = substr(trim((string)$nm_raw), 0, 25);
-                if ($nm === '') continue;
-                $jn = strtolower(trim((string)($jenis_arr[$i] ?? 'tetap')));
-                if (!in_array($jn, ['tetap', 'tidak_tetap'], true)) $jn = 'tetap';
-                $jm = (string)tpl_float($jumlah_arr[$i] ?? 0);
-                $tp = (int)($tampil_arr[$i] ?? 1);
-                if (!in_array($tp, [0, 1], true)) $tp = 1;
-                $stmtT->bind_param("isssi", $id_detail, $nm, $jn, $jm, $tp);
-                if (!$stmtT->execute()) throw new Exception("Gagal menyimpan tunjangan: " . $stmtT->error);
-                $n_tunjangan++;
-            }
-            $stmtT->close();
-
-            $pot_nama_arr = isset($_POST['potongan_nama']) && is_array($_POST['potongan_nama']) ? $_POST['potongan_nama'] : [];
-            $pot_jumlah_arr = isset($_POST['potongan_jumlah']) && is_array($_POST['potongan_jumlah']) ? $_POST['potongan_jumlah'] : [];
-            $stmtP = $koneksi->prepare(
-                "INSERT INTO tb_potongan_kontrak (id_detail_kontrak, jenis_potongan, jumlah_potongan) VALUES (?, ?, ?)"
-            );
-            if (!$stmtP) throw new Exception("Gagal menyiapkan potongan: " . $koneksi->error);
-            foreach ($pot_nama_arr as $i => $pn_raw) {
-                $pn = substr(trim((string)$pn_raw), 0, 25);
-                if ($pn === '') continue;
-                $pm = (string)tpl_float($pot_jumlah_arr[$i] ?? 0);
-                $stmtP->bind_param("iss", $id_detail, $pn, $pm);
-                if (!$stmtP->execute()) throw new Exception("Gagal menyimpan potongan: " . $stmtP->error);
-                $n_potongan++;
-            }
-            $stmtP->close();
+            $n_potongan = 0;
 
             $koneksi->commit();
+        } catch (PDOException $e) {
+            if ($koneksi->inTransaction()) $koneksi->rollBack();
+            @unlink($upload_dir . $new_file);
+            error_log($e->getMessage());
+            throw new Exception("Gagal menyimpan template.");
         } catch (Exception $e) {
-            $koneksi->rollback();
+            if ($koneksi->inTransaction()) $koneksi->rollBack();
             @unlink($upload_dir . $new_file);
             throw $e;
         }
@@ -260,6 +211,9 @@ if ($action === 'upload') {
             'tunjangan' => $n_tunjangan,
             'potongan' => $n_potongan,
         ]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal menyimpan template.');
     } catch (Exception $e) {
         tpl_json('error', $e->getMessage());
     }
@@ -273,15 +227,18 @@ if ($action === 'rename') {
     if ($nama_kontrak === '') tpl_json('error', 'Nama kontrak wajib diisi.');
     if (strlen($nama_kontrak) > 150) tpl_json('error', 'Nama kontrak maksimal 150 karakter.');
 
-    $stmt = $koneksi->prepare("UPDATE tb_template_kontrak SET nama_kontrak = ? WHERE id_template = ?");
-    if (!$stmt) tpl_json('error', 'Gagal menyiapkan data: ' . $koneksi->error);
-    $stmt->bind_param("si", $nama_kontrak, $id);
-    if (!$stmt->execute()) tpl_json('error', 'Gagal menyimpan: ' . $stmt->error);
-    if ($stmt->affected_rows === 0) {
-        $cek = $koneksi->query("SELECT id_template FROM tb_template_kontrak WHERE id_template = '$id'");
-        if (!$cek || $cek->num_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
+    try {
+        $stmt = $koneksi->prepare("UPDATE tb_template_kontrak SET nama_kontrak = ? WHERE id_template = ?");
+        $stmt->execute([$nama_kontrak, $id]);
+        if ($stmt->rowCount() === 0) {
+            $cek = $koneksi->prepare("SELECT id_template FROM tb_template_kontrak WHERE id_template = ?");
+            $cek->execute([$id]);
+            if (!$cek->fetch()) tpl_json('error', 'Data tidak ditemukan.');
+        }
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal menyimpan data.');
     }
-    $stmt->close();
     tpl_json('success', 'Nama kontrak berhasil disimpan.');
 }
 
@@ -291,8 +248,9 @@ if ($action === 'update') {
         $id_template = (int)($_POST['id_template'] ?? 0);
         if ($id_template <= 0) throw new Exception("ID template tidak valid.");
 
-        $q = $koneksi->query("SELECT `file` FROM tb_template_kontrak WHERE id_template = '$id_template' LIMIT 1");
-        $lama = $q ? $q->fetch_assoc() : null;
+        $q = $koneksi->prepare("SELECT `file` FROM tb_template_kontrak WHERE id_template = ? LIMIT 1");
+        $q->execute([$id_template]);
+        $lama = $q->fetch();
         if (!$lama) throw new Exception("Template tidak ditemukan.");
 
         $nama_kontrak = trim($_POST['nama_kontrak'] ?? '');
@@ -308,7 +266,7 @@ if ($action === 'update') {
 
         $in = implode(',', $ids);
         $cek = $koneksi->query("SELECT COUNT(*) AS n FROM tb_jabatan WHERE id_jabatan IN ($in)");
-        $n = $cek ? (int)$cek->fetch_assoc()['n'] : 0;
+        $n = $cek ? (int)$cek->fetch()['n'] : 0;
         if ($n !== count($ids)) throw new Exception("Ada jabatan yang tidak valid.");
 
         // File pengganti (opsional, kosongkan bila tidak diganti).
@@ -328,37 +286,34 @@ if ($action === 'update') {
             if (!move_uploaded_file($file_tmp, $upload_dir . $new_file)) throw new Exception("Gagal mengupload file ke server.");
         }
 
-        $koneksi->begin_transaction();
+        $koneksi->beginTransaction();
         try {
             if ($new_file !== null) {
                 $stmt = $koneksi->prepare(
                     "UPDATE tb_template_kontrak SET nama_kontrak = ?, `file` = ?, nama_asli = ?, ukuran = ? WHERE id_template = ?"
                 );
-                if (!$stmt) throw new Exception("Gagal menyiapkan data: " . $koneksi->error);
-                $stmt->bind_param("sssii", $nama_kontrak, $new_file, $file_name, $file_size, $id_template);
+                $stmt->execute([$nama_kontrak, $new_file, $file_name, $file_size, $id_template]);
             } else {
                 $stmt = $koneksi->prepare("UPDATE tb_template_kontrak SET nama_kontrak = ? WHERE id_template = ?");
-                if (!$stmt) throw new Exception("Gagal menyiapkan data: " . $koneksi->error);
-                $stmt->bind_param("si", $nama_kontrak, $id_template);
+                $stmt->execute([$nama_kontrak, $id_template]);
             }
-            if (!$stmt->execute()) throw new Exception("Gagal menyimpan template: " . $stmt->error);
-            $stmt->close();
 
-            if (!$koneksi->query("DELETE FROM tb_template_kontrak_jabatan WHERE id_template = '$id_template'")) {
-                throw new Exception("Gagal memperbarui relasi: " . $koneksi->error);
-            }
+            $delRel = $koneksi->prepare("DELETE FROM tb_template_kontrak_jabatan WHERE id_template = ?");
+            $delRel->execute([$id_template]);
             $stmt2 = $koneksi->prepare(
                 "INSERT INTO tb_template_kontrak_jabatan (id_template, id_jabatan) VALUES (?, ?)"
             );
-            if (!$stmt2) throw new Exception("Gagal menyiapkan relasi: " . $koneksi->error);
             foreach ($ids as $id_jab) {
-                $stmt2->bind_param("ii", $id_template, $id_jab);
-                if (!$stmt2->execute()) throw new Exception("Gagal menautkan jabatan: " . $stmt2->error);
+                $stmt2->execute([$id_template, $id_jab]);
             }
-            $stmt2->close();
             $koneksi->commit();
+        } catch (PDOException $e) {
+            if ($koneksi->inTransaction()) $koneksi->rollBack();
+            if ($new_file !== null) @unlink($upload_dir . $new_file);
+            error_log($e->getMessage());
+            throw new Exception("Gagal memperbarui template.");
         } catch (Exception $e) {
-            $koneksi->rollback();
+            if ($koneksi->inTransaction()) $koneksi->rollBack();
             if ($new_file !== null) @unlink($upload_dir . $new_file);
             throw $e;
         }
@@ -369,6 +324,9 @@ if ($action === 'update') {
             if ($old_base !== '' && file_exists($legacy_upload_dir . $old_base)) @unlink($legacy_upload_dir . $old_base);
         }
         tpl_json('success', 'Template berhasil diperbarui.');
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal memperbarui template.');
     } catch (Exception $e) {
         tpl_json('error', $e->getMessage());
     }
@@ -379,152 +337,32 @@ if ($action === 'save_detail') {
     $id_template = (int)($_POST['id_template'] ?? 0);
     if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
 
-    $cek = $koneksi->query("SELECT id_template FROM tb_template_kontrak WHERE id_template = '$id_template'");
-    if (!$cek || $cek->num_rows === 0) tpl_json('error', 'Template tidak ditemukan.');
+    try {
+        $cek = $koneksi->prepare("SELECT id_template FROM tb_template_kontrak WHERE id_template = ?");
+        $cek->execute([$id_template]);
+        if (!$cek->fetch()) tpl_json('error', 'Template tidak ditemukan.');
 
-    $gaji_pokok       = tpl_float($_POST['gaji_pokok'] ?? 0);
-    $upah_lembur      = tpl_float($_POST['upah_lembur'] ?? 0);
-    $potongan_izin    = tpl_float($_POST['potongan_izin'] ?? 0);
-    $potongan_mangkir = tpl_float($_POST['potongan_mangkir'] ?? 0);
+        $gaji_pokok       = tpl_float($_POST['gaji_pokok'] ?? 0);
 
-    $stmt = $koneksi->prepare(
-        "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) " .
-        "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE " .
-        "gaji_pokok = VALUES(gaji_pokok), upah_lembur = VALUES(upah_lembur), " .
-        "potongan_izin = VALUES(potongan_izin), potongan_mangkir = VALUES(potongan_mangkir)"
-    );
-    if (!$stmt) tpl_json('error', 'Gagal menyiapkan data: ' . $koneksi->error);
-    $stmt->bind_param("idddd", $id_template, $gaji_pokok, $upah_lembur, $potongan_izin, $potongan_mangkir);
-    if (!$stmt->execute()) tpl_json('error', 'Gagal menyimpan detail: ' . $stmt->error);
-    $stmt->close();
-
-    tpl_json('success', 'Nilai kontrak berhasil disimpan.');
-}
-
-// --- Tunjangan milik detail kontrak (tabel khusus tb_tunjangan_kontrak) ---
-if ($action === 'list_tunjangan') {
-    $id_template = (int)($_POST['id_template'] ?? $_GET['id_template'] ?? 0);
-    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
-    $id_detail = tpl_ensure_detail($koneksi, $id_template);
-    $rows = [];
-    $q = $koneksi->query(
-        "SELECT id_tunjangan_kontrak AS id_tunjangan, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template " .
-        "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail' ORDER BY id_tunjangan_kontrak ASC"
-    );
-    if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
-    while ($r = $q->fetch_assoc()) $rows[] = $r;
-    echo json_encode(['status' => 'success', 'data' => $rows, 'id_detail' => $id_detail]);
-    exit;
-}
-
-if ($action === 'save_tunjangan') {
-    $id_template = (int)($_POST['id_template'] ?? 0);
-    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
-    $nama_raw = trim($_POST['nama_tunjangan'] ?? '');
-    if ($nama_raw === '') tpl_json('error', 'Nama tunjangan wajib diisi.');
-    if (strlen($nama_raw) > 25) tpl_json('error', 'Nama tunjangan maksimal 25 karakter.');
-    $jumlah_raw = $_POST['jumlah_tunjangan'] ?? '';
-    if ($jumlah_raw === '' || $jumlah_raw === null) tpl_json('error', 'Jumlah tunjangan wajib diisi.');
-    $jenis_t = strtolower(trim($_POST['jenis_tunjangan'] ?? 'tetap'));
-    if (!in_array($jenis_t, ['tetap', 'tidak_tetap'], true)) tpl_json('error', 'Jenis tunjangan tidak valid.');
-    $tampil = (int)($_POST['tampil_template'] ?? 1);
-    if (!in_array($tampil, [0, 1], true)) $tampil = 1;
-    $jumlah = (string)tpl_float($jumlah_raw);
-    $id_detail = tpl_ensure_detail($koneksi, $id_template);
-    $nama = $koneksi->real_escape_string($nama_raw);
-    $jumlah_esc = $koneksi->real_escape_string($jumlah);
-
-    $id_tunjangan = (int)($_POST['id_tunjangan'] ?? 0);
-    if ($id_tunjangan > 0) {
-        $ok = $koneksi->query(
-            "UPDATE tb_tunjangan_kontrak SET nama_tunjangan = '$nama', jenis_tunjangan = '$jenis_t', jumlah_tunjangan = '$jumlah_esc', tampil_template = '$tampil' " .
-            "WHERE id_tunjangan_kontrak = '$id_tunjangan' AND id_detail_kontrak = '$id_detail'"
+        $stmt = $koneksi->prepare(
+            "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok) " .
+            "VALUES (?, ?) ON DUPLICATE KEY UPDATE " .
+            "gaji_pokok = VALUES(gaji_pokok)"
         );
-        if (!$ok) tpl_json('error', 'Gagal mengupdate: ' . $koneksi->error);
-        if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
-        tpl_json('success', 'Tunjangan berhasil diupdate.');
-    } else {
-        $ok = $koneksi->query(
-            "INSERT INTO tb_tunjangan_kontrak (id_detail_kontrak, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) " .
-            "VALUES ('$id_detail', '$nama', '$jenis_t', '$jumlah_esc', '$tampil')"
-        );
-        if (!$ok) tpl_json('error', 'Gagal menyimpan: ' . $koneksi->error);
-        tpl_json('success', 'Tunjangan berhasil ditambah.', ['id_tunjangan' => $koneksi->insert_id]);
+        $stmt->execute([$id_template, $gaji_pokok]);
+
+        tpl_json('success', 'Nilai kontrak berhasil disimpan.');
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal menyimpan detail.');
     }
 }
 
-if ($action === 'delete_tunjangan') {
-    $id_template = (int)($_POST['id_template'] ?? 0);
-    $id_tunjangan = (int)($_POST['id_tunjangan'] ?? 0);
-    if ($id_template <= 0 || $id_tunjangan <= 0) tpl_json('error', 'ID tidak valid.');
-    $id_detail = tpl_ensure_detail($koneksi, $id_template);
-    $ok = $koneksi->query(
-        "DELETE FROM tb_tunjangan_kontrak WHERE id_tunjangan_kontrak = '$id_tunjangan' AND id_detail_kontrak = '$id_detail'"
-    );
-    if (!$ok) tpl_json('error', 'Gagal menghapus: ' . $koneksi->error);
-    if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
-    tpl_json('success', 'Tunjangan berhasil dihapus.');
-}
-
-// --- Potongan milik detail kontrak (tabel khusus tb_potongan_kontrak) ---
-if ($action === 'list_potongan') {
-    $id_template = (int)($_POST['id_template'] ?? $_GET['id_template'] ?? 0);
-    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
-    $id_detail = tpl_ensure_detail($koneksi, $id_template);
-    $rows = [];
-    $q = $koneksi->query(
-        "SELECT id_potongan_kontrak AS id_potongan, jenis_potongan, jumlah_potongan " .
-        "FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_detail' ORDER BY id_potongan_kontrak ASC"
-    );
-    if (!$q) tpl_json('error', 'Gagal mengambil data: ' . $koneksi->error);
-    while ($r = $q->fetch_assoc()) $rows[] = $r;
-    echo json_encode(['status' => 'success', 'data' => $rows, 'id_detail' => $id_detail]);
-    exit;
-}
-
-if ($action === 'save_potongan') {
-    $id_template = (int)($_POST['id_template'] ?? 0);
-    if ($id_template <= 0) tpl_json('error', 'ID template tidak valid.');
-    $jenis_raw = trim($_POST['jenis_potongan'] ?? '');
-    if ($jenis_raw === '') tpl_json('error', 'Nama potongan wajib diisi.');
-    if (strlen($jenis_raw) > 25) tpl_json('error', 'Nama potongan maksimal 25 karakter.');
-    $jumlah_raw = $_POST['jumlah_potongan'] ?? '';
-    if ($jumlah_raw === '' || $jumlah_raw === null) tpl_json('error', 'Jumlah potongan wajib diisi.');
-    $jumlah = (string)tpl_float($jumlah_raw);
-    $id_detail = tpl_ensure_detail($koneksi, $id_template);
-    $jenis = $koneksi->real_escape_string($jenis_raw);
-    $jumlah_esc = $koneksi->real_escape_string($jumlah);
-
-    $id_potongan = (int)($_POST['id_potongan'] ?? 0);
-    if ($id_potongan > 0) {
-        $ok = $koneksi->query(
-            "UPDATE tb_potongan_kontrak SET jenis_potongan = '$jenis', jumlah_potongan = '$jumlah_esc' " .
-            "WHERE id_potongan_kontrak = '$id_potongan' AND id_detail_kontrak = '$id_detail'"
-        );
-        if (!$ok) tpl_json('error', 'Gagal mengupdate: ' . $koneksi->error);
-        if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
-        tpl_json('success', 'Potongan berhasil diupdate.');
-    } else {
-        $ok = $koneksi->query(
-            "INSERT INTO tb_potongan_kontrak (id_detail_kontrak, jenis_potongan, jumlah_potongan) " .
-            "VALUES ('$id_detail', '$jenis', '$jumlah_esc')"
-        );
-        if (!$ok) tpl_json('error', 'Gagal menyimpan: ' . $koneksi->error);
-        tpl_json('success', 'Potongan berhasil ditambah.', ['id_potongan' => $koneksi->insert_id]);
-    }
-}
-
-if ($action === 'delete_potongan') {
-    $id_template = (int)($_POST['id_template'] ?? 0);
-    $id_potongan = (int)($_POST['id_potongan'] ?? 0);
-    if ($id_template <= 0 || $id_potongan <= 0) tpl_json('error', 'ID tidak valid.');
-    $id_detail = tpl_ensure_detail($koneksi, $id_template);
-    $ok = $koneksi->query(
-        "DELETE FROM tb_potongan_kontrak WHERE id_potongan_kontrak = '$id_potongan' AND id_detail_kontrak = '$id_detail'"
-    );
-    if (!$ok) tpl_json('error', 'Gagal menghapus: ' . $koneksi->error);
-    if ($koneksi->affected_rows === 0) tpl_json('error', 'Data tidak ditemukan.');
-    tpl_json('success', 'Potongan berhasil dihapus.');
+// Aksi tunjangan/potongan kontrak dihapus bersama tabelnya
+// (penyederhanaan gaji Okt 2026). Panggilan lama ditolak tegas.
+if (in_array($action, ['list_tunjangan','save_tunjangan','delete_tunjangan',
+    'list_potongan','save_potongan','delete_potongan'], true)) {
+    tpl_json('error', 'Fitur tunjangan/potongan sudah dihapus dari sistem.');
 }
 
 // --- Info untuk preview surat kontrak sebelum karier disimpan ---
@@ -535,45 +373,40 @@ if ($action === 'preview_info') {
     $tgl_mulai = (string)($_POST['tgl_mulai'] ?? $_GET['tgl_mulai'] ?? '');
     if ($id_jabatan <= 0) tpl_json('error', 'Jabatan belum dipilih.');
 
-    $qj = $koneksi->query("SELECT kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-    if (!$qj || $qj->num_rows === 0) tpl_json('error', 'Jabatan tidak ditemukan.');
-    $jab = $qj->fetch_assoc();
+    try {
+        $qj = $koneksi->prepare("SELECT kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = ? LIMIT 1");
+        $qj->execute([$id_jabatan]);
+        $jab = $qj->fetch();
+        if (!$jab) tpl_json('error', 'Jabatan tidak ditemukan.');
 
-    $qt = $koneksi->query(
-        "SELECT t.id_template, t.nama_kontrak, t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
-        "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-        "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC"
-    );
-    // Semua template yang berlaku untuk jabatan (+ detail nilai masing-masing)
-    // agar user bisa memilih bila jumlahnya lebih dari satu.
-    $templates = [];
-    if ($qt) {
-        while ($tr = $qt->fetch_assoc()) {
+        $qt = $koneksi->prepare(
+            "SELECT t.id_template, t.nama_kontrak, t.`file`, t.nama_asli FROM tb_template_kontrak_jabatan p " .
+            "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
+            "WHERE p.id_jabatan = ? ORDER BY t.id_template DESC"
+        );
+        $qt->execute([$id_jabatan]);
+        // Semua template yang berlaku untuk jabatan (+ detail nilai masing-masing)
+        // agar user bisa memilih bila jumlahnya lebih dari satu.
+        $templates = [];
+        while ($tr = $qt->fetch()) {
             $id_tpl = (int)$tr['id_template'];
-            $qd = $koneksi->query(
-                "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
-                "FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1"
+            $qd = $koneksi->prepare(
+                "SELECT id_detail, gaji_pokok " .
+                "FROM tb_detail_kontrak WHERE id_template = ? LIMIT 1"
             );
-            $detailRow = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
+            $qd->execute([$id_tpl]);
+            $detailRow = $qd->fetch();
             $tr['tunjangan'] = [];
             $tr['potongan'] = [];
             if ($detailRow && !empty($detailRow['id_detail'])) {
-                $id_det = (int)$detailRow['id_detail'];
-                $qt2 = $koneksi->query(
-                    "SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan_kontrak " .
-                    "WHERE id_detail_kontrak = '$id_det' ORDER BY id_tunjangan_kontrak ASC"
-                );
-                if ($qt2) while ($x = $qt2->fetch_assoc()) $tr['tunjangan'][] = $x;
-                $qp2 = $koneksi->query(
-                    "SELECT jenis_potongan, jumlah_potongan FROM tb_potongan_kontrak " .
-                    "WHERE id_detail_kontrak = '$id_det' ORDER BY id_potongan_kontrak ASC"
-                );
-                if ($qp2) while ($x = $qp2->fetch_assoc()) $tr['potongan'][] = $x;
                 unset($detailRow['id_detail']);
             }
-            $tr['detail'] = $detailRow;
+            $tr['detail'] = $detailRow === false ? null : $detailRow;
             $templates[] = $tr;
         }
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal mengambil data.');
     }
     $tpl = $templates[0] ?? null;
 
@@ -601,21 +434,24 @@ if ($action === 'delete') {
     $id = (int)($_POST['id_template'] ?? 0);
     if ($id <= 0) tpl_json('error', 'ID template tidak valid.');
 
-    $q = $koneksi->query("SELECT `file` FROM tb_template_kontrak WHERE id_template = '$id'");
-    $row = $q ? $q->fetch_assoc() : null;
+    $q = $koneksi->prepare("SELECT `file` FROM tb_template_kontrak WHERE id_template = ?");
+    $q->execute([$id]);
+    $row = $q->fetch();
     if (!$row) tpl_json('error', 'Data tidak ditemukan.');
 
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
     try {
-        if (!$koneksi->query("DELETE FROM tb_template_kontrak_jabatan WHERE id_template = '$id'")) {
-            throw new Exception("Gagal menghapus relasi: " . $koneksi->error);
-        }
-        if (!$koneksi->query("DELETE FROM tb_template_kontrak WHERE id_template = '$id'")) {
-            throw new Exception("Gagal menghapus template: " . $koneksi->error);
-        }
+        $delRel = $koneksi->prepare("DELETE FROM tb_template_kontrak_jabatan WHERE id_template = ?");
+        $delRel->execute([$id]);
+        $delTpl = $koneksi->prepare("DELETE FROM tb_template_kontrak WHERE id_template = ?");
+        $delTpl->execute([$id]);
         $koneksi->commit();
+    } catch (PDOException $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        tpl_json('error', 'Gagal menghapus template.');
     } catch (Exception $e) {
-        $koneksi->rollback();
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
         tpl_json('error', $e->getMessage());
     }
 

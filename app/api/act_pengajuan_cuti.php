@@ -23,9 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once __DIR__ . '/koneksi-api.php';
-if (mysqli_connect_errno()) {
-    sendResponse('error', 'Database error', null, 500);
-}
 
 function uploadBuktiCuti($file_input_name, $nik, $tgl_format) {
     if (!isset($_FILES[$file_input_name]) || $_FILES[$file_input_name]['error'] === UPLOAD_ERR_NO_FILE) {
@@ -79,43 +76,58 @@ switch ($action) {
             sendResponse('error', 'Bukti lampiran cuti wajib diupload.', null, 400);
         }
 
-        $id_karyawan_safe = mysqli_real_escape_string($koneksi, $id_karyawan);
         $tahun_cuti = date('Y', strtotime($tgl_awal));
 
-        // 1. CEK SISA KUOTA SEBELUM MENGAJUKAN
-        $q_jatah = mysqli_query($koneksi, "SELECT sisa_cuti FROM tb_jatah_cuti WHERE id_karyawan = '$id_karyawan_safe' AND tahun = '$tahun_cuti'");
-        $sisa_kuota = 12; // Default jika belum di-generate oleh admin
-        if ($row_jatah = mysqli_fetch_assoc($q_jatah)) {
-            $sisa_kuota = (int)$row_jatah['sisa_cuti'];
-        }
+        try {
+            // 1. CEK SISA KUOTA SEBELUM MENGAJUKAN
+            $st_jatah = $koneksi->prepare("SELECT sisa_cuti FROM tb_jatah_cuti WHERE id_karyawan = ? AND tahun = ?");
+            $st_jatah->execute([$id_karyawan, $tahun_cuti]);
+            $row_jatah = $st_jatah->fetch();
+            $sisa_kuota = 12; // Default jika belum di-generate oleh admin
+            if ($row_jatah) {
+                $sisa_kuota = (int)$row_jatah['sisa_cuti'];
+            }
 
-        if ($lama_cuti > $sisa_kuota) {
-            sendResponse('error', "Maaf, sisa kuota cuti Anda tahun $tahun_cuti tinggal $sisa_kuota hari. Pengajuan $lama_cuti hari ditolak.", null, 400);
-        }
+            if ($lama_cuti > $sisa_kuota) {
+                sendResponse('error', "Maaf, sisa kuota cuti Anda tahun $tahun_cuti tinggal $sisa_kuota hari. Pengajuan $lama_cuti hari ditolak.", null, 400);
+            }
 
-        // 2. LANJUTKAN PROSES JIKA KUOTA CUKUP
-        $q_kar = mysqli_query($koneksi, "SELECT nik_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan_safe'");
-        $nik_karyawan = ($r = mysqli_fetch_assoc($q_kar)) ? $r['nik_karyawan'] : 'UNKNOWN';
+            // 2. LANJUTKAN PROSES JIKA KUOTA CUKUP
+            $st_kar = $koneksi->prepare("SELECT nik_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
+            $st_kar->execute([$id_karyawan]);
+            $r = $st_kar->fetch();
+            $nik_karyawan = $r ? $r['nik_karyawan'] : 'UNKNOWN';
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_cuti ajukan cek kuota gagal: ' . $e->getMessage());
+            sendResponse('error', 'Terjadi kesalahan database.', null, 500);
+        }
 
         $bukti_cuti = uploadBuktiCuti('bukti_cuti', $nik_karyawan, date('Ymd', strtotime($tgl_awal)));
-        $bukti_val = $bukti_cuti ? "'$bukti_cuti'" : "NULL";
 
-        $sql = "INSERT INTO tb_pengajuan_cuti (id_karyawan, tgl_awal, tgl_akhir, lama_cuti, alasan_cuti, bukti_cuti, status_cuti)
-                VALUES ('$id_karyawan_safe', '$tgl_awal', '$tgl_akhir', $lama_cuti, '" . mysqli_real_escape_string($koneksi, $alasan_cuti) . "', $bukti_val, 'pending')";
-
-        if (mysqli_query($koneksi, $sql)) {
+        try {
+            $st = $koneksi->prepare("INSERT INTO tb_pengajuan_cuti (id_karyawan, tgl_awal, tgl_akhir, lama_cuti, alasan_cuti, bukti_cuti, status_cuti)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending')");
+            $st->execute([$id_karyawan, $tgl_awal, $tgl_akhir, $lama_cuti, $alasan_cuti, $bukti_cuti]);
             sendResponse('success', 'Pengajuan cuti berhasil disubmit dan menunggu persetujuan HRD!');
-        } else {
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_cuti ajukan insert gagal: ' . $e->getMessage());
             sendResponse('error', 'Gagal menyimpan ke database.', null, 500);
         }
         break;
 
     case 'batalkan':
-        $id_pengajuan = mysqli_real_escape_string($koneksi, $_POST['id_pengajuan'] ?? '');
-        $cek_sql = "SELECT status_cuti, bukti_cuti FROM tb_pengajuan_cuti WHERE id_pengajuan_cuti = '$id_pengajuan'";
-        $cek_result = mysqli_query($koneksi, $cek_sql);
+        $id_pengajuan = $_POST['id_pengajuan'] ?? '';
 
-        if ($row = mysqli_fetch_assoc($cek_result)) {
+        try {
+            $st_cek = $koneksi->prepare("SELECT status_cuti, bukti_cuti FROM tb_pengajuan_cuti WHERE id_pengajuan_cuti = ?");
+            $st_cek->execute([$id_pengajuan]);
+            $row = $st_cek->fetch();
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_cuti batalkan cek gagal: ' . $e->getMessage());
+            sendResponse('error', 'Terjadi kesalahan database.', null, 500);
+        }
+
+        if ($row) {
             if ($row['status_cuti'] !== 'pending') {
                 sendResponse('error', 'Gagal. Cuti sudah diproses Admin.', null, 400);
             }
@@ -125,8 +137,13 @@ switch ($action) {
                 unlink($base_dir . $row['bukti_cuti']);
             }
 
-            if (mysqli_query($koneksi, "DELETE FROM tb_pengajuan_cuti WHERE id_pengajuan_cuti = '$id_pengajuan'")) {
+            try {
+                $st_del = $koneksi->prepare("DELETE FROM tb_pengajuan_cuti WHERE id_pengajuan_cuti = ?");
+                $st_del->execute([$id_pengajuan]);
                 sendResponse('success', 'Pengajuan cuti berhasil dibatalkan.');
+            } catch (PDOException $e) {
+                error_log('act_pengajuan_cuti batalkan hapus gagal: ' . $e->getMessage());
+                sendResponse('error', 'Terjadi kesalahan database.', null, 500);
             }
         }
         sendResponse('error', 'Gagal menghapus data.', null, 400);

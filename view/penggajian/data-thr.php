@@ -176,9 +176,10 @@
                             <?php
                             $sqlPeriode = "SELECT DISTINCT periode FROM tb_thr ORDER BY periode DESC";
                             $resultPeriode = $koneksi->query($sqlPeriode);
-                            if ($resultPeriode && $resultPeriode->num_rows > 0) {
+                            $rowsPeriode = $resultPeriode ? $resultPeriode->fetchAll() : [];
+                            if (count($rowsPeriode) > 0) {
                                 $isFirst = true;
-                                while ($rowPeriode = $resultPeriode->fetch_assoc()) {
+                                foreach ($rowsPeriode as $rowPeriode) {
                                     $tahun = htmlspecialchars($rowPeriode['periode']);
                                     $selected = $isFirst ? "selected" : "";
                                     echo "<option value='$tahun' $selected>$tahun</option>";

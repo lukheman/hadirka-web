@@ -23,20 +23,27 @@ if (empty($nik)) {
     exit;
 }
 
-// Cari data berdasarkan NIK
-$q = mysqli_query($koneksi,"
-    SELECT k.id_karyawan, k.email_pribadi, k.status_karyawan, k.password 
-    FROM tb_identitas i
-    JOIN tb_karyawan k ON i.id_karyawan = k.id_karyawan
-    WHERE i.nik_ktp = '$nik'
-");
+try {
+    // Cari data berdasarkan NIK
+    $st = $koneksi->prepare("
+        SELECT k.id_karyawan, k.email_pribadi, k.status_karyawan, k.password 
+        FROM tb_identitas i
+        JOIN tb_karyawan k ON i.id_karyawan = k.id_karyawan
+        WHERE i.nik_ktp = ?
+    ");
+    $st->execute([$nik]);
+    $data = $st->fetch();
 
-if (mysqli_num_rows($q) == 0) {
-    echo json_encode(['status' => 'error', 'message' => 'NIK tidak ditemukan di sistem']);
+    if (!$data) {
+        echo json_encode(['status' => 'error', 'message' => 'NIK tidak ditemukan di sistem']);
+        exit;
+    }
+} catch (PDOException $e) {
+    error_log('send_otp_reset cari karyawan gagal: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Terjadi kesalahan database.']);
     exit;
 }
 
-$data = mysqli_fetch_assoc($q);
 $id_karyawan = $data['id_karyawan'];
 $email_tujuan = $data['email_pribadi'];
 $status = strtolower(trim($data['status_karyawan']));
@@ -58,14 +65,22 @@ if (empty($email_tujuan)) {
 $otp = rand(100000, 999999);
 $expired = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
-// Hapus OTP lama yang belum terpakai
-mysqli_query($koneksi, "DELETE FROM tb_reset_otp WHERE id_karyawan='$id_karyawan' AND is_used=0");
+try {
+    // Hapus OTP lama yang belum terpakai
+    $st_del_old = $koneksi->prepare("DELETE FROM tb_reset_otp WHERE id_karyawan = ? AND is_used = 0");
+    $st_del_old->execute([$id_karyawan]);
 
-// Insert OTP Baru
-mysqli_query($koneksi,"
-    INSERT INTO tb_reset_otp(id_karyawan, otp_code, expired_at)
-    VALUES('$id_karyawan','$otp','$expired')
-");
+    // Insert OTP Baru
+    $st_ins = $koneksi->prepare("
+        INSERT INTO tb_reset_otp(id_karyawan, otp_code, expired_at)
+        VALUES(?, ?, ?)
+    ");
+    $st_ins->execute([$id_karyawan, $otp, $expired]);
+} catch (PDOException $e) {
+    error_log('send_otp_reset simpan OTP gagal: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Terjadi kesalahan database.']);
+    exit;
+}
 
 // Sensor email untuk ditampilkan di HP (agar aman)
 $parts = explode("@", $email_tujuan);
@@ -118,7 +133,12 @@ try {
 
 } catch (Exception $e) {
     // Jika gagal terkirim, kita hapus OTP dari database agar tidak nyangkut
-    mysqli_query($koneksi, "DELETE FROM tb_reset_otp WHERE id_karyawan='$id_karyawan' AND otp_code='$otp'");
+    try {
+        $st_del_fail = $koneksi->prepare("DELETE FROM tb_reset_otp WHERE id_karyawan = ? AND otp_code = ?");
+        $st_del_fail->execute([$id_karyawan, $otp]);
+    } catch (PDOException $e2) {
+        error_log('send_otp_reset hapus OTP gagal-terkirim gagal: ' . $e2->getMessage());
+    }
     
     // Tampilkan pesan error mailer untuk debugging (Bisa diganti dengan pesan umum nanti)
     echo json_encode(['status' => 'error', 'message' => "Gagal mengirim email. Error: {$mail->ErrorInfo}"]);

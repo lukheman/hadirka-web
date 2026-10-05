@@ -11,7 +11,7 @@ $q = $koneksi->query("SELECT kr.id_karyawan, kr.nik_karyawan, kr.nama_lengkap, j
     GROUP BY kr.id_karyawan
     ORDER BY kr.nama_lengkap ASC");
 
-while ($r = $q->fetch_assoc()) {
+while ($r = $q->fetch()) {
     $nik = htmlspecialchars($r['nik_karyawan'] ?? '');
     $nama = htmlspecialchars($r['nama_lengkap'] ?? '');
     $jabatan = htmlspecialchars($r['nama_jabatan'] ?? '-');

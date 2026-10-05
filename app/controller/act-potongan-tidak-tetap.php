@@ -19,9 +19,12 @@ switch ($action) {
         }
 
         $stmt = $koneksi->prepare("INSERT INTO tb_potongan_tidak_tetap (id_karyawan, tgl_potongan, jenis_potongan, nominal_potongan, ket_potongan) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("issds", $id_karyawan, $tgl_potongan, $jenis_potongan, $nominal, $ket);
-        echo $stmt->execute() ? json_encode(['status' => 'success']) : json_encode(['status' => 'error', 'msg' => $stmt->error]);
-        $stmt->close();
+        try {
+            echo $stmt->execute([$id_karyawan, $tgl_potongan, $jenis_potongan, $nominal, $ket]) ? json_encode(['status' => 'success']) : json_encode(['status' => 'error', 'msg' => 'Gagal menyimpan data.']);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'Gagal menyimpan data.']);
+        }
         break;
 
     case 'edit':
@@ -38,9 +41,12 @@ switch ($action) {
         }
 
         $stmt = $koneksi->prepare("UPDATE tb_potongan_tidak_tetap SET id_karyawan=?, tgl_potongan=?, jenis_potongan=?, nominal_potongan=?, ket_potongan=? WHERE id_potongan_tidak_tetap=?");
-        $stmt->bind_param("issdsi", $id_karyawan, $tgl_potongan, $jenis_potongan, $nominal, $ket, $id);
-        echo $stmt->execute() ? json_encode(['status' => 'success']) : json_encode(['status' => 'error', 'msg' => $stmt->error]);
-        $stmt->close();
+        try {
+            echo $stmt->execute([$id_karyawan, $tgl_potongan, $jenis_potongan, $nominal, $ket, $id]) ? json_encode(['status' => 'success']) : json_encode(['status' => 'error', 'msg' => 'Gagal memperbarui data.']);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'Gagal memperbarui data.']);
+        }
         break;
 
     case 'delete':
@@ -52,9 +58,12 @@ switch ($action) {
 
         // Hapus potongan langsung tanpa validasi relasi pengajuan
         $stmt = $koneksi->prepare("DELETE FROM tb_potongan_tidak_tetap WHERE id_potongan_tidak_tetap=?");
-        $stmt->bind_param("i", $id);
-        echo $stmt->execute() ? json_encode(['status' => 'success']) : json_encode(['status' => 'error', 'msg' => $stmt->error]);
-        $stmt->close();
+        try {
+            echo $stmt->execute([$id]) ? json_encode(['status' => 'success']) : json_encode(['status' => 'error', 'msg' => 'Gagal menghapus data.']);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            echo json_encode(['status' => 'error', 'msg' => 'Gagal menghapus data.']);
+        }
         break;
 
     default:

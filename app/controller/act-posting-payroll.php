@@ -19,21 +19,26 @@ $tgl_posting = date('Y-m-01', strtotime('+1 month', strtotime($endDate)));
 
 try {
     // 1. Ambil ID Akun Keuangan (4001, 1301, 3004, 2003)
-    $qBebanGaji = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '4001' LIMIT 1");
-    $id_beban_gaji = mysqli_fetch_assoc($qBebanGaji)['id_kategori'] ?? null;
+    $qBebanGaji = $koneksi->query("SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '4001' LIMIT 1");
+    $rowBeban = $qBebanGaji->fetch();
+    $id_beban_gaji = $rowBeban['id_kategori'] ?? null;
 
-    $qPiutang = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1301' LIMIT 1");
-    $id_piutang = mysqli_fetch_assoc($qPiutang)['id_kategori'] ?? null;
+    $qPiutang = $koneksi->query("SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1301' LIMIT 1");
+    $rowPiutang = $qPiutang->fetch();
+    $id_piutang = $rowPiutang['id_kategori'] ?? null;
 
-    $qPendapatanLain = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '3004' LIMIT 1");
-    $id_pendapatan_lain = mysqli_fetch_assoc($qPendapatanLain)['id_kategori'] ?? null;
+    $qPendapatanLain = $koneksi->query("SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '3004' LIMIT 1");
+    $rowPend = $qPendapatanLain->fetch();
+    $id_pendapatan_lain = $rowPend['id_kategori'] ?? null;
 
-    $qTitipan = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '2003' LIMIT 1");
-    $id_titipan = mysqli_fetch_assoc($qTitipan)['id_kategori'] ?? null;
+    $qTitipan = $koneksi->query("SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '2003' LIMIT 1");
+    $rowTit = $qTitipan->fetch();
+    $id_titipan = $rowTit['id_kategori'] ?? null;
 
     // Ambil akun Kas (1001)
-    $qKas = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
-    $id_kas = mysqli_fetch_assoc($qKas)['id_kategori'] ?? null;
+    $qKas = $koneksi->query("SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
+    $rowKas = $qKas->fetch();
+    $id_kas = $rowKas['id_kategori'] ?? null;
 
     if (!$id_beban_gaji || !$id_piutang || !$id_pendapatan_lain || !$id_titipan || !$id_kas) {
         throw new Exception("Setup Akun (4001, 1301, 3004, 2003, 1001) belum lengkap di tb_kategori_keuangan.");
@@ -46,13 +51,13 @@ try {
     $total_gaji_bersih_rekap = 0;
 
     // FIX BUG: Tambahkan DISTINCT agar NIK tidak berulang jika ada double karier di bulan yang sama
-    $sqlKaryawan = "SELECT DISTINCT k.nik_karyawan FROM tb_karyawan k
+    $stKar = $koneksi->prepare("SELECT DISTINCT k.nik_karyawan FROM tb_karyawan k
                     LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
-                    WHERE kr.tgl_mulai <= '$endDate' 
-                    AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= '$startDate')";
-    $q_karyawan = mysqli_query($koneksi, $sqlKaryawan);
+                    WHERE kr.tgl_mulai <= ?
+                    AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= ?)");
+    $stKar->execute([$endDate, $startDate]);
 
-    while ($karyawan = mysqli_fetch_assoc($q_karyawan)) {
+    while ($karyawan = $stKar->fetch()) {
         $slip = generateSlipGaji($karyawan['nik_karyawan'], $startDate, $endDate);
 
         if (!isset($slip['error']) && !isset($slip['skip'])) {
@@ -113,47 +118,57 @@ try {
     if ($total_gaji_kotor <= 0) throw new Exception("Total gaji kotor Rp 0. Tidak ada yang diposting.");
     $ket_posting = "Auto-Posting Payroll: " . date('d/m/y', strtotime($startDate)) . " - " . date('d/m/y', strtotime($endDate));
 
-    // Bersihkan duplikat postingan jika admin reposting
-    mysqli_query($koneksi, "DELETE FROM tb_transaksi_keuangan WHERE keterangan LIKE 'Auto-Posting Payroll:%' AND tanggal_transaksi = '$tgl_posting'");
+    $koneksi->beginTransaction();
 
-    mysqli_begin_transaction($koneksi);
+    // Bersihkan duplikat postingan jika admin reposting
+    $del = $koneksi->prepare("DELETE FROM tb_transaksi_keuangan WHERE keterangan LIKE 'Auto-Posting Payroll:%' AND tanggal_transaksi = ?");
+    $del->execute([$tgl_posting]);
 
     // [1] Beban Gaji Kotor (Uang Keluar) -> Beban bertambah = debit
-    mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
-                            VALUES ('$tgl_posting', '$id_beban_gaji', '$total_gaji_kotor', 'Keluar', 'debit', '$ket_posting - Beban Gaji')");
+    $ins1 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan)
+                            VALUES (?, ?, ?, 'Keluar', 'debit', ?)");
+    $ins1->execute([$tgl_posting, $id_beban_gaji, $total_gaji_kotor, $ket_posting . ' - Beban Gaji']);
 
     // [2] Pelunasan Kasbon (Uang Masuk) -> Piutang (Aset) berkurang = kredit
     if ($total_potong_kasbon > 0) {
-        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
-                                VALUES ('$tgl_posting', '$id_piutang', '$total_potong_kasbon', 'Masuk', 'kredit', '$ket_posting - Pelunasan Pinjaman')");
+        $ins2 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan)
+                                VALUES (?, ?, ?, 'Masuk', 'kredit', ?)");
+        $ins2->execute([$tgl_posting, $id_piutang, $total_potong_kasbon, $ket_posting . ' - Pelunasan Pinjaman']);
     }
 
     // [3] Potongan Denda / Sanksi (Uang Masuk ke Akun Pendapatan 3004) -> Pendapatan bertambah = kredit
     if ($total_potong_denda > 0) {
-        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
-                                VALUES ('$tgl_posting', '$id_pendapatan_lain', '$total_potong_denda', 'Masuk', 'kredit', '$ket_posting - Denda/Sanksi')");
+        $ins3 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan)
+                                VALUES (?, ?, ?, 'Masuk', 'kredit', ?)");
+        $ins3->execute([$tgl_posting, $id_pendapatan_lain, $total_potong_denda, $ket_posting . ' - Denda/Sanksi']);
     }
 
     // [4] Potongan Titipan / Sumbangan (Uang Masuk Sementara ke Kewajiban 2003) -> Kewajiban bertambah = kredit
     if ($total_potong_titipan > 0) {
-        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
-                                VALUES ('$tgl_posting', '$id_titipan', '$total_potong_titipan', 'Masuk', 'kredit', '$ket_posting - Sumbangan/Titipan')");
+        $ins4 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan)
+                                VALUES (?, ?, ?, 'Masuk', 'kredit', ?)");
+        $ins4->execute([$tgl_posting, $id_titipan, $total_potong_titipan, $ket_posting . ' - Sumbangan/Titipan']);
     }
 
     // [5] PEMBAYARAN GAJI BERSIH (Uang Keluar dari Kas)
     if ($total_gaji_bersih_rekap > 0) {
-        mysqli_query($koneksi, "INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) 
-            VALUES ('$tgl_posting', '$id_kas', '$total_gaji_bersih_rekap', 'Keluar', 'kredit', '$ket_posting - Pembayaran Gaji Bersih ke Karyawan')");
+        $ins5 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan)
+            VALUES (?, ?, ?, 'Keluar', 'kredit', ?)");
+        $ins5->execute([$tgl_posting, $id_kas, $total_gaji_bersih_rekap, $ket_posting . ' - Pembayaran Gaji Bersih ke Karyawan']);
     }
 
-    mysqli_commit($koneksi);
+    $koneksi->commit();
 
     echo json_encode([
         'status' => 'success',
         'message' => 'Berhasil Posting ke Laporan Keuangan! Uang Keluar Bersih Kas Bank: Rp ' . number_format($total_gaji_bersih_rekap, 0, ',', '.')
     ]);
+} catch (PDOException $e) {
+    if ($koneksi->inTransaction()) $koneksi->rollBack();
+    error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Gagal memposting ke laporan keuangan.']);
 } catch (Exception $e) {
-    mysqli_rollback($koneksi);
+    if ($koneksi->inTransaction()) $koneksi->rollBack();
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 exit;

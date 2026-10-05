@@ -5,15 +5,19 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../../config/koneksi.php';
 
 // Cek apakah ada parameter filter periode
-$id_priode = isset($_GET['id_priode']) && $_GET['id_priode'] !== 'semua' ? mysqli_real_escape_string($koneksi, $_GET['id_priode']) : '';
+$raw_priode = isset($_GET['id_priode']) ? (string)$_GET['id_priode'] : '';
+$id_priode = ($raw_priode !== 'semua' && preg_match('/^\d{4}-\d{2}$/', $raw_priode) === 1) ? $raw_priode : '';
 
 $whereClause = "";
+$params = [];
 if (!empty($id_priode)) {
-    $startDate = $id_priode . '-01'; 
-    $endDate = date('Y-m-t', strtotime($startDate)); 
-    
-    // Sesuaikan prefix tabel (t.) 
-    $whereClause = "WHERE t.tanggal_transaksi BETWEEN '$startDate' AND '$endDate'";
+    $startDate = $id_priode . '-01';
+    $endDate = date('Y-m-t', strtotime($startDate));
+
+    // Sesuaikan prefix tabel (t.)
+    $whereClause = "WHERE t.tanggal_transaksi BETWEEN ? AND ?";
+    $params[] = $startDate;
+    $params[] = $endDate;
 }
 
 // Siapkan wadah per kelompok
@@ -33,10 +37,12 @@ $sql = "
     ORDER BY t.tanggal_transaksi DESC, t.id_transaksi DESC
 ";
 
-$query = mysqli_query($koneksi, $sql);
+$stKelola = $koneksi->prepare($sql);
+$stKelola->execute($params);
+$query = $stKelola;
 
 if ($query) {
-    while ($row = mysqli_fetch_assoc($query)) {
+    while ($row = $query->fetch()) {
         $kelompok = $row['kelompok'];
 
         if (isset($data[$kelompok])) {

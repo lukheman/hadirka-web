@@ -11,8 +11,13 @@ if ($action == "add") {
     $nama = $_POST['nama_departemen'];
 
     $sql = $koneksi->prepare("INSERT INTO tb_departemen (nama_departemen) VALUES (?)");
-    $sql->bind_param("s", $nama);
-    echo json_encode(["status" => $sql->execute() ? "success" : "error"]);
+    try {
+        $sql->execute([$nama]);
+        echo json_encode(["status" => "success"]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error"]);
+    }
     exit;
 }
 
@@ -21,8 +26,13 @@ if ($action == "edit") {
     $nama = $_POST['nama_departemen'];
 
     $sql = $koneksi->prepare("UPDATE tb_departemen SET nama_departemen=? WHERE id_departemen=?");
-    $sql->bind_param("si", $nama, $id);
-    echo json_encode(["status" => $sql->execute() ? "success" : "error"]);
+    try {
+        $sql->execute([$nama, $id]);
+        echo json_encode(["status" => "success"]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error"]);
+    }
     exit;
 }
 
@@ -30,8 +40,13 @@ if ($action == "delete") {
     $id = $_POST['id_departemen'];
 
     $sql = $koneksi->prepare("DELETE FROM tb_departemen WHERE id_departemen=?");
-    $sql->bind_param("i", $id);
-    echo json_encode(["status" => $sql->execute() ? "success" : "error"]);
+    try {
+        $sql->execute([$id]);
+        echo json_encode(["status" => "success"]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error"]);
+    }
     exit;
 }
 

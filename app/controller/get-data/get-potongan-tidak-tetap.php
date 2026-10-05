@@ -2,21 +2,25 @@
 require_once __DIR__ . '/../../config/koneksi.php';
 
 // 1. Tangkap parameter dari frontend
-$bulan = isset($_GET['bulan']) ? mysqli_real_escape_string($koneksi, $_GET['bulan']) : '';
-$site = isset($_GET['site']) ? mysqli_real_escape_string($koneksi, $_GET['site']) : '';
-$jabatan = isset($_GET['jabatan']) ? mysqli_real_escape_string($koneksi, $_GET['jabatan']) : '';
+$bulan = isset($_GET['bulan']) ? $_GET['bulan'] : '';
+$site = isset($_GET['site']) ? $_GET['site'] : '';
+$jabatan = isset($_GET['jabatan']) ? $_GET['jabatan'] : '';
 
 // 2. Siapkan klausa WHERE
 $where = ["1=1"];
+$params = [];
 if (!empty($bulan)) {
     // PERBAIKAN: Hilangkan kata " WHERE " di dalam sini
-    $where[] = "p.tgl_potongan LIKE '$bulan%'"; 
+    $where[] = "p.tgl_potongan LIKE ?";
+    $params[] = $bulan . '%';
 }
 if (!empty($site)) {
-    $where[] = "kr.id_site = '$site'";
+    $where[] = "kr.id_site = ?";
+    $params[] = $site;
 }
 if (!empty($jabatan)) {
-    $where[] = "kr.id_jabatan = '$jabatan'";
+    $where[] = "kr.id_jabatan = ?";
+    $params[] = $jabatan;
 }
 
 $whereClause = " WHERE " . implode(" AND ", $where);
@@ -31,15 +35,17 @@ $query = "SELECT p.id_potongan_tidak_tetap, k.id_karyawan, k.nik_karyawan, k.nam
           GROUP BY p.id_potongan_tidak_tetap
           ORDER BY p.tgl_potongan DESC";
 
-$result = mysqli_query($koneksi, $query);
+$stPot = $koneksi->prepare($query);
+$stPot->execute($params);
+$rowsPot = $stPot->fetchAll();
 $no = 1;
 
 // 4. Jika data kosong setelah difilter, tampilkan pesan tabel kosong
-if (mysqli_num_rows($result) == 0) {
+if (count($rowsPot) == 0) {
     // Biarkan kosong, DataTables yang akan memunculkan pesan "Data tidak ditemukan"
     echo "";
 } else {
-    while ($row = mysqli_fetch_assoc($result)) {
+    foreach ($rowsPot as $row) {
         echo "<tr>";
         echo "<td class='text-center'>{$no}</td>";
         echo "<td>{$row['nik_karyawan']}</td>";

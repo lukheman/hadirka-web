@@ -20,9 +20,11 @@ if (!isset($koneksi) || !$koneksi) {
 $periode = isset($_GET['periode']) ? trim($_GET['periode']) : '';
 $whereClause = "";
 
+$paramsThr = [];
 if (!empty($periode)) {
     $periode = intval($periode);
-    $whereClause = " WHERE r.periode = '$periode' ";
+    $whereClause = " WHERE r.periode = ? ";
+    $paramsThr[] = $periode;
 }
 
 // 3. Query dengan JOIN ke tabel Identitas (Bank), Karier, Site, dan Jabatan
@@ -44,14 +46,13 @@ $sql = "SELECT
         $whereClause
         ORDER BY r.periode DESC, r.id_thr DESC";
 
-$result = $koneksi->query($sql);
+$stThr = $koneksi->prepare($sql);
+$stThr->execute($paramsThr);
 $data = [];
 
 // 4. Masukkan ke array
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $data[] = $row;
-    }
+foreach ($stThr->fetchAll() as $row) {
+    $data[] = $row;
 }
 
 // 5. Cetak JSON

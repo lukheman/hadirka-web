@@ -41,32 +41,28 @@ try {
     }
 
     // Sanitize input
-    $nama_bank = mysqli_real_escape_string($koneksi, $nama_bank);
-    $atas_nama_rek = mysqli_real_escape_string($koneksi, trim($atas_nama_rek));
-    $no_rek = mysqli_real_escape_string($koneksi, trim($no_rek));
-    $id_karyawan = mysqli_real_escape_string($koneksi, $id_karyawan);
+    $nama_bank = trim($nama_bank);
+    $atas_nama_rek = trim($atas_nama_rek);
+    $no_rek = trim($no_rek);
 
     // Check if record exists in tb_identitas
-    $checkSql = "SELECT id_identitas FROM tb_identitas WHERE id_karyawan = '$id_karyawan'";
-    $checkResult = mysqli_query($koneksi, $checkSql);
+    $check = $koneksi->prepare("SELECT id_identitas FROM tb_identitas WHERE id_karyawan = ?");
+    $check->execute([$id_karyawan]);
+    $exists = $check->fetch();
 
-    if (mysqli_num_rows($checkResult) > 0) {
+    if ($exists) {
         // UPDATE existing record
-        $sql = "UPDATE tb_identitas SET 
-                    nama_bank = '$nama_bank',
-                    atas_nama_rek = '$atas_nama_rek',
-                    no_rek = '$no_rek'
-                WHERE id_karyawan = '$id_karyawan'";
+        $st = $koneksi->prepare("UPDATE tb_identitas SET
+                    nama_bank = ?,
+                    atas_nama_rek = ?,
+                    no_rek = ?
+                WHERE id_karyawan = ?");
+        $st->execute([$nama_bank, $atas_nama_rek, $no_rek, $id_karyawan]);
     } else {
         // INSERT new record
-        $sql = "INSERT INTO tb_identitas (id_karyawan, nama_bank, atas_nama_rek, no_rek) 
-                VALUES ('$id_karyawan', '$nama_bank', '$atas_nama_rek', '$no_rek')";
-    }
-
-    $result = mysqli_query($koneksi, $sql);
-
-    if (!$result) {
-        throw new Exception("Query failed: " . mysqli_error($koneksi));
+        $st = $koneksi->prepare("INSERT INTO tb_identitas (id_karyawan, nama_bank, atas_nama_rek, no_rek)
+                VALUES (?, ?, ?, ?)");
+        $st->execute([$id_karyawan, $nama_bank, $atas_nama_rek, $no_rek]);
     }
 
     echo json_encode([
@@ -74,6 +70,13 @@ try {
         "message" => "Data rekening berhasil diupdate"
     ]);
 
+} catch (PDOException $e) {
+    error_log($e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Gagal memperbarui data rekening."
+    ]);
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([

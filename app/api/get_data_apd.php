@@ -34,17 +34,22 @@ $sql = "
     ORDER BY pa.tanggal_pengambilan DESC
 ";
 
-$stmt = mysqli_prepare($koneksi, $sql);
-mysqli_stmt_bind_param($stmt, "s", $id_karyawan);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
+try {
+    $stmt = $koneksi->prepare($sql);
+    $stmt->execute([$id_karyawan]);
 
-$data = [];
-while ($row = mysqli_fetch_assoc($result)) {
-    $data[] = $row;
+    $data = [];
+    while ($row = $stmt->fetch()) {
+        $data[] = $row;
+    }
+} catch (PDOException $e) {
+    error_log('get_data_apd gagal: ' . $e->getMessage());
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Terjadi kesalahan database.'
+    ]);
+    exit;
 }
-
-mysqli_stmt_close($stmt);
 
 echo json_encode([
     'status' => 'success',

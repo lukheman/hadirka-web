@@ -7,42 +7,47 @@ header('Content-Type: application/json');
 $response = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nik = isset($_POST['nik']) ? mysqli_real_escape_string($koneksi, $_POST['nik']) : '';
+    $nik = isset($_POST['nik']) ? $_POST['nik'] : '';
 
     if (empty($nik)) {
         $response = ['status' => 'error', 'message' => 'NIK wajib diisi.'];
     } else {
-        // --- STEP 1: Cek apakah NIK (nik_ktp) ada di tb_identitas dan ambil id_karyawan ---
-        $query_POST_id = "SELECT id_karyawan FROM tb_identitas WHERE nik_ktp = '$nik'";
-        $result_POST_id = mysqli_query($koneksi, $query_POST_id);
+        try {
+            // --- STEP 1: Cek apakah NIK (nik_ktp) ada di tb_identitas dan ambil id_karyawan ---
+            $st_post_id = $koneksi->prepare("SELECT id_karyawan FROM tb_identitas WHERE nik_ktp = ?");
+            $st_post_id->execute([$nik]);
+            $data_identitas = $st_post_id->fetch();
 
-        if (!$result_POST_id || mysqli_num_rows($result_POST_id) == 0) {
-            // NIK tidak ditemukan di data identitas
-            $response = ['status' => 'error', 'message' => 'NIK tidak terdaftar di sistem.'];
-        } else {
-            $data_identitas = mysqli_fetch_assoc($result_POST_id);
-            $id_karyawan = $data_identitas['id_karyawan'];
-
-            // --- STEP 2: Cek status_karyawan di tb_karyawan menggunakan id_karyawan ---
-            $query_check_status = "SELECT status_karyawan, password FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'";
-            $result_check_status = mysqli_query($koneksi, $query_check_status);
-
-            if (!$result_check_status || mysqli_num_rows($result_check_status) == 0) {
-                // Kasus jarang: NIK ditemukan di identitas, tetapi data tidak lengkap di tb_karyawan
-                $response = ['status' => 'error', 'message' => 'Data karyawan tidak lengkap, hubungi HR.'];
+            if (!$data_identitas) {
+                // NIK tidak ditemukan di data identitas
+                $response = ['status' => 'error', 'message' => 'NIK tidak terdaftar di sistem.'];
             } else {
-                $data_karyawan = mysqli_fetch_assoc($result_check_status);
-                $status = $data_karyawan['status_karyawan'];
-                $password_tersimpan = $data_karyawan['password'];
+                $id_karyawan = $data_identitas['id_karyawan'];
 
-                if (strtolower($status) === 'aktif' && !empty($password_tersimpan)) {
-                    // Status 1: Akun sudah aktif
-                    $response = ['status' => 'error', 'message' => 'Akun untuk NIK ini sudah aktif. Silakan login.'];
+                // --- STEP 2: Cek status_karyawan di tb_karyawan menggunakan id_karyawan ---
+                $st_check_status = $koneksi->prepare("SELECT status_karyawan, password FROM tb_karyawan WHERE id_karyawan = ?");
+                $st_check_status->execute([$id_karyawan]);
+                $data_karyawan = $st_check_status->fetch();
+
+                if (!$data_karyawan) {
+                    // Kasus jarang: NIK ditemukan di identitas, tetapi data tidak lengkap di tb_karyawan
+                    $response = ['status' => 'error', 'message' => 'Data karyawan tidak lengkap, hubungi HR.'];
                 } else {
-                    // Status 0: NIK valid dan belum aktif, siap untuk pendaftaran
-                    $response = ['status' => 'success', 'message' => 'NIK terverifikasi. Silakan lanjutkan aktivasi akun.'];
+                    $status = $data_karyawan['status_karyawan'];
+                    $password_tersimpan = $data_karyawan['password'];
+
+                    if (strtolower($status) === 'aktif' && !empty($password_tersimpan)) {
+                        // Status 1: Akun sudah aktif
+                        $response = ['status' => 'error', 'message' => 'Akun untuk NIK ini sudah aktif. Silakan login.'];
+                    } else {
+                        // Status 0: NIK valid dan belum aktif, siap untuk pendaftaran
+                        $response = ['status' => 'success', 'message' => 'NIK terverifikasi. Silakan lanjutkan aktivasi akun.'];
+                    }
                 }
             }
+        } catch (PDOException $e) {
+            error_log('cek_nik gagal: ' . $e->getMessage());
+            $response = ['status' => 'error', 'message' => 'Terjadi kesalahan database.'];
         }
     }
 } else {
@@ -50,5 +55,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 echo json_encode($response);
-mysqli_close($koneksi);
 ?>

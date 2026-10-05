@@ -5,56 +5,62 @@ include "../config/koneksi.php";
 $action = $_GET['action'] ?? '';
 
 if ($action == 'get-single') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $res = mysqli_query($koneksi, "SELECT * FROM tb_pengumuman WHERE id = '$id'");
-    echo json_encode(mysqli_fetch_assoc($res));
+    $id = $_GET['id'];
+    $res = $koneksi->prepare("SELECT * FROM tb_pengumuman WHERE id = ?");
+    $res->execute([$id]);
+    $row = $res->fetch();
+    echo json_encode($row === false ? null : $row);
     exit;
 }
 
 if ($action == 'save') {
     $id      = $_POST['id'];
-    $judul   = mysqli_real_escape_string($koneksi, $_POST['judul']);
+    $judul   = $_POST['judul'];
 
     // Mengambil input dari detail_konten
-    $detail = mysqli_real_escape_string($koneksi, $_POST['detail_konten']);
+    $detail = $_POST['detail_konten'];
     $sub    = mb_strimwidth($detail, 0, 100, "...");
 
-    $ikon    = mysqli_real_escape_string($koneksi, $_POST['ikon_nama']);
-    $warna   = mysqli_real_escape_string($koneksi, $_POST['warna_kode']);
+    $ikon    = $_POST['ikon_nama'];
+    $warna   = $_POST['warna_kode'];
 
-    if (empty($id)) {
-        // Tambahkan detail_konten ke Query INSERT
-        $sql = "INSERT INTO tb_pengumuman (judul, sub_judul, detail_konten, ikon_nama, warna_kode, waktu_buat) 
-                VALUES ('$judul', '$sub', '$detail', '$ikon', '$warna', NOW())";
-    } else {
-        // Tambahkan detail_konten ke Query UPDATE
-        $sql = "UPDATE tb_pengumuman SET 
-                judul='$judul', 
-                sub_judul='$sub', 
-                detail_konten='$detail', 
-                ikon_nama='$ikon', 
-                warna_kode='$warna' 
-                WHERE id='$id'";
-    }
-
-    if (mysqli_query($koneksi, $sql)) {
+    try {
+        if (empty($id)) {
+            // Tambahkan detail_konten ke Query INSERT
+            $st = $koneksi->prepare("INSERT INTO tb_pengumuman (judul, sub_judul, detail_konten, ikon_nama, warna_kode, waktu_buat)
+                    VALUES (?, ?, ?, ?, ?, NOW())");
+            $st->execute([$judul, $sub, $detail, $ikon, $warna]);
+        } else {
+            // Tambahkan detail_konten ke Query UPDATE
+            $st = $koneksi->prepare("UPDATE tb_pengumuman SET
+                    judul=?,
+                    sub_judul=?,
+                    detail_konten=?,
+                    ikon_nama=?,
+                    warna_kode=?
+                    WHERE id=?");
+            $st->execute([$judul, $sub, $detail, $ikon, $warna, $id]);
+        }
         echo json_encode(['status' => 'success']);
-    } else {
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
         http_response_code(500);
-        echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan data.']);
     }
     exit;
 }
 
 if ($action == 'delete') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $sql = "DELETE FROM tb_pengumuman WHERE id = '$id'";
+    $id = $_GET['id'];
 
-    if (mysqli_query($koneksi, $sql)) {
+    try {
+        $st = $koneksi->prepare("DELETE FROM tb_pengumuman WHERE id = ?");
+        $st->execute([$id]);
         echo json_encode(['status' => 'success']);
-    } else {
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
         http_response_code(500);
-        echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus data.']);
     }
     exit;
 }

@@ -27,21 +27,24 @@ $jabatan = isset($_GET['jabatan']) ? trim($_GET['jabatan']) : '';
 
 // 2. Susun Kondisi Filter (WHERE Clause)
 $where = ["1=1"];
+$params = [];
 $judulFile = "Data_Rapel";
 
 if (!empty($bulan)) {
-    $bulan_safe = $koneksi->real_escape_string($bulan);
-    $where[] = "DATE_FORMAT(r.tgl_rapel, '%Y-%m') = '$bulan_safe'";
-    $judulFile .= "_" . $bulan_safe;
+    $where[] = "DATE_FORMAT(r.tgl_rapel, '%Y-%m') = ?";
+    $params[] = $bulan;
+    $judulFile .= "_" . $bulan;
 } else {
     $judulFile .= "_SemuaBulan";
 }
 
 if (!empty($site)) {
-    $where[] = "kr.id_site = '" . $koneksi->real_escape_string($site) . "'";
+    $where[] = "kr.id_site = ?";
+    $params[] = $site;
 }
 if (!empty($jabatan)) {
-    $where[] = "kr.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+    $where[] = "kr.id_jabatan = ?";
+    $params[] = $jabatan;
 }
 
 $whereClause = " WHERE " . implode(" AND ", $where);
@@ -68,10 +71,13 @@ $sql = "SELECT
         GROUP BY r.id_rapel
         ORDER BY r.tgl_rapel DESC, k.nama_lengkap ASC";
 
-$result = $koneksi->query($sql);
-
-if (!$result) {
-    die("Kueri error: " . $koneksi->error);
+try {
+    $stmt = $koneksi->prepare($sql);
+    $stmt->execute($params);
+    $result = $stmt;
+} catch (PDOException $e) {
+    error_log('export-rapel: ' . $e->getMessage());
+    die("Kueri error: gagal mengambil data.");
 }
 
 // 4. Inisialisasi Spreadsheet
@@ -117,7 +123,7 @@ $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
 $rowExcel = 2;
 $no = 1;
 
-while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch()) {
     $sheet->setCellValue('A' . $rowExcel, $no);
     $sheet->setCellValue('B' . $rowExcel, $row['nik_karyawan']);
     $sheet->setCellValue('C' . $rowExcel, $row['nama_lengkap']);

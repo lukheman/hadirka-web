@@ -44,15 +44,16 @@ try {
         if ($id_karier <= 0) throw new Exception("ID karier tidak valid");
 
         // Cek status karyawan
-        $cek = $koneksi->query("
-            SELECT kr.status_karyawan, k.tgl_selesai 
-            FROM tb_karier k 
-            INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan 
-            WHERE k.id_karier = $id_karier
+        $cek = $koneksi->prepare("
+            SELECT kr.status_karyawan, k.tgl_selesai
+            FROM tb_karier k
+            INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
+            WHERE k.id_karier = ?
         ");
+        $cek->execute([$id_karier]);
 
-        if ($cek->num_rows === 0) throw new Exception("Data karier tidak ditemukan.");
-        $row = $cek->fetch_assoc();
+        $row = $cek->fetch();
+        if (!$row) throw new Exception("Data karier tidak ditemukan.");
 
         if (strtolower($row['status_karyawan']) !== 'aktif') {
             throw new Exception("Ditolak: Hanya karyawan dengan status Aktif yang bisa diperpanjang otomatis.");
@@ -62,7 +63,8 @@ try {
         }
 
         // Tambah 6 Bulan
-        $koneksi->query("UPDATE tb_karier SET tgl_selesai = DATE_ADD(tgl_selesai, INTERVAL 6 MONTH) WHERE id_karier = $id_karier");
+        $upd = $koneksi->prepare("UPDATE tb_karier SET tgl_selesai = DATE_ADD(tgl_selesai, INTERVAL 6 MONTH) WHERE id_karier = ?");
+        $upd->execute([$id_karier]);
         $response = ['status' => 'success', 'msg' => 'Kontrak berhasil diperpanjang 6 bulan.'];
     }
 
@@ -81,15 +83,18 @@ try {
         $sql = "UPDATE tb_karier k
                 INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
                 SET k.tgl_selesai = DATE_ADD(k.tgl_selesai, INTERVAL 6 MONTH)
-                WHERE k.id_karier IN ($ids_str) 
-                AND LOWER(kr.status_karyawan) = 'aktif' 
+                WHERE k.id_karier IN ($ids_str)
+                AND LOWER(kr.status_karyawan) = 'aktif'
                 AND k.tgl_selesai IS NOT NULL";
 
-        if (!$koneksi->query($sql)) {
-            throw new Exception("Gagal melakukan perpanjangan massal: " . $koneksi->error);
+        try {
+            $st = $koneksi->query($sql);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            throw new Exception("Gagal melakukan perpanjangan massal.");
         }
 
-        $affected = $koneksi->affected_rows;
+        $affected = $st->rowCount();
         if ($affected > 0) {
             $response = ['status' => 'success', 'msg' => "$affected kontrak karyawan aktif berhasil diperpanjang 6 bulan."];
         } else {
@@ -105,8 +110,7 @@ try {
             throw new Exception("ID karier tidak valid");
 
         $stmt = $koneksi->prepare("DELETE FROM tb_karier WHERE id_karier=?");
-        $stmt->bind_param("i", $id_karier);
-        $stmt->execute();
+        $stmt->execute([$id_karier]);
 
         $response = ['status' => 'success'];
     }
@@ -131,9 +135,7 @@ try {
         $id_jabatan    = intval($_POST['id_jabatan']);
 
         $gaji_pokok  = floatOrZero($_POST['gaji_pokok']);
-        $lembur      = floatOrZero($_POST['lembur']);
-        $pot_izin    = floatOrZero($_POST['pot_izin']);
-        $pot_mangkir = floatOrZero($_POST['pot_mangkir']);
+        // Kolom lembur/pot_izin/pot_mangkir dihapus dari DB (penyederhanaan gaji Okt 2026).
 
         $tgl_mulai   = $_POST['tgl_mulai'];
         $tgl_selesai = !empty($_POST['tgl_selesai']) ? $_POST['tgl_selesai'] : null;
@@ -145,9 +147,11 @@ try {
         if ($action === 'add') {
 
             // --- TAMBAHKAN VALIDASI STATUS DISINI ---
-            $cekStatus = $koneksi->query("SELECT status_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'");
-            if ($cekStatus->num_rows > 0) {
-                $status = $cekStatus->fetch_assoc()['status_karyawan'];
+            $cekStatus = $koneksi->prepare("SELECT status_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
+            $cekStatus->execute([$id_karyawan]);
+            $statusRow = $cekStatus->fetch();
+            if ($statusRow) {
+                $status = $statusRow['status_karyawan'];
                 // Sesuaikan kata 'Resign' dengan value yang ada di databasemu
                 if (strtolower($status) === 'resign' || strtolower($status) === 'tidak aktif') {
                     throw new Exception("Ditolak: Karyawan ini sudah berstatus Resign. Sesuai aturan, tidak bisa masuk kembali.");
@@ -161,104 +165,36 @@ try {
             // Gagal bila jabatan belum punya kode_jabatan.
             $no_urut_manual = substr(preg_replace('/\D/', '', (string)($_POST['no_urut'] ?? '')), 0, 4);
             if ($no_urut_manual !== '') {
-                $qKode = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-                $kode_jabatan = ($qKode && $qKode->num_rows > 0) ? trim((string)($qKode->fetch_assoc()['kode_jabatan'] ?? '')) : '';
+                $qKode = $koneksi->prepare("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = ? LIMIT 1");
+                $qKode->execute([$id_jabatan]);
+                $kodeRow = $qKode->fetch();
+                $kode_jabatan = $kodeRow ? trim((string)($kodeRow['kode_jabatan'] ?? '')) : '';
                 if ($kode_jabatan === '') throw new Exception('Kode jabatan belum diisi. Lengkapi kode jabatan terlebih dahulu.');
                 $no_surat = sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode_jabatan, (int)$no_urut_manual, substr($tgl_mulai, 0, 4));
                 $cekNo = $koneksi->prepare("SELECT id_karier FROM tb_karier WHERE no_surat = ? LIMIT 1");
-                $cekNo->bind_param("s", $no_surat);
-                $cekNo->execute();
-                if ($cekNo->get_result()->num_rows > 0) throw new Exception("Nomor surat sudah dipakai, gunakan nomor urut lain.");
-                $cekNo->close();
+                $cekNo->execute([$no_surat]);
+                if ($cekNo->fetch()) throw new Exception("Nomor surat sudah dipakai, gunakan nomor urut lain.");
             } else {
-                $qKode = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-                $kode_jabatan = ($qKode && $qKode->num_rows > 0) ? ($qKode->fetch_assoc()['kode_jabatan'] ?? '') : '';
+                $qKode = $koneksi->prepare("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = ? LIMIT 1");
+                $qKode->execute([$id_jabatan]);
+                $kodeRow = $qKode->fetch();
+                $kode_jabatan = $kodeRow ? ($kodeRow['kode_jabatan'] ?? '') : '';
                 $no_surat = generate_no_surat($koneksi, $kode_jabatan, $tgl_mulai);
             }
 
-            $sql = "INSERT INTO tb_karier (id_karyawan,id_site,id_departemen,id_jabatan,gaji_pokok,lembur,pot_izin,pot_mangkir,spl,ot1_spl,ot2_spl,tgl_mulai,tgl_selesai,no_surat) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            $sql = "INSERT INTO tb_karier (id_karyawan,id_site,id_departemen,id_jabatan,gaji_pokok,tgl_mulai,tgl_selesai,no_surat) VALUES (?,?,?,?,?,?,?,?)";
             $stmt = $koneksi->prepare($sql);
-            $kosong = '';
-            $stmt->bind_param("iiiiddddssssss", $id_karyawan, $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $kosong, $kosong, $kosong, $tgl_mulai, $tgl_selesai, $no_surat);
-            if (!$stmt->execute()) {
-                if ((int)$koneksi->errno === 1062) throw new Exception("Nomor surat ganda, silakan ulangi simpan.");
-                throw new Exception($stmt->error);
+            try {
+                $stmt->execute([$id_karyawan, $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $tgl_mulai, $tgl_selesai, $no_surat]);
+            } catch (PDOException $e) {
+                error_log($e->getMessage());
+                if (($e->errorInfo[1] ?? null) == 1062) throw new Exception("Nomor surat ganda, silakan ulangi simpan.");
+                throw new Exception("Gagal menyimpan data karier.");
             }
-            $id_karier_baru = $stmt->insert_id;
-            $stmt->close();
 
-            // Tunjangan & potongan: bila dikirim dari tab Tambah (tp_dari_tab),
-            // daftar itu otoritatif (sudah diedit user, boleh kosong) dan salinan
-            // template dilewati. Selain itu, salin dari template seperti semula.
-            $id_template = intval($_POST['id_template'] ?? 0);
-            $n_tunjangan = 0;
-            $n_potongan = 0;
-            if (isset($_POST['tp_dari_tab'])) {
-                $nama_arr = isset($_POST['tunjangan_nama']) && is_array($_POST['tunjangan_nama']) ? $_POST['tunjangan_nama'] : [];
-                $jenis_arr = isset($_POST['tunjangan_jenis']) && is_array($_POST['tunjangan_jenis']) ? $_POST['tunjangan_jenis'] : [];
-                $jumlah_arr = isset($_POST['tunjangan_jumlah']) && is_array($_POST['tunjangan_jumlah']) ? $_POST['tunjangan_jumlah'] : [];
-                $tampil_arr = isset($_POST['tunjangan_tampil']) && is_array($_POST['tunjangan_tampil']) ? $_POST['tunjangan_tampil'] : [];
-                $stmtT = $koneksi->prepare("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) VALUES (?,?,?,?,?)");
-                foreach ($nama_arr as $i => $nm_raw) {
-                    $nm = substr(trim((string)$nm_raw), 0, 25);
-                    if ($nm === '') continue;
-                    $jn = strtolower(trim((string)($jenis_arr[$i] ?? 'tetap')));
-                    if (!in_array($jn, ['tetap', 'tidak_tetap'], true)) $jn = 'tetap';
-                    $jm = (string)floatOrZero($jumlah_arr[$i] ?? '');
-                    $tp = (int)($tampil_arr[$i] ?? 1);
-                    if (!in_array($tp, [0, 1], true)) $tp = 1;
-                    $stmtT->bind_param("isssi", $id_karier_baru, $nm, $jn, $jm, $tp);
-                    if (!$stmtT->execute()) throw new Exception("Karier tersimpan, tetapi tunjangan gagal disimpan: " . $stmtT->error);
-                    $n_tunjangan++;
-                }
-                $stmtT->close();
-                $pot_nama_arr = isset($_POST['potongan_nama']) && is_array($_POST['potongan_nama']) ? $_POST['potongan_nama'] : [];
-                $pot_jumlah_arr = isset($_POST['potongan_jumlah']) && is_array($_POST['potongan_jumlah']) ? $_POST['potongan_jumlah'] : [];
-                $stmtP = $koneksi->prepare("INSERT INTO tb_potongan (id_karier, jenis_potongan, jumlah_potongan) VALUES (?,?,?)");
-                foreach ($pot_nama_arr as $i => $pn_raw) {
-                    $pn = substr(trim((string)$pn_raw), 0, 25);
-                    if ($pn === '') continue;
-                    $pm = (string)floatOrZero($pot_jumlah_arr[$i] ?? '');
-                    $stmtP->bind_param("iss", $id_karier_baru, $pn, $pm);
-                    if (!$stmtP->execute()) throw new Exception("Karier tersimpan, tetapi potongan gagal disimpan: " . $stmtP->error);
-                    $n_potongan++;
-                }
-                $stmtP->close();
-            } elseif ($id_template > 0) {
-                $qDet = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1");
-                $id_detail = ($qDet && $qDet->num_rows > 0) ? (int)$qDet->fetch_assoc()['id_detail'] : 0;
-                if ($id_detail <= 0) {
-                    // Template lama belum punya baris detail: buatkan (kosong) agar penyalinan tetap berjalan.
-                    if (!$koneksi->query(
-                        "INSERT INTO tb_detail_kontrak (id_template, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir) " .
-                        "VALUES ('$id_template', 0, 0, 0, 0)"
-                    )) {
-                        throw new Exception("Karier tersimpan, tetapi detail template gagal disiapkan: " . $koneksi->error);
-                    }
-                    $id_detail = (int)$koneksi->insert_id;
-                }
-                {
-                    if ($koneksi->query(
-                        "INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) " .
-                        "SELECT '$id_karier_baru', nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template " .
-                        "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_detail'"
-                    )) {
-                        $n_tunjangan = $koneksi->affected_rows;
-                    } else {
-                        throw new Exception("Karier tersimpan, tetapi tunjangan template gagal disalin: " . $koneksi->error);
-                    }
-                    if ($koneksi->query(
-                        "INSERT INTO tb_potongan (id_karier, jenis_potongan, jumlah_potongan) " .
-                        "SELECT '$id_karier_baru', jenis_potongan, jumlah_potongan " .
-                        "FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_detail'"
-                    )) {
-                        $n_potongan = $koneksi->affected_rows;
-                    } else {
-                        throw new Exception("Karier tersimpan, tetapi potongan template gagal disalin: " . $koneksi->error);
-                    }
-                }
-            }
-            $response = ['status' => 'success', 'no_surat' => $no_surat, 'tunjangan' => $n_tunjangan, 'potongan' => $n_potongan];
+            // Tabel tunjangan/potongan dihapus dari DB (penyederhanaan gaji Okt 2026):
+            // tidak ada lagi penyalinan tunjangan/potongan dari tab maupun template.
+            $response = ['status' => 'success', 'no_surat' => $no_surat, 'tunjangan' => 0, 'potongan' => 0];
         }
 
         // EDIT (nomor surat bisa dikoreksi manual; kosong = tanpa nomor)
@@ -268,28 +204,30 @@ try {
             $no_surat_edit = $no_surat_manual !== '' ? $no_surat_manual : null;
             if ($no_surat_edit !== null) {
                 $cekNo = $koneksi->prepare("SELECT id_karier FROM tb_karier WHERE no_surat = ? AND id_karier <> ? LIMIT 1");
-                $cekNo->bind_param("si", $no_surat_edit, $id_karier);
-                $cekNo->execute();
-                if ($cekNo->get_result()->num_rows > 0) throw new Exception("Nomor surat sudah dipakai karier lain.");
-                $cekNo->close();
+                $cekNo->execute([$no_surat_edit, $id_karier]);
+                if ($cekNo->fetch()) throw new Exception("Nomor surat sudah dipakai karier lain.");
             }
-            if ($tgl_selesai === null) {
-                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=NULL, no_surat=? WHERE id_karier=?";
-                $stmt = $koneksi->prepare($sql);
-                // KOREKSI: Mengubah tipe data dari "iiiidddsi" menjadi "iiiddddsi"
-                $stmt->bind_param("iiiddddssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $no_surat_edit, $id_karier);
-            } else {
-                $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, lembur=?, pot_izin=?, pot_mangkir=?, tgl_mulai=?, tgl_selesai=?, no_surat=? WHERE id_karier=?";
-                $stmt = $koneksi->prepare($sql);
-                // KOREKSI: Mengubah tipe data dari "iiiidddssi" menjadi "iiiddddssi"
-                $stmt->bind_param("iiiddddsssi", $id_site, $id_departemen, $id_jabatan, $gaji_pokok, $lembur, $pot_izin, $pot_mangkir, $tgl_mulai, $tgl_selesai, $no_surat_edit, $id_karier);
+            try {
+                if ($tgl_selesai === null) {
+                    $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, tgl_mulai=?, tgl_selesai=NULL, no_surat=? WHERE id_karier=?";
+                    $stmt = $koneksi->prepare($sql);
+                    $stmt->execute([$id_site, $id_departemen, $id_jabatan, $gaji_pokok, $tgl_mulai, $no_surat_edit, $id_karier]);
+                } else {
+                    $sql = "UPDATE tb_karier SET id_site=?, id_departemen=?, id_jabatan=?, gaji_pokok=?, tgl_mulai=?, tgl_selesai=?, no_surat=? WHERE id_karier=?";
+                    $stmt = $koneksi->prepare($sql);
+                    $stmt->execute([$id_site, $id_departemen, $id_jabatan, $gaji_pokok, $tgl_mulai, $tgl_selesai, $no_surat_edit, $id_karier]);
+                }
+            } catch (PDOException $e) {
+                error_log($e->getMessage());
+                throw new Exception("Gagal memperbarui data karier.");
             }
-            if (!$stmt->execute())
-                throw new Exception($stmt->error);
 
             $response = ['status' => 'success'];
         }
     }
+} catch (PDOException $e) {
+    error_log($e->getMessage());
+    $response = ['status' => 'error', 'msg' => 'Terjadi kesalahan database.'];
 } catch (Exception $e) {
     $response = ['status' => 'error', 'msg' => $e->getMessage()];
 }

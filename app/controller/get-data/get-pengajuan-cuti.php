@@ -7,15 +7,20 @@ $site = $_GET['site'] ?? '';
 $jabatan = $_GET['jabatan'] ?? '';
 
 $where = ["1=1"];
+$params = [];
 if ($start && $end) {
     // Memfilter berdasarkan tanggal mulai cuti
-    $where[] = "pc.tgl_awal BETWEEN '$start' AND '$end'"; 
+    $where[] = "pc.tgl_awal BETWEEN ? AND ?";
+    $params[] = $start;
+    $params[] = $end;
 }
 if ($site) {
-    $where[] = "kr.id_site = '$site'";
+    $where[] = "kr.id_site = ?";
+    $params[] = $site;
 }
 if ($jabatan) {
-    $where[] = "kr.id_jabatan = '$jabatan'";
+    $where[] = "kr.id_jabatan = ?";
+    $params[] = $jabatan;
 }
 
 $where_sql = implode(' AND ', $where);
@@ -28,14 +33,16 @@ $sql = "SELECT pc.*, k.nama_lengkap, k.nik_karyawan
         GROUP BY pc.id_pengajuan_cuti
         ORDER BY pc.id_pengajuan_cuti DESC";
 
-$q = mysqli_query($koneksi, $sql);
+$stCuti = $koneksi->prepare($sql);
+$stCuti->execute($params);
+$rowsCuti = $stCuti->fetchAll();
 
-if (mysqli_num_rows($q) == 0) {
+if (count($rowsCuti) == 0) {
     echo '<tr><td colspan="7" class="text-center py-5 text-muted">Belum ada data pengajuan cuti.</td></tr>';
     exit;
 }
 
-while ($row = mysqli_fetch_assoc($q)) {
+foreach ($rowsCuti as $row) {
     $id = $row['id_pengajuan_cuti'];
     $status = $row['status_cuti'];
     

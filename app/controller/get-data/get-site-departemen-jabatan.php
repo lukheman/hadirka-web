@@ -5,18 +5,18 @@
     $departemens = [];
     $jabatans = [];
 
-    $q1 = mysqli_query($koneksi, "SELECT id_site, nama_site FROM tb_site ORDER BY nama_site ASC");
-    while ($r = mysqli_fetch_assoc($q1)) {
+    $q1 = $koneksi->query("SELECT id_site, nama_site FROM tb_site ORDER BY nama_site ASC");
+    while ($r = $q1->fetch()) {
         $sites[] = $r;
     }
 
-    $q2 = mysqli_query($koneksi, "SELECT id_departemen, nama_departemen FROM tb_departemen ORDER BY nama_departemen ASC");
-    while ($r = mysqli_fetch_assoc($q2)) {
+    $q2 = $koneksi->query("SELECT id_departemen, nama_departemen FROM tb_departemen ORDER BY nama_departemen ASC");
+    while ($r = $q2->fetch()) {
         $departemens[] = $r;
     }
 
-    $q3 = mysqli_query($koneksi, "SELECT id_jabatan, nama_jabatan FROM tb_jabatan ORDER BY nama_jabatan ASC");
-    while ($r = mysqli_fetch_assoc($q3)) {
+    $q3 = $koneksi->query("SELECT id_jabatan, nama_jabatan FROM tb_jabatan ORDER BY nama_jabatan ASC");
+    while ($r = $q3->fetch()) {
         $jabatans[] = $r;
     }
 

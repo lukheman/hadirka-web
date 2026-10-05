@@ -9,8 +9,8 @@ include __DIR__ . "/../../config/koneksi.php";
 include __DIR__ . "/../../config/function.php";
 include __DIR__ . "/../../config/function-slip.php";
 
-$id_priode = isset($_GET['id_priode']) ? mysqli_real_escape_string($koneksi, $_GET['id_priode']) : '';
-$id_site = isset($_GET['id_site']) ? mysqli_real_escape_string($koneksi, $_GET['id_site']) : '';
+$id_priode = isset($_GET['id_priode']) ? $_GET['id_priode'] : '';
+$id_site = isset($_GET['id_site']) ? $_GET['id_site'] : '';
 $only_karyawan = isset($_GET['only_karyawan']) ? $_GET['only_karyawan'] : '0';
 
 // ==============================================================
@@ -18,10 +18,12 @@ $only_karyawan = isset($_GET['only_karyawan']) ? $_GET['only_karyawan'] : '0';
 // ==============================================================
 $karyawan_per_jabatan = [];
 $whereJabatan = "kar.status_karyawan = 'Aktif'";
+$paramsJabatan = [];
 
 // Terapkan filter site jika ada
 if (!empty($id_site)) {
-    $whereJabatan .= " AND k.id_site = '$id_site'";
+    $whereJabatan .= " AND k.id_site = ?";
+    $paramsJabatan[] = $id_site;
 }
 
 $sqlJabatan = "SELECT j.nama_jabatan, COUNT(kar.nik_karyawan) as jumlah
@@ -32,9 +34,11 @@ $sqlJabatan = "SELECT j.nama_jabatan, COUNT(kar.nik_karyawan) as jumlah
                GROUP BY j.id_jabatan, j.nama_jabatan
                ORDER BY jumlah DESC";
 
-$qJabatan = mysqli_query($koneksi, $sqlJabatan);
+$stJabatan = $koneksi->prepare($sqlJabatan);
+$stJabatan->execute($paramsJabatan);
+$qJabatan = $stJabatan;
 if ($qJabatan) {
-    while ($rowJ = mysqli_fetch_assoc($qJabatan)) {
+    while ($rowJ = $qJabatan->fetch()) {
         $karyawan_per_jabatan[] = [
             'jabatan' => $rowJ['nama_jabatan'] ? $rowJ['nama_jabatan'] : 'Belum Ditugaskan',
             'jumlah' => (int)$rowJ['jumlah']
@@ -56,12 +60,14 @@ if ($only_karyawan === '1') {
 // 2. CARI PERIODE SAAT INI (YANG DIPILIH ATAU YANG TERBARU)
 // ==============================================================
 if (!empty($id_priode)) {
-    $qCur = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE id_priode = '$id_priode' AND type_priode = 'slip gaji'");
+    $stCur = $koneksi->prepare("SELECT * FROM tb_priode WHERE id_priode = ? AND type_priode = 'slip gaji'");
+    $stCur->execute([$id_priode]);
+    $qCur = $stCur;
 } else {
-    $qCur = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC LIMIT 1");
+    $qCur = $koneksi->query("SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC LIMIT 1");
 }
 
-$pCur = mysqli_fetch_assoc($qCur);
+$pCur = $qCur->fetch();
 if (!$pCur) {
     echo json_encode(["status" => "error", "message" => "Tidak ada periode slip gaji ditemukan"]);
     exit;
@@ -72,23 +78,27 @@ $selesai_cur = $pCur['tgl_selesai'];
 $periode_text = $mulai_cur . " - " . $selesai_cur;
 
 // 3. CARI PERIODE SEBELUMNYA UNTUK PERBANDINGAN
-$qPrev = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' AND tgl_mulai < '$mulai_cur' ORDER BY tgl_mulai DESC LIMIT 1");
-$pPrev = mysqli_fetch_assoc($qPrev);
+$stPrev = $koneksi->prepare("SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' AND tgl_mulai < ? ORDER BY tgl_mulai DESC LIMIT 1");
+$stPrev->execute([$mulai_cur]);
+$qPrev = $stPrev;
+$pPrev = $qPrev->fetch();
 
 function hitungTotalPeriode($koneksi, $mulai, $selesai)
 {
     $t_gaji = 0;
     $t_pinjaman = 0;
 
-    $sqlKaryawan = "SELECT k.nik_karyawan 
+    $sqlKaryawan = "SELECT k.nik_karyawan
                     FROM tb_karyawan k
                     LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan
-                    WHERE kr.tgl_mulai <= '$selesai' 
-                      AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= '$mulai')";
+                    WHERE kr.tgl_mulai <= ?
+                      AND (kr.tgl_selesai IS NULL OR kr.tgl_selesai >= ?)";
 
-    $qKaryawan = mysqli_query($koneksi, $sqlKaryawan);
+    $stKaryawan = $koneksi->prepare($sqlKaryawan);
+    $stKaryawan->execute([$selesai, $mulai]);
+    $qKaryawan = $stKaryawan;
     if ($qKaryawan) {
-        while ($r = mysqli_fetch_assoc($qKaryawan)) {
+        while ($r = $qKaryawan->fetch()) {
             if (function_exists('generateSlipGaji')) {
                 $slip = generateSlipGaji($r['nik_karyawan'], $mulai, $selesai);
                 if (!isset($slip['error']) && !isset($slip['skip'])) {
@@ -104,10 +114,8 @@ function hitungTotalPeriode($koneksi, $mulai, $selesai)
         }
     }
 
-    $qPinjaman = mysqli_query($koneksi, "SELECT COALESCE(SUM(nominal_pinjaman),0) AS tot FROM tb_pinjaman WHERE tgl_pinjaman BETWEEN '$mulai' AND '$selesai'");
-    if ($qPinjaman) {
-        $t_pinjaman = (int)mysqli_fetch_assoc($qPinjaman)['tot'];
-    }
+    // Tabel tb_pinjaman dihapus (penyederhanaan gaji Okt 2026): pinjaman = 0.
+    $t_pinjaman = 0;
 
     return ['gaji' => $t_gaji, 'pinjaman' => $t_pinjaman];
 }

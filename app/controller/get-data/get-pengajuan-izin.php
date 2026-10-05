@@ -7,14 +7,19 @@ $site = $_GET['site'] ?? '';
 $jabatan = $_GET['jabatan'] ?? '';
 
 $where = ["1=1"];
+$params = [];
 if ($start && $end) {
-    $where[] = "pi.tgl_izin BETWEEN '$start' AND '$end'";
+    $where[] = "pi.tgl_izin BETWEEN ? AND ?";
+    $params[] = $start;
+    $params[] = $end;
 }
 if ($site) {
-    $where[] = "kr.id_site = '$site'";
+    $where[] = "kr.id_site = ?";
+    $params[] = $site;
 }
 if ($jabatan) {
-    $where[] = "kr.id_jabatan = '$jabatan'";
+    $where[] = "kr.id_jabatan = ?";
+    $params[] = $jabatan;
 }
 
 $where_sql = implode(' AND ', $where);
@@ -28,14 +33,16 @@ $sql = "SELECT pi.*, k.nama_lengkap, k.nik_karyawan
         GROUP BY pi.id_pengajuan_izin
         ORDER BY pi.tgl_izin DESC";
         
-$q = mysqli_query($koneksi, $sql);
+$stIzin = $koneksi->prepare($sql);
+$stIzin->execute($params);
+$rowsIzin = $stIzin->fetchAll();
 
-if (mysqli_num_rows($q) == 0) {
+if (count($rowsIzin) == 0) {
     echo '<tr><td colspan="6" class="text-center py-5 text-muted">Belum ada data pengajuan izin.</td></tr>';
     exit;
 }
 
-while ($row = mysqli_fetch_assoc($q)) {
+foreach ($rowsIzin as $row) {
     $id = $row['id_pengajuan_izin'];
     $status = $row['status_izin'];
     

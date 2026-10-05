@@ -14,32 +14,15 @@ $response = [
 
 $show_notif = false;
 
-// 1. HRD (Level 2) & Direktur (Level 1) -> Notif Pinjaman Pending
-if (in_array($user_level, [1, 2])) {
-    $q_pinjaman = mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_pinjaman WHERE status_pinjaman = 'pending'");
-    $cek_pinjaman = mysqli_fetch_assoc($q_pinjaman);
-
-    if ($cek_pinjaman['jml'] > 0) {
-        $show_notif = true;
-        $response['title'] = "Menunggu Approval!";
-        $response['msg']   = "
-            <div style='background: #fff2d6; border-left: 4px solid #ffab00; padding: 15px; border-radius: 6px; text-align: left; color: #566a7f;'>
-                Terdapat <b class='text-warning' style='font-size: 1.2rem;'>{$cek_pinjaman['jml']}</b> pengajuan pinjaman karyawan yang berstatus <b>PENDING</b>.
-            </div>
-            <p style='margin-top: 15px; text-align: left; color: #697a8d; font-size: 0.9rem;'>
-                Mohon segera ditindaklanjuti pada menu pengajuan pinjaman.
-            </p>
-        ";
-    }
-}
+// 1. Notif pinjaman dihapus bersama tabelnya (penyederhanaan gaji Okt 2026).
 // 2. Admin (Level 5) -> Notif Izin, Cuti & Bukti SKS Pending
-elseif ($user_level == 5) {
+if ($user_level == 5) {
     $start_date = date('Y-m-21', strtotime(date('Y-m-01') . ' -1 month'));
     $end_date   = date('Y-m-d');
 
-    $q_izin = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_izin WHERE status_izin = 'pending' AND tgl_izin BETWEEN '$start_date' AND '$end_date'"));
-    $q_cuti = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_cuti WHERE status_cuti = 'pending' AND tgl_awal BETWEEN '$start_date' AND '$end_date'"));
-    $q_sks  = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_bukti_sks WHERE status = 'Pending' AND tgl_sks BETWEEN '$start_date' AND '$end_date'"));
+    $q_izin = ($koneksi->query("SELECT COUNT(*) as jml FROM tb_pengajuan_izin WHERE status_izin = 'pending' AND tgl_izin BETWEEN '$start_date' AND '$end_date'")->fetch());
+    $q_cuti = ($koneksi->query("SELECT COUNT(*) as jml FROM tb_pengajuan_cuti WHERE status_cuti = 'pending' AND tgl_awal BETWEEN '$start_date' AND '$end_date'")->fetch());
+    $q_sks  = ($koneksi->query("SELECT COUNT(*) as jml FROM tb_bukti_sks WHERE status = 'Pending' AND tgl_sks BETWEEN '$start_date' AND '$end_date'")->fetch());
 
     $total_admin = $q_izin['jml'] + $q_cuti['jml'] + $q_sks['jml'];
 
@@ -68,8 +51,8 @@ elseif ($user_level == 5) {
 }
 // 3. Safety (Level 4) -> Notif APD Pending
 elseif ($user_level == 4) {
-    $q_apd = mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM tb_pengajuan_apd WHERE status_pengajuan = 'pending'");
-    $cek_apd = mysqli_fetch_assoc($q_apd);
+    $q_apd = $koneksi->query("SELECT COUNT(*) as jml FROM tb_pengajuan_apd WHERE status_pengajuan = 'pending'");
+    $cek_apd = $q_apd->fetch();
 
     if ($cek_apd['jml'] > 0) {
         $show_notif = true;

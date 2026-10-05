@@ -41,10 +41,8 @@ try {
         }
 
         $stmt = $koneksi->prepare("SELECT id_karyawan, file_kontrak FROM tb_karier WHERE id_karier = ?");
-        $stmt->bind_param("i", $id_karier);
-        $stmt->execute();
-        $kar = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
+        $stmt->execute([$id_karier]);
+        $kar = $stmt->fetch();
 
         if (!$kar) {
             throw new Exception("Data karier tidak ditemukan.");
@@ -68,13 +66,10 @@ try {
         }
 
         $upd = $koneksi->prepare("UPDATE tb_karier SET file_kontrak = ? WHERE id_karier = ?");
-        $upd->bind_param("si", $new_name, $id_karier);
-        if (!$upd->execute()) {
+        if (!$upd->execute([$new_name, $id_karier])) {
             @unlink($upload_dir . $new_name);
-            $upd->close();
             throw new Exception("Gagal memperbarui database.");
         }
-        $upd->close();
 
         $response = ["status" => "success", "message" => "File kontrak berhasil diunggah.", "file" => $new_name];
     } elseif ($action === "delete") {
@@ -84,10 +79,8 @@ try {
         }
 
         $stmt = $koneksi->prepare("SELECT file_kontrak FROM tb_karier WHERE id_karier = ?");
-        $stmt->bind_param("i", $id_karier);
-        $stmt->execute();
-        $kar = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
+        $stmt->execute([$id_karier]);
+        $kar = $stmt->fetch();
 
         if (!$kar) {
             throw new Exception("Data karier tidak ditemukan.");
@@ -101,12 +94,9 @@ try {
         }
 
         $upd = $koneksi->prepare("UPDATE tb_karier SET file_kontrak = NULL WHERE id_karier = ?");
-        $upd->bind_param("i", $id_karier);
-        if (!$upd->execute()) {
-            $upd->close();
+        if (!$upd->execute([$id_karier])) {
             throw new Exception("Gagal memperbarui database.");
         }
-        $upd->close();
 
         $response = ["status" => "success", "message" => "File kontrak berhasil dihapus."];
     }

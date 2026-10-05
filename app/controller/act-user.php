@@ -1,6 +1,6 @@
 <?php
 // TAHAN SEMUA OUTPUT HTML/ERROR PHP AGAR TIDAK MERUSAK JSON
-ob_start(); 
+ob_start();
 
 require_once __DIR__ . '/../config/koneksi.php';
 header('Content-Type: application/json; charset=utf-8');
@@ -13,12 +13,12 @@ if (!is_dir($alamat_foto)) {
 
 function json_resp($status, $msg = '') {
     $php_error = ob_get_clean(); // Tangkap error PHP yang bocor
-    
+
     // Jika gagal dan ada pesan error dari PHP, masukkan ke dalam pesan alert
     if (!$status && $php_error && empty($msg)) {
         $msg = "Error PHP: " . strip_tags(substr($php_error, 0, 150));
     }
-    
+
     echo json_encode(['status' => $status ? 'success' : 'error', 'msg' => $msg]);
     exit;
 }
@@ -45,12 +45,14 @@ if ($action === 'add') {
 
     $pass_hash = password_hash($password, PASSWORD_DEFAULT);
 
-    $stmt = $koneksi->prepare("INSERT INTO tb_user (username,password,nama_user,jabatan,site,level,foto) VALUES (?,?,?,?,?,?,?)");
-    if (!$stmt) json_resp(false, "Query Error: " . $koneksi->error); // Tangkap error jika query salah
-    
-    $stmt->bind_param("sssssis", $username, $pass_hash, $nama, $jabatan, $site, $level, $foto_name);
-    $ok = $stmt->execute();
-    json_resp($ok, $ok ? '' : $koneksi->error);
+    try {
+        $stmt = $koneksi->prepare("INSERT INTO tb_user (username,password,nama_user,jabatan,site,level,foto) VALUES (?,?,?,?,?,?,?)");
+        $ok = $stmt->execute([$username, $pass_hash, $nama, $jabatan, $site, $level, $foto_name]);
+        json_resp($ok, $ok ? '' : 'Gagal menambah user.');
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        json_resp(false, 'Gagal menambah user.');
+    }
 }
 
 if ($action === 'edit') {
@@ -69,23 +71,24 @@ if ($action === 'edit') {
     }
 
     // ambil foto lama
-    $old = $koneksi->query("SELECT foto FROM tb_user WHERE id_user = ".$id)->fetch_assoc();
+    $stOld = $koneksi->prepare("SELECT foto FROM tb_user WHERE id_user = ?");
+    $stOld->execute([$id]);
+    $old = $stOld->fetch();
     $old_foto = $old['foto'] ?? '';
 
     $set_parts = [];
     $params = [];
-    $types = '';
 
-    $set_parts[] = "username = ?"; $params[] = $username; $types .= 's';
-    $set_parts[] = "nama_user = ?"; $params[] = $nama; $types .= 's';
-    $set_parts[] = "jabatan = ?"; $params[] = $jabatan; $types .= 's';
-    $set_parts[] = "site = ?"; $params[] = $site; $types .= 's';
-    $set_parts[] = "level = ?"; $params[] = $level; $types .= 'i';
+    $set_parts[] = "username = ?"; $params[] = $username;
+    $set_parts[] = "nama_user = ?"; $params[] = $nama;
+    $set_parts[] = "jabatan = ?"; $params[] = $jabatan;
+    $set_parts[] = "site = ?"; $params[] = $site;
+    $set_parts[] = "level = ?"; $params[] = $level;
 
     if (!empty($password)) {
         $pw = password_hash($password, PASSWORD_DEFAULT);
         $set_parts[] = "password = ?";
-        $params[] = $pw; $types .= 's';
+        $params[] = $pw;
     }
 
     // foto baru
@@ -95,39 +98,43 @@ if ($action === 'edit') {
         if (move_uploaded_file($_FILES['foto']['tmp_name'], $alamat_foto.$foto_name)) {
             if ($old_foto && file_exists($alamat_foto.$old_foto)) @unlink($alamat_foto.$old_foto);
             $set_parts[] = "foto = ?";
-            $params[] = $foto_name; $types .= 's';
+            $params[] = $foto_name;
         }
     }
 
     $set_sql = implode(', ', $set_parts);
     $sql = "UPDATE tb_user SET {$set_sql} WHERE id_user = ?";
-    $params[] = $id; $types .= 'i';
+    $params[] = $id;
 
-    $stmt = $koneksi->prepare($sql);
-    if (!$stmt) json_resp(false, "Query Error: " . $koneksi->error);
-
-    $bind_names[] = $types;
-    for ($i=0; $i<count($params); $i++) {
-        $bind_names[] = &$params[$i];
+    try {
+        $stmt = $koneksi->prepare($sql);
+        $ok = $stmt->execute($params);
+        json_resp($ok, $ok ? '' : 'Gagal memperbarui user.');
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        json_resp(false, 'Gagal memperbarui user.');
     }
-    call_user_func_array([$stmt, 'bind_param'], $bind_names);
-    $ok = $stmt->execute();
-    json_resp($ok, $ok ? '' : $koneksi->error);
 }
 
 if ($action === 'delete') {
     $id = (int)($_POST['id_user'] ?? 0);
     if (!$id) json_resp(false, 'ID tidak valid');
 
-    $old = $koneksi->query("SELECT foto FROM tb_user WHERE id_user = ".$id)->fetch_assoc();
+    $stOld = $koneksi->prepare("SELECT foto FROM tb_user WHERE id_user = ?");
+    $stOld->execute([$id]);
+    $old = $stOld->fetch();
     if ($old && !empty($old['foto']) && file_exists($alamat_foto.$old['foto'])) {
         @unlink($alamat_foto.$old['foto']);
     }
 
-    $stmt = $koneksi->prepare("DELETE FROM tb_user WHERE id_user = ?");
-    $stmt->bind_param("i", $id);
-    $ok = $stmt->execute();
-    json_resp($ok, $ok ? '' : $koneksi->error);
+    try {
+        $stmt = $koneksi->prepare("DELETE FROM tb_user WHERE id_user = ?");
+        $ok = $stmt->execute([$id]);
+        json_resp($ok, $ok ? '' : 'Gagal menghapus user.');
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        json_resp(false, 'Gagal menghapus user.');
+    }
 }
 
 json_resp(false, 'Action tidak dikenali');

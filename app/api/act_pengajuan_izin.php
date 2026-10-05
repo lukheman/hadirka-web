@@ -29,9 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // KONEKSI DATABASE
 require_once __DIR__ . '/koneksi-api.php';
-if (mysqli_connect_errno()) {
-    sendResponse('error', 'Database error: ' . mysqli_connect_error(), null, 500);
-}
 
 // ============================================
 // FUNGSI UPLOAD BUKTI IZIN
@@ -97,47 +94,49 @@ switch ($action) {
             sendResponse('error', 'Bukti izin wajib diupload.', null, 400);
         }
 
-        $id_karyawan_safe = mysqli_real_escape_string($koneksi, $id_karyawan);
-        $tgl_izin_safe    = mysqli_real_escape_string($koneksi, $tgl_izin);
-        $alasan_izin_safe = mysqli_real_escape_string($koneksi, $alasan_izin);
+        try {
+            // 👇 TAMBAHKAN KODE INI UNTUK AMBIL NIK & NAMA 👇
+            $nik_karyawan = 'UNKNOWN';
+            $nama_karyawan = 'UNKNOWN';
+            $st_kar = $koneksi->prepare("SELECT nik_karyawan, nama_lengkap FROM tb_karyawan WHERE id_karyawan = ?");
+            $st_kar->execute([$id_karyawan]);
+            $row_kar = $st_kar->fetch();
+            if ($row_kar) {
+                $nik_karyawan = $row_kar['nik_karyawan'];
+                // Hapus spasi pada nama (Budi Santoso -> BudiSantoso) agar link gambar tidak rusak
+                $nama_karyawan = str_replace(' ', '', $row_kar['nama_lengkap']); 
+            }
+            
+            // Ubah format tanggal 2026-04-11 menjadi 20260411
+            $tgl_format_file = date('Ymd', strtotime($tgl_izin));
+            // 👆 ========================================== 👆
 
-        // 👇 TAMBAHKAN KODE INI UNTUK AMBIL NIK & NAMA 👇
-        $nik_karyawan = 'UNKNOWN';
-        $nama_karyawan = 'UNKNOWN';
-        $query_kar = mysqli_query($koneksi, "SELECT nik_karyawan, nama_lengkap FROM tb_karyawan WHERE id_karyawan = '$id_karyawan_safe'");
-        if ($row_kar = mysqli_fetch_assoc($query_kar)) {
-            $nik_karyawan = $row_kar['nik_karyawan'];
-            // Hapus spasi pada nama (Budi Santoso -> BudiSantoso) agar link gambar tidak rusak
-            $nama_karyawan = str_replace(' ', '', $row_kar['nama_lengkap']); 
-        }
-        
-        // Ubah format tanggal 2026-04-11 menjadi 20260411
-        $tgl_format_file = date('Ymd', strtotime($tgl_izin_safe));
-        // 👆 ========================================== 👆
-
-        // Cek Duplikat
-        $check_sql = "SELECT id_pengajuan_izin FROM tb_pengajuan_izin WHERE id_karyawan = '$id_karyawan_safe' AND DATE(tgl_izin) = DATE('$tgl_izin_safe')";
-        if (mysqli_num_rows(mysqli_query($koneksi, $check_sql)) > 0) {
-            sendResponse('error', 'Anda sudah mengajukan izin pada tanggal ini.', null, 400);
+            // Cek Duplikat
+            $st_check = $koneksi->prepare("SELECT 1 FROM tb_pengajuan_izin WHERE id_karyawan = ? AND DATE(tgl_izin) = DATE(?) LIMIT 1");
+            $st_check->execute([$id_karyawan, $tgl_izin]);
+            if ($st_check->fetch()) {
+                sendResponse('error', 'Anda sudah mengajukan izin pada tanggal ini.', null, 400);
+            }
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_izin ajukan cek gagal: ' . $e->getMessage());
+            sendResponse('error', 'Terjadi kesalahan database.', null, 500);
         }
 
         // Proses Upload File
         $bukti_izin = uploadBuktiIzin('bukti_izin', $nik_karyawan, $nama_karyawan, $tgl_format_file);
         
-        // Memformat query agar mendukung NULL
-        $bukti_val = $bukti_izin ? "'$bukti_izin'" : "NULL";
-
         // Penggabungan Waktu (Agar history jam pengajuan tercatat)
         $waktu_saat_ini = date('H:i:s');
-        $tgl_izin_timestamp = $tgl_izin_safe . ' ' . $waktu_saat_ini;
+        $tgl_izin_timestamp = $tgl_izin . ' ' . $waktu_saat_ini;
         
-        $sql = "INSERT INTO tb_pengajuan_izin (id_karyawan, tgl_izin, alasan_izin, bukti_izin, status_izin)
-                VALUES ('$id_karyawan_safe', '$tgl_izin_timestamp', '$alasan_izin_safe', $bukti_val, 'pending')";
-
-        if (mysqli_query($koneksi, $sql)) {
+        try {
+            $st = $koneksi->prepare("INSERT INTO tb_pengajuan_izin (id_karyawan, tgl_izin, alasan_izin, bukti_izin, status_izin)
+                    VALUES (?, ?, ?, ?, 'pending')");
+            $st->execute([$id_karyawan, $tgl_izin_timestamp, $alasan_izin, $bukti_izin]);
             sendResponse('success', 'Pengajuan izin berhasil disubmit!');
-        } else {
-            sendResponse('error', 'Gagal menyimpan ke database: ' . mysqli_error($koneksi), null, 500);
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_izin ajukan insert gagal: ' . $e->getMessage());
+            sendResponse('error', 'Gagal menyimpan ke database.', null, 500);
         }
         break;
 
@@ -145,13 +144,19 @@ switch ($action) {
     // AKSI 2: BATALKAN / HAPUS PENGAJUAN IZIN
     // ---------------------------------------------------------
     case 'batalkan':
-        $id_pengajuan = mysqli_real_escape_string($koneksi, $_POST['id_pengajuan'] ?? '');
+        $id_pengajuan = $_POST['id_pengajuan'] ?? '';
         if (empty($id_pengajuan)) sendResponse('error', 'ID Pengajuan tidak ditemukan', null, 400);
 
-        $cek_sql = "SELECT status_izin, bukti_izin FROM tb_pengajuan_izin WHERE id_pengajuan_izin = '$id_pengajuan'";
-        $cek_result = mysqli_query($koneksi, $cek_sql);
+        try {
+            $st_cek = $koneksi->prepare("SELECT status_izin, bukti_izin FROM tb_pengajuan_izin WHERE id_pengajuan_izin = ?");
+            $st_cek->execute([$id_pengajuan]);
+            $row = $st_cek->fetch();
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_izin batalkan cek gagal: ' . $e->getMessage());
+            sendResponse('error', 'Terjadi kesalahan database.', null, 500);
+        }
 
-        if ($row = mysqli_fetch_assoc($cek_result)) {
+        if ($row) {
             if ($row['status_izin'] !== 'pending') {
                 sendResponse('error', 'Gagal dibatalkan. Pengajuan sudah diproses oleh Admin.', null, 400);
             }
@@ -163,9 +168,12 @@ switch ($action) {
             }
 
             // Hapus dari database
-            if (mysqli_query($koneksi, "DELETE FROM tb_pengajuan_izin WHERE id_pengajuan_izin = '$id_pengajuan'")) {
+            try {
+                $st_del = $koneksi->prepare("DELETE FROM tb_pengajuan_izin WHERE id_pengajuan_izin = ?");
+                $st_del->execute([$id_pengajuan]);
                 sendResponse('success', 'Pengajuan izin berhasil dibatalkan dan dihapus.');
-            } else {
+            } catch (PDOException $e) {
+                error_log('act_pengajuan_izin batalkan hapus gagal: ' . $e->getMessage());
                 sendResponse('error', 'Gagal menghapus data.', null, 500);
             }
         } else {
@@ -180,6 +188,4 @@ switch ($action) {
         sendResponse('error', 'Action tidak valid atau tidak ditemukan', null, 400);
         break;
 }
-
-mysqli_close($koneksi);
 ?>

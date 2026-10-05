@@ -10,25 +10,20 @@ $sql = "SELECT nama_shortcut, ikon_nama, tipe_aksi, nilai_aksi, warna_ikon
         WHERE is_active = 1 
         ORDER BY urutan ASC";
 
-$result = $koneksi->query($sql);
+try {
+    $stmt = $koneksi->query($sql);
+    $shortcuts = $stmt->fetchAll();
 
-$shortcuts = [];
-
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $shortcuts[] = $row;
-    }
-    
     echo json_encode([
         "status" => "success",
         "data_shortcuts" => $shortcuts
     ]);
-} else {
+} catch (PDOException $e) {
+    error_log('get_icon_footer gagal: ' . $e->getMessage());
     echo json_encode([
-        "status" => "success",
+        "status" => "error",
+        "message" => "Terjadi kesalahan database.",
         "data_shortcuts" => []
     ]);
 }
-
-$koneksi->close();
 ?>

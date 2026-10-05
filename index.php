@@ -25,7 +25,6 @@ $routes = [
     'data-karyawan'   => 'view/master-data/data-karyawan.php',
     'data-karyawan-tereliminasi' => 'view/master-data/data-karyawan-tereliminasi.php',
     'data-site'       => 'view/master-data/data-site.php',
-    'data-potongan-tidak-tetap' => 'view/penggajian/data-potongan-tidak-tetap.php',
     'data-departemen' => 'view/master-data/data-departemen.php',
     'karier'          => 'view/master-data/data-karier.php',
     'data-jabatan'    => 'view/master-data/data-jabatan.php',
@@ -51,9 +50,6 @@ $routes = [
     'data-periode'    => 'view/finance-payrol/data-periode.php',
     'payroll'         => 'view/penggajian/data-payrol.php',
     // 'slipgajinew'       => 'view/penggajian/slipgajinew.php',
-    'data-pengajuan-pinjaman'   => 'view/penggajian/data-pengajuan-pinjaman.php',
-    'data-pinjaman'   => 'view/penggajian/data-pinjaman.php',
-    'data-rapel'      => 'view/penggajian/data-rapel.php',
     'data-thr'        => 'view/penggajian/data-thr.php',
 
     // --- ROUTE BARU AKUNTANSI ---
@@ -115,10 +111,6 @@ if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
 $finance_pages = [
     'data-periode',
     'payroll',
-    'data-pengajuan-pinjaman',
-    'data-pinjaman',
-    'data-potongan-tidak-tetap',
-    'data-rapel',
     'data-thr',
     'laporan-keuangan',
     'kelola-transaksi',
@@ -149,8 +141,9 @@ if (!in_array($user_level, [0]) && in_array($page, $system_pages)) {
 
 // ======= AMBIL DATA USER YANG SEDANG LOGIN =======
 $id_session = $_SESSION['id_user'] ?? 0;
-$query_active_user = mysqli_query($koneksi, "SELECT nama_user, jabatan, foto FROM tb_user WHERE id_user = '$id_session'");
-$active_user = mysqli_fetch_assoc($query_active_user);
+$stActiveUser = $koneksi->prepare("SELECT nama_user, jabatan, foto FROM tb_user WHERE id_user = ?");
+$stActiveUser->execute([$id_session]);
+$active_user = $stActiveUser->fetch() ?: [];
 
 $nama_login = $active_user['nama_user'] ?? 'User';
 $jabatan_login = $active_user['jabatan'] ?? 'Karyawan';

@@ -17,12 +17,12 @@ if ($action == "add") {
     if ($kode === '') $kode = null;
 
     $sql = $koneksi->prepare("INSERT INTO tb_jabatan (kode_jabatan, nama_jabatan) VALUES (?, ?)");
-    $sql->bind_param("ss", $kode, $nama);
     try {
-        $sql->execute();
+        $sql->execute([$kode, $nama]);
         echo json_encode(["status" => "success"]);
-    } catch (mysqli_sql_exception $e) {
-        $msg = $e->getCode() === 1062 ? "Kode jabatan sudah dipakai" : "Gagal menyimpan";
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        $msg = (($e->errorInfo[1] ?? null) == 1062) ? "Kode jabatan sudah dipakai" : "Gagal menyimpan";
         echo json_encode(["status" => "error", "msg" => $msg]);
     }
     exit;
@@ -39,12 +39,12 @@ if ($action == "edit") {
     if ($kode === '') $kode = null;
 
     $sql = $koneksi->prepare("UPDATE tb_jabatan SET kode_jabatan=?, nama_jabatan=? WHERE id_jabatan=?");
-    $sql->bind_param("ssi", $kode, $nama, $id);
     try {
-        $sql->execute();
+        $sql->execute([$kode, $nama, $id]);
         echo json_encode(["status" => "success"]);
-    } catch (mysqli_sql_exception $e) {
-        $msg = $e->getCode() === 1062 ? "Kode jabatan sudah dipakai" : "Gagal mengupdate";
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        $msg = (($e->errorInfo[1] ?? null) == 1062) ? "Kode jabatan sudah dipakai" : "Gagal mengupdate";
         echo json_encode(["status" => "error", "msg" => $msg]);
     }
     exit;
@@ -54,8 +54,13 @@ if ($action == "delete") {
     $id = $_POST['id_jabatan'];
 
     $sql = $koneksi->prepare("DELETE FROM tb_jabatan WHERE id_jabatan=?");
-    $sql->bind_param("i", $id);
-    echo json_encode(["status" => $sql->execute() ? "success" : "error"]);
+    try {
+        $sql->execute([$id]);
+        echo json_encode(["status" => "success"]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error"]);
+    }
     exit;
 }
 

@@ -30,7 +30,7 @@
                         <option value="">-- Pilih Site --</option>
                         <?php
                         $q = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
-                        while ($d = $q->fetch_assoc()):
+                        while ($d = $q->fetch()):
                         ?>
                             <option value="<?= $d['id_site']; ?>"><?= $d['nama_site']; ?></option>
                         <?php endwhile; ?>
@@ -117,7 +117,7 @@
                             <option value="">-- Pilih Site --</option>
                             <?php
                             $q = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
-                            while ($s = $q->fetch_assoc()) {
+                            while ($s = $q->fetch()) {
                                 echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
                             }
                             ?>

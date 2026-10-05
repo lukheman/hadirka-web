@@ -67,26 +67,23 @@ for ($i = 2; $i <= count($data); $i++) {
 
     // 1. Cek apakah NIK KTP tersebut terdaftar di tb_identitas
     $stmtCheck = $koneksi->prepare("SELECT id_karyawan FROM tb_identitas WHERE nik_ktp = ?");
-    $stmtCheck->bind_param("s", $nik_ktp);
-    $stmtCheck->execute();
-    $stmtCheck->store_result();
-    $isExists = $stmtCheck->num_rows > 0;
-    $stmtCheck->close();
+    $stmtCheck->execute([$nik_ktp]);
+    $isExists = (bool)$stmtCheck->fetch();
 
     // 2. Eksekusi Update jika ada, catat error jika tidak ada
     if ($isExists) {
         // Langsung hajar UPDATE karena keduanya ada di tabel yang sama
         $stmtUpdate = $koneksi->prepare("UPDATE tb_identitas SET bpjs_tk = ? WHERE nik_ktp = ?");
-        $stmtUpdate->bind_param("ss", $bpjs_tk, $nik_ktp);
-        
-        if ($stmtUpdate->execute()) {
-            $successCount++; 
+
+        try {
+            $stmtUpdate->execute([$bpjs_tk, $nik_ktp]);
+            $successCount++;
             $updateCount++;
-        } else {
-            $errorCount++; 
-            $errors[] = "Baris $i (NIK $nik_ktp): Gagal update - " . $stmtUpdate->error;
+        } catch (PDOException $e) {
+            error_log('csv-bpjs-tk update: ' . $e->getMessage());
+            $errorCount++;
+            $errors[] = "Baris $i (NIK $nik_ktp): Gagal update.";
         }
-        $stmtUpdate->close();
     } else {
         // Jika NIK KTP tidak ditemukan di tb_identitas
         $errorCount++;
@@ -104,6 +101,4 @@ echo json_encode([
     'message' => "Selesai! $successCount data berhasil diupdate. $errorCount error.",
     'errors' => $errors
 ]);
-
-$koneksi->close();
 ?>

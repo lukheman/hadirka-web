@@ -1,5 +1,5 @@
 <?php
-require '../../config/koneksi.php'; // pastikan $koneksi adalah MySQLi
+require '../../config/koneksi.php'; // $koneksi adalah PDO
 
 header('Content-Type: application/json');
 
@@ -19,13 +19,11 @@ if ($site && $jabatan) {
         ORDER BY kr.nama_lengkap ASC");
         
     if ($stmt) {
-        $stmt->bind_param("ii", $site, $jabatan);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        while ($row = $res->fetch_assoc()) {
+        $stmt->execute([$site, $jabatan]);
+        $res = $stmt;
+        while ($row = $res->fetch()) {
             $data[] = $row;
         }
-        $stmt->close();
     }
 }
 

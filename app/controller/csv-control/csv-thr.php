@@ -78,14 +78,15 @@ for ($i = 2; $i <= count($data); $i++) {
         continue;
     }
 
-    $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
-    if (!$stmtK) Excel::json('error', "Query Karyawan Error: " . $koneksi->error);
-    
-    $stmtK->bind_param("s", $nik_karyawan);
-    $stmtK->execute();
-    $stmtK->bind_result($id_karyawan);
-    $stmtK->fetch();
-    $stmtK->close();
+    try {
+        $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
+        $stmtK->execute([$nik_karyawan]);
+        $rowK = $stmtK->fetch();
+    } catch (PDOException $e) {
+        error_log('csv-thr karyawan: ' . $e->getMessage());
+        Excel::json('error', 'Gagal menyiapkan query karyawan.');
+    }
+    $id_karyawan = $rowK['id_karyawan'] ?? null;
 
     if (!$id_karyawan) {
         $errorCount++;
@@ -114,50 +115,40 @@ for ($i = 2; $i <= count($data); $i++) {
     $str_nominal = (string) Excel::cleanRupiah($row[$colNominalTHR] ?? 0);
     $str_masa_kerja = trim((string)($row[$colMasaKerja] ?? '0'));
 
-    $stmtCheck = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ?");
-    if (!$stmtCheck) Excel::json('error', "Query Check Error: " . $koneksi->error);
-    
-    $stmtCheck->bind_param("is", $id_karyawan, $periode); 
-    $stmtCheck->execute();
-    $stmtCheck->store_result();
+    try {
+        $stmtCheck = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ?");
+        $stmtCheck->execute([$id_karyawan, $periode]);
+        $exists = (bool)$stmtCheck->fetch();
+    } catch (PDOException $e) {
+        error_log('csv-thr check: ' . $e->getMessage());
+        Excel::json('error', 'Gagal memeriksa data THR.');
+    }
 
-    if ($stmtCheck->num_rows == 0) {
-        $stmtCheck->close();
-
-        $stmtInsert = $koneksi->prepare("
-            INSERT INTO tb_thr (id_karyawan, periode, tgl_mulai, tgl_hari_raya, gaji_pokok, tunjangan_lokasi, tunjangan_kebutuhan, masa_kerja, nominal_thr)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-
-        if (!$stmtInsert) Excel::json('error', 'Query Insert Error: ' . $koneksi->error);
-
-        $stmtInsert->bind_param("issssssss", $id_karyawan, $periode, $tgl_mulai, $tgl_raya, $str_gapok, $str_lokasi, $str_kebutuhan, $str_masa_kerja, $str_nominal);
-
-        if ($stmtInsert->execute()) {
+    if (!$exists) {
+        try {
+            $stmtInsert = $koneksi->prepare("
+                INSERT INTO tb_thr (id_karyawan, periode, tgl_mulai, tgl_hari_raya, gaji_pokok, tunjangan_lokasi, tunjangan_kebutuhan, masa_kerja, nominal_thr)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmtInsert->execute([$id_karyawan, $periode, $tgl_mulai, $tgl_raya, $str_gapok, $str_lokasi, $str_kebutuhan, $str_masa_kerja, $str_nominal]);
             $successCount++; $insertCount++;
-        } else {
-            $errorCount++; $errors[] = "Baris $i: Gagal insert - " . $stmtInsert->error;
+        } catch (PDOException $e) {
+            error_log('csv-thr insert: ' . $e->getMessage());
+            $errorCount++; $errors[] = "Baris $i: Gagal insert.";
         }
-        $stmtInsert->close();
     } else {
-        $stmtCheck->close();
-
-        $stmtUpdate = $koneksi->prepare("
-            UPDATE tb_thr 
-            SET tgl_mulai = ?, tgl_hari_raya = ?, gaji_pokok = ?, tunjangan_lokasi = ?, tunjangan_kebutuhan = ?, masa_kerja = ?, nominal_thr = ? 
-            WHERE id_karyawan = ? AND periode = ?
-        ");
-
-        if (!$stmtUpdate) Excel::json('error', 'Query Update Error: ' . $koneksi->error);
-
-        $stmtUpdate->bind_param("sssssssis", $tgl_mulai, $tgl_raya, $str_gapok, $str_lokasi, $str_kebutuhan, $str_masa_kerja, $str_nominal, $id_karyawan, $periode);
-
-        if ($stmtUpdate->execute()) {
+        try {
+            $stmtUpdate = $koneksi->prepare("
+                UPDATE tb_thr
+                SET tgl_mulai = ?, tgl_hari_raya = ?, gaji_pokok = ?, tunjangan_lokasi = ?, tunjangan_kebutuhan = ?, masa_kerja = ?, nominal_thr = ?
+                WHERE id_karyawan = ? AND periode = ?
+            ");
+            $stmtUpdate->execute([$tgl_mulai, $tgl_raya, $str_gapok, $str_lokasi, $str_kebutuhan, $str_masa_kerja, $str_nominal, $id_karyawan, $periode]);
             $successCount++; $updateCount++;
-        } else {
-            $errorCount++; $errors[] = "Baris $i: Gagal update - " . $stmtUpdate->error;
+        } catch (PDOException $e) {
+            error_log('csv-thr update: ' . $e->getMessage());
+            $errorCount++; $errors[] = "Baris $i: Gagal update.";
         }
-        $stmtUpdate->close();
     }
 }
 
@@ -170,6 +161,4 @@ echo json_encode([
     'message' => "Selesai! $successCount sukses ($insertCount baru, $updateCount update). $errorCount error.",
     'errors' => array_slice($errors, 0, 5)
 ]);
-
-if (isset($koneksi)) $koneksi->close();
 ?>

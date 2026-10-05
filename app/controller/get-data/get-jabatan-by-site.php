@@ -11,10 +11,9 @@ if ($site) {
         WHERE kar.id_site = ?
           AND (kar.tgl_selesai IS NULL OR kar.tgl_selesai >= CURDATE())
     ");
-    $stmt->bind_param("i", $site);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
+    $stmt->execute([$site]);
+    $res = $stmt;
+    while ($row = $res->fetch()) {
         $data[] = $row;
     }
 }

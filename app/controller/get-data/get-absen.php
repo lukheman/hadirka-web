@@ -26,7 +26,7 @@ LEFT JOIN tb_karier kr ON kr.id_karier = (
     SELECT kr2.id_karier
     FROM tb_karier kr2
     WHERE kr2.id_karyawan = k.id_karyawan
-      AND (kr2.tgl_selesai IS NULL OR kr2.tgl_selesai >= '$tgl')
+      AND (kr2.tgl_selesai IS NULL OR kr2.tgl_selesai >= ?)
     ORDER BY kr2.tgl_mulai DESC, kr2.id_karier DESC
     LIMIT 1
 )
@@ -35,29 +35,34 @@ LEFT JOIN tb_jabatan j ON kr.id_jabatan = j.id_jabatan
 WHERE 1=1
 ";
 
+$paramsAbsen = [$tgl];
 if ($site != "") {
-    $sql .= " AND kr.id_site='$site'";
+    $sql .= " AND kr.id_site = ?";
+    $paramsAbsen[] = $site;
 }
 
-$karyawan = $koneksi->query($sql);
+$stKaryawan = $koneksi->prepare($sql);
+$stKaryawan->execute($paramsAbsen);
+$rowsKaryawan = $stKaryawan->fetchAll();
 
-if ($karyawan->num_rows == 0) {
+if (count($rowsKaryawan) == 0) {
     exit;
 }
 
-while ($k = $karyawan->fetch_assoc()) {
+foreach ($rowsKaryawan as $k) {
     $idk = $k['id_karyawan'];
 
     // Ambil data absen
-    $qA = $koneksi->query("
-        SELECT * FROM tb_absen 
-        WHERE id_karyawan='$idk' AND tgl_absen='$tgl'
+    $stA = $koneksi->prepare("
+        SELECT * FROM tb_absen
+        WHERE id_karyawan = ? AND tgl_absen = ?
         LIMIT 1
     ");
+    $stA->execute([$idk, $tgl]);
+    $a = $stA->fetch();
 
-    if ($qA->num_rows > 0) {
+    if ($a) {
         // Ada data absen
-        $a   = $qA->fetch_assoc();
         $ket = strtoupper($a['ket_absen']);
         $jam = $a['jam_kerja'];
 

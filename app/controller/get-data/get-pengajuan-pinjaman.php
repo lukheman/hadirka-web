@@ -34,19 +34,18 @@ try {
             LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
             LEFT JOIN tb_karier kr ON kr.id_karyawan = k.id_karyawan 
             LEFT JOIN tb_site s ON kr.id_site = s.id_site
-            WHERE DATE(p.tgl_pengajuan) BETWEEN '$startDate' AND '$endDate'
+            WHERE DATE(p.tgl_pengajuan) BETWEEN ? AND ?
             GROUP BY p.id_pengajuan_pinjaman
             ORDER BY p.tgl_pengajuan DESC";
 
-    $result = mysqli_query($koneksi, $query);
-    if (!$result) {
-        throw new Exception("Gagal mengeksekusi query data pengajuan: " . mysqli_error($koneksi));
-    }
+    $stPinjaman = $koneksi->prepare($query);
+    $stPinjaman->execute([$startDate, $endDate]);
+    $result = $stPinjaman;
 
     $data = [];
     $no = 1;
 
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = $result->fetch()) {
         // Ambil nama jabatan menggunakan fungsi generateSlipGaji bawaan agar nama jabatan seragam dengan payroll
         $jabatan = "-";
         if (function_exists('generateSlipGaji')) {

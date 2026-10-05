@@ -4,30 +4,32 @@ include __DIR__ . "/../config/koneksi.php";
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 if ($action == 'update-status') {
-    $id = mysqli_real_escape_string($koneksi, $_POST['id'] ?? $_GET['id']);
-    $status = mysqli_real_escape_string($koneksi, $_POST['status'] ?? $_GET['status']); 
-    $ket_admin = mysqli_real_escape_string($koneksi, $_POST['ket_admin'] ?? ''); 
-    
-    $sql = "UPDATE tb_pengajuan_izin SET status_izin = '$status', ket_admin = '$ket_admin' WHERE id_pengajuan_izin = '$id'";
-    
-    if (mysqli_query($koneksi, $sql)) {
+    $id = $_POST['id'] ?? $_GET['id'];
+    $status = $_POST['status'] ?? $_GET['status'];
+    $ket_admin = $_POST['ket_admin'] ?? '';
+
+    try {
+        $st = $koneksi->prepare("UPDATE tb_pengajuan_izin SET status_izin = ?, ket_admin = ? WHERE id_pengajuan_izin = ?");
+        $st->execute([$status, $ket_admin, $id]);
         echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Gagal memperbarui status.']);
     }
     exit;
 }
 
 if ($action == 'delete') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    
+    $id = $_GET['id'];
+
     // 1. Ambil nama file gambar dari database sebelum datanya dihapus
-    $query_cari = mysqli_query($koneksi, "SELECT bukti_izin FROM tb_pengajuan_izin WHERE id_pengajuan_izin = '$id'");
-    $data_izin = mysqli_fetch_assoc($query_cari);
+    $query_cari = $koneksi->prepare("SELECT bukti_izin FROM tb_pengajuan_izin WHERE id_pengajuan_izin = ?");
+    $query_cari->execute([$id]);
+    $data_izin = $query_cari->fetch();
 
     if ($data_izin) {
         $nama_file = $data_izin['bukti_izin'];
-        
+
         // 2. Tentukan path/lokasi folder gambar
         // Sesuaikan path ini dengan struktur folder Anda (contoh: ../uploads/izin/)
         $path_file = "../" . $nama_file;
@@ -39,12 +41,13 @@ if ($action == 'delete') {
     }
 
     // 4. Setelah file fisik terhapus, baru hapus data di database
-    $sql = "DELETE FROM tb_pengajuan_izin WHERE id_pengajuan_izin = '$id'";
-    
-    if (mysqli_query($koneksi, $sql)) {
+    try {
+        $st = $koneksi->prepare("DELETE FROM tb_pengajuan_izin WHERE id_pengajuan_izin = ?");
+        $st->execute([$id]);
         echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus data.']);
     }
     exit;
 }

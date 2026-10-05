@@ -6,7 +6,7 @@ $q = $koneksi->query("SELECT sp.*, kr.nama_lengkap
     INNER JOIN tb_karyawan kr ON sp.id_karyawan = kr.id_karyawan
     ORDER BY sp.id_sp DESC");
 
-while ($r = $q->fetch_assoc()) {
+while ($r = $q->fetch()) {
     
     // Logika handling jika masa berlaku kosong (PHK/End Contract)
     if (empty($r['masa_berlaku_bulan']) || $r['masa_berlaku_bulan'] == 0) {

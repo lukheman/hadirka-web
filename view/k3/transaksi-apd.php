@@ -80,7 +80,7 @@
                             <option value="">-- Semua Site --</option>
                             <?php
                             $q_site = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
-                            while ($s = $q_site->fetch_assoc()) {
+                            while ($s = $q_site->fetch()) {
                                 echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
                             }
                             ?>
@@ -97,7 +97,7 @@
                         <option value="">-- Semua Departemen --</option>
                         <?php
                         $q_dept = $koneksi->query("SELECT * FROM tb_departemen ORDER BY nama_departemen ASC");
-                        while ($d = $q_dept->fetch_assoc()) {
+                        while ($d = $q_dept->fetch()) {
                             echo "<option value='{$d['id_departemen']}'>{$d['nama_departemen']}</option>";
                         }
                         ?>
@@ -110,7 +110,7 @@
                         <option value="">-- Semua Jabatan --</option>
                         <?php
                         $q_jab = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
-                        while ($j = $q_jab->fetch_assoc()) {
+                        while ($j = $q_jab->fetch()) {
                             echo "<option value='{$j['id_jabatan']}'>{$j['nama_jabatan']}</option>";
                         }
                         ?>

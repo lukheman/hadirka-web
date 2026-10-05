@@ -21,19 +21,21 @@ function getAvailablePeriods()
             WHERE status_priode = 'Open' AND type_priode = 'Slip gaji'
             ORDER BY tgl_mulai DESC";
     
-    $q = mysqli_query($koneksi, $sql);
-
-    if (!$q) {
-         return ['error' => 'Query database gagal: ' . mysqli_error($koneksi)];
+    try {
+        $stmt = $koneksi->query($sql);
+        $rows = $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('periode_slip gagal: ' . $e->getMessage());
+        return ['error' => 'Query database gagal.'];
     }
 
-    if (mysqli_num_rows($q) == 0) {
+    if (count($rows) == 0) {
         return []; // Mengembalikan array kosong jika tidak ada data
     }
 
     $is_first = true;
     
-    while ($r = mysqli_fetch_assoc($q)) {
+    foreach ($rows as $r) {
         $tgl_mulai_display = date('d M Y', strtotime($r['tgl_mulai']));
         $tgl_selesai_display = date('d M Y', strtotime($r['tgl_selesai']));
         
@@ -61,8 +63,6 @@ function getAvailablePeriods()
 // ====================================================================
 
 $response = getAvailablePeriods();
-
-if (isset($koneksi) && is_object($koneksi)) $koneksi->close(); 
 
 // Kirim header 200 OK
 http_response_code(200);

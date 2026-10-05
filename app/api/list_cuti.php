@@ -5,17 +5,12 @@ header('Access-Control-Allow-Methods: POST');
 
 require_once __DIR__ . '/koneksi-api.php';
 
-if (mysqli_connect_errno()) {
-    echo json_encode(['status' => 'error', 'message' => 'Koneksi Database Gagal: ' . mysqli_connect_error()]);
-    exit;
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Method tidak diizinkan']);
     exit;
 }
 
-$id_karyawan = mysqli_real_escape_string($koneksi, $_POST['id_karyawan'] ?? '');
+$id_karyawan = $_POST['id_karyawan'] ?? '';
 
 if (empty($id_karyawan)) {
     echo json_encode(['status' => 'error', 'message' => 'ID Karyawan diperlukan']);
@@ -24,28 +19,27 @@ if (empty($id_karyawan)) {
 
 // Ambil data riwayat cuti
 $sql = "SELECT * FROM tb_pengajuan_cuti 
-        WHERE id_karyawan = '$id_karyawan' 
+        WHERE id_karyawan = ? 
         ORDER BY id_pengajuan_cuti DESC";
 
-$result = mysqli_query($koneksi, $sql);
-$data_cuti = [];
-
-if ($result) {
-    while ($row = mysqli_fetch_assoc($result)) {
+try {
+    $stmt = $koneksi->prepare($sql);
+    $stmt->execute([$id_karyawan]);
+    $data_cuti = [];
+    while ($row = $stmt->fetch()) {
         $data_cuti[] = $row;
     }
-    
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Data riwayat cuti berhasil dimuat',
         'data' => $data_cuti
     ]);
-} else {
+} catch (PDOException $e) {
+    error_log('list_cuti gagal: ' . $e->getMessage());
     echo json_encode([
         'status' => 'error',
-        'message' => 'Gagal mengambil data: ' . mysqli_error($koneksi)
+        'message' => 'Terjadi kesalahan database.'
     ]);
 }
-
-mysqli_close($koneksi);
 ?>

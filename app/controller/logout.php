@@ -20,9 +20,7 @@ if (isset($_COOKIE['remember_me']) && strpos($_COOKIE['remember_me'], ':') !== f
 
     $stmt = $koneksi->prepare("DELETE FROM tb_user_token WHERE selector = ?");
     if ($stmt) {
-        $stmt->bind_param("s", $selector);
-        $stmt->execute();
-        $stmt->close();
+        $stmt->execute([$selector]);
     }
 
     $secure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';

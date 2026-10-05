@@ -31,11 +31,11 @@ function sendResponse($status, $message, $data = null) {
         'msg' => $message,
         'timestamp' => date('Y-m-d H:i:s')
     ];
-    
+
     if ($data !== null) {
         $response['data'] = $data;
     }
-    
+
     echo json_encode($response);
     exit;
 }
@@ -45,11 +45,6 @@ function sendResponse($status, $message, $data = null) {
 // ============================================
 if (!isset($koneksi) || !$koneksi) {
     sendResponse('error', 'Koneksi database gagal. Silakan hubungi administrator.');
-}
-
-// Check if connection is active
-if ($koneksi->connect_error) {
-    sendResponse('error', 'Database connection error: ' . $koneksi->connect_error);
 }
 
 // ============================================
@@ -65,7 +60,7 @@ if (empty($action)) {
 // PROCESS ACTIONS
 // ============================================
 switch ($action) {
-    
+
     // ========================================
     // ACTION: ADD NEW THR
     // ========================================
@@ -78,28 +73,32 @@ switch ($action) {
         $tunj_kebutuhan = trim($_POST['tunjangan_kebutuhan']);
         $masa_kerja = trim($_POST['masa_kerja']);
         $nominal_thr = trim($_POST['nominal_thr']);
-        
+
         // Ekstrak periode
         $periode = date('Y', strtotime($tgl_hari_raya));
 
-        // Cek duplikat (Tahun dan Karyawan)
-        $dupStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ?");
-        $dupStmt->bind_param("is", $id_karyawan, $periode);
-        $dupStmt->execute();
-        if ($dupStmt->get_result()->num_rows > 0) {
-            sendResponse('error', 'Karyawan ini sudah memiliki data THR untuk periode tahun ' . $periode);
-        }
+        try {
+            // Cek duplikat (Tahun dan Karyawan)
+            $dupStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ?");
+            $dupStmt->execute([$id_karyawan, $periode]);
+            if ($dupStmt->fetch()) {
+                sendResponse('error', 'Karyawan ini sudah memiliki data THR untuk periode tahun ' . $periode);
+            }
 
-        $stmt = $koneksi->prepare("
-            INSERT INTO tb_thr (id_karyawan, periode, tgl_mulai, tgl_hari_raya, gaji_pokok, tunjangan_lokasi, tunjangan_kebutuhan, masa_kerja, nominal_thr) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        
-        // i = integer, s = string (karena nilai uang Anda bertipe varchar di database)
-        $stmt->bind_param("issssssss", $id_karyawan, $periode, $tgl_mulai, $tgl_hari_raya, $gaji_pokok, $tunj_lokasi, $tunj_kebutuhan, $masa_kerja, $nominal_thr);
-        
-        if ($stmt->execute()) sendResponse('success', 'Data THR berhasil ditambahkan');
-        else sendResponse('error', 'Gagal menyimpan: ' . $stmt->error);
+            $stmt = $koneksi->prepare("
+                INSERT INTO tb_thr (id_karyawan, periode, tgl_mulai, tgl_hari_raya, gaji_pokok, tunjangan_lokasi, tunjangan_kebutuhan, masa_kerja, nominal_thr)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            if ($stmt->execute([$id_karyawan, $periode, $tgl_mulai, $tgl_hari_raya, $gaji_pokok, $tunj_lokasi, $tunj_kebutuhan, $masa_kerja, $nominal_thr])) {
+                sendResponse('success', 'Data THR berhasil ditambahkan');
+            } else {
+                sendResponse('error', 'Gagal menyimpan data.');
+            }
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            sendResponse('error', 'Gagal menyimpan data.');
+        }
         break;
 
     // ========================================
@@ -115,94 +114,83 @@ switch ($action) {
         $tunj_kebutuhan = trim($_POST['tunjangan_kebutuhan']);
         $masa_kerja = trim($_POST['masa_kerja']);
         $nominal_thr = trim($_POST['nominal_thr']);
-        
+
         $periode = date('Y', strtotime($tgl_hari_raya));
 
-        // --- TAMBAHKAN PENGECEKAN DUPLIKAT DI SINI ---
-        // Cek apakah ada data di tahun yang sama, KECUALI data yang sedang diedit ini
-        $dupStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ? AND id_thr != ?");
-        $dupStmt->bind_param("isi", $id_karyawan, $periode, $id_thr);
-        $dupStmt->execute();
-        if ($dupStmt->get_result()->num_rows > 0) {
-            $dupStmt->close();
-            sendResponse('error', 'Gagal update. Karyawan ini sudah memiliki data THR lain untuk periode tahun ' . $periode);
-        }
-        $dupStmt->close();
-        // ---------------------------------------------
+        try {
+            // --- TAMBAHKAN PENGECEKAN DUPLIKAT DI SINI ---
+            // Cek apakah ada data di tahun yang sama, KECUALI data yang sedang diedit ini
+            $dupStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_karyawan = ? AND periode = ? AND id_thr != ?");
+            $dupStmt->execute([$id_karyawan, $periode, $id_thr]);
+            if ($dupStmt->fetch()) {
+                sendResponse('error', 'Gagal update. Karyawan ini sudah memiliki data THR lain untuk periode tahun ' . $periode);
+            }
+            // ---------------------------------------------
 
-        $stmt = $koneksi->prepare("
-            UPDATE tb_thr SET 
-            id_karyawan=?, periode=?, tgl_mulai=?, tgl_hari_raya=?, gaji_pokok=?, tunjangan_lokasi=?, tunjangan_kebutuhan=?, masa_kerja=?, nominal_thr=? 
-            WHERE id_thr=?
-        ");
-        
-        $stmt->bind_param("issssssssi", $id_karyawan, $periode, $tgl_mulai, $tgl_hari_raya, $gaji_pokok, $tunj_lokasi, $tunj_kebutuhan, $masa_kerja, $nominal_thr, $id_thr);
-        
-        if ($stmt->execute()) sendResponse('success', 'Data THR berhasil diupdate');
-        else sendResponse('error', 'Gagal update: ' . $stmt->error);
+            $stmt = $koneksi->prepare("
+                UPDATE tb_thr SET
+                id_karyawan=?, periode=?, tgl_mulai=?, tgl_hari_raya=?, gaji_pokok=?, tunjangan_lokasi=?, tunjangan_kebutuhan=?, masa_kerja=?, nominal_thr=?
+                WHERE id_thr=?
+            ");
+
+            if ($stmt->execute([$id_karyawan, $periode, $tgl_mulai, $tgl_hari_raya, $gaji_pokok, $tunj_lokasi, $tunj_kebutuhan, $masa_kerja, $nominal_thr, $id_thr])) {
+                sendResponse('success', 'Data THR berhasil diupdate');
+            } else {
+                sendResponse('error', 'Gagal memperbarui data.');
+            }
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            sendResponse('error', 'Gagal memperbarui data.');
+        }
         break;
-    
+
     // ========================================
     // ACTION: DELETE thr
     // ========================================
     case 'delete':
         // Sanitize and validate input
         $id_thr = isset($_POST['id_thr']) ? intval($_POST['id_thr']) : 0;
-        
+
         // Validation
         if ($id_thr <= 0) {
             sendResponse('error', 'ID thr tidak valid');
         }
-        
-        // Check if thr exists
-        $checkStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_thr = ?");
-        $checkStmt->bind_param("i", $id_thr);
-        $checkStmt->execute();
-        $checkStmt->store_result();
-        
-        if ($checkStmt->num_rows === 0) {
-            $checkStmt->close();
-            sendResponse('error', 'Data thr tidak ditemukan');
-        }
-        $checkStmt->close();
-        
-        // Prepare DELETE statement
-        $stmt = $koneksi->prepare("DELETE FROM tb_thr WHERE id_thr = ?");
-        
-        if (!$stmt) {
-            sendResponse('error', 'Gagal menyiapkan query: ' . $koneksi->error);
-        }
-        
-        // Bind parameter
-        $stmt->bind_param("i", $id_thr);
-        
-        // Execute query
-        if ($stmt->execute()) {
-            $affected_rows = $stmt->affected_rows;
-            $stmt->close();
-            
-            if ($affected_rows > 0) {
-                sendResponse('success', 'Data thr berhasil dihapus');
-            } else {
-                sendResponse('error', 'Data thr tidak ditemukan atau sudah dihapus');
+
+        try {
+            // Check if thr exists
+            $checkStmt = $koneksi->prepare("SELECT id_thr FROM tb_thr WHERE id_thr = ?");
+            $checkStmt->execute([$id_thr]);
+
+            if (!$checkStmt->fetch()) {
+                sendResponse('error', 'Data thr tidak ditemukan');
             }
-        } else {
-            $error = $stmt->error;
-            $stmt->close();
-            sendResponse('error', 'Gagal menghapus data: ' . $error);
+
+            // Prepare DELETE statement
+            $stmt = $koneksi->prepare("DELETE FROM tb_thr WHERE id_thr = ?");
+
+            // Execute query
+            if ($stmt->execute([$id_thr])) {
+                $affected_rows = $stmt->rowCount();
+
+                if ($affected_rows > 0) {
+                    sendResponse('success', 'Data thr berhasil dihapus');
+                } else {
+                    sendResponse('error', 'Data thr tidak ditemukan atau sudah dihapus');
+                }
+            } else {
+                sendResponse('error', 'Gagal menghapus data.');
+            }
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            sendResponse('error', 'Gagal menghapus data.');
         }
         break;
-    
+
     // ========================================
     // ACTION: INVALID
     // ========================================
     default:
         sendResponse('error', 'Aksi tidak valid: ' . htmlspecialchars($action));
         break;
-}
-
-// Close database connection
-if (isset($koneksi)) {
-    $koneksi->close();
 }
 ?>

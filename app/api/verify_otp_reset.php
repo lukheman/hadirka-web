@@ -10,34 +10,45 @@ if(empty($nik) || empty($otp)){
   exit;
 }
 
-// Cari id_karyawan dari NIK
-$q_id = mysqli_query($koneksi, "SELECT id_karyawan FROM tb_identitas WHERE nik_ktp = '$nik'");
-if(mysqli_num_rows($q_id) == 0){
-    echo json_encode(['status'=>'error','message'=>'NIK tidak valid']);
+try {
+  // Cari id_karyawan dari NIK
+  $st_id = $koneksi->prepare("SELECT id_karyawan FROM tb_identitas WHERE nik_ktp = ?");
+  $st_id->execute([$nik]);
+  $row_id = $st_id->fetch();
+  if(!$row_id){
+      echo json_encode(['status'=>'error','message'=>'NIK tidak valid']);
+      exit;
+  }
+  $id_karyawan = $row_id['id_karyawan'];
+
+  // Cek OTP
+  $st = $koneksi->prepare("
+      SELECT * FROM tb_reset_otp
+      WHERE id_karyawan = ?
+      AND otp_code = ?
+      AND is_used = 0
+      AND expired_at > NOW()
+      ORDER BY id_otp DESC LIMIT 1
+  ");
+  $st->execute([$id_karyawan, $otp]);
+  $row_otp = $st->fetch();
+
+  if(!$row_otp){
+    echo json_encode(['status'=>'error','message'=>'OTP tidak valid atau sudah kadaluarsa']);
     exit;
-}
-$id_karyawan = mysqli_fetch_assoc($q_id)['id_karyawan'];
+  }
 
-// Cek OTP
-$q = mysqli_query($koneksi,"
-    SELECT * FROM tb_reset_otp
-    WHERE id_karyawan='$id_karyawan'
-    AND otp_code='$otp'
-    AND is_used=0
-    AND expired_at > NOW()
-    ORDER BY id_otp DESC LIMIT 1
-");
-
-if(mysqli_num_rows($q)==0){
-  echo json_encode(['status'=>'error','message'=>'OTP tidak valid atau sudah kadaluarsa']);
+  // Tandai OTP sudah terpakai
+  $st_used = $koneksi->prepare("
+      UPDATE tb_reset_otp SET is_used = 1
+      WHERE id_karyawan = ? AND otp_code = ?
+  ");
+  $st_used->execute([$id_karyawan, $otp]);
+} catch (PDOException $e) {
+  error_log('verify_otp_reset gagal: ' . $e->getMessage());
+  echo json_encode(['status'=>'error','message'=>'Terjadi kesalahan database.']);
   exit;
 }
-
-// Tandai OTP sudah terpakai
-mysqli_query($koneksi,"
-    UPDATE tb_reset_otp SET is_used=1
-    WHERE id_karyawan='$id_karyawan' AND otp_code='$otp'
-");
 
 echo json_encode(['status'=>'success','message'=>'OTP valid. Silakan buat kata sandi baru.']);
 ?>

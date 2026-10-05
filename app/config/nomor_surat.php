@@ -10,13 +10,19 @@ if (!function_exists('peek_no_urut')) {
     {
         $last = 0;
         $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
-        if ($qc && $qc->num_rows > 0) $last = (int)$qc->fetch_assoc()['terakhir'];
+        if ($qc) {
+            $rowC = $qc->fetch();
+            if ($rowC) $last = (int)$rowC['terakhir'];
+        }
         $mx = 0;
         $qm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
             "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
-        if ($qm) $mx = (int)$qm->fetch_assoc()['mx'];
+        if ($qm) {
+            $rowM = $qm->fetch();
+            if ($rowM) $mx = (int)$rowM['mx'];
+        }
         return max($last, $mx) + 1;
     }
 }
@@ -34,27 +40,29 @@ function generate_no_surat($koneksi, $kode_jabatan, $tgl_mulai)
 
     // Nomor urut = (terbesar yang terpakai di tb_karier / counter, mana yang lebih besar) + 1.
     // Baris counter dikunci (FOR UPDATE) agar request bersamaan tidak menghasilkan nomor ganda.
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
     try {
         $koneksi->query("INSERT IGNORE INTO tb_nomor_urut (nama, terakhir) VALUES ('kontrak', 0)");
         $lock = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' FOR UPDATE");
-        if (!$lock || $lock->num_rows === 0) throw new Exception('Counter nomor surat tidak tersedia.');
-        $last = (int)$lock->fetch_assoc()['terakhir'];
+        $lockRow = $lock ? $lock->fetch() : false;
+        if (!$lockRow) throw new Exception('Counter nomor surat tidak tersedia.');
+        $last = (int)$lockRow['terakhir'];
 
         $qm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
             "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
-        if (!$qm) throw new Exception('Gagal membaca nomor terakhir: ' . $koneksi->error);
-        $mx = (int)$qm->fetch_assoc()['mx'];
+        $mxRow = $qm ? $qm->fetch() : false;
+        if ($mxRow === false) throw new Exception('Gagal membaca nomor terakhir.');
+        $mx = (int)$mxRow['mx'];
 
         $seq = max($last, $mx) + 1;
-        if (!$koneksi->query("UPDATE tb_nomor_urut SET terakhir = '$seq' WHERE nama = 'kontrak'")) {
-            throw new Exception('Gagal mencatat nomor surat: ' . $koneksi->error);
-        }
+        $stSeq = $koneksi->prepare("UPDATE tb_nomor_urut SET terakhir = ? WHERE nama = 'kontrak'");
+        $stSeq->execute([$seq]);
         $koneksi->commit();
     } catch (Throwable $e) {
-        $koneksi->rollback();
+        error_log('generate_no_surat: ' . $e->getMessage());
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
         throw $e instanceof Exception ? $e : new Exception($e->getMessage());
     }
 

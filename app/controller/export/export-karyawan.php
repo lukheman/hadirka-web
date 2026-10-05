@@ -24,27 +24,32 @@ $bulan   = $_GET['bulan'] ?? '';
 
 // Build WHERE Clause
 $where = ["1=1"];
+$params = [];
 
 if (!empty($status)) {
     if ($status === 'TERELIMINASI') {
         $where[] = "kar.status_karyawan != 'Aktif'";
     } elseif ($status !== 'Semua') {
-        $where[] = "kar.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+        $where[] = "kar.status_karyawan = ?";
+        $params[] = $status;
     }
 } else {
     $where[] = "kar.status_karyawan = 'Aktif'";
 }
 
 if (!empty($site)) {
-    $where[] = "k.id_site = '" . $koneksi->real_escape_string($site) . "'";
+    $where[] = "k.id_site = ?";
+    $params[] = $site;
 }
 
 if (!empty($jabatan)) {
-    $where[] = "k.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+    $where[] = "k.id_jabatan = ?";
+    $params[] = $jabatan;
 }
 
 if (!empty($bulan)) {
-    $where[] = "MONTH(k.tgl_selesai) = '" . $koneksi->real_escape_string($bulan) . "'";
+    $where[] = "MONTH(k.tgl_selesai) = ?";
+    $params[] = $bulan;
 }
 
 $where_sql = implode(" AND ", $where);
@@ -68,11 +73,13 @@ $query = "SELECT
     WHERE $where_sql
     ORDER BY kar.nama_lengkap ASC";
 
-$result = $koneksi->query($query);
-
-// Cek jika error query
-if (!$result) {
-    die("Query Error: " . $koneksi->error);
+try {
+    $stmt = $koneksi->prepare($query);
+    $stmt->execute($params);
+    $rowsKaryawan = $stmt->fetchAll();
+} catch (PDOException $e) {
+    error_log('export-karyawan: ' . $e->getMessage());
+    die("Query Error: gagal mengambil data karyawan.");
 }
 
 // Inisialisasi PhpSpreadsheet
@@ -135,8 +142,8 @@ foreach ($headers as $cell => $val) {
 $rowNum = 2;
 $no = 1;
 
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
+if (count($rowsKaryawan) > 0) {
+    foreach ($rowsKaryawan as $row) {
         $sheet->setCellValue('A' . $rowNum, $no++);
         $sheet->setCellValueExplicit('B' . $rowNum, $row['nik_karyawan'] ?? '', DataType::TYPE_STRING);
         $sheet->setCellValue('C' . $rowNum, $row['nama_lengkap'] ?? '');
@@ -197,9 +204,10 @@ foreach (range('A', 'R') as $col) {
 // Logika nama site untuk nama file
 $nama_site_file = "SEMUA_SITE";
 if (!empty($site)) {
-    $q_site = $koneksi->query("SELECT nama_site FROM tb_site WHERE id_site = '" . $koneksi->real_escape_string($site) . "'");
-    if ($q_site && $q_site->num_rows > 0) {
-        $site_data = $q_site->fetch_assoc();
+    $stSite = $koneksi->prepare("SELECT nama_site FROM tb_site WHERE id_site = ?");
+    $stSite->execute([$site]);
+    $site_data = $stSite->fetch();
+    if ($site_data) {
         $nama_site_file = str_replace(' ', '_', strtoupper(trim($site_data['nama_site'])));
     }
 }

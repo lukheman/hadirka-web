@@ -8,29 +8,32 @@ $sql = "SELECT judul, detail_konten, waktu_buat, warna_kode
         ORDER BY waktu_buat DESC 
         LIMIT 3";
 
-$result = $koneksi->query($sql);
-$pengumuman_data = [];
+try {
+    $stmt = $koneksi->query($sql);
+    $pengumuman_data = $stmt->fetchAll();
 
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $pengumuman_data[] = $row;
+    if (count($pengumuman_data) > 0) {
+        // Sukses mengambil data
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Data pengumuman berhasil dimuat.',
+            'data_pengumuman' => $pengumuman_data
+        ]);
+
+    } else {
+        // Tidak ada data ditemukan
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Tidak ada pengumuman aktif.',
+            'data_pengumuman' => []
+        ]);
     }
-    
-    // Sukses mengambil data
+} catch (PDOException $e) {
+    error_log('api_get_pengumuman gagal: ' . $e->getMessage());
     echo json_encode([
-        'status' => 'success',
-        'message' => 'Data pengumuman berhasil dimuat.',
-        'data_pengumuman' => $pengumuman_data
-    ]);
-    
-} else {
-    // Tidak ada data ditemukan
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Tidak ada pengumuman aktif.',
+        'status' => 'error',
+        'message' => 'Terjadi kesalahan database.',
         'data_pengumuman' => []
     ]);
 }
-
-$koneksi->close();
 ?>

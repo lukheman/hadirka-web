@@ -5,17 +5,19 @@ header('Content-Type: text/html; charset=utf-8');
 // Variabel Base URL dari fungsi Anda (Pastikan url() mengembalikan contoh: http://localhost/tjs-outsoorsing/)
 $base_url = url();
 
-$q = $koneksi->query("SELECT * FROM tb_user ORDER BY nama_user ASC");
+$stUser = $koneksi->query("SELECT * FROM tb_user ORDER BY nama_user ASC");
+$stSite = $koneksi->prepare("SELECT * FROM tb_site WHERE id_site = ?");
 $no = 1;
 $html = '';
-while ($row = $q->fetch_assoc()) {
-    $qrSq = mysqli_fetch_array(mysqli_query($koneksi, "SELECT * FROM tb_site WHERE id_site ='{$row['site']}'"));
+foreach ($stUser->fetchAll() as $row) {
+    $stSite->execute([$row['site']]);
+    $qrSq = $stSite->fetch();
 
     $id = (int)$row['id_user'];
     $username = htmlspecialchars($row['username']);
     $nama = htmlspecialchars($row['nama_user']);
     $jabatan = htmlspecialchars($row['jabatan']);
-    $site = (htmlspecialchars($row['site']) == 0) ? 0 : $qrSq['nama_site'];
+    $site = (htmlspecialchars($row['site']) == 0) ? 0 : ($qrSq['nama_site'] ?? '');
 
     $lvl_angka = (int)$row['level'];
     if ($lvl_angka === 0) { $level = 'Master'; }

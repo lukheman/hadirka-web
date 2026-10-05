@@ -6,7 +6,7 @@ include __DIR__ . '/koneksi-api.php'; // Pastikan jalur koneksi benar
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-// Asumsi: Variabel global $koneksi adalah objek koneksi MySQLi yang sudah valid
+// Asumsi: Variabel global $koneksi adalah objek koneksi PDO yang sudah valid
 // if (!isset($koneksi) || $koneksi === false) {
 //     http_response_code(500);
 //     echo json_encode(['status' => 'error', 'message' => 'Koneksi database ($koneksi) tidak ditemukan atau gagal.']);
@@ -99,7 +99,7 @@ $response = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ID karyawan yang dikirim dari Flutter
-    $id_karyawan = isset($_POST['id_karyawan']) ? mysqli_real_escape_string($koneksi, $_POST['id_karyawan']) : '';
+    $id_karyawan = isset($_POST['id_karyawan']) ? $_POST['id_karyawan'] : '';
     $today = date('Y-m-d');
 
     if (empty($id_karyawan)) {
@@ -107,50 +107,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $response = ['status' => 'error', 'message' => 'ID Karyawan wajib diisi.'];
     } else {
 
-        // =======================================================
-        // 1. Query untuk mengambil Data Dasar Karyawan
-        // =======================================================
-        $query_base = "SELECT k.*, i.* FROM tb_karyawan k 
-                        LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan 
-                        WHERE k.id_karyawan = '$id_karyawan' 
-                        LIMIT 1";
+        try {
+            // =======================================================
+            // 1. Query untuk mengambil Data Dasar Karyawan
+            // =======================================================
+            $st_base = $koneksi->prepare("SELECT k.*, i.* FROM tb_karyawan k 
+                            LEFT JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan 
+                            WHERE k.id_karyawan = ? 
+                            LIMIT 1");
+            $st_base->execute([$id_karyawan]);
+            $data_karyawan_base = $st_base->fetch();
 
-        $result_base = mysqli_query($koneksi, $query_base);
-        $data_karyawan_base = mysqli_fetch_assoc($result_base);
+            if (!$data_karyawan_base) {
+                http_response_code(404);
+                $response = ['status' => 'error', 'message' => 'Data karyawan tidak ditemukan.'];
+                goto end_script;
+            }
 
-        if (!$data_karyawan_base) {
-            http_response_code(404);
-            $response = ['status' => 'error', 'message' => 'Data karyawan tidak ditemukan.'];
+            // =======================================================
+            // 2. Query untuk mengambil Karier AKTIF (Paling Baru) + Detail Nama
+            // =======================================================
+            $st_karier = $koneksi->prepare("SELECT 
+                                cr.*,
+                                j.nama_jabatan,
+                                d.nama_departemen,
+                                s.nama_site
+                            FROM 
+                                tb_karier cr
+                            LEFT JOIN tb_jabatan j ON cr.id_jabatan = j.id_jabatan
+                            LEFT JOIN tb_departemen d ON cr.id_departemen = d.id_departemen
+                            LEFT JOIN tb_site s ON cr.id_site = s.id_site
+                            WHERE 
+                                cr.id_karyawan = ?
+                            AND cr.tgl_mulai <= ?
+                            AND (
+                                cr.tgl_selesai IS NULL 
+                                OR cr.tgl_selesai = '0000-00-00'
+                                OR cr.tgl_selesai >= ?
+                            )
+                            ORDER BY 
+                                cr.tgl_mulai DESC
+                            LIMIT 1");
+            $st_karier->execute([$id_karyawan, $today, $today]);
+            $data_karier_aktif = $st_karier->fetch();
+        } catch (PDOException $e) {
+            error_log('get_karyawan gagal: ' . $e->getMessage());
+            http_response_code(500);
+            $response = ['status' => 'error', 'message' => 'Terjadi kesalahan database.'];
             goto end_script;
         }
-
-        // =======================================================
-        // 2. Query untuk mengambil Karier AKTIF (Paling Baru) + Detail Nama
-        // =======================================================
-        $query_karier = "SELECT 
-                            cr.*,
-                            j.nama_jabatan,
-                            d.nama_departemen,
-                            s.nama_site
-                        FROM 
-                            tb_karier cr
-                        LEFT JOIN tb_jabatan j ON cr.id_jabatan = j.id_jabatan
-                        LEFT JOIN tb_departemen d ON cr.id_departemen = d.id_departemen
-                        LEFT JOIN tb_site s ON cr.id_site = s.id_site
-                        WHERE 
-                            cr.id_karyawan = '$id_karyawan'
-                        AND cr.tgl_mulai <= '$today'
-                        AND (
-                            cr.tgl_selesai IS NULL 
-                            OR cr.tgl_selesai = '0000-00-00'
-                            OR cr.tgl_selesai >= '$today'
-                        )
-                        ORDER BY 
-                            cr.tgl_mulai DESC
-                        LIMIT 1";
-
-        $result_karier = mysqli_query($koneksi, $query_karier);
-        $data_karier_aktif = mysqli_fetch_assoc($result_karier);
 
         // =======================================================
         // 3. Susun Data Final (Flattened Structure for Flutter)
@@ -216,4 +221,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 end_script:
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
-mysqli_close($koneksi);

@@ -7,14 +7,19 @@ $site = $_GET['site'] ?? '';
 $jabatan = $_GET['jabatan'] ?? '';
 
 $where = ["1=1"];
+$params = [];
 if ($start && $end) {
-    $where[] = "s.tgl_sks BETWEEN '$start' AND '$end'";
+    $where[] = "s.tgl_sks BETWEEN ? AND ?";
+    $params[] = $start;
+    $params[] = $end;
 }
 if ($site) {
-    $where[] = "kr.id_site = '$site'";
+    $where[] = "kr.id_site = ?";
+    $params[] = $site;
 }
 if ($jabatan) {
-    $where[] = "kr.id_jabatan = '$jabatan'";
+    $where[] = "kr.id_jabatan = ?";
+    $params[] = $jabatan;
 }
 
 $where_sql = implode(' AND ', $where);
@@ -27,14 +32,16 @@ $sql = "SELECT s.*, k.nama_lengkap, k.nik_karyawan
         GROUP BY s.id_bukti_sks
         ORDER BY s.tgl_kirim DESC";
 
-$q = mysqli_query($koneksi, $sql);
+$stSks = $koneksi->prepare($sql);
+$stSks->execute($params);
+$rowsSks = $stSks->fetchAll();
 
-if (mysqli_num_rows($q) == 0) {
+if (count($rowsSks) == 0) {
     echo '<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada data pengajuan SKS.</td></tr>';
     exit;
 }
 
-while ($row = mysqli_fetch_assoc($q)) {
+foreach ($rowsSks as $row) {
     $id = $row['id_bukti_sks'];
     $status = $row['status']; // Enum: Pending, Diterima, Ditolak
     $ket_sks = !empty($row['ket_sks']) ? htmlspecialchars($row['ket_sks']) : '-';

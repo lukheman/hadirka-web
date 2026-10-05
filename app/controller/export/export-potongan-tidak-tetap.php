@@ -16,18 +16,19 @@ $site = isset($_GET['site']) ? trim($_GET['site']) : '';
 $jabatan = isset($_GET['jabatan']) ? trim($_GET['jabatan']) : '';
 
 $where = ["1=1"];
+$params = [];
 $judulFile = "Data_Potongan_Tidak_Tetap";
 
 if (!empty($bulan)) {
-    $bulan_safe = $koneksi->real_escape_string($bulan);
-    $where[] = "p.tgl_potongan LIKE '$bulan_safe%'";
-    $judulFile .= "_" . $bulan_safe;
+    $where[] = "p.tgl_potongan LIKE ?";
+    $params[] = $bulan . '%';
+    $judulFile .= "_" . $bulan;
 } else {
     $judulFile .= "_SemuaBulan";
 }
 
-if (!empty($site)) $where[] = "kr.id_site = '" . $koneksi->real_escape_string($site) . "'";
-if (!empty($jabatan)) $where[] = "kr.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+if (!empty($site)) { $where[] = "kr.id_site = ?"; $params[] = $site; }
+if (!empty($jabatan)) { $where[] = "kr.id_jabatan = ?"; $params[] = $jabatan; }
 
 $whereClause = " WHERE " . implode(" AND ", $where);
 
@@ -47,7 +48,9 @@ $sql = "SELECT
         GROUP BY p.id_potongan_tidak_tetap
         ORDER BY p.tgl_potongan DESC, k.nama_lengkap ASC";
 
-$result = $koneksi->query($sql);
+$stmt = $koneksi->prepare($sql);
+$stmt->execute($params);
+$result = $stmt;
 
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
@@ -63,7 +66,7 @@ $sheet->getStyle('A1:J1')->applyFromArray([
 ]);
 
 $rowEx = 2; $no = 1;
-while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch()) {
     $sheet->setCellValue('A'.$rowEx, $no);
     $sheet->setCellValue('B'.$rowEx, $row['nik_karyawan']);
     $sheet->setCellValue('C'.$rowEx, $row['nama_lengkap']);

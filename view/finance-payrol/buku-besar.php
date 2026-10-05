@@ -10,8 +10,8 @@
                     <label class="form-label small fw-bold">Pilih Akun (COA)</label>
                     <select id="bbAkun" class="form-select form-select-sm" onchange="loadBukuBesar()">
                         <?php
-                        $q = mysqli_query($koneksi, "SELECT * FROM tb_kategori_keuangan ORDER BY kode_akun ASC");
-                        while ($r = mysqli_fetch_assoc($q)) {
+                        $q = $koneksi->query("SELECT * FROM tb_kategori_keuangan ORDER BY kode_akun ASC");
+                        while ($r = $q->fetch()) {
                             echo "<option value='{$r['id_kategori']}'>[{$r['kode_akun']}] - {$r['nama_akun']}</option>";
                         }
                         ?>

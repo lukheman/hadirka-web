@@ -14,23 +14,25 @@ if (!$id_karyawan) {
 
 // Query sederhana: ambil karier yang berlaku pada <= tgl_b (terbaru)
 $sql = "SELECT * FROM tb_karier
-        WHERE id_karyawan = '" . mysqli_real_escape_string($koneksi, $id_karyawan) . "'
-        AND tanggal_berlaku <= '" . mysqli_real_escape_string($koneksi, $tgl_b) . "'
+        WHERE id_karyawan = ?
+        AND tanggal_berlaku <= ?
         ORDER BY tanggal_berlaku DESC
         LIMIT 1";
 
-$res = mysqli_query($koneksi, $sql);
-if (!$res) {
-    echo json_encode(['status' => 'error', 'message' => mysqli_error($koneksi)]);
+try {
+    $stKarier = $koneksi->prepare($sql);
+    $stKarier->execute([$id_karyawan, $tgl_b]);
+    $data = $stKarier->fetch();
+} catch (PDOException $e) {
+    error_log('get-karier-terbaru: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Gagal mengambil data karier']);
     exit;
 }
 
-if (mysqli_num_rows($res) == 0) {
+if (!$data) {
     echo json_encode(['status' => 'empty', 'message' => 'Tidak ada data karier']);
     exit;
 }
-
-$data = mysqli_fetch_assoc($res);
 
 // NOTE: jika tabel karier memiliki kolom nama_karyawan, jabatan, dst. Pastikan field sesuai.
 // contoh mapping minimal:

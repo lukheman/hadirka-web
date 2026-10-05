@@ -29,9 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // KONEKSI DATABASE
 require_once __DIR__ . '/koneksi-api.php';
-if (mysqli_connect_errno()) {
-    sendResponse('error', 'Database error: ' . mysqli_connect_error(), null, 500);
-}
 
 // ============================================
 // ROUTING BERDASARKAN ACTION
@@ -59,8 +56,13 @@ switch ($action) {
     // ---------------------------------------------------------
     case 'ajukan':
         // --- NEW: CEK APAKAH AKSES PENGAJUAN SEDANG DIBUKA/DITUTUP ---
-        $q_status = mysqli_query($koneksi, "SELECT nilai FROM tb_pengaturan WHERE nama_pengaturan = 'buka_pinjaman'");
-        $row_status = mysqli_fetch_assoc($q_status);
+        try {
+            $q_status = $koneksi->query("SELECT nilai FROM tb_pengaturan WHERE nama_pengaturan = 'buka_pinjaman'");
+            $row_status = $q_status->fetch();
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_pinjaman cek status buka gagal: ' . $e->getMessage());
+            sendResponse('error', 'Terjadi kesalahan database.', null, 500);
+        }
         $is_open = $row_status ? $row_status['nilai'] : '1';
 
         if ($is_open == '0') {
@@ -85,62 +87,63 @@ switch ($action) {
             sendResponse('error', 'Pengajuan pinjaman hanya dibuka pada tanggal 10 hingga 25 setiap bulannya.', null, 400);
         }
 
-        $id_karyawan_safe      = mysqli_real_escape_string($koneksi, $id_karyawan);
-        $tgl_pengajuan_safe    = mysqli_real_escape_string($koneksi, $tgl_pengajuan);
-        $nominal_pinjaman_safe = mysqli_real_escape_string($koneksi, $nominal_pinjaman);
-        $alasan_pinjaman_safe  = mysqli_real_escape_string($koneksi, $alasan_pinjaman);
+        try {
+            // --- NEW: CEK STATUS KARYAWAN (HANYA AKTIF YANG BISA MENGAJUKAN) ---
+            $st_cek_karyawan = $koneksi->prepare("SELECT nik_karyawan, status_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
+            $st_cek_karyawan->execute([$id_karyawan]);
+            $data_karyawan = $st_cek_karyawan->fetch();
 
-        // --- NEW: CEK STATUS KARYAWAN (HANYA AKTIF YANG BISA MENGAJUKAN) ---
-        $query_cek_karyawan = mysqli_query($koneksi, "SELECT nik_karyawan, status_karyawan FROM tb_karyawan WHERE id_karyawan = '$id_karyawan_safe'");
-        $data_karyawan = mysqli_fetch_assoc($query_cek_karyawan);
+            if (!$data_karyawan) {
+                sendResponse('error', 'Data karyawan tidak ditemukan.', null, 404);
+            }
 
-        if (!$data_karyawan) {
-            sendResponse('error', 'Data karyawan tidak ditemukan.', null, 404);
-        }
+            // Jika statusnya bukan 'Aktif', tolak pengajuan
+            if (strtolower($data_karyawan['status_karyawan']) !== 'aktif') {
+                sendResponse('error', 'Maaf, pengajuan pinjaman hanya diperbolehkan untuk karyawan yang masih AKTIF.', null, 403);
+            }
 
-        // Jika statusnya bukan 'Aktif', tolak pengajuan
-        if (strtolower($data_karyawan['status_karyawan']) !== 'aktif') {
-            sendResponse('error', 'Maaf, pengajuan pinjaman hanya diperbolehkan untuk karyawan yang masih AKTIF.', null, 403);
-        }
+            // Simpan NIK untuk dipakai buat nama file foto nanti
+            $nik_karyawan = $data_karyawan['nik_karyawan'];
+            // ------------------------------------------------------------------
 
-        // Simpan NIK untuk dipakai buat nama file foto nanti
-        $nik_karyawan = $data_karyawan['nik_karyawan'];
-        // ------------------------------------------------------------------
+            // --- NEW: VALIDASI AKUMULASI LIMIT PINJAMAN 1 JUTA PER BULAN ---
+            $tahun_target = date('Y', strtotime($tgl_pengajuan));
+            $bulan_target = date('m', strtotime($tgl_pengajuan));
 
-        // --- NEW: VALIDASI AKUMULASI LIMIT PINJAMAN 1 JUTA PER BULAN ---
-        $tahun_target = date('Y', strtotime($tgl_pengajuan_safe));
-        $bulan_target = date('m', strtotime($tgl_pengajuan_safe));
+            // NEW: Hitung total pinjaman yang sudah diajukan bulan ini (yang pending atau disetujui)
+            $st_check_limit = $koneksi->prepare("SELECT SUM(nominal_pinjaman) AS total_terpakai 
+                                  FROM tb_pengajuan_pinjaman 
+                                  WHERE id_karyawan = ? 
+                                    AND status_pinjaman != 'ditolak' 
+                                    AND YEAR(tgl_pengajuan) = ? 
+                                    AND MONTH(tgl_pengajuan) = ?");
+            $st_check_limit->execute([$id_karyawan, $tahun_target, $bulan_target]);
+            $row_limit = $st_check_limit->fetch();
+            $total_terpakai = (int)($row_limit['total_terpakai'] ?? 0);
 
-        // NEW: Hitung total pinjaman yang sudah diajukan bulan ini (yang pending atau disetujui)
-        $query_check_limit = "SELECT SUM(nominal_pinjaman) AS total_terpakai 
-                              FROM tb_pengajuan_pinjaman 
-                              WHERE id_karyawan = '$id_karyawan_safe' 
-                                AND status_pinjaman != 'ditolak' 
-                                AND YEAR(tgl_pengajuan) = '$tahun_target' 
-                                AND MONTH(tgl_pengajuan) = '$bulan_target'";
-        
-        $res_check_limit = mysqli_query($koneksi, $query_check_limit);
-        $row_limit = mysqli_fetch_assoc($res_check_limit);
-        $total_terpakai = (int)($row_limit['total_terpakai'] ?? 0);
+            $limit_maksimal = 1000000; // Batas 1 Juta
+            $sisa_kuota = $limit_maksimal - $total_terpakai;
 
-        $limit_maksimal = 1000000; // Batas 1 Juta
-        $sisa_kuota = $limit_maksimal - $total_terpakai;
+            if ($sisa_kuota <= 0) {
+                sendResponse('error', 'Batas maksimal pinjaman Anda bulan ini sudah habis (Maks Rp 1.000.000). Sisa kuota Anda: Rp 0', null, 400);
+            }
 
-        if ($sisa_kuota <= 0) {
-            sendResponse('error', 'Batas maksimal pinjaman Anda bulan ini sudah habis (Maks Rp 1.000.000). Sisa kuota Anda: Rp 0', null, 400);
-        }
+            if ($nominal_pinjaman > $sisa_kuota) {
+                sendResponse('error', 'Nominal melebihi sisa kuota bulan ini. Sisa kuota yang bisa Anda ajukan: Rp ' . number_format($sisa_kuota, 0, ',', '.'), null, 400);
+            }
+            // ----------------------------------------------------------
 
-        if ($nominal_pinjaman > $sisa_kuota) {
-            sendResponse('error', 'Nominal melebihi sisa kuota bulan ini. Sisa kuota yang bisa Anda ajukan: Rp ' . number_format($sisa_kuota, 0, ',', '.'), null, 400);
-        }
-        // ----------------------------------------------------------
+            $tgl_format_file = date('Ymd', strtotime($tgl_pengajuan));
 
-        $tgl_format_file = date('Ymd', strtotime($tgl_pengajuan_safe));
-
-        // Cek Duplikat Hari Ini
-        $check_sql = "SELECT id_pengajuan_pinjaman FROM tb_pengajuan_pinjaman WHERE id_karyawan = '$id_karyawan_safe' AND DATE(tgl_pengajuan) = '$tgl_pengajuan_safe'";
-        if (mysqli_num_rows(mysqli_query($koneksi, $check_sql)) > 0) {
-            sendResponse('error', 'Anda sudah mengajukan pinjaman hari ini.', null, 400);
+            // Cek Duplikat Hari Ini
+            $st_check = $koneksi->prepare("SELECT 1 FROM tb_pengajuan_pinjaman WHERE id_karyawan = ? AND DATE(tgl_pengajuan) = ? LIMIT 1");
+            $st_check->execute([$id_karyawan, $tgl_pengajuan]);
+            if ($st_check->fetch()) {
+                sendResponse('error', 'Anda sudah mengajukan pinjaman hari ini.', null, 400);
+            }
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_pinjaman ajukan cek gagal: ' . $e->getMessage());
+            sendResponse('error', 'Terjadi kesalahan database.', null, 500);
         }
 
         // Upload Validasi
@@ -157,15 +160,17 @@ switch ($action) {
         $path_id_card = uploadFile('foto_id_card', 'idcard', $nik_karyawan, $tgl_format_file);
 
         // Insert
-        $tgl_pinjaman_timestamp = $tgl_pengajuan_safe . ' ' . date('H:i:s');
-        $sql = "INSERT INTO tb_pengajuan_pinjaman (id_karyawan, tgl_pengajuan, nominal_pinjaman, alasan_pinjaman, foto_wajah, foto_id_card, status_pinjaman)
-                VALUES ('$id_karyawan_safe', '$tgl_pinjaman_timestamp', '$nominal_pinjaman_safe', '$alasan_pinjaman_safe', '$path_wajah', '$path_id_card', 'pending')";
+        $tgl_pinjaman_timestamp = $tgl_pengajuan . ' ' . date('H:i:s');
 
-        if (mysqli_query($koneksi, $sql)) {
+        try {
+            $st = $koneksi->prepare("INSERT INTO tb_pengajuan_pinjaman (id_karyawan, tgl_pengajuan, nominal_pinjaman, alasan_pinjaman, foto_wajah, foto_id_card, status_pinjaman)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending')");
+            $st->execute([$id_karyawan, $tgl_pinjaman_timestamp, $nominal_pinjaman, $alasan_pinjaman, $path_wajah, $path_id_card]);
             // Berikan info sisa kuota baru di response sukses
             $sisa_kuota_baru = $sisa_kuota - $nominal_pinjaman;
             sendResponse('success', 'Pengajuan pinjaman berhasil disubmit! Sisa kuota bulan ini: Rp ' . number_format($sisa_kuota_baru, 0, ',', '.'));
-        } else {
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_pinjaman ajukan insert gagal: ' . $e->getMessage());
             sendResponse('error', 'Gagal insert database', null, 500);
         }
         break;
@@ -174,13 +179,19 @@ switch ($action) {
     // AKSI 2: BATALKAN / HAPUS PENGAJUAN
     // ---------------------------------------------------------
     case 'batalkan':
-        $id_pengajuan = mysqli_real_escape_string($koneksi, $_POST['id_pengajuan'] ?? '');
+        $id_pengajuan = $_POST['id_pengajuan'] ?? '';
         if (empty($id_pengajuan)) sendResponse('error', 'ID Pengajuan tidak ditemukan', null, 400);
 
-        $cek_sql = "SELECT status_pinjaman, foto_wajah, foto_id_card FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = '$id_pengajuan'";
-        $cek_result = mysqli_query($koneksi, $cek_sql);
+        try {
+            $st_cek = $koneksi->prepare("SELECT status_pinjaman, foto_wajah, foto_id_card FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = ?");
+            $st_cek->execute([$id_pengajuan]);
+            $row = $st_cek->fetch();
+        } catch (PDOException $e) {
+            error_log('act_pengajuan_pinjaman batalkan cek gagal: ' . $e->getMessage());
+            sendResponse('error', 'Terjadi kesalahan database.', null, 500);
+        }
 
-        if ($row = mysqli_fetch_assoc($cek_result)) {
+        if ($row) {
             if ($row['status_pinjaman'] !== 'pending') {
                 sendResponse('error', 'Gagal dibatalkan. Pengajuan sudah diproses oleh Admin.', null, 400);
             }
@@ -191,9 +202,12 @@ switch ($action) {
             if (!empty($row['foto_id_card']) && file_exists($base_dir . $row['foto_id_card'])) unlink($base_dir . $row['foto_id_card']);
 
             // Hapus dari database
-            if (mysqli_query($koneksi, "DELETE FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = '$id_pengajuan'")) {
+            try {
+                $st_del = $koneksi->prepare("DELETE FROM tb_pengajuan_pinjaman WHERE id_pengajuan_pinjaman = ?");
+                $st_del->execute([$id_pengajuan]);
                 sendResponse('success', 'Pengajuan berhasil dibatalkan dan dihapus.');
-            } else {
+            } catch (PDOException $e) {
+                error_log('act_pengajuan_pinjaman batalkan hapus gagal: ' . $e->getMessage());
                 sendResponse('error', 'Gagal menghapus data dari database.', null, 500);
             }
         } else {
@@ -208,6 +222,4 @@ switch ($action) {
         sendResponse('error', 'Action tidak valid atau tidak ditemukan', null, 400);
         break;
 }
-
-mysqli_close($koneksi);
 ?>

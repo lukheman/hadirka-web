@@ -8,13 +8,11 @@
             $id_karyawan_bc = (int)decrypt($_GET['id']);
             if ($id_karyawan_bc > 0) {
                 $stmt_bc = $koneksi->prepare("SELECT nama_lengkap FROM tb_karyawan WHERE id_karyawan = ?");
-                $stmt_bc->bind_param("i", $id_karyawan_bc);
-                $stmt_bc->execute();
-                $row_bc = $stmt_bc->get_result()->fetch_assoc();
+                $stmt_bc->execute([$id_karyawan_bc]);
+                $row_bc = $stmt_bc->fetch();
                 if ($row_bc) {
                     $breadcrumb_nama = $row_bc['nama_lengkap'];
                 }
-                $stmt_bc->close();
             }
         }
         ?>
@@ -39,10 +37,7 @@
                                 <th class="text-center">Site</th>
                                 <th class="text-center">Departemen</th>
                                 <th class="text-center">Jabatan</th>
-                                <th class="text-center">Gaji Pokok</th>
-                                <th class="text-center">Upah Lembur</th>
-                                <th class="text-center">Pot Izin</th>
-                                <th class="text-center">Pot Mangkir</th>
+                                <th class="text-center">Gaji Pokok (Harian)</th>
                                 <th class="text-center">Tgl Mulai</th>
                                 <th class="text-center">Tgl Selesai</th>
                                 <th class="text-center">No Surat</th>
@@ -70,12 +65,6 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="tab-add-data-tab" data-bs-toggle="tab" data-bs-target="#tab-add-data" type="button" role="tab" aria-controls="tab-add-data" aria-selected="true">Data Karier</button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-add-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-add-tunjangan" type="button" role="tab" aria-controls="tab-add-tunjangan" aria-selected="false">Tunjangan</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-add-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-add-potongan" type="button" role="tab" aria-controls="tab-add-potongan" aria-selected="false">Potongan</button>
-                        </li>
                     </ul>
                     <div class="tab-content pt-3">
                         <div class="tab-pane fade show active" id="tab-add-data" role="tabpanel" aria-labelledby="tab-add-data-tab">
@@ -87,7 +76,7 @@
                                 <option value="">-- Pilih Site --</option>
                                 <?php
                                 $sites = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
-                                while ($s = $sites->fetch_assoc()) {
+                                while ($s = $sites->fetch()) {
                                     echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
                                 }
                                 ?>
@@ -101,7 +90,7 @@
                                 <option value="">-- Pilih Departemen --</option>
                                 <?php
                                 $departemens = $koneksi->query("SELECT * FROM tb_departemen ORDER BY nama_departemen ASC");
-                                while ($d = $departemens->fetch_assoc()) {
+                                while ($d = $departemens->fetch()) {
                                     echo "<option value='{$d['id_departemen']}'>{$d['nama_departemen']}</option>";
                                 }
                                 ?>
@@ -115,7 +104,7 @@
                                 <option value="">-- Pilih Jabatan --</option>
                                 <?php
                                 $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
-                                while ($j = $jabatans->fetch_assoc()) {
+                                while ($j = $jabatans->fetch()) {
                                     $__kj = trim((string)($j['kode_jabatan'] ?? ''));
                                     echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
                                 }
@@ -126,32 +115,14 @@
 
 
                         <div class="col-md-12">
-                            <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
+                            <b class="text-secondary">Gaji Pokok Harian</b>
                             <hr>
                         </div>
 
-                        <!-- Gaji Pokok -->
+                        <!-- Gaji Pokok (harian: gaji = hadir x gaji pokok) -->
                         <div class="col-md-3">
                             <label>Gaji Basic</label>
                             <input type="text" name="gaji_pokok" class="form-control nominal-mask" required>
-                        </div>
-
-                        <!-- Lembur -->
-                        <div class="col-md-3">
-                            <label>Upah Lembur</label>
-                            <input type="text" name="lembur" class="form-control nominal-mask" required>
-                        </div>
-
-                        <!-- Pot Izin -->
-                        <div class="col-md-3">
-                            <label>Potongan Izin</label>
-                            <input type="text" name="pot_izin" class="form-control nominal-mask">
-                        </div>
-
-                        <!-- Pot Mangkir -->
-                        <div class="col-md-3">
-                            <label>Potongan Mangkir</label>
-                            <input type="text" name="pot_mangkir" class="form-control nominal-mask">
                         </div>
 
                         <!-- Tgl Mulai -->
@@ -195,47 +166,7 @@
                             </div>
                             <div id="addNoSuratWarning"></div>
                         </div>
-                        <!-- Penanda: tunjangan & potongan dikirim dari tab (otoritatif) -->
-                        <input type="hidden" name="tp_dari_tab" value="1">
                     </div>
-                        </div>
-                        <div class="tab-pane fade" id="tab-add-tunjangan" role="tabpanel" aria-labelledby="tab-add-tunjangan-tab">
-                            <div class="alert alert-info py-2">
-                                <i class="fa fa-info-circle"></i> Terisi otomatis dari template terpilih — tetap bisa diubah, dihapus, atau ditambah baris.
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm w-100">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th>Nama Tunjangan</th>
-                                            <th style="width:18%">Jenis</th>
-                                            <th style="width:22%">Jumlah (Rp)</th>
-                                            <th style="width:18%">Tampil</th>
-                                            <th class="text-center" style="width:10%">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyAddTunjangan"></tbody>
-                                </table>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-success" id="btnAddRowTunjangan"><i class="fa fa-plus"></i> Tambah Tunjangan</button>
-                        </div>
-                        <div class="tab-pane fade" id="tab-add-potongan" role="tabpanel" aria-labelledby="tab-add-potongan-tab">
-                            <div class="alert alert-info py-2">
-                                <i class="fa fa-info-circle"></i> Terisi otomatis dari template terpilih — tetap bisa diubah, dihapus, atau ditambah baris.
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm w-100">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th>Nama Potongan</th>
-                                            <th style="width:30%">Jumlah (Rp)</th>
-                                            <th class="text-center" style="width:10%">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyAddPotongan"></tbody>
-                                </table>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-success" id="btnAddRowPotongan"><i class="fa fa-plus"></i> Tambah Potongan</button>
                         </div>
                     </div>
                 </div>
@@ -262,12 +193,6 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="tab-edit-data-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-data" type="button" role="tab" aria-controls="tab-edit-data" aria-selected="true">Data Karier</button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-edit-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-tunjangan" type="button" role="tab" aria-controls="tab-edit-tunjangan" aria-selected="false">Tunjangan</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-edit-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-edit-potongan" type="button" role="tab" aria-controls="tab-edit-potongan" aria-selected="false">Potongan</button>
-                        </li>
                     </ul>
                     <div class="tab-content pt-3">
                         <div class="tab-pane fade show active" id="tab-edit-data" role="tabpanel" aria-labelledby="tab-edit-data-tab">
@@ -281,7 +206,7 @@
                             <select name="id_site" class="form-control" required>
                                 <?php
                                 $sites = $koneksi->query("SELECT * FROM tb_site ORDER BY nama_site ASC");
-                                while ($s = $sites->fetch_assoc()) {
+                                while ($s = $sites->fetch()) {
                                     echo "<option value='{$s['id_site']}'>{$s['nama_site']}</option>";
                                 }
                                 ?>
@@ -295,7 +220,7 @@
                                 <option value="">-- Pilih Departemen --</option>
                                 <?php
                                 $departemens = $koneksi->query("SELECT * FROM tb_departemen ORDER BY nama_departemen ASC");
-                                while ($d = $departemens->fetch_assoc()) {
+                                while ($d = $departemens->fetch()) {
                                     echo "<option value='{$d['id_departemen']}'>{$d['nama_departemen']}</option>";
                                 }
                                 ?>
@@ -309,7 +234,7 @@
                                 <option value="">-- Pilih Jabatan --</option>
                                 <?php
                                 $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
-                                while ($j = $jabatans->fetch_assoc()) {
+                                while ($j = $jabatans->fetch()) {
                                     $__kj = trim((string)($j['kode_jabatan'] ?? ''));
                                     echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
                                 }
@@ -318,31 +243,14 @@
                         </div>
 
                         <div class="col-md-12">
-                            <b class="text-secondary">Gaji Pokok Dan Tunjangan Tetap</b>
+                            <b class="text-secondary">Gaji Pokok Harian</b>
                             <hr>
                         </div>
 
-                        <!-- Gaji Basic -->
+                        <!-- Gaji Basic (harian: gaji = hadir x gaji pokok) -->
                         <div class="col-md-3">
                             <label>Gaji Basic</label>
                             <input type="text" name="gaji_pokok" class="form-control nominal-mask" required>
-                        </div>
-
-                        <!-- Lembur -->
-                        <div class="col-md-3">
-                            <label>Upah Lembur</label>
-                            <input type="text" name="lembur" class="form-control nominal-mask" required>
-                        </div>
-
-                        <!-- Potongan -->
-                        <div class="col-md-3">
-                            <label>Potongan Izin</label>
-                            <input type="text" name="pot_izin" class="form-control nominal-mask">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label>Potongan Mangkir</label>
-                            <input type="text" name="pot_mangkir" class="form-control nominal-mask">
                         </div>
 
                         <!-- Tanggal -->
@@ -374,12 +282,6 @@
                             </div>
                             </form>
                         </div>
-                        <div class="tab-pane fade" id="tab-edit-tunjangan" role="tabpanel" aria-labelledby="tab-edit-tunjangan-tab">
-                            <?php include __DIR__ . '/fragment-karier-tunjangan.php'; ?>
-                        </div>
-                        <div class="tab-pane fade" id="tab-edit-potongan" role="tabpanel" aria-labelledby="tab-edit-potongan-tab">
-                            <?php include __DIR__ . '/fragment-karier-potongan.php'; ?>
-                        </div>
                     </div>
                 </div>
 
@@ -389,8 +291,6 @@
             </div>
         </div>
     </div>
-
-    <?php include __DIR__ . '/modal-karier-tunjangan-potongan.php'; ?>
 
     <!-- Modal Preview Surat Kontrak (sebelum simpan) -->
     <div class="modal fade" id="modalPreviewKarier">
@@ -533,14 +433,6 @@
             const manualNo = composeManualNoSurat(form, info);
             const tpl = chosenTemplate(form, info);
             const fmtRpPrev = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
-            const tunjList = bacaTabTunjangan();
-            const potList = bacaTabPotongan();
-            const tunjCell = tunjList.length
-                ? tunjList.map(t => { const _m = ["tunjangan makan", "tunjangan uang makan"].includes(String(t.nama_tunjangan || "").toLowerCase().trim()); return `${escPreview(t.nama_tunjangan)}${t.jenis_tunjangan === "tidak_tetap" ? " (Tidak Tetap)" : ""}: ${fmtRpTab(t.jumlah_tunjangan)}${_m ? "/hari" : ""}${String(t.tampil_template ?? "1") === "0" ? ' <span class="badge bg-secondary">tidak tampil</span>' : ""}`; }).join("<br>")
-                : `<span class="text-muted">-</span>`;
-            const potCell = potList.length
-                ? potList.map(p => `${escPreview(p.jenis_potongan)}: ${fmtRpTab(p.jumlah_potongan)}`).join("<br>")
-                : `<span class="text-muted">-</span>`;
             const tplCell = tpl
                 ? `<a href="app/uploads/template-kontrak/${encodeURIComponent(tpl.file)}" target="_blank">${escPreview(tpl.nama_kontrak || tpl.nama_asli || tpl.file)}</a>`
                 : `<span class="badge bg-warning text-dark">Belum ada template untuk jabatan ini</span>`;
@@ -554,12 +446,7 @@
                 ["Site", escPreview(selText(form, "id_site"))],
                 ["Departemen", escPreview(selText(form, "id_departemen"))],
                 ["Jabatan", escPreview(selText(form, "id_jabatan")) + (info.kode_jabatan ? ` <small class="text-muted">(${escPreview(info.kode_jabatan)})</small>` : "")],
-                ["Gaji Pokok", rp(fd.get("gaji_pokok"))],
-                ["Upah Lembur", rp(fd.get("lembur"))],
-                ["Potongan Izin", rp(fd.get("pot_izin"))],
-                ["Potongan Mangkir", rp(fd.get("pot_mangkir"))],
-                ["Tunjangan", tunjCell],
-                ["Potongan", potCell],
+                ["Gaji Pokok (Harian)", rp(fd.get("gaji_pokok"))],
                 ["Tgl Mulai", escPreview(fd.get("tgl_mulai"))],
                 ["Tgl Selesai", escPreview(fd.get("tgl_selesai"))],
                 ["No Surat", noCell],
@@ -686,10 +573,7 @@
             const t = karierTemplates.find(x => sel && String(x.id_template) === String(sel.value)) || karierTemplates[0];
             if (!t || !t.detail || typeof formatIndo !== "function") return;
             const map = {
-                gaji_pokok: "gaji_pokok",
-                lembur: "upah_lembur",
-                pot_izin: "potongan_izin",
-                pot_mangkir: "potongan_mangkir"
+                gaji_pokok: "gaji_pokok"
             };
             Object.keys(map).forEach(name => {
                 const el = form.querySelector(`input[name=${name}]`);
@@ -706,94 +590,11 @@
                 karierTemplates[0] || (info && info.template) || null;
         }
 
-        // --- TAB TUNJANGAN & POTONGAN PADA MODAL TAMBAH ---
-        // Baris terisi otomatis dari template terpilih, tetap bisa diubah/dihapus/ditambah.
-        // Saat simpan, isi tab inilah yang dikirim (otoritatif) menggantikan salinan template.
+        // --- TEMPLATE KONTRAK: nilai gaji pokok mengisi otomatis dari template ---
         function escAttr(s) {
             return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
-        function addRowTunjangan(d) {
-            d = d || {};
-            const tb = document.getElementById("tbodyAddTunjangan");
-            if (!tb) return;
-            const jenis = d.jenis_tunjangan === "tidak_tetap" ? "tidak_tetap" : "tetap";
-            const tampil = String(d.tampil_template ?? "1") === "0" ? "0" : "1";
-            const tr = document.createElement("tr");
-            tr.innerHTML =
-                `<td><input type="text" name="tunjangan_nama[]" class="form-control form-control-sm" maxlength="25" value="${escAttr(d.nama_tunjangan || "")}" placeholder="Nama tunjangan"></td>` +
-                `<td><select name="tunjangan_jenis[]" class="form-select form-select-sm">` +
-                `<option value="tetap"${jenis === "tetap" ? " selected" : ""}>Tetap</option>` +
-                `<option value="tidak_tetap"${jenis === "tidak_tetap" ? " selected" : ""}>Tidak Tetap</option></select></td>` +
-                `<td><input type="text" name="tunjangan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_tunjangan ?? "") === "" ? "" : formatIndo(d.jumlah_tunjangan)}" placeholder="0"></td>` +
-                `<td><select name="tunjangan_tampil[]" class="form-select form-select-sm" title="Tampilkan di template kontrak?">` +
-                `<option value="1"${tampil === "1" ? " selected" : ""}>Ya</option>` +
-                `<option value="0"${tampil === "0" ? " selected" : ""}>Tidak</option></select></td>` +
-                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelAddRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
-            tb.appendChild(tr);
-        }
-        function addRowPotongan(d) {
-            d = d || {};
-            const tb = document.getElementById("tbodyAddPotongan");
-            if (!tb) return;
-            const tr = document.createElement("tr");
-            tr.innerHTML =
-                `<td><select name="potongan_nama[]" class="form-select form-select-sm">` +
-                `<option value="">-- Pilih --</option>` +
-                ["PPH21", "BPJS KETENAGAKERJAAN 2%", "BPJS KESEHATAN 1%"].map(nm => `<option value="${nm}"${nm === (d.jenis_potongan || "") ? " selected" : ""}>${nm}</option>`).join("") +
-                `</select></td>` +
-                `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_potongan ?? "") === "" ? "" : formatIndo(d.jumlah_potongan)}" placeholder="0"></td>` +
-                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelAddRow" title="Hapus baris"><i class="fa fa-trash"></i></button></td>`;
-            tb.appendChild(tr);
-        }
-        function isiTabTunjanganPotongan(form, force) {
-            const t = chosenTemplate(form, null);
-            const tunj = (t && Array.isArray(t.tunjangan)) ? t.tunjangan : [];
-            const pot = (t && Array.isArray(t.potongan)) ? t.potongan : [];
-            const tbT = document.getElementById("tbodyAddTunjangan");
-            const tbP = document.getElementById("tbodyAddPotongan");
-            if (!tbT || !tbP) return;
-            if (force || tbT.rows.length === 0) {
-                tbT.innerHTML = "";
-                tunj.forEach(x => addRowTunjangan({ nama_tunjangan: x.nama_tunjangan, jenis_tunjangan: x.jenis_tunjangan || "tetap", jumlah_tunjangan: x.jumlah_tunjangan, tampil_template: (x.tampil_template ?? "1") }));
-            }
-            if (force || tbP.rows.length === 0) {
-                tbP.innerHTML = "";
-                pot.forEach(x => addRowPotongan({ jenis_potongan: x.jenis_potongan, jumlah_potongan: x.jumlah_potongan }));
-            }
-        }
-        function resetTabTunjanganPotongan() {
-            const tbT = document.getElementById("tbodyAddTunjangan");
-            const tbP = document.getElementById("tbodyAddPotongan");
-            if (tbT) tbT.innerHTML = "";
-            if (tbP) tbP.innerHTML = "";
-            const tabData = document.querySelector('#tabTambahKarier button[data-bs-target="#tab-add-data"]');
-            if (tabData) bootstrap.Tab.getOrCreateInstance(tabData).show();
-        }
-        function bacaTabTunjangan() {
-            return [...document.querySelectorAll("#tbodyAddTunjangan tr")].map(tr => ({
-                nama_tunjangan: tr.querySelector("input[name='tunjangan_nama[]']").value.trim(),
-                jenis_tunjangan: tr.querySelector("select[name='tunjangan_jenis[]']").value,
-                jumlah_tunjangan: tr.querySelector("input[name='tunjangan_jumlah[]']").value,
-                tampil_template: tr.querySelector("select[name='tunjangan_tampil[]']").value
-            })).filter(x => x.nama_tunjangan !== "");
-        }
-        function bacaTabPotongan() {
-            return [...document.querySelectorAll("#tbodyAddPotongan tr")].map(tr => ({
-                jenis_potongan: tr.querySelector("input[name='potongan_nama[]']").value.trim(),
-                jumlah_potongan: tr.querySelector("input[name='potongan_jumlah[]']").value
-            })).filter(x => x.jenis_potongan !== "");
-        }
-        function fmtRpTab(v) {
-            const n = Number(String(v ?? "").replace(/[^0-9,-]/g, "").replace(/\./g, "").replace(",", "."));
-            return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
-        }
-        document.addEventListener("click", e => {
-            const del = e.target.closest(".btnDelAddRow");
-            if (del) { del.closest("tr").remove(); return; }
-            if (e.target.closest("#btnAddRowTunjangan")) { addRowTunjangan(); return; }
-            if (e.target.closest("#btnAddRowPotongan")) { addRowPotongan(); return; }
-        });
         // --- AUTO-ISI NILAI DARI DETAIL KONTRAK SAAT JABATAN DIPILIH ---
         function autoIsiNilaiKontrak() {
             const form = document.getElementById("formTambahKarier");
@@ -810,7 +611,6 @@
                     karierTemplates = Array.isArray(res.templates) ? res.templates : [];
                     renderTemplateOptions(form, false);
                     isiNilaiDariTemplate(form);
-                    isiTabTunjanganPotongan(form, false);
                 })
                 .catch(() => {});
         }
@@ -826,12 +626,10 @@
             });
             $(form).find("select[name=id_template]").on("change", () => {
                 isiNilaiDariTemplate(form, true);
-                isiTabTunjanganPotongan(form, true);
             });
             $(form).find("input[name=tgl_mulai]").on("change", refreshAddNoSurat);
             $(form).find("input[name=no_urut]").on("input", refreshAddNoSurat);
             document.getElementById("modalTambahKarier").addEventListener("show.bs.modal", () => {
-                resetTabTunjanganPotongan();
                 refreshAddNoSurat();
             });
         })();
@@ -881,14 +679,11 @@
                 .then(res => {
                     if (res.status == "success") {
                         loadKarier();
-                        const salin = ((res.tunjangan || 0) + (res.potongan || 0) > 0) ?
-                            ` (${res.tunjangan || 0} tunjangan, ${res.potongan || 0} potongan tersimpan)` : "";
-                        showToast("Karier berhasil ditambah!" + (res.no_surat ? " No: " + res.no_surat : "") + salin, "success");
+                        showToast("Karier berhasil ditambah!" + (res.no_surat ? " No: " + res.no_surat : ""), "success");
                         // toastr.success("Berhasil menghapus!");
                         bootstrap.Modal.getInstance(document.getElementById("modalPreviewKarier")).hide();
                         bootstrap.Modal.getInstance(document.getElementById("modalTambahKarier")).hide();
                         document.getElementById("formTambahKarier").reset();
-                        resetTabTunjanganPotongan();
                         karierTemplates = [];
                         renderTemplateOptions(document.getElementById("formTambahKarier"), false);
                         $("#formTambahKarier select.select-search").val("").trigger("change");
@@ -939,18 +734,10 @@
 
             // KOREKSI: Gunakan fungsi formatIndo di data-karier.php
             form.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gaji_pokok);
-            form.querySelector("input[name=lembur]").value = formatIndo(btn.dataset.lembur);
-            form.querySelector("input[name=pot_izin]").value = formatIndo(btn.dataset.pot_izin);
-            form.querySelector("input[name=pot_mangkir]").value = formatIndo(btn.dataset.pot_mangkir);
 
             form.querySelector("input[name=tgl_mulai]").value = btn.dataset.tgl_mulai;
             form.querySelector("input[name=tgl_selesai]").value = btn.dataset.tgl_selesai;
             form.querySelector("input[name=no_surat]").value = btn.dataset.no_surat || "";
-
-            // Isi tab Tunjangan & tab Potongan + kembali ke tab Data Karier
-            if (typeof window.setKarierTp === "function") window.setKarierTp(btn.dataset.idKarierEnc, btn.dataset.nama);
-            const tabData = document.querySelector('#tabEditKarier button[data-bs-target="#tab-edit-data"]');
-            if (tabData) bootstrap.Tab.getOrCreateInstance(tabData).show();
 
             new bootstrap.Modal(document.getElementById("modalEditKarier")).show();
         });

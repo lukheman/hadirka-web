@@ -44,18 +44,21 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
- * Cari ID berdasarkan nama (case-insensitive, trimmed)
+ * Cari ID berdasarkan nama (case-insensitive, trimmed).
+ * $table/$nama_field/$id_field adalah nama internal (whitelist), nilai dicari via placeholder.
  */
 function getId($koneksi, $table, $nama_field, $nama_value, $id_field)
 {
-    $nama_value = mysqli_real_escape_string($koneksi, strtolower(trim($nama_value)));
-    $nama_field_escaped = mysqli_real_escape_string($koneksi, $nama_field);
-    $id_field_escaped = mysqli_real_escape_string($koneksi, $id_field);
+    $allowedTables = ['tb_site' => ['nama_site' => 'id_site'], 'tb_departemen' => ['nama_departemen' => 'id_departemen'], 'tb_jabatan' => ['nama_jabatan' => 'id_jabatan']];
+    if (!isset($allowedTables[$table][$nama_field]) || $allowedTables[$table][$nama_field] !== $id_field) {
+        return null;
+    }
 
-    $query = "SELECT $id_field_escaped FROM $table WHERE LOWER(TRIM($nama_field_escaped))='$nama_value'";
-    $result = $koneksi->query($query);
+    $stmt = $koneksi->prepare("SELECT $id_field FROM $table WHERE LOWER(TRIM($nama_field))=?");
+    $stmt->execute([strtolower(trim($nama_value))]);
+    $row = $stmt->fetch();
 
-    return $result && $result->num_rows > 0 ? $result->fetch_assoc()[$id_field] : null;
+    return $row[$id_field] ?? null;
 }
 
 $response = ["success" => false, "berhasil" => 0, "gagal" => 0, "errors" => []];
@@ -90,13 +93,14 @@ try {
         if (empty($nik)) continue;
 
         // 1. Ambil Data Karyawan (Cek Departemen/Jabatan untuk backup insert karier baru)
-        $cekKaryawan = $koneksi->query("SELECT id_karyawan, status_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik'");
-        if ($cekKaryawan->num_rows == 0) {
+        $stmtKar = $koneksi->prepare("SELECT id_karyawan, status_karyawan FROM tb_karyawan WHERE nik_karyawan=?");
+        $stmtKar->execute([$nik]);
+        $dataKaryawan = $stmtKar->fetch();
+        if (!$dataKaryawan) {
             $response["gagal"]++;
             $response["errors"][] = "Row $i : NIK '$nik' tidak terdaftar";
             continue;
         }
-        $dataKaryawan = $cekKaryawan->fetch_assoc();
 
         // --- TAMBAHKAN VALIDASI STATUS DISINI ---
         // Pastikan variabel aman jika status ternyata kosong/null dari database
@@ -123,18 +127,7 @@ try {
         $nama_jabatan    = trim($row['F'] ?? '');
         
         $basic      = Excel::cleanRupiah($row['G'] ?? 0);
-        $t_daerah   = Excel::cleanRupiah($row['H'] ?? 0);
-        $t_hidup    = Excel::cleanRupiah($row['I'] ?? 0);
-        $t_skill    = Excel::cleanRupiah($row['J'] ?? 0);
-        $t_posisi   = Excel::cleanRupiah($row['K'] ?? 0);
-        $t_makan    = Excel::cleanRupiah($row['L'] ?? 0);
-        $p_bonus    = Excel::cleanRupiah($row['M'] ?? 0);
-        $lembur     = Excel::cleanRupiah($row['N'] ?? 0); // Pengganti ke-5 kolom OT/SPL
-        $pot_bpjs   = Excel::cleanRupiah($row['O'] ?? 0);
-        $pot_jht    = Excel::cleanRupiah($row['P'] ?? 0);
-        $pph21      = Excel::cleanRupiah($row['Q'] ?? 0);
-        $pot_izin   = Excel::cleanRupiah($row['R'] ?? 0);
-        $pot_mangkir = Excel::cleanRupiah($row['S'] ?? 0);
+        // Kolom H-S (tunjangan/lembur/potongan) diabaikan: hanya gaji pokok (penyederhanaan Okt 2026).
         
         $tgl_masuk_site = Excel::parseDate($row['T'] ?? '');
         $tgl_selesai_kontrak = Excel::parseDate($row['U'] ?? '');
@@ -153,97 +146,91 @@ try {
         }
 
         // 2. Kelola tb_karier
-        $cekKarier = $koneksi->query("SELECT id_karier FROM tb_karier WHERE id_karyawan='$id_karyawan' ORDER BY tgl_mulai DESC, id_karier DESC LIMIT 1");
+        $stmtCekKarier = $koneksi->prepare("SELECT id_karier FROM tb_karier WHERE id_karyawan=? ORDER BY tgl_mulai DESC, id_karier DESC LIMIT 1");
+        $stmtCekKarier->execute([$id_karyawan]);
+        $rowKarier = $stmtCekKarier->fetch();
 
-        if ($cekKarier->num_rows > 0) {
-            $id_karier = $cekKarier->fetch_assoc()['id_karier'];
+        if ($rowKarier) {
+            $id_karier = $rowKarier['id_karier'];
 
             $setTanggal = [];
+            $paramsTanggal = [$id_site, $id_departemen, $id_jabatan, $basic];
 
             if ($tgl_masuk_site) {
-                $setTanggal[] = "tgl_mulai='$tgl_masuk_site'";
+                $setTanggal[] = "tgl_mulai=?";
+                $paramsTanggal[] = $tgl_masuk_site;
             } else {
                 $setTanggal[] = "tgl_mulai=NULL";
             }
 
             if ($tgl_selesai_kontrak) {
-                $setTanggal[] = "tgl_selesai='$tgl_selesai_kontrak'";
+                $setTanggal[] = "tgl_selesai=?";
+                $paramsTanggal[] = $tgl_selesai_kontrak;
             } else {
                 $setTanggal[] = "tgl_selesai=NULL";
             }
 
             // Update Karier Terakhir (no_surat lama dipertahankan, tidak ditimpa)
-            $koneksi->query("UPDATE tb_karier SET
-                id_site='$id_site', id_departemen='$id_departemen', id_jabatan='$id_jabatan', 
-                gaji_pokok=$basic,
-                lembur=$lembur, 
-                pot_izin=$pot_izin, 
-                pot_mangkir=$pot_mangkir,
-                " . implode(",", $setTanggal) . "
-            WHERE id_karier='$id_karier'");
+            $paramsTanggal[] = $id_karier;
+            try {
+                $stmtUpdKarier = $koneksi->prepare("UPDATE tb_karier SET
+                    id_site=?, id_departemen=?, id_jabatan=?,
+                    gaji_pokok=?,
+                    " . implode(",", $setTanggal) . "
+                WHERE id_karier=?");
+                $stmtUpdKarier->execute($paramsTanggal);
+            } catch (PDOException $e) {
+                error_log('csv-karier update: ' . $e->getMessage());
+                $response["gagal"]++;
+                $response["errors"][] = "Row $i : Gagal update karier.";
+                continue;
+            }
         } else {
             // Insert Baru jika belum ada data karier sama sekali (nomor surat otomatis)
             $tglMulai = $tgl_masuk_site ?: date('Y-m-d');
             $tglSelesai = $tgl_selesai_kontrak ?: null;
-            $no_surat_sql = "NULL";
-            $qKodeImp = $koneksi->query("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-            $kodeImp = ($qKodeImp && $qKodeImp->num_rows > 0) ? trim((string)($qKodeImp->fetch_assoc()['kode_jabatan'] ?? '')) : '';
+            $no_surat_val = null;
+            $stmtKode = $koneksi->prepare("SELECT kode_jabatan FROM tb_jabatan WHERE id_jabatan = ? LIMIT 1");
+            $stmtKode->execute([$id_jabatan]);
+            $rowKode = $stmtKode->fetch();
+            $kodeImp = $rowKode ? trim((string)($rowKode['kode_jabatan'] ?? '')) : '';
             if ($kodeImp !== '') {
                 try {
-                    $no_surat_sql = "'" . $koneksi->real_escape_string(generate_no_surat($koneksi, $kodeImp, $tglMulai)) . "'";
+                    $no_surat_val = generate_no_surat($koneksi, $kodeImp, $tglMulai);
                 } catch (Exception $e) {
-                    $no_surat_sql = "NULL"; // jabatan tanpa kode: biarkan kosong, tidak menggagalkan baris
+                    error_log('csv-karier no_surat: ' . $e->getMessage());
+                    $no_surat_val = null; // jabatan tanpa kode: biarkan kosong, tidak menggagalkan baris
                 }
             }
 
-            $koneksi->query("INSERT INTO tb_karier (
-                id_karyawan, id_site, id_departemen, id_jabatan,
-                gaji_pokok, lembur, pot_izin, pot_mangkir, spl, ot1_spl, ot2_spl, tgl_mulai, tgl_selesai, no_surat
-            ) VALUES (
-                '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan', $basic, $lembur,
-                $pot_izin, $pot_mangkir, '', '', '', '$tglMulai', " . ($tglSelesai ? "'$tglSelesai'" : "NULL") . ", $no_surat_sql
-            )");
-            $id_karier = $koneksi->insert_id;
+            try {
+                $stmtInsKarier = $koneksi->prepare("INSERT INTO tb_karier (
+                    id_karyawan, id_site, id_departemen, id_jabatan,
+                    gaji_pokok, tgl_mulai, tgl_selesai, no_surat
+                ) VALUES (
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?
+                )");
+                $stmtInsKarier->execute([
+                    $id_karyawan, $id_site, $id_departemen, $id_jabatan, $basic,
+                    $tglMulai, $tglSelesai, $no_surat_val
+                ]);
+            } catch (PDOException $e) {
+                error_log('csv-karier insert: ' . $e->getMessage());
+                $response["gagal"]++;
+                $response["errors"][] = "Row $i : Gagal insert karier.";
+                continue;
+            }
         }
 
-        // 3. Kelola tb_tunjangan (Upsert Logic)
-        $listTunjangan = [
-            "Tunjangan Makan" => $t_makan,
-            "Tunjangan Skill" => $t_skill,
-            "Tunjangan Hidup" => $t_hidup,
-            "Tunjangan Daerah" => $t_daerah,
-            "Bonus Kehadiran" => $p_bonus, // <--- UBAH DISINI
-            "Tunjangan Posisi" => $t_posisi
-        ];
-
-        $koneksi->query("DELETE FROM tb_tunjangan WHERE id_karier='$id_karier'");
-
-        foreach ($listTunjangan as $nama_t => $nilai) {
-            $koneksi->query("INSERT INTO tb_tunjangan 
-                (id_karier,nama_tunjangan,jumlah_tunjangan)
-                VALUES ('$id_karier','$nama_t',$nilai)");
-        }
-
-        // 4. Kelola tb_potongan (Upsert Logic)
-        $listPotongan = [
-            "BPJS KESEHATAN 1%" => $pot_bpjs,
-            // BPJS KETENAGAKERJAAN 2% yg awalnya JHT 2%
-            "BPJS KETENAGAKERJAAN 2%" => $pot_jht,
-            "PPH21" => $pph21
-        ];
-
-        $koneksi->query("DELETE FROM tb_potongan WHERE id_karier='$id_karier'");
-
-        foreach ($listPotongan as $jenis_p => $nilai_p) {
-            $koneksi->query("INSERT INTO tb_potongan (id_karier, jenis_potongan, jumlah_potongan) VALUES ('$id_karier', '$jenis_p', $nilai_p)");
-        }
-
+        // Tabel tunjangan/potongan dihapus (penyederhanaan gaji Okt 2026): hanya gaji pokok.
         $response["berhasil"]++;
     }
 
     $response["success"] = true;
 } catch (Exception $e) {
-    $response["error"] = "Sistem Error: " . $e->getMessage();
+    error_log('csv-karier: ' . $e->getMessage());
+    $response["error"] = "Sistem Error: gagal memproses file.";
 }
 
 echo json_encode($response);

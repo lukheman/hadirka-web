@@ -80,11 +80,19 @@ $atas_nama_rek  = safe($data['atas_nama_rek']);
 $nik_verifikasi = safe($data['nik_verifikasi'] ?? '');
 $password_verifikasi = safe($data['password_verifikasi'] ?? '');
 
-$stmt_old_bank = $koneksi->prepare("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = ?");
-$stmt_old_bank->bind_param("s", $id_karyawan);
-$stmt_old_bank->execute();
-$old_bank_data = $stmt_old_bank->get_result()->fetch_assoc();
-$stmt_old_bank->close();
+try {
+    $stmt_old_bank = $koneksi->prepare("SELECT nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan = ?");
+    $stmt_old_bank->execute([$id_karyawan]);
+    $old_bank_data = $stmt_old_bank->fetch();
+} catch (PDOException $e) {
+    error_log('update_profile cek rekening lama gagal: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Terjadi kesalahan database."
+    ]);
+    exit;
+}
 
 $is_bank_changed = false;
 
@@ -124,26 +132,33 @@ if ($is_bank_changed) {
     }
 
     $hashed_password_verif = md5($password_verifikasi);
-    $stmt_auth = $koneksi->prepare("
-        SELECT k.id_karyawan 
-        FROM tb_karyawan k
-        INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
-        WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
-    ");
-    $stmt_auth->bind_param("sss", $id_karyawan, $nik_verifikasi, $hashed_password_verif);
-    $stmt_auth->execute();
-    $res_auth = $stmt_auth->get_result();
+    try {
+        $stmt_auth = $koneksi->prepare("
+            SELECT k.id_karyawan 
+            FROM tb_karyawan k
+            INNER JOIN tb_identitas i ON k.id_karyawan = i.id_karyawan
+            WHERE k.id_karyawan = ? AND i.nik_ktp = ? AND k.password = ?
+        ");
+        $stmt_auth->execute([$id_karyawan, $nik_verifikasi, $hashed_password_verif]);
+        $row_auth = $stmt_auth->fetch();
 
-    if ($res_auth->num_rows === 0) {
-        $stmt_auth->close();
-        http_response_code(401);
+        if (!$row_auth) {
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "message" => "Verifikasi Gagal: NIK KTP atau Password salah."
+            ]);
+            exit;
+        }
+    } catch (PDOException $e) {
+        error_log('update_profile verifikasi bank gagal: ' . $e->getMessage());
+        http_response_code(500);
         echo json_encode([
             "status" => "error",
-            "message" => "Verifikasi Gagal: NIK KTP atau Password salah."
+            "message" => "Terjadi kesalahan database."
         ]);
         exit;
     }
-    $stmt_auth->close();
 }
 
 // =======================
@@ -159,11 +174,19 @@ if (!empty($foto_base64)) {
     }
 
     // --- 1. CARI DAN HAPUS FOTO LAMA ---
-    $stmt_old_foto = $koneksi->prepare("SELECT foto FROM tb_karyawan WHERE id_karyawan = ?");
-    $stmt_old_foto->bind_param("s", $id_karyawan);
-    $stmt_old_foto->execute();
-    $res_old_foto = $stmt_old_foto->get_result()->fetch_assoc();
-    $stmt_old_foto->close();
+    try {
+        $stmt_old_foto = $koneksi->prepare("SELECT foto FROM tb_karyawan WHERE id_karyawan = ?");
+        $stmt_old_foto->execute([$id_karyawan]);
+        $res_old_foto = $stmt_old_foto->fetch();
+    } catch (PDOException $e) {
+        error_log('update_profile cek foto lama gagal: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Terjadi kesalahan database."
+        ]);
+        exit;
+    }
 
     if ($res_old_foto && !empty($res_old_foto['foto'])) {
         $path_foto_lama = $target_dir . $res_old_foto['foto'];
@@ -201,7 +224,7 @@ if (!empty($foto_base64)) {
 // =======================
 // TRANSAKSI
 // =======================
-$koneksi->begin_transaction();
+$koneksi->beginTransaction();
 
 try {
 
@@ -209,14 +232,12 @@ try {
     $cek = $koneksi->prepare(
         "SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ? FOR UPDATE"
     );
-    $cek->bind_param("s", $id_karyawan);
-    $cek->execute();
-    $res = $cek->get_result();
+    $cek->execute([$id_karyawan]);
+    $res = $cek->fetch();
 
-    if ($res->num_rows === 0) {
+    if (!$res) {
         throw new Exception("Data karyawan tidak ditemukan");
     }
-    $cek->close();
 
     // UPDATE tb_karyawan
     $stmt = $koneksi->prepare("
@@ -234,35 +255,29 @@ try {
         WHERE id_karyawan = ?
     ");
 
-    $stmt->bind_param(
-        "sssssssssss",
-        $nama_lengkap,
-        $jenis_kelamin,
-        $tgl_lahir,
-        $tempat_lahir,
-        $email_pribadi,
-        $no_telp,
-        $nationality,
-        $agama,
-        $status_pernikahan,
-        $status_ptkp,
-        $id_karyawan
+    $stmt->execute(
+        [
+            $nama_lengkap,
+            $jenis_kelamin,
+            $tgl_lahir,
+            $tempat_lahir,
+            $email_pribadi,
+            $no_telp,
+            $nationality,
+            $agama,
+            $status_pernikahan,
+            $status_ptkp,
+            $id_karyawan
+        ]
     );
 
-    if (!$stmt->execute()) {
-        throw new Exception("Gagal update data karyawan: " . $stmt->error);
-    }
-    $stmt->close();
-
     // Simpan status update untuk tb_karyawan
-    $updatedKaryawan = $koneksi->affected_rows;
+    $updatedKaryawan = $stmt->rowCount();
 
     // ==== QUERY UPDATE FOTO ====
     if ($nama_file_foto !== "") {
         $stmt_foto = $koneksi->prepare("UPDATE tb_karyawan SET foto = ? WHERE id_karyawan = ?");
-        $stmt_foto->bind_param("ss", $nama_file_foto, $id_karyawan);
-        $stmt_foto->execute();
-        $stmt_foto->close();
+        $stmt_foto->execute([$nama_file_foto, $id_karyawan]);
     }
 
     // UPDATE tb_identitas
@@ -289,36 +304,32 @@ try {
     ");
 
 
-    $stmt->bind_param(
-        "sssssssssssssssssss",
-        $nik_ktp,
-        $kk_number,
-        $npwp,
-        $bpjs_tk,
-        $bpjs_kes,
-        $alamat_ktp,
-        $provinsi,
-        $kabupaten,
-        $kecamatan,
-        $desa,
-        $rt_rw,
-        $nama_ibu,
-        $last_education,
-        $major,
-        $education_level,
-        $nama_bank,
-        $no_rek,
-        $atas_nama_rek,
-        $id_karyawan
+    $stmt->execute(
+        [
+            $nik_ktp,
+            $kk_number,
+            $npwp,
+            $bpjs_tk,
+            $bpjs_kes,
+            $alamat_ktp,
+            $provinsi,
+            $kabupaten,
+            $kecamatan,
+            $desa,
+            $rt_rw,
+            $nama_ibu,
+            $last_education,
+            $major,
+            $education_level,
+            $nama_bank,
+            $no_rek,
+            $atas_nama_rek,
+            $id_karyawan
+        ]
     );
 
-    if (!$stmt->execute()) {
-        throw new Exception("Gagal update data identitas: " . $stmt->error);
-    }
-    $stmt->close();
-
     // PERBAIKAN KRITIS DI SINI:
-    // Tidak perlu memeriksa affected_rows === 0 untuk tb_identitas, 
+    // Tidak perlu memeriksa rowCount() === 0 untuk tb_identitas, 
     // karena update tb_karyawan mungkin sudah berhasil. Commit tetap dilakukan.
 
     $koneksi->commit();
@@ -327,9 +338,22 @@ try {
         "status" => "success",
         "message" => "Profil berhasil diperbarui"
     ]);
+} catch (PDOException $e) {
+    if ($koneksi->inTransaction()) {
+        $koneksi->rollBack();
+    }
+    error_log('update_profile transaksi gagal: ' . $e->getMessage());
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Terjadi kesalahan database."
+    ]);
 } catch (Exception $e) {
 
-    $koneksi->rollback();
+    if ($koneksi->inTransaction()) {
+        $koneksi->rollBack();
+    }
     http_response_code(500);
 
     echo json_encode([
@@ -337,5 +361,3 @@ try {
         "message" => "Transaction Error: " . $e->getMessage()
     ]);
 }
-
-$koneksi->close();

@@ -9,7 +9,7 @@ untuk aplikasi mobile karyawan.
 
 | Lapisan | Teknologi |
 |---|---|
-| Backend | PHP (MySQLi prosedural), MySQL/MariaDB |
+| Backend | PHP (PDO MySQL + prepared statements), MySQL/MariaDB |
 | Frontend | Bootstrap 5 (template Sneat), jQuery, DataTables, Select2, SweetAlert2, Toastr, Flatpickr |
 | Cetak/Unduh | html2pdf.js, JSZip + FileSaver, SheetJS (XLSX) |
 | Import/Export server | PhpSpreadsheet (`composer.json` root) |
@@ -18,7 +18,7 @@ untuk aplikasi mobile karyawan.
 
 ## Syarat
 
-* PHP >= 7.4 (disarankan 8.x) + ekstensi `mysqli`, `gd`, `mbstring`, `zip`, `xml`
+* PHP >= 7.4 (disarankan 8.x) + ekstensi `pdo_mysql`, `gd`, `mbstring`, `zip`, `xml`
 * MySQL/MariaDB, Composer 2
 * Apache/Nginx dengan `mod_rewrite` (atau PHP built-in untuk dev)
 

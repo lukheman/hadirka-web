@@ -2,10 +2,10 @@
 require_once __DIR__ . '/../../config/koneksi.php';
 
 
-$q = mysqli_query($koneksi, "SELECT * FROM tb_site ORDER BY id_site DESC");
+$q = $koneksi->query("SELECT * FROM tb_site ORDER BY id_site DESC");
 $no = 1;
 
-while ($r = mysqli_fetch_assoc($q)) {
+while ($r = $q->fetch()) {
     echo "
     <tr>
         <td class='text-center'>{$no}</td>

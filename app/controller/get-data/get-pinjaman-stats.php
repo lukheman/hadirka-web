@@ -7,12 +7,12 @@ $bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';
 
 // 2. Setup WHERE clause & Label Teks
 $whereClause = "";
+$paramsStats = [];
 $teksBulan = "Total Keseluruhan"; // Default jika "Semua Bulan" dipilih
 
 if (!empty($bulan)) {
-    // Escape string untuk keamanan
-    $bulan_safe = $koneksi->real_escape_string($bulan);
-    $whereClause = " WHERE DATE_FORMAT(tgl_pinjaman, '%Y-%m') = '$bulan_safe'";
+    $whereClause = " WHERE DATE_FORMAT(tgl_pinjaman, '%Y-%m') = ?";
+    $paramsStats[] = $bulan;
     
     // Ubah "2026-03" jadi "Maret 2026" untuk teks di tampilan
     $parts = explode('-', $bulan);
@@ -22,13 +22,15 @@ if (!empty($bulan)) {
 
 // 3. Hitung Total Pinjaman (Sesuai filter)
 $sqlTotal = "SELECT COUNT(*) as total FROM tb_pinjaman" . $whereClause;
-$resultTotal = $koneksi->query($sqlTotal);
-$total = $resultTotal->fetch_assoc()['total'];
+$stTotal = $koneksi->prepare($sqlTotal);
+$stTotal->execute($paramsStats);
+$total = $stTotal->fetch()['total'];
 
 // 4. Hitung Total Nominal (Sesuai filter)
 $sqlNominal = "SELECT SUM(nominal_pinjaman) as total_nominal FROM tb_pinjaman" . $whereClause;
-$resultNominal = $koneksi->query($sqlNominal);
-$totalNominal = $resultNominal->fetch_assoc()['total_nominal'] ?: 0;
+$stNominal = $koneksi->prepare($sqlNominal);
+$stNominal->execute($paramsStats);
+$totalNominal = $stNominal->fetch()['total_nominal'] ?: 0;
 
 // 5. Kirim respon JSON
 echo json_encode([

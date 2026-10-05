@@ -95,18 +95,20 @@ if (!in_array($file_ext, ['xls', 'xlsx'])) {
     exit;
 }
 
-// Fungsi batasi update untuk sell kosong 
-function addUpdateField(&$fields, $column, $value, $allowNull = false)
+// Fungsi batasi update untuk sell kosong
+function addUpdateField(&$fields, &$params, $column, $value, $allowNull = false)
 {
     if ($allowNull) {
         if ($value === null || $value === '') {
             $fields[] = "$column = NULL";
         } else {
-            $fields[] = "$column = '$value'";
+            $fields[] = "$column = ?";
+            $params[] = $value;
         }
     } else {
         if ($value !== '' && $value !== null) {
-            $fields[] = "$column = '$value'";
+            $fields[] = "$column = ?";
+            $params[] = $value;
         }
     }
 }
@@ -114,21 +116,28 @@ function addUpdateField(&$fields, $column, $value, $allowNull = false)
 // =========================================================================
 // OPTIMASI: CACHING DATA MASTER AGAR TIDAK QUERY BERULANG DI DALAM LOOPING
 // =========================================================================
-$cache_site = [];
-$qSite = $koneksi->query("SELECT id_site, LOWER(TRIM(nama_site)) as nama FROM tb_site");
-if ($qSite) while ($r = $qSite->fetch_assoc()) $cache_site[$r['nama']] = $r['id_site'];
+try {
+    $cache_site = [];
+    $qSite = $koneksi->query("SELECT id_site, LOWER(TRIM(nama_site)) as nama FROM tb_site");
+    while ($r = $qSite->fetch()) $cache_site[$r['nama']] = $r['id_site'];
 
-$cache_dept = [];
-$qDept = $koneksi->query("SELECT id_departemen, LOWER(TRIM(nama_departemen)) as nama FROM tb_departemen");
-if ($qDept) while ($r = $qDept->fetch_assoc()) $cache_dept[$r['nama']] = $r['id_departemen'];
+    $cache_dept = [];
+    $qDept = $koneksi->query("SELECT id_departemen, LOWER(TRIM(nama_departemen)) as nama FROM tb_departemen");
+    while ($r = $qDept->fetch()) $cache_dept[$r['nama']] = $r['id_departemen'];
 
-$cache_jabatan = [];
-$qJabatan = $koneksi->query("SELECT id_jabatan, LOWER(TRIM(nama_jabatan)) as nama FROM tb_jabatan");
-if ($qJabatan) while ($r = $qJabatan->fetch_assoc()) $cache_jabatan[$r['nama']] = $r['id_jabatan'];
+    $cache_jabatan = [];
+    $qJabatan = $koneksi->query("SELECT id_jabatan, LOWER(TRIM(nama_jabatan)) as nama FROM tb_jabatan");
+    while ($r = $qJabatan->fetch()) $cache_jabatan[$r['nama']] = $r['id_jabatan'];
 
-$cache_jenis_keluar = [];
-$qJenis = $koneksi->query("SELECT id_jenis_keluar, LOWER(TRIM(nama_kategori)) as nama FROM m_jenis_keluar");
-if ($qJenis) while ($r = $qJenis->fetch_assoc()) $cache_jenis_keluar[$r['nama']] = $r['id_jenis_keluar'];
+    $cache_jenis_keluar = [];
+    $qJenis = $koneksi->query("SELECT id_jenis_keluar, LOWER(TRIM(nama_kategori)) as nama FROM m_jenis_keluar");
+    while ($r = $qJenis->fetch()) $cache_jenis_keluar[$r['nama']] = $r['id_jenis_keluar'];
+} catch (PDOException $e) {
+    error_log('csv-karyawan cache master: ' . $e->getMessage());
+    $response["error"] = "Gagal memuat data master.";
+    echo json_encode($response);
+    exit;
+}
 // =========================================================================
 
 try {
@@ -171,10 +180,11 @@ try {
             // NIK adalah kunci unik. Existing employee langsung dilewati,
             // tanpa memvalidasi atau mengubah kolom lainnya.
             if ($nik_karyawan !== '') {
-                $cekKaryawanAwal = $koneksi->query(
-                    "SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan' LIMIT 1"
+                $stmtCekAwal = $koneksi->prepare(
+                    "SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan=? LIMIT 1"
                 );
-                if ($cekKaryawanAwal && $cekKaryawanAwal->num_rows > 0) {
+                $stmtCekAwal->execute([$nik_karyawan]);
+                if ($stmtCekAwal->fetch()) {
                     $response['dilewati']++;
                     $response['debug'][] = "Baris $rowNum: Dilewati - NIK '$nik_karyawan' sudah terdaftar.";
                     continue;
@@ -285,98 +295,116 @@ try {
                 throw new Exception("Site '$raw_nama_site', Dept '$raw_nama_departemen', atau Jabatan '$raw_nama_jabatan' tidak ditemukan/salah ketik.");
             }
 
-            $koneksi->begin_transaction();
+            $koneksi->beginTransaction();
             $transaction_started = true;
 
             // ==== INSERT KARYAWAN BARU ====
-                $sqlKaryawan = "INSERT INTO tb_karyawan (
+            $stmtKaryawan = $koneksi->prepare("INSERT INTO tb_karyawan (
                     nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir,
                     email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp,
                     status_karyawan, password
                 ) VALUES (
-                    '$nik_karyawan', '$nama_lengkap', '$jenis_kelamin',
-                    " . ($tgl_lahir ? "'$tgl_lahir'" : "NULL") . ",
-                    '$tempat_lahir', '$email_pribadi', '$no_telp', '$nationality',
-                    '$agama', '$status_pernikahan', '$status_ptkp', '$status_karyawan', ''
-            )";
+                    ?, ?, ?,
+                    ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?, ''
+            )");
+            $stmtKaryawan->execute([
+                $nik_karyawan, $nama_lengkap, $jenis_kelamin,
+                ($tgl_lahir ?: null),
+                $tempat_lahir, $email_pribadi, $no_telp, $nationality,
+                $agama, $status_pernikahan, $status_ptkp, $status_karyawan
+            ]);
+            $id_karyawan = (int)$koneksi->lastInsertId();
 
-            if (!$koneksi->query($sqlKaryawan)) throw new Exception("Error insert tb_karyawan: " . $koneksi->error);
-            $id_karyawan = $koneksi->insert_id;
-
-                $sqlIdentitas = "INSERT INTO tb_identitas (
+            $stmtIdentitas = $koneksi->prepare("INSERT INTO tb_identitas (
                     id_karyawan, nik_ktp, kk_number, npwp, bpjs_tk, bpjs_kes,
                     alamat_ktp, provinsi, kabupaten, kecamatan, desa, rt_rw, nama_ibu,
                     last_education, major, education_level, nama_bank, no_rek, atas_nama_rek
                 ) VALUES (
-                    '$id_karyawan', '$nik_ktp', '$kk_number', '$npwp', '$bpjs_tk',
-                    '$bpjs_kes', '$alamat_ktp', '$provinsi', '$kabupaten', '$kecamatan',
-                    '$desa', '$rt_rw', '$nama_ibu', '$last_education', '$major',
-                    '$education_level', '$nama_bank', '$no_rek', '$atas_nama_rek'
-                )";
-            if (!$koneksi->query($sqlIdentitas)) throw new Exception("Error insert tb_identitas: " . $koneksi->error);
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?
+                )");
+            $stmtIdentitas->execute([
+                $id_karyawan, $nik_ktp, $kk_number, $npwp, $bpjs_tk,
+                $bpjs_kes, $alamat_ktp, $provinsi, $kabupaten, $kecamatan,
+                $desa, $rt_rw, $nama_ibu, $last_education, $major,
+                $education_level, $nama_bank, $no_rek, $atas_nama_rek
+            ]);
             // Insert kontak darurat (berlaku untuk update & insert)
             if (!empty($nama_kontak1) && !empty($no_telp_darurat1)) {
-                $sqlKontak1 = "INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES ('$id_karyawan', '$nama_kontak1', '$hubungan1', '$no_telp_darurat1', 1)";
-                if (!$koneksi->query($sqlKontak1)) throw new Exception("Error insert kontak 1: " . $koneksi->error);
+                $stmtKontak1 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES (?,?,?,?,1)");
+                $stmtKontak1->execute([$id_karyawan, $nama_kontak1, $hubungan1, $no_telp_darurat1]);
             }
             if (!empty($nama_kontak2) && !empty($no_telp_darurat2)) {
-                $sqlKontak2 = "INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES ('$id_karyawan', '$nama_kontak2', '$hubungan2', '$no_telp_darurat2', 2)";
-                if (!$koneksi->query($sqlKontak2)) throw new Exception("Error insert kontak 2: " . $koneksi->error);
+                $stmtKontak2 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES (?,?,?,?,2)");
+                $stmtKontak2->execute([$id_karyawan, $nama_kontak2, $hubungan2, $no_telp_darurat2]);
             }
 
             // === Update/Insert tb_karier ===
-            $cekKarier = $koneksi->query("SELECT id_karier FROM tb_karier WHERE id_karyawan='$id_karyawan' ORDER BY tgl_mulai DESC LIMIT 1");
+            $stmtCekKarier = $koneksi->prepare("SELECT id_karier FROM tb_karier WHERE id_karyawan=? ORDER BY tgl_mulai DESC LIMIT 1");
+            $stmtCekKarier->execute([$id_karyawan]);
+            $rowKarier = $stmtCekKarier->fetch();
 
-            if ($cekKarier->num_rows > 0) {
+            if ($rowKarier) {
                 // Update
-                $idKarier = $cekKarier->fetch_assoc()['id_karier'];
+                $idKarier = $rowKarier['id_karier'];
                 $updateKarier = [];
-                addUpdateField($updateKarier, 'id_site', $id_site);
-                addUpdateField($updateKarier, 'id_departemen', $id_departemen);
-                addUpdateField($updateKarier, 'id_jabatan', $id_jabatan);
-                addUpdateField($updateKarier, 'tgl_mulai', $tgl_masuk_site, true);
-                addUpdateField($updateKarier, 'tgl_selesai', $tgl_selesai_kontrak, true);
+                $paramsKarier = [];
+                addUpdateField($updateKarier, $paramsKarier, 'id_site', $id_site);
+                addUpdateField($updateKarier, $paramsKarier, 'id_departemen', $id_departemen);
+                addUpdateField($updateKarier, $paramsKarier, 'id_jabatan', $id_jabatan);
+                addUpdateField($updateKarier, $paramsKarier, 'tgl_mulai', $tgl_masuk_site, true);
+                addUpdateField($updateKarier, $paramsKarier, 'tgl_selesai', $tgl_selesai_kontrak, true);
 
                 if (!empty($updateKarier)) {
-                    $sqlKarierUpdate = "UPDATE tb_karier SET " . implode(", ", $updateKarier) . " WHERE id_karier = '$idKarier'";
-                    if (!$koneksi->query($sqlKarierUpdate)) throw new Exception("Error tb_karier: " . $koneksi->error);
+                    $paramsKarier[] = $idKarier;
+                    $stmtKarierUpdate = $koneksi->prepare("UPDATE tb_karier SET " . implode(", ", $updateKarier) . " WHERE id_karier = ?");
+                    $stmtKarierUpdate->execute($paramsKarier);
                 }
             } else {
                 // Insert
-                $sqlKarierInsert = "INSERT INTO tb_karier (
+                $stmtKarierInsert = $koneksi->prepare("INSERT INTO tb_karier (
                     id_karyawan, id_site, id_departemen, id_jabatan,
-                    spl, ot1_spl, ot2_spl, pot_izin, pot_mangkir,
                     tgl_mulai, tgl_selesai
                 ) VALUES (
-                    '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan',
-                    '', '', '', '', '',
-                    " . ($tgl_masuk_site ? "'$tgl_masuk_site'" : "NULL") . ",
-                    " . ($tgl_selesai_kontrak ? "'$tgl_selesai_kontrak'" : "NULL") . "
-                )";
-                if (!$koneksi->query($sqlKarierInsert)) throw new Exception("Error tb_karier: " . $koneksi->error);
+                    ?, ?, ?, ?,
+                    ?,
+                    ?
+                )");
+                $stmtKarierInsert->execute([
+                    $id_karyawan, $id_site, $id_departemen, $id_jabatan,
+                    ($tgl_masuk_site ?: null),
+                    ($tgl_selesai_kontrak ?: null)
+                ]);
             }
 
             // === PROSES tb_tereliminasi ===
             if (!empty($status_karyawan) && strtolower($status_karyawan) != 'aktif') {
-                
+
                 // Cari id_jenis_keluar berdasarkan status yang sudah dinormalisasi.
                 $key_jenis_keluar = strtolower(trim($normalized_status));
                 $id_jenis_keluar  = $cache_jenis_keluar[$key_jenis_keluar] ?? null;
-                
+
                 if (!$id_jenis_keluar) throw new Exception("Jenis keluar '$raw_status_karyawan' tidak ditemukan di m_jenis_keluar");
                 if (empty($tgl_keluar)) throw new Exception("Status '$status_karyawan' tapi tgl_keluar kosong");
 
-                $cekEliminasiDb = $koneksi->query("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan='$id_karyawan'");
+                $stmtCekEliminasi = $koneksi->prepare("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan=?");
+                $stmtCekEliminasi->execute([$id_karyawan]);
 
-                if ($cekEliminasiDb->num_rows > 0) {
-                    $sqlEliminasi = "UPDATE tb_tereliminasi SET tgl_keluar = '$tgl_keluar', id_jenis_keluar = '$id_jenis_keluar', alasan_keluar = '$alasan_keluar' WHERE id_karyawan = '$id_karyawan'";
+                if ($stmtCekEliminasi->fetch()) {
+                    $stmtEliminasi = $koneksi->prepare("UPDATE tb_tereliminasi SET tgl_keluar = ?, id_jenis_keluar = ?, alasan_keluar = ? WHERE id_karyawan = ?");
+                    $stmtEliminasi->execute([$tgl_keluar, $id_jenis_keluar, $alasan_keluar, $id_karyawan]);
                 } else {
-                    $sqlEliminasi = "INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar) VALUES ('$id_karyawan', '$tgl_keluar', '$id_jenis_keluar', '$alasan_keluar')";
+                    $stmtEliminasi = $koneksi->prepare("INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar) VALUES (?,?,?,?)");
+                    $stmtEliminasi->execute([$id_karyawan, $tgl_keluar, $id_jenis_keluar, $alasan_keluar]);
                 }
-                if (!$koneksi->query($sqlEliminasi)) throw new Exception("Error tb_tereliminasi: " . $koneksi->error);
-                
+
             } else {
-                $koneksi->query("DELETE FROM tb_tereliminasi WHERE id_karyawan='$id_karyawan'");
+                $stmtDelEliminasi = $koneksi->prepare("DELETE FROM tb_tereliminasi WHERE id_karyawan=?");
+                $stmtDelEliminasi->execute([$id_karyawan]);
             }
 
             $response["berhasil"]++;
@@ -385,15 +413,23 @@ try {
             // TAMBAHKAN DI SINI: Commit hanya jika semua query di baris ini sukses
             $koneksi->commit();
             $transaction_started = false;
-            
+
         } catch (Exception $e) {
             // TAMBAHKAN DI SINI: Batalkan seluruh perubahan pada baris ini jika ada 1 query yang gagal
-            if ($transaction_started) {
-                $koneksi->rollback();
+            if ($transaction_started && $koneksi->inTransaction()) {
+                $koneksi->rollBack();
             }
 
-            $response["gagal"]++;
-            $response["errors"][] = "Baris $rowNum: " . $e->getMessage();
+            // Duplikat NIK (balapan dengan pre-check di atas): perlakukan sebagai dilewati.
+            if ($e instanceof PDOException && (($e->errorInfo[1] ?? null) == 1062)) {
+                error_log("csv-karyawan duplikat: " . $e->getMessage());
+                $response["dilewati"]++;
+                $response["debug"][] = "Baris $rowNum: Dilewati - NIK sudah terdaftar (duplikat).";
+            } else {
+                if ($e instanceof PDOException) error_log("csv-karyawan DB baris $rowNum: " . $e->getMessage());
+                $response["gagal"]++;
+                $response["errors"][] = "Baris $rowNum: " . ($e instanceof PDOException ? "Gagal menyimpan data." : $e->getMessage());
+            }
         }
     }
 
@@ -401,9 +437,9 @@ try {
     $response["message"] = "Import selesai. Berhasil: {$response['berhasil']}, Dilewati: {$response['dilewati']}, Gagal: {$response['gagal']}";
     
     } catch (Exception $e) {
-        if (isset($koneksi) && $koneksi->errno === 0) {
-            // Tidak ada transaksi aktif pada tahap validasi/skip.
-            // Rollback hanya ditangani oleh catch per baris.
+        error_log('csv-karyawan: ' . $e->getMessage());
+        if (isset($koneksi) && $koneksi instanceof PDO && $koneksi->inTransaction()) {
+            $koneksi->rollBack();
         }
 
         $response["error"] = "Gagal membaca file Excel: " . $e->getMessage();

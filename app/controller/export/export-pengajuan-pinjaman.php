@@ -19,26 +19,28 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 // 1. Tangkap Parameter GET dari Frontend
-$startDate = isset($_GET['startDate']) ? $koneksi->real_escape_string($_GET['startDate']) : date("Y-m-01");
-$endDate   = isset($_GET['endDate']) ? $koneksi->real_escape_string($_GET['endDate']) : date("Y-m-t");
-$site      = isset($_GET['site']) ? $koneksi->real_escape_string($_GET['site']) : '';
-$jabatan   = isset($_GET['jabatan']) ? $koneksi->real_escape_string($_GET['jabatan']) : '';
-$bank      = isset($_GET['bank']) ? $koneksi->real_escape_string($_GET['bank']) : '';
-$status    = isset($_GET['status']) ? $koneksi->real_escape_string($_GET['status']) : '';
+$startDate = isset($_GET['startDate']) ? trim($_GET['startDate']) : date("Y-m-01");
+$endDate   = isset($_GET['endDate']) ? trim($_GET['endDate']) : date("Y-m-t");
+$site      = isset($_GET['site']) ? trim($_GET['site']) : '';
+$jabatan   = isset($_GET['jabatan']) ? trim($_GET['jabatan']) : '';
+$bank      = isset($_GET['bank']) ? trim($_GET['bank']) : '';
+$status    = isset($_GET['status']) ? trim($_GET['status']) : '';
 
 // 2. Susun Kondisi Filter (WHERE Clause)
-$where = ["DATE(p.tgl_pengajuan) BETWEEN '$startDate' AND '$endDate'"];
+$where = ["DATE(p.tgl_pengajuan) BETWEEN ? AND ?"];
+$params = [$startDate, $endDate];
 
-if (!empty($site)) $where[] = "kr.id_site = '$site'";
-if (!empty($jabatan)) $where[] = "kr.id_jabatan = '$jabatan'";
-if (!empty($status)) $where[] = "p.status_pinjaman = '$status'";
+if (!empty($site)) { $where[] = "kr.id_site = ?"; $params[] = $site; }
+if (!empty($jabatan)) { $where[] = "kr.id_jabatan = ?"; $params[] = $jabatan; }
+if (!empty($status)) { $where[] = "p.status_pinjaman = ?"; $params[] = $status; }
 
 // Logika filter Bank (Diadopsi dari NormalizeBankName di JS lama)
 if (!empty($bank)) {
     if ($bank === 'BELUM_PUNYA') {
         $where[] = "(i.nama_bank IS NULL OR i.nama_bank = '' OR i.nama_bank = 'BELUM PUNYA REKENING')";
     } elseif (in_array($bank, ['MANDIRI', 'BRI', 'BNI', 'BCA'])) {
-        $where[] = "i.nama_bank LIKE '%$bank%'";
+        $where[] = "i.nama_bank LIKE ?";
+        $params[] = "%$bank%";
     } elseif ($bank === 'LAINNYA') {
         $where[] = "(i.nama_bank NOT LIKE '%MANDIRI%' AND i.nama_bank NOT LIKE '%BRI%' AND i.nama_bank NOT LIKE '%BNI%' AND i.nama_bank NOT LIKE '%BCA%' AND i.nama_bank IS NOT NULL AND i.nama_bank != '' AND i.nama_bank != 'BELUM PUNYA REKENING')";
     }
@@ -63,10 +65,13 @@ $sql = "SELECT p.*, k.nama_lengkap, k.nik_karyawan,
         GROUP BY p.id_pengajuan_pinjaman
         ORDER BY p.tgl_pengajuan DESC, k.nama_lengkap ASC";
 
-$result = $koneksi->query($sql);
-
-if (!$result) {
-    die("Kueri error: " . $koneksi->error);
+try {
+    $stmt = $koneksi->prepare($sql);
+    $stmt->execute($params);
+    $result = $stmt;
+} catch (PDOException $e) {
+    error_log('export-pengajuan-pinjaman: ' . $e->getMessage());
+    die("Kueri error: gagal mengambil data.");
 }
 
 // 4. Inisialisasi Spreadsheet
@@ -115,7 +120,7 @@ $sheet->getStyle('A1:L1')->applyFromArray($headerStyle);
 $rowExcel = 2;
 $no = 1;
 
-while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch()) {
     $sheet->setCellValue('A' . $rowExcel, $no);
     $sheet->setCellValue('B' . $rowExcel, $row['nik_karyawan']);
     $sheet->setCellValue('C' . $rowExcel, $row['nama_lengkap']);

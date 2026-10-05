@@ -17,7 +17,7 @@ $data = [];
 $no = 1;
 
 if ($result) {
-    while ($row = $result->fetch_assoc()) {
+    foreach ($result->fetchAll() as $row) {
         $dir = "app/uploads/"; 
         
         // Mempercantik tombol download berkas
@@ -124,9 +124,6 @@ if ($result) {
             'action' => $action
         ];
     }
-} else {
-    echo json_encode(['error' => $koneksi->error]);
-    exit;
 }
 
 echo json_encode(['data' => $data]);

@@ -243,8 +243,17 @@ final class Excel
     {
         return self::parseTanggalTeks(self::bersihkanTanggal($value));
     }
-    public static function esc($koneksi, $value)
+    /**
+     * Escape helper LEGACY: dipertahankan agar 100+ pemanggil lama tidak pecah.
+     * Dengan PDO + prepared statements, escaping manual TIDAK diperlukan lagi.
+     * Fungsi ini hanya trim; JANGAN dipakai untuk interpolasi ke SQL.
+     * Tanda tangan mendukung esc($value) maupun esc($koneksi, $value).
+     */
+    public static function esc($koneksi, $value = null)
     {
-        return mysqli_real_escape_string($koneksi, trim((string)$value));
+        if ($value === null) {
+            $value = $koneksi;
+        }
+        return trim((string)$value);
     }
 }

@@ -51,12 +51,6 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tab-up-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-up-nilai" type="button" role="tab" aria-controls="tab-up-nilai" aria-selected="false">Nilai Kontrak</button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-up-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-up-tunjangan" type="button" role="tab" aria-controls="tab-up-tunjangan" aria-selected="false">Tunjangan</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-up-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-up-potongan" type="button" role="tab" aria-controls="tab-up-potongan" aria-selected="false">Potongan</button>
-                        </li>
                     </ul>
                     <div class="tab-content pt-3">
                         <div class="tab-pane fade show active" id="tab-up-template" role="tabpanel" aria-labelledby="tab-up-template-tab">
@@ -83,74 +77,17 @@
                         <div class="tab-pane fade" id="tab-up-nilai" role="tabpanel" aria-labelledby="tab-up-nilai-tab">
                     <label class="form-label fw-bold">Nilai Kontrak</label>
                     <div class="row g-2">
-                        <div class="col-md-6">
-                            <label class="form-label">Gaji Pokok</label>
+                        <div class="col-md-12">
+                            <label class="form-label">Gaji Pokok (Harian)</label>
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
                                 <input type="text" name="gaji_pokok" class="form-control nominal-mask" value="0">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Upah Lembur</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="text" name="upah_lembur" class="form-control nominal-mask" value="0">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Potongan Izin</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="text" name="potongan_izin" class="form-control nominal-mask" value="0">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Potongan Mangkir</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="text" name="potongan_mangkir" class="form-control nominal-mask" value="0">
-                            </div>
-                        </div>
+
                     </div>
                         </div>
-                        <div class="tab-pane fade" id="tab-up-tunjangan" role="tabpanel" aria-labelledby="tab-up-tunjangan-tab">
-                            <div class="alert alert-info py-2">
-                                <i class="fa fa-info-circle"></i> Opsional — baris kosong tidak disimpan.
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm w-100">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th>Nama Tunjangan</th>
-                                            <th style="width:18%">Jenis</th>
-                                            <th style="width:22%">Jumlah (Rp)</th>
-                                            <th style="width:18%">Tampil</th>
-                                            <th class="text-center" style="width:10%">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyUploadTunjangan"></tbody>
-                                </table>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowTunjangan"><i class="bx bx-plus me-1"></i> Tambah Tunjangan</button>
-                        </div>
-                        <div class="tab-pane fade" id="tab-up-potongan" role="tabpanel" aria-labelledby="tab-up-potongan-tab">
-                            <div class="alert alert-info py-2">
-                                <i class="fa fa-info-circle"></i> Opsional — baris kosong tidak disimpan.
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm w-100">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th>Nama Potongan</th>
-                                            <th style="width:30%">Jumlah (Rp)</th>
-                                            <th class="text-center" style="width:10%">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyUploadPotongan"></tbody>
-                                </table>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-success" id="btnUploadRowPotongan"><i class="bx bx-plus me-1"></i> Tambah Potongan</button>
-                        </div>
+                        
                     </div>
                 </div>
 
@@ -179,12 +116,6 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tab-et-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-et-nilai" type="button" role="tab" aria-controls="tab-et-nilai" aria-selected="false">Nilai Kontrak</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-et-tunjangan-tab" data-bs-toggle="tab" data-bs-target="#tab-et-tunjangan" type="button" role="tab" aria-controls="tab-et-tunjangan" aria-selected="false">Tunjangan</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-et-potongan-tab" data-bs-toggle="tab" data-bs-target="#tab-et-potongan" type="button" role="tab" aria-controls="tab-et-potongan" aria-selected="false">Potongan</button>
                         </li>
                     </ul>
                     <div class="tab-content pt-3">
@@ -224,34 +155,14 @@
                             <form id="formEditDetail">
                                 <input type="hidden" name="id_template">
                                 <div class="row g-2">
-                                    <div class="col-md-3">
-                                        <label class="form-label">Gaji Pokok</label>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Gaji Pokok (Harian)</label>
                                         <div class="input-group">
                                             <span class="input-group-text">Rp</span>
                                             <input type="text" name="gaji_pokok" class="form-control nominal-mask">
                                         </div>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Upah Lembur</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">Rp</span>
-                                            <input type="text" name="upah_lembur" class="form-control nominal-mask">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Potongan Izin</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">Rp</span>
-                                            <input type="text" name="potongan_izin" class="form-control nominal-mask">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Potongan Mangkir</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">Rp</span>
-                                            <input type="text" name="potongan_mangkir" class="form-control nominal-mask">
-                                        </div>
-                                    </div>
+
                                 </div>
                                 <div class="mt-2 text-end">
                                     <button type="submit" class="btn btn-warning" id="btnSaveDetail">
@@ -260,110 +171,7 @@
                                 </div>
                             </form>
                         </div>
-                        <div class="tab-pane fade" id="tab-et-tunjangan" role="tabpanel" aria-labelledby="tab-et-tunjangan-tab">
-                            <h6 class="fw-bold"><i class="fa fa-money-bill"></i> Tunjangan</h6>
-                            <form id="formTplTunjangan" class="row g-2 align-items-end">
-                                <input type="hidden" name="id_template" id="tplTunjanganTemplateId">
-                                <input type="hidden" name="id_tunjangan" id="tplTunjanganId">
-                                <div class="col-md-3">
-                                    <label class="form-label">Nama Tunjangan</label>
-                                    <select name="nama_tunjangan" id="tplTunjanganNama" class="form-select" required>
-                                        <option value="">-- Pilih Tunjangan --</option>
-                                        <option value="Tunjangan Daerah">Tunjangan Daerah</option>
-                                        <option value="Tunjangan Hidup">Tunjangan Hidup</option>
-                                        <option value="Tunjangan Makan">Tunjangan Makan</option>
-                                        <option value="Tunjangan Skill">Tunjangan Skill</option>
-                                        <option value="Bonus Kehadiran">Bonus Kehadiran</option>
-                                        <option value="Tunjangan Posisi">Tunjangan Posisi</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Jenis</label>
-                                    <select name="jenis_tunjangan" id="tplTunjanganJenis" class="form-select" required>
-                                        <option value="tetap">Tetap</option>
-                                        <option value="tidak_tetap">Tidak Tetap</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Jumlah (Rp)</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
-                                        <input type="text" name="jumlah_tunjangan" id="tplTunjanganJumlah" class="form-control nominal-mask" placeholder="0" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Tampil di Template</label>
-                                    <select name="tampil_template" id="tplTunjanganTampil" class="form-select" required>
-                                        <option value="1">Ya, tampilkan</option>
-                                        <option value="0">Tidak</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3 d-flex gap-1">
-                                    <button type="submit" class="btn btn-success" id="btnTplTunjanganSubmit">
-                                        <i class="bx bx-save me-1"></i> Simpan
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary d-none" id="btnTplTunjanganCancel">Batal</button>
-                                </div>
-                            </form>
-                            <div class="table-responsive mt-2">
-                                <table class="table table-bordered table-sm w-100">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th class="text-center" style="width:5%">No</th>
-                                            <th class="text-center">Nama Tunjangan</th>
-                                            <th class="text-center">Jenis</th>
-                                            <th class="text-center">Jumlah (Rp)</th>
-                                            <th class="text-center">Tampil</th>
-                                            <th class="text-center" style="width:15%">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyTplTunjangan"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="tab-pane fade" id="tab-et-potongan" role="tabpanel" aria-labelledby="tab-et-potongan-tab">
-                            <h6 class="fw-bold"><i class="fa fa-scissors"></i> Potongan</h6>
-                            <form id="formTplPotongan" class="row g-2 align-items-end">
-                                <input type="hidden" name="id_template" id="tplPotonganTemplateId">
-                                <input type="hidden" name="id_potongan" id="tplPotonganId">
-                                <div class="col-md-6">
-                                    <label class="form-label">Nama Potongan</label>
-                                    <select name="jenis_potongan" id="tplPotonganNama" class="form-select" required>
-                                        <option value="">-- Pilih Potongan --</option>
-                                        <option value="PPH21">PPH21</option>
-                                        <option value="BPJS KETENAGAKERJAAN 2%">BPJS KETENAGAKERJAAN 2%</option>
-                                        <option value="BPJS KESEHATAN 1%">BPJS KESEHATAN 1%</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Jumlah (Rp)</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
-                                        <input type="text" name="jumlah_potongan" id="tplPotonganJumlah" class="form-control nominal-mask" placeholder="0" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 d-flex gap-1">
-                                    <button type="submit" class="btn btn-success" id="btnTplPotonganSubmit">
-                                        <i class="bx bx-save me-1"></i> Simpan
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary d-none" id="btnTplPotonganCancel">Batal</button>
-                                </div>
-                            </form>
-                            <div class="table-responsive mt-2">
-                                <table class="table table-bordered table-sm w-100">
-                                    <thead class="table-info">
-                                        <tr>
-                                            <th class="text-center" style="width:5%">No</th>
-                                            <th class="text-center">Nama Potongan</th>
-                                            <th class="text-center">Jumlah (Rp)</th>
-                                            <th class="text-center" style="width:15%">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyTplPotongan"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                                            </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -487,7 +295,7 @@
             document.querySelectorAll(".chk-jabatan-edit").forEach(c => c.checked = this.checked);
         });
 
-        // Buka modal edit template (template, nilai kontrak, tunjangan, potongan) dengan prefill
+        // Buka modal edit template (template + nilai kontrak) dengan prefill
         document.addEventListener("click", e => {
             const btn = e.target.closest(".btnEditTemplate");
             if (!btn) return;
@@ -500,24 +308,12 @@
             const formD = document.getElementById("formEditDetail");
             formD.querySelector("input[name=id_template]").value = btn.dataset.id;
             formD.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gajiPokok);
-            formD.querySelector("input[name=upah_lembur]").value = formatIndo(btn.dataset.upahLembur);
-            formD.querySelector("input[name=potongan_izin]").value = formatIndo(btn.dataset.potonganIzin);
-            formD.querySelector("input[name=potongan_mangkir]").value = formatIndo(btn.dataset.potonganMangkir);
             const fmtRpNow = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
             const infoNow = document.getElementById("infoNilaiSekarang");
             if (infoNow) {
                 infoNow.querySelector("span").innerHTML =
-                    `Nilai saat ini: Gaji <strong>${fmtRpNow(btn.dataset.gajiPokok)}</strong> • ` +
-                    `Lembur <strong>${fmtRpNow(btn.dataset.upahLembur)}</strong> • ` +
-                    `Pot Izin <strong>${fmtRpNow(btn.dataset.potonganIzin)}</strong> • ` +
-                    `Pot Mangkir <strong>${fmtRpNow(btn.dataset.potonganMangkir)}</strong>`;
+                    `Nilai saat ini: Gaji <strong>${fmtRpNow(btn.dataset.gajiPokok)}</strong> (harian)`;
             }
-            document.getElementById("tplTunjanganTemplateId").value = btn.dataset.id;
-            document.getElementById("tplPotonganTemplateId").value = btn.dataset.id;
-            resetTplTunjanganForm();
-            resetTplPotonganForm();
-            loadTplTunjangan();
-            loadTplPotongan();
             const tabTpl = document.querySelector('#tabEditTemplate button[data-bs-target="#tab-et-template"]');
             if (tabTpl) bootstrap.Tab.getOrCreateInstance(tabTpl).show();
             new bootstrap.Modal(document.getElementById("modalEditTemplate")).show();
@@ -581,11 +377,7 @@
                             : '<span class="badge bg-secondary">Tanpa jabatan</span>';
                         const d = r.detail || {};
                         const fmtRp = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
-                        const nilai = `<small>Gaji: <strong>${fmtRp(d.gaji_pokok)}</strong><br>` +
-                            `Lembur: <strong>${fmtRp(d.upah_lembur)}</strong><br>` +
-                            `Pot Izin: <strong>${fmtRp(d.potongan_izin)}</strong><br>` +
-                            `Pot Mangkir: <strong>${fmtRp(d.potongan_mangkir)}</strong><br>` +
-                            `<span class="text-muted">Tunjangan: ${r.jml_tunjangan ?? 0} • Potongan: ${r.jml_potongan ?? 0}</span></small>`;
+                        const nilai = `<small>Gaji: <strong>${fmtRp(d.gaji_pokok)}</strong> (harian)</small>`;
                         return `<tr>
                             <td class="text-center">${i + 1}</td>
                             <td><strong>${escHtml(r.nama_kontrak || "-")}</strong></td>
@@ -600,10 +392,7 @@
                                     data-file="${escHtml(r.nama_asli || r.file)}"
                                     data-jabatan-ids="${(r.jabatan || []).map(j => j.id_jabatan).join(",")}"
                                     data-gaji-pokok="${escHtml(d.gaji_pokok ?? 0)}"
-                                    data-upah-lembur="${escHtml(d.upah_lembur ?? 0)}"
-                                    data-potongan-izin="${escHtml(d.potongan_izin ?? 0)}"
-                                    data-potongan-mangkir="${escHtml(d.potongan_mangkir ?? 0)}"
-                                    title="Edit template, nilai & tunjangan"><i class="bx bx-edit me-1"></i>Edit</button>
+                                    title="Edit template & nilai"><i class="bx bx-edit me-1"></i>Edit</button>
                                 <button type="button" class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
                                     data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}" title="Hapus template">
                                     <i class="bx bx-trash me-1"></i>Hapus
@@ -664,275 +453,8 @@
             }
         });
 
-        // --- Tunjangan milik detail kontrak ---
-        const fmtModalRp = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
-
-        function resetTplTunjanganForm() {
-            document.getElementById("tplTunjanganId").value = "";
-            document.getElementById("tplTunjanganNama").value = "";
-            document.getElementById("tplTunjanganJenis").value = "tetap";
-            document.getElementById("tplTunjanganJumlah").value = "";
-            document.getElementById("tplTunjanganTampil").value = "1";
-            document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Simpan';
-            document.getElementById("btnTplTunjanganCancel").classList.add("d-none");
-        }
-
-        function loadTplTunjangan() {
-            const id = document.getElementById("tplTunjanganTemplateId").value;
-            if (!id) return;
-            const fd = new FormData();
-            fd.append("action", "list_tunjangan");
-            fd.append("id_template", id);
-            fetch(API, { method: "POST", body: fd })
-                .then(res => res.json())
-                .then(res => {
-                    const tbody = document.getElementById("tbodyTplTunjangan");
-                    if (res.status !== "success" || !res.data.length) {
-                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada tunjangan.</td></tr>`;
-                        return;
-                    }
-                    tbody.innerHTML = res.data.map((t, i) => `<tr>
-                        <td class="text-center">${i + 1}</td>
-                        <td>${escHtml(t.nama_tunjangan)}</td>
-                        <td class="text-center">${t.jenis_tunjangan === "tidak_tetap"
-                            ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
-                            : '<span class="badge bg-success">Tetap</span>'}</td>
-                        <td class="text-end">${fmtModalRp(t.jumlah_tunjangan)}${["tunjangan makan", "tunjangan uang makan"].includes(String(t.nama_tunjangan || "").toLowerCase().trim()) ? "/hari" : ""}</td>
-                        <td class="text-center">${String(t.tampil_template ?? "1") === "0"
-                            ? '<span class="badge bg-secondary">Tidak</span>'
-                            : '<span class="badge bg-info text-dark">Ya</span>'}</td>
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center gap-1">
-                            <button type="button" class="btn btn-sm btn-warning btnTplTunjanganEdit"
-                                data-id="${t.id_tunjangan}" data-nama="${escHtml(t.nama_tunjangan)}"
-                                data-jenis="${escHtml(t.jenis_tunjangan || "tetap")}"
-                                data-jumlah="${escHtml(t.jumlah_tunjangan)}"
-                                data-tampil="${escHtml(t.tampil_template ?? "1")}"><i class="bx bx-edit me-1"></i>Edit</button>
-                            <button type="button" class="btn btn-sm btn-danger btnTplTunjanganDel"
-                                data-id="${t.id_tunjangan}"><i class="bx bx-trash me-1"></i>Hapus</button>
-                            </div>
-                        </td>
-                    </tr>`).join("");
-                })
-                .catch(() => {
-                    document.getElementById("tbodyTplTunjangan").innerHTML =
-                        `<tr><td colspan="6" class="text-center text-danger">Gagal memuat.</td></tr>`;
-                });
-        }
-
-        // --- Potongan milik detail kontrak ---
-        function resetTplPotonganForm() {
-            document.getElementById("tplPotonganId").value = "";
-            document.getElementById("tplPotonganNama").value = "";
-            document.getElementById("tplPotonganJumlah").value = "";
-            document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Simpan';
-            document.getElementById("btnTplPotonganCancel").classList.add("d-none");
-        }
-
-        function loadTplPotongan() {
-            const id = document.getElementById("tplPotonganTemplateId").value;
-            if (!id) return;
-            const fd = new FormData();
-            fd.append("action", "list_potongan");
-            fd.append("id_template", id);
-            fetch(API, { method: "POST", body: fd })
-                .then(res => res.json())
-                .then(res => {
-                    const tbody = document.getElementById("tbodyTplPotongan");
-                    if (res.status !== "success" || !res.data.length) {
-                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Belum ada potongan.</td></tr>`;
-                        return;
-                    }
-                    tbody.innerHTML = res.data.map((p, i) => `<tr>
-                        <td class="text-center">${i + 1}</td>
-                        <td>${escHtml(p.jenis_potongan)}</td>
-                        <td class="text-end">${fmtModalRp(p.jumlah_potongan)}</td>
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center gap-1">
-                            <button type="button" class="btn btn-sm btn-warning btnTplPotonganEdit"
-                                data-id="${p.id_potongan}" data-nama="${escHtml(p.jenis_potongan)}"
-                                data-jumlah="${escHtml(p.jumlah_potongan)}"><i class="bx bx-edit me-1"></i>Edit</button>
-                            <button type="button" class="btn btn-sm btn-danger btnTplPotonganDel"
-                                data-id="${p.id_potongan}"><i class="bx bx-trash me-1"></i>Hapus</button>
-                            </div>
-                        </td>
-                    </tr>`).join("");
-                })
-                .catch(() => {
-                    document.getElementById("tbodyTplPotongan").innerHTML =
-                        `<tr><td colspan="4" class="text-center text-danger">Gagal memuat.</td></tr>`;
-                });
-        }
-
-        document.addEventListener("click", e => {
-            const btnET = e.target.closest(".btnTplTunjanganEdit");
-            if (btnET) {
-                document.getElementById("tplTunjanganId").value = btnET.dataset.id;
-                document.getElementById("tplTunjanganNama").value = btnET.dataset.nama || "";
-                document.getElementById("tplTunjanganJenis").value = btnET.dataset.jenis || "tetap";
-                document.getElementById("tplTunjanganJumlah").value = formatIndo(btnET.dataset.jumlah);
-                document.getElementById("tplTunjanganTampil").value = String(btnET.dataset.tampil ?? "1") === "0" ? "0" : "1";
-                document.getElementById("btnTplTunjanganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Update';
-                document.getElementById("btnTplTunjanganCancel").classList.remove("d-none");
-                return;
-            }
-            const btnEP = e.target.closest(".btnTplPotonganEdit");
-            if (btnEP) {
-                document.getElementById("tplPotonganId").value = btnEP.dataset.id;
-                document.getElementById("tplPotonganNama").value = btnEP.dataset.nama || "";
-                document.getElementById("tplPotonganJumlah").value = formatIndo(btnEP.dataset.jumlah);
-                document.getElementById("btnTplPotonganSubmit").innerHTML = '<i class="bx bx-save me-1"></i> Update';
-                document.getElementById("btnTplPotonganCancel").classList.remove("d-none");
-                return;
-            }
-        });
-
-        document.addEventListener("click", async e => {
-            const btnDT = e.target.closest(".btnTplTunjanganDel");
-            if (btnDT) {
-                if (await confirmDialog("Yakin hapus tunjangan ini?")) {
-                    const fd = new FormData();
-                    fd.append("action", "delete_tunjangan");
-                    fd.append("id_template", document.getElementById("tplTunjanganTemplateId").value);
-                    fd.append("id_tunjangan", btnDT.dataset.id);
-                    const res = await (await fetch(API, { method: "POST", body: fd })).json();
-                    showToast(res.msg || "Selesai.", res.status === "success" ? "success" : "error");
-                    if (res.status === "success") { loadTplTunjangan(); loadTable(); }
-                }
-                return;
-            }
-            const btnDP = e.target.closest(".btnTplPotonganDel");
-            if (btnDP) {
-                if (await confirmDialog("Yakin hapus potongan ini?")) {
-                    const fd = new FormData();
-                    fd.append("action", "delete_potongan");
-                    fd.append("id_template", document.getElementById("tplPotonganTemplateId").value);
-                    fd.append("id_potongan", btnDP.dataset.id);
-                    const res = await (await fetch(API, { method: "POST", body: fd })).json();
-                    showToast(res.msg || "Selesai.", res.status === "success" ? "success" : "error");
-                    if (res.status === "success") { loadTplPotongan(); loadTable(); }
-                }
-            }
-        });
-
-        document.getElementById("formTplTunjangan").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const isEdit = document.getElementById("tplTunjanganId").value !== "";
-            const fd = new FormData(this);
-            fd.append("action", "save_tunjangan");
-            try {
-                const res = await (await fetch(API, { method: "POST", body: fd })).json();
-                if (res.status === "success") {
-                    showToast(res.msg || "Berhasil.", "success");
-                    resetTplTunjanganForm();
-                    loadTplTunjangan();
-                    loadTable();
-                } else {
-                    showToast(res.msg || "Gagal menyimpan.", "error");
-                }
-            } catch (err) {
-                showToast("Terjadi kesalahan sistem.", "error");
-            }
-        });
-
-        document.getElementById("formTplPotongan").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const fd = new FormData(this);
-            fd.append("action", "save_potongan");
-            try {
-                const res = await (await fetch(API, { method: "POST", body: fd })).json();
-                if (res.status === "success") {
-                    showToast(res.msg || "Berhasil.", "success");
-                    resetTplPotonganForm();
-                    loadTplPotongan();
-                    loadTable();
-                } else {
-                    showToast(res.msg || "Gagal menyimpan.", "error");
-                }
-            } catch (err) {
-                showToast("Terjadi kesalahan sistem.", "error");
-            }
-        });
-
-        document.getElementById("btnTplTunjanganCancel").addEventListener("click", resetTplTunjanganForm);
-        document.getElementById("btnTplPotonganCancel").addEventListener("click", resetTplPotonganForm);
-
-        // --- BARIS TUNJANGAN & POTONGAN PADA MODAL UPLOAD ---
-        // Ikut terkirim bersama form (array), disimpan dalam transaksi upload yang sama.
-        function addUploadRowTunjangan(d) {
-            d = d || {};
-            const tb = document.getElementById("tbodyUploadTunjangan");
-            if (!tb) return;
-            const jenis = d.jenis_tunjangan === "tidak_tetap" ? "tidak_tetap" : "tetap";
-            const tampil = String(d.tampil_template ?? "1") === "0" ? "0" : "1";
-            const daftarNama = ["Tunjangan Daerah", "Tunjangan Hidup", "Tunjangan Makan",
-                "Tunjangan Skill", "Bonus Kehadiran", "Tunjangan Posisi"];
-            const namaDipilih = d.nama_tunjangan || "";
-            const tr = document.createElement("tr");
-            tr.innerHTML =
-                `<td><select name="tunjangan_nama[]" class="form-select form-select-sm">` +
-                `<option value="">-- Pilih --</option>` +
-                daftarNama.map(nm => `<option value="${nm}"${nm === namaDipilih ? " selected" : ""}>${nm}</option>`).join("") +
-                `</select></td>` +
-                `<td><select name="tunjangan_jenis[]" class="form-select form-select-sm">` +
-                `<option value="tetap"${jenis === "tetap" ? " selected" : ""}>Tetap</option>` +
-                `<option value="tidak_tetap"${jenis === "tidak_tetap" ? " selected" : ""}>Tidak Tetap</option></select></td>` +
-                `<td><input type="text" name="tunjangan_jumlah[]" class="form-control form-control-sm nominal-mask" placeholder="0"></td>` +
-                `<td><select name="tunjangan_tampil[]" class="form-select form-select-sm">` +
-                `<option value="1"${tampil === "1" ? " selected" : ""}>Ya</option>` +
-                `<option value="0"${tampil === "0" ? " selected" : ""}>Tidak</option></select></td>` +
-                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="bx bx-trash me-1"></i>Hapus</button></td>`;
-            tb.appendChild(tr);
-        }
-        function addUploadRowPotongan(d) {
-            d = d || {};
-            const tb = document.getElementById("tbodyUploadPotongan");
-            if (!tb) return;
-            const daftarPot = ["BPJS KESEHATAN 1%", "BPJS KETENAGAKERJAAN 2%", "PPH21"];
-            const potDipilih = d.jenis_potongan || "";
-            const tr = document.createElement("tr");
-            tr.innerHTML =
-                `<td><select name="potongan_nama[]" class="form-select form-select-sm">` +
-                `<option value="">-- Pilih --</option>` +
-                daftarPot.map(nm => `<option value="${nm}"${nm === potDipilih ? " selected" : ""}>${nm}</option>`).join("") +
-                `</select></td>` +
-                `<td><input type="text" name="potongan_jumlah[]" class="form-control form-control-sm nominal-mask" value="${(d.jumlah_potongan ?? "") === "" ? "" : (typeof formatIndo === "function" ? formatIndo(d.jumlah_potongan) : d.jumlah_potongan)}" placeholder="0"></td>` +
-                `<td class="text-center"><button type="button" class="btn btn-danger btn-sm btnDelUploadRow" title="Hapus baris"><i class="bx bx-trash me-1"></i>Hapus</button></td>`;
-            tb.appendChild(tr);
-        }
-        function resetUploadTpRows() {
-            const tbT = document.getElementById("tbodyUploadTunjangan");
-            const tbP = document.getElementById("tbodyUploadPotongan");
-            if (tbT) tbT.innerHTML = "";
-            if (tbP) tbP.innerHTML = "";
-            const tabFirst = document.querySelector('#tabUploadTemplate button[data-bs-target="#tab-up-template"]');
-            if (tabFirst) bootstrap.Tab.getOrCreateInstance(tabFirst).show();
-        }
-        // Baris bawaan agar pengguna tinggal mengatur nilainya (baris bisa dihapus bila tak perlu).
-        function seedUploadTpRows() {
-            ["Tunjangan Daerah", "Tunjangan Hidup", "Tunjangan Makan", "Tunjangan Skill",
-             "Bonus Kehadiran", "Tunjangan Posisi"].forEach(nm => {
-                addUploadRowTunjangan({ nama_tunjangan: nm, jenis_tunjangan: nm === "Bonus Kehadiran" ? "tidak_tetap" : "tetap" });
-            });
-            [
-                { jenis_potongan: "PPH21", jumlah_potongan: 0 },
-                { jenis_potongan: "BPJS KETENAGAKERJAAN 2%", jumlah_potongan: 110644 },
-                { jenis_potongan: "BPJS KESEHATAN 1%", jumlah_potongan: 36881 },
-            ].forEach(d => {
-                addUploadRowPotongan(d);
-            });
-        }
-        document.addEventListener("click", e => {
-            const del = e.target.closest(".btnDelUploadRow");
-            if (del) { del.closest("tr").remove(); return; }
-            if (e.target.closest("#btnUploadRowTunjangan")) { addUploadRowTunjangan(); return; }
-            if (e.target.closest("#btnUploadRowPotongan")) { addUploadRowPotongan(); return; }
-        });
-
         document.getElementById("btnTambahTemplate").addEventListener("click", () => {
             document.getElementById("formUploadTemplate").reset();
-            resetUploadTpRows();
-            seedUploadTpRows();
             loadJabatan();
             new bootstrap.Modal(document.getElementById("modalUploadTemplate")).show();
         });
@@ -953,9 +475,7 @@
                 const res = await fetch(API, { method: "POST", body: fd });
                 const data = await res.json();
                 if (data.status === "success") {
-                    const extra = ((data.tunjangan || 0) + (data.potongan || 0) > 0) ?
-                        ` (${data.tunjangan || 0} tunjangan, ${data.potongan || 0} potongan)` : "";
-                    showToast((data.msg || "Template berhasil diupload.") + extra, "success");
+                    showToast(data.msg || "Template berhasil diupload.", "success");
                     bootstrap.Modal.getInstance(document.getElementById("modalUploadTemplate")).hide();
                     loadTable();
                 } else {

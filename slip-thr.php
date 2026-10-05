@@ -237,8 +237,9 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
                 <?php
                 // Ambil daftar tahun unik dari tb_thr
                 $sqlTahun = $koneksi->query("SELECT DISTINCT periode FROM tb_thr ORDER BY periode DESC");
-                if ($sqlTahun && $sqlTahun->num_rows > 0) {
-                    while ($t = $sqlTahun->fetch_assoc()) {
+                $rowsTahun = $sqlTahun ? $sqlTahun->fetchAll() : [];
+                if (count($rowsTahun) > 0) {
+                    foreach ($rowsTahun as $t) {
                         $thn = $t['periode'];
                         $sel = ($thn == $tahun_aktif) ? 'selected' : '';
                         echo "<option value='$thn' $sel>$thn</option>";
@@ -256,12 +257,13 @@ $tahun_aktif = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
             <option value="">-- Pilih Karyawan --</option>
             <?php
             // Ambil daftar karyawan yang HANYA mendapat THR di tahun tersebut
-            $sqlKaryawan = $koneksi->query("SELECT r.id_karyawan, k.nik_karyawan, k.nama_lengkap 
-                                            FROM tb_thr r 
-                                            JOIN tb_karyawan k ON r.id_karyawan = k.id_karyawan 
-                                            WHERE r.periode = '$tahun_aktif' 
+            $stKaryawan = $koneksi->prepare("SELECT r.id_karyawan, k.nik_karyawan, k.nama_lengkap
+                                            FROM tb_thr r
+                                            JOIN tb_karyawan k ON r.id_karyawan = k.id_karyawan
+                                            WHERE r.periode = ?
                                             ORDER BY k.nama_lengkap ASC");
-            while ($k = $sqlKaryawan->fetch_assoc()) {
+            $stKaryawan->execute([$tahun_aktif]);
+            while ($k = $stKaryawan->fetch()) {
                 $val = implode('|', [$k['id_karyawan'], $k['nik_karyawan'], $k['nama_lengkap']]);
                 echo '<option value="' . htmlspecialchars($val) . '">' . htmlspecialchars($k['nik_karyawan'] . ' - ' . $k['nama_lengkap']) . '</option>';
             }

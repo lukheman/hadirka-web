@@ -190,19 +190,19 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     // ================================
     // GET EMPLOYEE ID BY NIK
     // ================================
-    $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE nik_karyawan = ?");
-    
-    if (!$stmtK) {
+    try {
+        $stmtK = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE nik_karyawan = ?");
+        $stmtK->execute([$nik_karyawan]);
+        $rowK = $stmtK->fetch();
+    } catch (PDOException $e) {
+        error_log('csv-rapel prepare karyawan: ' . $e->getMessage());
         $errorCount++;
-        $errors[] = "Baris $i: Error prepare statement - " . $koneksi->error;
+        $errors[] = "Baris $i: Gagal menyiapkan query karyawan.";
         continue;
     }
-    
-    $stmtK->bind_param("s", $nik_karyawan);
-    $stmtK->execute();
-    $stmtK->bind_result($id_karyawan, $nama_lengkap);
-    $stmtK->fetch();
-    $stmtK->close();
+
+    $id_karyawan = $rowK['id_karyawan'] ?? null;
+    $nama_lengkap = $rowK['nama_lengkap'] ?? null;
 
     // Check if employee exists
     if (!$id_karyawan) {
@@ -309,38 +309,27 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
     // ================================
     // CHECK IF DATA EXISTS (Cek Kombinasi ID, Tgl, dan Keterangan)
     // ================================
-    $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?");
-    
-    if (!$stmtCheck) {
+    try {
+        $stmtCheck = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?");
+        $stmtCheck->execute([$id_karyawan, $tgl_rapel, $keterangan]);
+        $exists = (bool)$stmtCheck->fetch();
+    } catch (PDOException $e) {
+        error_log('csv-rapel check: ' . $e->getMessage());
         $errorCount++;
-        $errors[] = "Baris $i: Error prepare check statement - " . $koneksi->error;
+        $errors[] = "Baris $i: Gagal memeriksa data rapel.";
         continue;
     }
-    
-    $stmtCheck->bind_param("iss", $id_karyawan, $tgl_rapel, $keterangan);
-    $stmtCheck->execute();
-    $stmtCheck->store_result();
 
-    if ($stmtCheck->num_rows == 0) {
+    if (!$exists) {
         // ================================
         // INSERT NEW DATA
         // ================================
-        $stmtCheck->close();
-        
-        $stmtInsert = $koneksi->prepare("
-            INSERT INTO tb_rapel (id_karyawan, tgl_rapel, nominal_rapel, ket_rapel)
-            VALUES (?, ?, ?, ?)
-        ");
-        
-        if (!$stmtInsert) {
-            $errorCount++;
-            $errors[] = "Baris $i: Error prepare insert statement - " . $koneksi->error;
-            continue;
-        }
-        
-        $stmtInsert->bind_param("isds", $id_karyawan, $tgl_rapel, $nominal_rapel, $keterangan);
-        
-        if ($stmtInsert->execute()) {
+        try {
+            $stmtInsert = $koneksi->prepare("
+                INSERT INTO tb_rapel (id_karyawan, tgl_rapel, nominal_rapel, ket_rapel)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmtInsert->execute([$id_karyawan, $tgl_rapel, $nominal_rapel, $keterangan]);
             $successCount++;
             $insertCount++;
             $logData[] = [
@@ -351,33 +340,23 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
                 'tgl' => $tgl_rapel,
                 'nominal' => $nominal_rapel
             ];
-        } else {
+        } catch (PDOException $e) {
+            error_log('csv-rapel insert: ' . $e->getMessage());
             $errorCount++;
-            $errors[] = "Baris $i: Gagal menyimpan data untuk NIK $nik_karyawan - " . $stmtInsert->error;
+            $errors[] = "Baris $i: Gagal menyimpan data untuk NIK $nik_karyawan.";
         }
-        $stmtInsert->close();
-        
+
     } else {
         // ================================
         // UPDATE EXISTING DATA
         // ================================
-        $stmtCheck->close();
-        
-        $stmtUpdate = $koneksi->prepare("
-            UPDATE tb_rapel 
-            SET nominal_rapel = ? 
-            WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?
-        ");
-        
-        if (!$stmtUpdate) {
-            $errorCount++;
-            $errors[] = "Baris $i: Error prepare update statement - " . $koneksi->error;
-            continue;
-        }
-        
-        $stmtUpdate->bind_param("diss", $nominal_rapel, $id_karyawan, $tgl_rapel, $keterangan);
-        
-        if ($stmtUpdate->execute()) {
+        try {
+            $stmtUpdate = $koneksi->prepare("
+                UPDATE tb_rapel
+                SET nominal_rapel = ?
+                WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?
+            ");
+            $stmtUpdate->execute([$nominal_rapel, $id_karyawan, $tgl_rapel, $keterangan]);
             $successCount++;
             $updateCount++;
             $logData[] = [
@@ -388,11 +367,11 @@ for ($i = $startRow; $i <= count($data) && $processedRows < $maxProcessRows; $i+
                 'tgl' => $tgl_rapel,
                 'nominal' => $nominal_rapel
             ];
-        } else {
+        } catch (PDOException $e) {
+            error_log('csv-rapel update: ' . $e->getMessage());
             $errorCount++;
-            $errors[] = "Baris $i: Gagal mengupdate data untuk NIK $nik_karyawan - " . $stmtUpdate->error;
+            $errors[] = "Baris $i: Gagal mengupdate data untuk NIK $nik_karyawan.";
         }
-        $stmtUpdate->close();
     }
 }
 
@@ -448,9 +427,4 @@ echo json_encode([
     'log_details' => $logData,
     'processed_rows' => $processedRows
 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-
-// Close connection
-if (isset($koneksi)) {
-    $koneksi->close();
-}
 ?>

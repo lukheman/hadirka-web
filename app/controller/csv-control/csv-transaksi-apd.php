@@ -35,7 +35,11 @@ try {
     $spreadsheet = IOFactory::load($file);
     $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
+
+    $stmtKaryawan = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
+    $stmtApd = $koneksi->prepare("SELECT id_apd FROM master_apd WHERE LOWER(nama_apd) = LOWER(?) AND status_aktif = 'aktif'");
+    $stmtInsert = $koneksi->prepare("INSERT INTO pengambilan_apd (id_karyawan, id_apd, tanggal_pengambilan, jumlah) VALUES (?, ?, ?, ?)");
     
     foreach ($sheet as $rowNum => $row) {
         if ($rowNum == 1) continue; // Skip baris pertama (Header)
@@ -68,25 +72,27 @@ try {
 
         try {
             // 1. Cari ID Karyawan berdasarkan NIK
-            $cekKaryawan = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = '$nik_karyawan'");
-            if ($cekKaryawan->num_rows == 0) {
+            $stmtKaryawan->execute([$nik_karyawan]);
+            $rowKaryawan = $stmtKaryawan->fetch();
+            if (!$rowKaryawan) {
                 throw new Exception("NIK Karyawan '$nik_karyawan' tidak ditemukan.");
             }
-            $id_karyawan = $cekKaryawan->fetch_assoc()['id_karyawan'];
+            $id_karyawan = $rowKaryawan['id_karyawan'];
 
             // 2. Cari ID APD berdasarkan Nama APD (Case Insensitive)
-            $cekApd = $koneksi->query("SELECT id_apd FROM master_apd WHERE LOWER(nama_apd) = LOWER('$nama_apd') AND status_aktif = 'aktif'");
-            if ($cekApd->num_rows == 0) {
+            $stmtApd->execute([$nama_apd]);
+            $rowApd = $stmtApd->fetch();
+            if (!$rowApd) {
                 throw new Exception("APD '$nama_apd' tidak ditemukan atau tidak aktif.");
             }
-            $id_apd = $cekApd->fetch_assoc()['id_apd'];
+            $id_apd = $rowApd['id_apd'];
 
             // 3. Simpan ke Database
-            $sqlInsert = "INSERT INTO pengambilan_apd (id_karyawan, id_apd, tanggal_pengambilan, jumlah) 
-                          VALUES ('$id_karyawan', '$id_apd', '$tanggal', '$jumlah')";
-            
-            if (!$koneksi->query($sqlInsert)) {
-                throw new Exception("Query Insert Gagal: " . $koneksi->error);
+            try {
+                $stmtInsert->execute([$id_karyawan, $id_apd, $tanggal, $jumlah]);
+            } catch (PDOException $e) {
+                error_log('csv-transaksi-apd insert: ' . $e->getMessage());
+                throw new Exception("Gagal menyimpan data pengambilan APD.");
             }
 
             $response["berhasil"]++;
@@ -100,8 +106,9 @@ try {
     $response["success"] = true;
 
 } catch (Exception $e) {
-    $koneksi->rollback();
-    $response["error"] = "Sistem gagal memproses file Excel: " . $e->getMessage();
+    error_log('csv-transaksi-apd: ' . $e->getMessage());
+    if ($koneksi->inTransaction()) $koneksi->rollBack();
+    $response["error"] = "Sistem gagal memproses file Excel.";
 }
 
 echo json_encode($response);

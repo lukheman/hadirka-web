@@ -2,14 +2,16 @@
 require_once __DIR__ . '/../../config/koneksi.php';
 
 // 1. Tangkap parameter bulan dari frontend
-$bulan = isset($_GET['bulan']) ? mysqli_real_escape_string($koneksi, $_GET['bulan']) : '';
+$bulan = isset($_GET['bulan']) ? $_GET['bulan'] : '';
 
 // 2. Siapkan klausa WHERE jika parameter bulan tidak kosong
 $whereClause = "";
+$params = [];
 if (!empty($bulan)) {
     // Parameter bulan berformat YYYY-MM (contoh: 2024-03)
     // Kita gunakan LIKE untuk mencari tanggal yang berawalan tahun-bulan tersebut
-    $whereClause = " WHERE p.tgl_pinjaman LIKE '$bulan%' ";
+    $whereClause = " WHERE p.tgl_pinjaman LIKE ? ";
+    $params[] = $bulan . '%';
 }
 
 // 3. Sisipkan $whereClause ke dalam query utama (DAN FIX BUG RELASI GANDA & DATA HILANG)
@@ -23,15 +25,17 @@ $query = "SELECT p.id_pinjaman, k.id_karyawan, k.nik_karyawan, k.nama_lengkap, p
           GROUP BY p.id_pinjaman
           ORDER BY p.tgl_pinjaman DESC, p.tgl_bayar_pinjaman ASC";
 
-$result = mysqli_query($koneksi, $query);
+$stPinjaman = $koneksi->prepare($query);
+$stPinjaman->execute($params);
+$rowsPinjaman = $stPinjaman->fetchAll();
 $no = 1;
 
 // 4. Jika data kosong setelah difilter, tampilkan pesan tabel kosong
-if (mysqli_num_rows($result) == 0) {
+if (count($rowsPinjaman) == 0) {
     // Biarkan kosong, DataTables yang akan memunculkan pesan "Data tidak ditemukan"
     echo "";
 } else {
-    while ($row = mysqli_fetch_assoc($result)) {
+    foreach ($rowsPinjaman as $row) {
         echo "<tr>";
         echo "<td class='text-center'>{$no}</td>";
         echo "<td>{$row['nik_karyawan']}</td>";

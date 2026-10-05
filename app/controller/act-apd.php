@@ -5,34 +5,48 @@ include "../config/koneksi.php";
 $action = $_GET['action'] ?? '';
 
 if ($action == 'get-single') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $res = mysqli_query($koneksi, "SELECT * FROM master_apd WHERE id_apd = '$id'");
-    echo json_encode(mysqli_fetch_assoc($res));
+    $id = $_GET['id'];
+    $res = $koneksi->prepare("SELECT * FROM master_apd WHERE id_apd = ?");
+    $res->execute([$id]);
+    $row = $res->fetch();
+    echo json_encode($row === false ? null : $row);
     exit;
 }
 
 if ($action == 'save') {
     $id      = $_POST['id_apd'];
-    $nama    = mysqli_real_escape_string($koneksi, $_POST['nama_apd']);
-    $kat     = mysqli_real_escape_string($koneksi, $_POST['kategori_apd']);
-    $desc    = mysqli_real_escape_string($koneksi, $_POST['deskripsi']);
+    $nama    = $_POST['nama_apd'];
+    $kat     = $_POST['kategori_apd'];
+    $desc    = $_POST['deskripsi'];
     $masa    = $_POST['masa_pakai_hari'];
     $stok    = (int)$_POST['stok'];
     $status  = $_POST['status_aktif'];
 
-    if (empty($id)) {
-        $sql = "INSERT INTO master_apd (nama_apd, kategori_apd, deskripsi, masa_pakai_hari, stok, status_aktif) 
-                VALUES ('$nama', '$kat', '$desc', '$masa', '$stok', '$status')";
-    } else {
-        $sql = "UPDATE master_apd SET nama_apd='$nama', kategori_apd='$kat', deskripsi='$desc', 
-                masa_pakai_hari='$masa', stok='$stok', status_aktif='$status' WHERE id_apd='$id'";
+    try {
+        if (empty($id)) {
+            $st = $koneksi->prepare("INSERT INTO master_apd (nama_apd, kategori_apd, deskripsi, masa_pakai_hari, stok, status_aktif)
+                    VALUES (?, ?, ?, ?, ?, ?)");
+            $st->execute([$nama, $kat, $desc, $masa, $stok, $status]);
+        } else {
+            $st = $koneksi->prepare("UPDATE master_apd SET nama_apd=?, kategori_apd=?, deskripsi=?,
+                    masa_pakai_hari=?, stok=?, status_aktif=? WHERE id_apd=?");
+            $st->execute([$nama, $kat, $desc, $masa, $stok, $status, $id]);
+        }
+        echo json_encode(['status' => 'success']);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan data.']);
     }
-
-    if (mysqli_query($koneksi, $sql)) echo json_encode(['status' => 'success']);
 }
 
 if ($action == 'delete') {
     $id = $_GET['id'];
-    mysqli_query($koneksi, "DELETE FROM master_apd WHERE id_apd = '$id'");
-    echo json_encode(['status' => 'success']);
+    try {
+        $st = $koneksi->prepare("DELETE FROM master_apd WHERE id_apd = ?");
+        $st->execute([$id]);
+        echo json_encode(['status' => 'success']);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus data.']);
+    }
 }

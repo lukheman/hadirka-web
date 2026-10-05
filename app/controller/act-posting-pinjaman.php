@@ -12,35 +12,38 @@ if (empty($bulan)) {
 
 try {
     // 1. Ambil ID Akun 1301 dan 1001 (Piutang Pinjaman Karyawan & Kas)
-    $qAkun = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1301' LIMIT 1");
-    $id_piutang = mysqli_fetch_assoc($qAkun)['id_kategori'] ?? null;
+    $qAkun = $koneksi->query("SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1301' LIMIT 1");
+    $rowAkun = $qAkun->fetch();
+    $id_piutang = $rowAkun['id_kategori'] ?? null;
 
-    $qKas = mysqli_query($koneksi, "SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
-    $id_kas = mysqli_fetch_assoc($qKas)['id_kategori'] ?? null;
+    $qKas = $koneksi->query("SELECT id_kategori FROM tb_kategori_keuangan WHERE kode_akun = '1001' LIMIT 1");
+    $rowKas = $qKas->fetch();
+    $id_kas = $rowKas['id_kategori'] ?? null;
 
     if (!$id_piutang) {
         throw new Exception("Akun Piutang Pinjaman Karyawan (1301) belum diatur di master kategori.");
     }
 
-    mysqli_begin_transaction($koneksi);
+    $koneksi->beginTransaction();
 
     // 2. Bersihkan data postingan transaksi (Debit dan Kredit) LAMA di bulan ini (Mencegah Duplikat saat Posting Ulang)
-    $delQuery = "DELETE FROM tb_transaksi_keuangan 
-             WHERE keterangan LIKE 'Auto-Posting Pencairan Pinjaman:%' 
-             AND DATE_FORMAT(tanggal_transaksi, '%Y-%m') = '$bulan'";
-    mysqli_query($koneksi, $delQuery);
+    $delLike = 'Auto-Posting Pencairan Pinjaman:%';
+    $del = $koneksi->prepare("DELETE FROM tb_transaksi_keuangan
+             WHERE keterangan LIKE ?
+             AND DATE_FORMAT(tanggal_transaksi, '%Y-%m') = ?");
+    $del->execute([$delLike, $bulan]);
 
     // 3. Ambil total pinjaman per hari di bulan tersebut
-    $sqlPinjaman = "SELECT tgl_pinjaman, SUM(nominal_pinjaman) as total_per_hari 
-                    FROM tb_pinjaman 
-                    WHERE DATE_FORMAT(tgl_pinjaman, '%Y-%m') = '$bulan' 
-                    GROUP BY tgl_pinjaman";
-    $qPinjaman = mysqli_query($koneksi, $sqlPinjaman);
+    $stPin = $koneksi->prepare("SELECT tgl_pinjaman, SUM(nominal_pinjaman) as total_per_hari
+                    FROM tb_pinjaman
+                    WHERE DATE_FORMAT(tgl_pinjaman, '%Y-%m') = ?
+                    GROUP BY tgl_pinjaman");
+    $stPin->execute([$bulan]);
 
     $total_terposting = 0;
     $count_hari = 0;
 
-    while ($row = mysqli_fetch_assoc($qPinjaman)) {
+    while ($row = $stPin->fetch()) {
         $tgl = $row['tgl_pinjaman'];
         $total_harian = (float) $row['total_per_hari'];
 
@@ -49,16 +52,12 @@ try {
 
             // A. DEBIT: Piutang Pinjaman Karyawan Bertambah (1301)
             $stmt1 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) VALUES (?, ?, ?, 'Keluar', 'debit', ?)");
-            $stmt1->bind_param("sids", $tgl, $id_piutang, $total_harian, $ket);
-            $stmt1->execute();
-            $stmt1->close();
+            $stmt1->execute([$tgl, $id_piutang, $total_harian, $ket]);
 
             // B. KREDIT: Kas Berkurang (1001)
             if ($id_kas) {
                 $stmt2 = $koneksi->prepare("INSERT INTO tb_transaksi_keuangan (tanggal_transaksi, id_kategori, nominal, tipe_arus, tipe_neraca, keterangan) VALUES (?, ?, ?, 'Keluar', 'kredit', ?)");
-                $stmt2->bind_param("sids", $tgl, $id_kas, $total_harian, $ket);
-                $stmt2->execute();
-                $stmt2->close();
+                $stmt2->execute([$tgl, $id_kas, $total_harian, $ket]);
             }
 
             $total_terposting += $total_harian;
@@ -66,7 +65,7 @@ try {
         }
     }
 
-    mysqli_commit($koneksi);
+    $koneksi->commit();
 
     if ($total_terposting > 0) {
         echo json_encode([
@@ -79,7 +78,11 @@ try {
             'message' => 'Tidak ada data pencairan pinjaman di bulan ini.'
         ]);
     }
+} catch (PDOException $e) {
+    if ($koneksi->inTransaction()) $koneksi->rollBack();
+    error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Gagal memposting data.']);
 } catch (Exception $e) {
-    mysqli_rollback($koneksi);
+    if ($koneksi->inTransaction()) $koneksi->rollBack();
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }

@@ -49,11 +49,6 @@ if (!isset($koneksi) || !$koneksi) {
     sendResponse('error', 'Koneksi database gagal. Silakan hubungi administrator.');
 }
 
-// Check if connection is active
-if ($koneksi->connect_error) {
-    sendResponse('error', 'Database connection error: ' . $koneksi->connect_error);
-}
-
 // ============================================
 // GET ACTION FROM POST
 // ============================================
@@ -111,49 +106,36 @@ switch ($action) {
             sendResponse('error', implode(', ', $errors));
         }
 
-        // Check if employee exists
-        $checkStmt = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
-        $checkStmt->bind_param("i", $id_karyawan);
-        $checkStmt->execute();
-        $checkStmt->store_result();
+        try {
+            // Check if employee exists
+            $checkStmt = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
+            $checkStmt->execute([$id_karyawan]);
 
-        if ($checkStmt->num_rows === 0) {
-            $checkStmt->close();
-            sendResponse('error', 'Data karyawan tidak ditemukan');
-        }
-        $checkStmt->close();
+            if (!$checkStmt->fetch()) {
+                sendResponse('error', 'Data karyawan tidak ditemukan');
+            }
 
-        // PERUBAHAN: Cek duplikat data dengan menyertakan KETERANGAN
-        $dupStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?");
-        $dupStmt->bind_param("iss", $id_karyawan, $tgl_rapel, $ket_rapel);
-        $dupStmt->execute();
-        $dupStmt->store_result();
+            // PERUBAHAN: Cek duplikat data dengan menyertakan KETERANGAN
+            $dupStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ?");
+            $dupStmt->execute([$id_karyawan, $tgl_rapel, $ket_rapel]);
 
-        if ($dupStmt->num_rows > 0) {
-            $dupStmt->close();
-            sendResponse('error', 'Data rapel untuk karyawan ini dengan tanggal dan keterangan yang sama persis sudah ada!');
-        }
-        $dupStmt->close();
+            if ($dupStmt->fetch()) {
+                sendResponse('error', 'Data rapel untuk karyawan ini dengan tanggal dan keterangan yang sama persis sudah ada!');
+            }
 
-        // Prepare INSERT statement
-        $stmt = $koneksi->prepare("INSERT INTO tb_rapel (id_karyawan, tgl_rapel, nominal_rapel, ket_rapel) VALUES (?, ?, ?, ?)");
+            // Prepare INSERT statement
+            $stmt = $koneksi->prepare("INSERT INTO tb_rapel (id_karyawan, tgl_rapel, nominal_rapel, ket_rapel) VALUES (?, ?, ?, ?)");
 
-        if (!$stmt) {
-            sendResponse('error', 'Gagal menyiapkan query: ' . $koneksi->error);
-        }
-
-        // Bind parameters (i=integer, s=string, d=double/decimal)
-        $stmt->bind_param("isds", $id_karyawan, $tgl_rapel, $nominal_rapel, $ket_rapel);
-
-        // Execute query
-        if ($stmt->execute()) {
-            $inserted_id = $stmt->insert_id;
-            $stmt->close();
-            sendResponse('success', 'Data rapel berhasil ditambahkan', ['id_rapel' => $inserted_id]);
-        } else {
-            $error = $stmt->error;
-            $stmt->close();
-            sendResponse('error', 'Gagal menyimpan data: ' . $error);
+            // Execute query
+            if ($stmt->execute([$id_karyawan, $tgl_rapel, $nominal_rapel, $ket_rapel])) {
+                $inserted_id = (int)$koneksi->lastInsertId();
+                sendResponse('success', 'Data rapel berhasil ditambahkan', ['id_rapel' => $inserted_id]);
+            } else {
+                sendResponse('error', 'Gagal menyimpan data.');
+            }
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            sendResponse('error', 'Gagal menyimpan data.');
         }
         break;
 
@@ -205,66 +187,49 @@ switch ($action) {
             sendResponse('error', implode(', ', $errors));
         }
 
-        // Check if rapel exists
-        $checkStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_rapel = ?");
-        $checkStmt->bind_param("i", $id_rapel);
-        $checkStmt->execute();
-        $checkStmt->store_result();
+        try {
+            // Check if rapel exists
+            $checkStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_rapel = ?");
+            $checkStmt->execute([$id_rapel]);
 
-        if ($checkStmt->num_rows === 0) {
-            $checkStmt->close();
-            sendResponse('error', 'Data rapel tidak ditemukan');
-        }
-        $checkStmt->close();
-
-        // Check if employee exists
-        $checkKaryawan = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
-        $checkKaryawan->bind_param("i", $id_karyawan);
-        $checkKaryawan->execute();
-        $checkKaryawan->store_result();
-
-        if ($checkKaryawan->num_rows === 0) {
-            $checkKaryawan->close();
-            sendResponse('error', 'Data karyawan tidak ditemukan');
-        }
-        $checkKaryawan->close();
-
-        // PERUBAHAN: Cek duplikat saat edit (pastikan tidak bentrok dengan ID Rapel lain yang punya kombinasi Karyawan+Tanggal+Ket sama)
-        $dupStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ? AND id_rapel != ?");
-        $dupStmt->bind_param("issi", $id_karyawan, $tgl_rapel, $ket_rapel, $id_rapel);
-        $dupStmt->execute();
-        $dupStmt->store_result();
-
-        if ($dupStmt->num_rows > 0) {
-            $dupStmt->close();
-            sendResponse('error', 'Data rapel untuk karyawan ini dengan tanggal dan keterangan tersebut sudah ada di baris lain!');
-        }
-        $dupStmt->close();
-
-        // Prepare UPDATE statement
-        $stmt = $koneksi->prepare("UPDATE tb_rapel SET id_karyawan = ?, tgl_rapel = ?, nominal_rapel = ?, ket_rapel = ? WHERE id_rapel = ?");
-
-        if (!$stmt) {
-            sendResponse('error', 'Gagal menyiapkan query: ' . $koneksi->error);
-        }
-
-        // Bind parameters
-        $stmt->bind_param("isdsi", $id_karyawan, $tgl_rapel, $nominal_rapel, $ket_rapel, $id_rapel);
-
-        // Execute query
-        if ($stmt->execute()) {
-            $affected_rows = $stmt->affected_rows;
-            $stmt->close();
-
-            if ($affected_rows > 0) {
-                sendResponse('success', 'Data rapel berhasil diperbarui');
-            } else {
-                sendResponse('success', 'Tidak ada perubahan data');
+            if (!$checkStmt->fetch()) {
+                sendResponse('error', 'Data rapel tidak ditemukan');
             }
-        } else {
-            $error = $stmt->error;
-            $stmt->close();
-            sendResponse('error', 'Gagal mengupdate data: ' . $error);
+
+            // Check if employee exists
+            $checkKaryawan = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
+            $checkKaryawan->execute([$id_karyawan]);
+
+            if (!$checkKaryawan->fetch()) {
+                sendResponse('error', 'Data karyawan tidak ditemukan');
+            }
+
+            // PERUBAHAN: Cek duplikat saat edit (pastikan tidak bentrok dengan ID Rapel lain yang punya kombinasi Karyawan+Tanggal+Ket sama)
+            $dupStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_karyawan = ? AND tgl_rapel = ? AND ket_rapel = ? AND id_rapel != ?");
+            $dupStmt->execute([$id_karyawan, $tgl_rapel, $ket_rapel, $id_rapel]);
+
+            if ($dupStmt->fetch()) {
+                sendResponse('error', 'Data rapel untuk karyawan ini dengan tanggal dan keterangan tersebut sudah ada di baris lain!');
+            }
+
+            // Prepare UPDATE statement
+            $stmt = $koneksi->prepare("UPDATE tb_rapel SET id_karyawan = ?, tgl_rapel = ?, nominal_rapel = ?, ket_rapel = ? WHERE id_rapel = ?");
+
+            // Execute query
+            if ($stmt->execute([$id_karyawan, $tgl_rapel, $nominal_rapel, $ket_rapel, $id_rapel])) {
+                $affected_rows = $stmt->rowCount();
+
+                if ($affected_rows > 0) {
+                    sendResponse('success', 'Data rapel berhasil diperbarui');
+                } else {
+                    sendResponse('success', 'Tidak ada perubahan data');
+                }
+            } else {
+                sendResponse('error', 'Gagal mengupdate data.');
+            }
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            sendResponse('error', 'Gagal mengupdate data.');
         }
         break;
 
@@ -280,42 +245,33 @@ switch ($action) {
             sendResponse('error', 'ID rapel tidak valid');
         }
 
-        // Check if rapel exists
-        $checkStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_rapel = ?");
-        $checkStmt->bind_param("i", $id_rapel);
-        $checkStmt->execute();
-        $checkStmt->store_result();
+        try {
+            // Check if rapel exists
+            $checkStmt = $koneksi->prepare("SELECT id_rapel FROM tb_rapel WHERE id_rapel = ?");
+            $checkStmt->execute([$id_rapel]);
 
-        if ($checkStmt->num_rows === 0) {
-            $checkStmt->close();
-            sendResponse('error', 'Data rapel tidak ditemukan');
-        }
-        $checkStmt->close();
-
-        // Prepare DELETE statement
-        $stmt = $koneksi->prepare("DELETE FROM tb_rapel WHERE id_rapel = ?");
-
-        if (!$stmt) {
-            sendResponse('error', 'Gagal menyiapkan query: ' . $koneksi->error);
-        }
-
-        // Bind parameter
-        $stmt->bind_param("i", $id_rapel);
-
-        // Execute query
-        if ($stmt->execute()) {
-            $affected_rows = $stmt->affected_rows;
-            $stmt->close();
-
-            if ($affected_rows > 0) {
-                sendResponse('success', 'Data rapel berhasil dihapus');
-            } else {
-                sendResponse('error', 'Data rapel tidak ditemukan atau sudah dihapus');
+            if (!$checkStmt->fetch()) {
+                sendResponse('error', 'Data rapel tidak ditemukan');
             }
-        } else {
-            $error = $stmt->error;
-            $stmt->close();
-            sendResponse('error', 'Gagal menghapus data: ' . $error);
+
+            // Prepare DELETE statement
+            $stmt = $koneksi->prepare("DELETE FROM tb_rapel WHERE id_rapel = ?");
+
+            // Execute query
+            if ($stmt->execute([$id_rapel])) {
+                $affected_rows = $stmt->rowCount();
+
+                if ($affected_rows > 0) {
+                    sendResponse('success', 'Data rapel berhasil dihapus');
+                } else {
+                    sendResponse('error', 'Data rapel tidak ditemukan atau sudah dihapus');
+                }
+            } else {
+                sendResponse('error', 'Gagal menghapus data.');
+            }
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            sendResponse('error', 'Gagal menghapus data.');
         }
         break;
 
@@ -325,9 +281,4 @@ switch ($action) {
     default:
         sendResponse('error', 'Aksi tidak valid: ' . htmlspecialchars($action));
         break;
-}
-
-// Close database connection
-if (isset($koneksi)) {
-    $koneksi->close();
 }

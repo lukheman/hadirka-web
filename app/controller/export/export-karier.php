@@ -28,6 +28,7 @@ $ids     = $_GET['ids'] ?? ''; // Tambahan: Tangkap parameter IDs
 
 // Build WHERE Clause
 $where = ["1=1"];
+$params = [];
 
 if (!empty($ids)) {
     // JIKA ADA DATA YANG DICENTANG: 
@@ -41,16 +42,20 @@ if (!empty($ids)) {
 } else {
     // JIKA TIDAK ADA YANG DICENTANG: Gunakan logika filter biasa
     if (!empty($site)) {
-        $where[] = "k.id_site = '" . $koneksi->real_escape_string($site) . "'";
+        $where[] = "k.id_site = ?";
+        $params[] = $site;
     }
     if (!empty($jabatan)) {
-        $where[] = "k.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+        $where[] = "k.id_jabatan = ?";
+        $params[] = $jabatan;
     }
     if (!empty($status)) {
-        $where[] = "kr.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+        $where[] = "kr.status_karyawan = ?";
+        $params[] = $status;
     }
     if (!empty($bulan)) {
-        $where[] = "MONTH(k.tgl_selesai) = '" . $koneksi->real_escape_string($bulan) . "'";
+        $where[] = "MONTH(k.tgl_selesai) = ?";
+        $params[] = $bulan;
     }
 }
 
@@ -66,7 +71,9 @@ $query = "SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_kar
     WHERE $where_sql
     ORDER BY kr.nama_lengkap ASC";
 
-$result = $koneksi->query($query);
+$stmt = $koneksi->prepare($query);
+$stmt->execute($params);
+$rowsKarier = $stmt->fetchAll();
 
 // Inisialisasi PhpSpreadsheet
 $spreadsheet = new Spreadsheet();
@@ -80,19 +87,7 @@ $headers = [
     'D1' => 'SITE',
     'E1' => 'DEPARTEMEN', 
     'F1' => 'JABATAN', 
-    'G1' => 'GAJI BASIC', 
-    'H1' => 'TUNJANGAN DAERAH', 
-    'I1' => 'TUNJANGAN HIDUP', 
-    'J1' => 'TUNJANGAN SKILL',
-    'K1' => 'TUNJANGAN POSISI', 
-    'L1' => 'TUNJANGAN MAKAN',
-    'M1' => 'BONUS KEHADIRAN', 
-    'N1' => 'UPAH LEMBUR', 
-    'O1' => 'POTONGAN BPJS KES', 
-    'P1' => 'POTONGAN JHT', 
-    'Q1' => 'PPH21', 
-    'R1' => 'POTONGAN IZIN', 
-    'S1' => 'POTONGAN MANGKIR', 
+    'G1' => 'GAJI BASIC (HARIAN)',
     'T1' => 'TGL MASUK SITE', 
     'U1' => 'TGL SELESAI KONTRAK',
     'V1' => 'NO SURAT'
@@ -107,36 +102,9 @@ foreach ($headers as $cell => $val) {
 $rowNum = 2; // Mulai isi data dari baris ke-2
 $no = 1;
 
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $id_karier = $row['id_karier'];
-
-        // Siapkan variabel default untuk Tunjangan
-        $t_daerah = 0; $t_hidup = 0; $t_makan = 0; $t_skill = 0; $p_bonus = 0; $t_posisi = 0;
-        
-        $q_tunjangan = $koneksi->query("SELECT nama_tunjangan, jumlah_tunjangan FROM tb_tunjangan WHERE id_karier='$id_karier'");
-        while ($t = $q_tunjangan->fetch_assoc()) {
-            $nama_t = strtoupper(trim($t['nama_tunjangan']));
-            if ($nama_t === 'TUNJANGAN DAERAH') $t_daerah = $t['jumlah_tunjangan'];
-            if ($nama_t === 'TUNJANGAN HIDUP') $t_hidup = $t['jumlah_tunjangan'];
-            if ($nama_t === 'TUNJANGAN MAKAN') $t_makan = $t['jumlah_tunjangan'];
-            if ($nama_t === 'TUNJANGAN SKILL') $t_skill = $t['jumlah_tunjangan'];
-            if ($nama_t === 'BONUS KEHADIRAN') $p_bonus = $t['jumlah_tunjangan']; // <--- SUDAH DIPERBAIKI
-            if ($nama_t === 'TUNJANGAN POSISI') $t_posisi = $t['jumlah_tunjangan'];
-        }
-
-        // Siapkan variabel default untuk Potongan
-        $pot_bpjs = 0; $pot_jht = 0; $pph21 = 0;
-
-        $q_potongan = $koneksi->query("SELECT jenis_potongan, jumlah_potongan FROM tb_potongan WHERE id_karier='$id_karier'");
-        while ($p = $q_potongan->fetch_assoc()) {
-            $jenis_p = strtoupper(trim($p['jenis_potongan']));
-            if (strpos($jenis_p, 'BPJS KESEHATAN') !== false) $pot_bpjs = $p['jumlah_potongan'];
-            if (strpos($jenis_p, 'BPJS KETENAGAKERJAAN') !== false) $pot_jht = $p['jumlah_potongan'];
-            if ($jenis_p === 'PPH21') $pph21 = $p['jumlah_potongan'];
-        }
-
-        // Tulis data ke masing-masing cell
+if (count($rowsKarier) > 0) {
+    foreach ($rowsKarier as $row) {
+        // Tulis data ke masing-masing cell (hanya gaji pokok; kolom H-S dihapus)
         $sheet->setCellValue('A' . $rowNum, $no++);
         // Khusus NIK kita set eksplisit sebagai String agar awalan '0' tidak hilang di Excel
         $sheet->setCellValueExplicit('B' . $rowNum, $row['nik_karyawan'], DataType::TYPE_STRING); 
@@ -145,18 +113,6 @@ if ($result && $result->num_rows > 0) {
         $sheet->setCellValue('E' . $rowNum, $row['nama_departemen']);
         $sheet->setCellValue('F' . $rowNum, $row['nama_jabatan']);
         $sheet->setCellValue('G' . $rowNum, $row['gaji_pokok']);
-        $sheet->setCellValue('H' . $rowNum, $t_daerah);
-        $sheet->setCellValue('I' . $rowNum, $t_hidup);
-        $sheet->setCellValue('J' . $rowNum, $t_skill);
-        $sheet->setCellValue('K' . $rowNum, $t_posisi);
-        $sheet->setCellValue('L' . $rowNum, $t_makan);
-        $sheet->setCellValue('M' . $rowNum, $p_bonus);
-        $sheet->setCellValue('N' . $rowNum, $row['lembur']);
-        $sheet->setCellValue('O' . $rowNum, $pot_bpjs);
-        $sheet->setCellValue('P' . $rowNum, $pot_jht);
-        $sheet->setCellValue('Q' . $rowNum, $pph21);
-        $sheet->setCellValue('R' . $rowNum, $row['pot_izin']);
-        $sheet->setCellValue('S' . $rowNum, $row['pot_mangkir']);
         $sheet->setCellValue('T' . $rowNum, $row['tgl_mulai']);
         $sheet->setCellValue('U' . $rowNum, $row['tgl_selesai']);
         $sheet->setCellValue('V' . $rowNum, $row['no_surat'] ?? '');
@@ -174,9 +130,10 @@ foreach (range('A', 'Y') as $col) {
 $nama_site_file = "SEMUA_SITE"; // Default jika tidak ada site yang difilter
 
 if (!empty($site)) {
-    $q_site = $koneksi->query("SELECT nama_site FROM tb_site WHERE id_site = '" . $koneksi->real_escape_string($site) . "'");
-    if ($q_site && $q_site->num_rows > 0) {
-        $site_data = $q_site->fetch_assoc();
+    $stSite = $koneksi->prepare("SELECT nama_site FROM tb_site WHERE id_site = ?");
+    $stSite->execute([$site]);
+    $site_data = $stSite->fetch();
+    if ($site_data) {
         // Bersihkan nama site dari spasi (ganti dengan underscore) agar rapi jadi nama file
         $nama_site_file = str_replace(' ', '_', strtoupper(trim($site_data['nama_site'])));
     }

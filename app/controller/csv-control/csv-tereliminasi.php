@@ -88,12 +88,13 @@ function validasiBarisTereliminasi($koneksi, $cache_jenis, $alias_jenis, $row)
     // status_karyawan mengikuti nama kategori master (konsisten dgn act-eliminasi.php)
     $r['status_baru'] = $cache_jenis[$key_jenis]['nama_kategori'];
 
-    $cekKar = $koneksi->query("SELECT id_karyawan, nama_lengkap, status_karyawan FROM tb_karyawan WHERE nik_karyawan = '$nik_karyawan' LIMIT 1");
-    if (!$cekKar || $cekKar->num_rows === 0) {
+    $stmtKar = $koneksi->prepare("SELECT id_karyawan, nama_lengkap, status_karyawan FROM tb_karyawan WHERE nik_karyawan = ? LIMIT 1");
+    $stmtKar->execute([$nik_karyawan]);
+    $kar = $stmtKar->fetch();
+    if (!$kar) {
         $r['error'] = "NIK '$nik_karyawan' tidak terdaftar di database. Daftarkan dulu di Data Karyawan.";
         return $r;
     }
-    $kar = $cekKar->fetch_assoc();
     $r['id_karyawan'] = $kar['id_karyawan'];
     $r['nama_db'] = $kar['nama_lengkap'];
     $r['status_saat_ini'] = $kar['status_karyawan'];
@@ -102,8 +103,9 @@ function validasiBarisTereliminasi($koneksi, $cache_jenis, $alias_jenis, $row)
         $r['warning'] = "Nama di file ('$nama_file') berbeda dengan database ('{$kar['nama_lengkap']}'), diproses berdasarkan NIK.";
     }
 
-    $cekElim = $koneksi->query("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan = '{$kar['id_karyawan']}' LIMIT 1");
-    $r['sudah_tereliminasi'] = ($cekElim && $cekElim->num_rows > 0);
+    $stmtElim = $koneksi->prepare("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan = ? LIMIT 1");
+    $stmtElim->execute([$kar['id_karyawan']]);
+    $r['sudah_tereliminasi'] = (bool)$stmtElim->fetch();
 
     $r['valid'] = true;
     return $r;
@@ -143,8 +145,8 @@ if (!in_array($file_ext, ['xls', 'xlsx'])) {
 
 // Cache m_jenis_keluar: nama lower => [id, nama_kategori]
 $cache_jenis = [];
-$qJenis = $koneksi->query("SELECT id_jenis_keluar, nama_kategori, LOWER(TRIM(nama_kategori)) as nama FROM m_jenis_keluar");
-if ($qJenis) while ($r = $qJenis->fetch_assoc()) $cache_jenis[$r['nama']] = $r;
+$stmtJenis = $koneksi->query("SELECT id_jenis_keluar, nama_kategori, LOWER(TRIM(nama_kategori)) as nama FROM m_jenis_keluar");
+while ($r = $stmtJenis->fetch()) $cache_jenis[$r['nama']] = $r;
 
 $alias_jenis = [
     'habis kontrak' => 'habis kontrak',
@@ -232,7 +234,7 @@ try {
         $nik_karyawan    = $v['nik'];
         $tgl_keluar      = $v['tgl_keluar'];
         $id_jenis_keluar = $v['id_jenis_keluar'];
-        $status_baru     = $koneksi->real_escape_string($v['status_baru']);
+        $status_baru     = $v['status_baru'];
         $id_karyawan     = $v['id_karyawan'];
         $alasan          = '';
 
@@ -242,29 +244,38 @@ try {
 
         $transaction_started = false;
         try {
-            $koneksi->begin_transaction();
+            $koneksi->beginTransaction();
             $transaction_started = true;
 
-            $cekElim = $koneksi->query("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan = '$id_karyawan' LIMIT 1");
-            if ($cekElim && $cekElim->num_rows > 0) {
-                $sqlElim = "UPDATE tb_tereliminasi SET tgl_keluar = '$tgl_keluar', id_jenis_keluar = '$id_jenis_keluar', alasan_keluar = '$alasan', created_at = NOW() WHERE id_karyawan = '$id_karyawan'";
+            $stmtCekElim = $koneksi->prepare("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan = ? LIMIT 1");
+            $stmtCekElim->execute([$id_karyawan]);
+            $sudahAda = (bool)$stmtCekElim->fetch();
+            if ($sudahAda) {
+                $stmtElim = $koneksi->prepare("UPDATE tb_tereliminasi SET tgl_keluar = ?, id_jenis_keluar = ?, alasan_keluar = ?, created_at = NOW() WHERE id_karyawan = ?");
+                $stmtElim->execute([$tgl_keluar, $id_jenis_keluar, $alasan, $id_karyawan]);
             } else {
-                $sqlElim = "INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at) VALUES ('$id_karyawan', '$tgl_keluar', '$id_jenis_keluar', '$alasan', NOW())";
+                $stmtElim = $koneksi->prepare("INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at) VALUES (?, ?, ?, ?, NOW())");
+                $stmtElim->execute([$id_karyawan, $tgl_keluar, $id_jenis_keluar, $alasan]);
             }
-            if (!$koneksi->query($sqlElim)) throw new Exception("Gagal menyimpan data eliminasi: " . $koneksi->error);
 
-            if (!$koneksi->query("UPDATE tb_karyawan SET status_karyawan = '$status_baru' WHERE id_karyawan = '$id_karyawan'")) {
-                throw new Exception("Gagal update status karyawan: " . $koneksi->error);
-            }
+            $stmtKar = $koneksi->prepare("UPDATE tb_karyawan SET status_karyawan = ? WHERE id_karyawan = ?");
+            $stmtKar->execute([$status_baru, $id_karyawan]);
 
             $koneksi->commit();
             $transaction_started = false;
 
             $response["berhasil"]++;
             $response["debug"][] = "Baris $rowNum: Berhasil - NIK: $nik_karyawan ($status_baru)";
+        } catch (PDOException $e) {
+            error_log("csv-tereliminasi DB baris $rowNum: " . $e->getMessage());
+            if ($transaction_started && $koneksi->inTransaction()) {
+                $koneksi->rollBack();
+            }
+            $response["gagal"]++;
+            $response["errors"][] = "Baris $rowNum: Gagal menyimpan data eliminasi.";
         } catch (Exception $e) {
-            if ($transaction_started) {
-                $koneksi->rollback();
+            if ($transaction_started && $koneksi->inTransaction()) {
+                $koneksi->rollBack();
             }
             $response["gagal"]++;
             $response["errors"][] = "Baris $rowNum: " . $e->getMessage();
@@ -282,6 +293,7 @@ try {
         $response["message"] = "Import selesai. Berhasil: {$response['berhasil']}, Gagal: {$response['gagal']}";
     }
 } catch (Exception $e) {
+    error_log('csv-tereliminasi: ' . $e->getMessage());
     $response["error"] = "Gagal membaca file Excel: " . $e->getMessage();
 }
 

@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../config/koneksi.php';
 
 $q = $koneksi->query("SELECT * FROM m_jenis_pelanggaran ORDER BY id_pelanggaran DESC");
 $no = 1;
-while ($r = $q->fetch_assoc()) {
+while ($r = $q->fetch()) {
     $nama = htmlspecialchars($r['nama_pelanggaran']);
     
     // Potong untuk tampilan tabel, biarkan full untuk passing ke modal edit

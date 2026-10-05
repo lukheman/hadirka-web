@@ -45,90 +45,87 @@ if ($action === 'info') {
     $id_jabatan = (int)($_POST['id_jabatan'] ?? $_GET['id_jabatan'] ?? 0);
     if ($id_jabatan <= 0) cetak_json('error', 'Jabatan belum dipilih.');
 
-    $qj = $koneksi->query("SELECT id_jabatan, kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-    if (!$qj || $qj->num_rows === 0) cetak_json('error', 'Jabatan tidak ditemukan.');
-    $jab = $qj->fetch_assoc();
+    try {
+        $stj = $koneksi->prepare("SELECT id_jabatan, kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = ? LIMIT 1");
+        $stj->execute([$id_jabatan]);
+        $jab = $stj->fetch();
+        if (!$jab) cetak_json('error', 'Jabatan tidak ditemukan.');
 
-    $templates = [];
-    $qt = $koneksi->query(
-        "SELECT t.id_template, t.nama_kontrak, t.nama_asli, t.`file` FROM tb_template_kontrak_jabatan p " .
-        "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-        "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC"
-    );
-    if ($qt) {
-        while ($tr = $qt->fetch_assoc()) {
+        $templates = [];
+        $stt = $koneksi->prepare(
+            "SELECT t.id_template, t.nama_kontrak, t.nama_asli, t.`file` FROM tb_template_kontrak_jabatan p " .
+            "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
+            "WHERE p.id_jabatan = ? ORDER BY t.id_template DESC"
+        );
+        $stt->execute([$id_jabatan]);
+        while ($tr = $stt->fetch()) {
             $id_tpl = (int)$tr['id_template'];
-            $qd = $koneksi->query(
-                "SELECT gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
-                "FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1"
+            $std = $koneksi->prepare(
+                "SELECT gaji_pokok " .
+                "FROM tb_detail_kontrak WHERE id_template = ? LIMIT 1"
             );
-            $tr['detail'] = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : null;
+            $std->execute([$id_tpl]);
+            $detRow = $std->fetch();
+            $tr['detail'] = $detRow === false ? null : $detRow;
             $tr['jml_tunjangan'] = 0;
             $tr['jml_potongan'] = 0;
             $tr['tunjangan'] = [];
             $tr['potongan'] = [];
-            if ($tr['detail']) {
-                $qd2 = $koneksi->query("SELECT id_detail FROM tb_detail_kontrak WHERE id_template = '$id_tpl' LIMIT 1");
-                if ($qd2 && $qd2->num_rows > 0) {
-                    $id_det = (int)$qd2->fetch_assoc()['id_detail'];
-                    $ct = $koneksi->query("SELECT COUNT(*) n FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_det'");
-                    $cp = $koneksi->query("SELECT COUNT(*) n FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_det'");
-                    if ($ct) $tr['jml_tunjangan'] = (int)$ct->fetch_assoc()['n'];
-                    if ($cp) $tr['jml_potongan'] = (int)$cp->fetch_assoc()['n'];
-                    $qt2 = $koneksi->query(
-                        "SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template " .
-                        "FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = '$id_det' ORDER BY id_tunjangan_kontrak ASC"
-                    );
-                    if ($qt2) while ($x = $qt2->fetch_assoc()) $tr['tunjangan'][] = $x;
-                    $qp2 = $koneksi->query(
-                        "SELECT jenis_potongan, jumlah_potongan " .
-                        "FROM tb_potongan_kontrak WHERE id_detail_kontrak = '$id_det' ORDER BY id_potongan_kontrak ASC"
-                    );
-                    if ($qp2) while ($x = $qp2->fetch_assoc()) $tr['potongan'][] = $x;
-                }
-            }
+            // Tabel tunjangan/potongan kontrak dihapus (penyederhanaan gaji Okt 2026).
             $templates[] = $tr;
         }
+
+        // Posisi nomor: counter vs data terbesar (tanpa mengonsumsi).
+        $terakhir = 0;
+        $stc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
+        $rowC = $stc->fetch();
+        if ($rowC) $terakhir = (int)$rowC['terakhir'];
+        $terbesar = 0;
+        $stm = $koneksi->query(
+            "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
+            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+        );
+        $rowM = $stm->fetch();
+        if ($rowM) $terbesar = (int)$rowM['mx'];
+
+        cetak_json('success', 'OK', [
+            'id_jabatan' => (int)$jab['id_jabatan'],
+            'kode_jabatan' => trim((string)($jab['kode_jabatan'] ?? '')),
+            'nama_jabatan' => $jab['nama_jabatan'] ?? '',
+            'templates' => $templates,
+            'terakhir_counter' => $terakhir,
+            'terbesar_data' => $terbesar,
+            'berikutnya' => max($terakhir, $terbesar) + 1,
+        ]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        cetak_json('error', 'Gagal mengambil data.');
     }
-
-    // Posisi nomor: counter vs data terbesar (tanpa mengonsumsi).
-    $terakhir = 0;
-    $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
-    if ($qc && $qc->num_rows > 0) $terakhir = (int)$qc->fetch_assoc()['terakhir'];
-    $terbesar = 0;
-    $qm = $koneksi->query(
-        "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-        "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
-    );
-    if ($qm) $terbesar = (int)$qm->fetch_assoc()['mx'];
-
-    cetak_json('success', 'OK', [
-        'id_jabatan' => (int)$jab['id_jabatan'],
-        'kode_jabatan' => trim((string)($jab['kode_jabatan'] ?? '')),
-        'nama_jabatan' => $jab['nama_jabatan'] ?? '',
-        'templates' => $templates,
-        'terakhir_counter' => $terakhir,
-        'terbesar_data' => $terbesar,
-        'berikutnya' => max($terakhir, $terbesar) + 1,
-    ]);
 }
 
 // ---------- COUNTER global (tanpa jabatan) ----------
 if ($action === 'counter') {
-    $terakhir = 0;
-    $qc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
-    if ($qc && $qc->num_rows > 0) $terakhir = (int)$qc->fetch_assoc()['terakhir'];
-    $terbesar = 0;
-    $qm = $koneksi->query(
-        "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-        "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
-    );
-    if ($qm) $terbesar = (int)$qm->fetch_assoc()['mx'];
-    cetak_json('success', 'OK', [
-        'terakhir_counter' => $terakhir,
-        'terbesar_data' => $terbesar,
-        'berikutnya' => max($terakhir, $terbesar) + 1,
-    ]);
+    try {
+        $terakhir = 0;
+        $stc = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' LIMIT 1");
+        $rowC = $stc->fetch();
+        if ($rowC) $terakhir = (int)$rowC['terakhir'];
+        $terbesar = 0;
+        $stm = $koneksi->query(
+            "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
+            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+        );
+        $rowM = $stm->fetch();
+        if ($rowM) $terbesar = (int)$rowM['mx'];
+        cetak_json('success', 'OK', [
+            'terakhir_counter' => $terakhir,
+            'terbesar_data' => $terbesar,
+            'berikutnya' => max($terakhir, $terbesar) + 1,
+        ]);
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        cetak_json('error', 'Gagal mengambil data.');
+    }
 }
 
 // ---------- GENERATE: reservasi nomor + bangun ZIP ----------
@@ -176,21 +173,23 @@ if ($action === 'generate') {
             if ($jumlah < 1 || $jumlah > 50) throw new Exception("Baris $no_baris: jumlah harus 1 s/d 50.");
 
             // Jabatan + kode.
-            $qj = $koneksi->query("SELECT kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = '$id_jabatan' LIMIT 1");
-            if (!$qj || $qj->num_rows === 0) throw new Exception("Baris $no_baris: jabatan tidak ditemukan.");
-            $jab = $qj->fetch_assoc();
+            $stj = $koneksi->prepare("SELECT kode_jabatan, nama_jabatan FROM tb_jabatan WHERE id_jabatan = ? LIMIT 1");
+            $stj->execute([$id_jabatan]);
+            $jab = $stj->fetch();
+            if (!$jab) throw new Exception("Baris $no_baris: jabatan tidak ditemukan.");
             $kode = trim((string)($jab['kode_jabatan'] ?? ''));
             if ($kode === '') throw new Exception("Baris $no_baris: kode jabatan belum diisi. Lengkapi kode jabatan terlebih dahulu.");
             $nama_jabatan = $jab['nama_jabatan'] ?? '-';
 
             // Template harus berlaku untuk jabatan ini.
-            $qp = $koneksi->query(
+            $stp = $koneksi->prepare(
                 "SELECT t.`file`, t.nama_kontrak FROM tb_template_kontrak_jabatan p " .
                 "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-                "WHERE p.id_jabatan = '$id_jabatan' AND p.id_template = '$id_template' LIMIT 1"
+                "WHERE p.id_jabatan = ? AND p.id_template = ? LIMIT 1"
             );
-            if (!$qp || $qp->num_rows === 0) throw new Exception("Baris $no_baris: template tidak berlaku untuk jabatan ini.");
-            $tpl = $qp->fetch_assoc();
+            $stp->execute([$id_jabatan, $id_template]);
+            $tpl = $stp->fetch();
+            if (!$tpl) throw new Exception("Baris $no_baris: template tidak berlaku untuk jabatan ini.");
 
             $tpl_base = basename((string)$tpl['file']);
             $src = __DIR__ . '/../uploads/template-kontrak/' . $tpl_base;
@@ -201,37 +200,19 @@ if ($action === 'generate') {
             if (!is_file($src)) throw new Exception("Baris $no_baris: file template tidak ditemukan di server.");
 
             // Nilai kontrak dari detail template.
-            $qd = $koneksi->query(
-                "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
-                "FROM tb_detail_kontrak WHERE id_template = '$id_template' LIMIT 1"
+            $std = $koneksi->prepare(
+                "SELECT id_detail, gaji_pokok " .
+                "FROM tb_detail_kontrak WHERE id_template = ? LIMIT 1"
             );
-            $det = ($qd && $qd->num_rows > 0) ? $qd->fetch_assoc() : ['gaji_pokok' => 0, 'upah_lembur' => 0, 'potongan_izin' => 0, 'potongan_mangkir' => 0];
+            $std->execute([$id_template]);
+            $detRow = $std->fetch();
+            $det = $detRow === false ? ['gaji_pokok' => 0] : $detRow;
             $id_det = (int)($det['id_detail'] ?? 0);
 
-            // Tunjangan template yg tampil saja (untuk daftar + placeholder per nama).
+            // Tabel tunjangan kontrak dihapus (penyederhanaan gaji Okt 2026).
             $tun = [];
             $tun_tetap = [];
             $tun_tidak = [];
-            if ($id_det > 0) {
-                $qtun = $koneksi->query(
-                    "SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan FROM tb_tunjangan_kontrak " .
-                    "WHERE id_detail_kontrak = '$id_det' AND tampil_template = 1 ORDER BY id_tunjangan_kontrak ASC"
-                );
-                if ($qtun) {
-                    while ($t = $qtun->fetch_assoc()) {
-                        $tun[strtolower(trim((string)$t['nama_tunjangan']))] = $t['jumlah_tunjangan'];
-                        $rupiah = kontrak_is_makan($t['nama_tunjangan'] ?? '')
-                            ? kontrak_rupiah_makan($t['jumlah_tunjangan'])
-                            : kontrak_rupiah($t['jumlah_tunjangan']);
-                        $baris = [kontrak_title($t['nama_tunjangan']), $rupiah];
-                        if (($t['jenis_tunjangan'] ?? 'tetap') === 'tidak_tetap') {
-                            $tun_tidak[] = $baris;
-                        } else {
-                            $tun_tetap[] = $baris;
-                        }
-                    }
-                }
-            }
             $specs[] = [
                 'kode' => $kode,
                 'nama_jabatan' => $nama_jabatan,
@@ -257,26 +238,33 @@ if ($action === 'generate') {
         // Counter tidak pernah dimundurkan (GREATEST).
         $override = (int)($_POST['nomor_mulai'] ?? 0);
         if ($override < 0 || $override > 999999) throw new Exception('Nomor Mulai harus 1 s/d 999999.');
-        $koneksi->begin_transaction();
+        $koneksi->beginTransaction();
         try {
             $koneksi->query("INSERT IGNORE INTO tb_nomor_urut (nama, terakhir) VALUES ('kontrak', 0)");
             $lock = $koneksi->query("SELECT terakhir FROM tb_nomor_urut WHERE nama = 'kontrak' FOR UPDATE");
-            if (!$lock || $lock->num_rows === 0) throw new Exception('Counter nomor surat tidak tersedia.');
-            $last = (int)$lock->fetch_assoc()['terakhir'];
-            $qm = $koneksi->query(
+            $lockRow = $lock->fetch();
+            if (!$lockRow) throw new Exception('Counter nomor surat tidak tersedia.');
+            $last = (int)$lockRow['terakhir'];
+            $stm = $koneksi->query(
                 "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
                 "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
             );
-            if (!$qm) throw new Exception('Gagal membaca nomor terakhir: ' . $koneksi->error);
-            $mx = (int)$qm->fetch_assoc()['mx'];
+            $mxRow = $stm->fetch();
+            if ($mxRow === false) throw new Exception('Gagal membaca nomor terakhir.');
+            $mx = (int)$mxRow['mx'];
             $mulai = $override > 0 ? $override : (max($last, $mx) + 1);
             $akhir = $mulai + $total - 1;
-            if (!$koneksi->query("UPDATE tb_nomor_urut SET terakhir = GREATEST(terakhir, '$akhir') WHERE nama = 'kontrak'")) {
-                throw new Exception('Gagal mencatat nomor surat: ' . $koneksi->error);
+            $updNo = $koneksi->prepare("UPDATE tb_nomor_urut SET terakhir = GREATEST(terakhir, ?) WHERE nama = 'kontrak'");
+            if (!$updNo->execute([$akhir])) {
+                throw new Exception('Gagal mencatat nomor surat.');
             }
             $koneksi->commit();
+        } catch (PDOException $e) {
+            if ($koneksi->inTransaction()) $koneksi->rollBack();
+            error_log($e->getMessage());
+            throw new Exception('Gagal mereservasi nomor surat.');
         } catch (Throwable $e) {
-            $koneksi->rollback();
+            if ($koneksi->inTransaction()) $koneksi->rollBack();
             throw $e instanceof Exception ? $e : new Exception($e->getMessage());
         }
 
@@ -374,6 +362,9 @@ if ($action === 'generate') {
             @rmdir($tmpdir);
         }
         exit;
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        cetak_fail('Gagal mencetak kontrak.');
     } catch (Throwable $e) {
         cetak_fail('Gagal mencetak kontrak: ' . $e->getMessage());
     }

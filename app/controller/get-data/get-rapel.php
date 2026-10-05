@@ -28,9 +28,10 @@ $site = isset($_GET['site']) ? trim($_GET['site']) : '';
 $jabatan = isset($_GET['jabatan']) ? trim($_GET['jabatan']) : '';
 
 $where = ["1=1"];
-if (!empty($bulan))   $where[] = "DATE_FORMAT(r.tgl_rapel, '%Y-%m') = '" . $koneksi->real_escape_string($bulan) . "'";
-if (!empty($site))    $where[] = "kr.id_site = '" . $koneksi->real_escape_string($site) . "'";
-if (!empty($jabatan)) $where[] = "kr.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+$params = [];
+if (!empty($bulan))   { $where[] = "DATE_FORMAT(r.tgl_rapel, '%Y-%m') = ?"; $params[] = $bulan; }
+if (!empty($site))    { $where[] = "kr.id_site = ?"; $params[] = $site; }
+if (!empty($jabatan)) { $where[] = "kr.id_jabatan = ?"; $params[] = $jabatan; }
 
 $whereClause = " WHERE " . implode(" AND ", $where);
 
@@ -49,16 +50,13 @@ $sql = "SELECT
         GROUP BY r.id_rapel
         ORDER BY r.tgl_rapel DESC, r.id_rapel DESC";
 
-$result = $koneksi->query($sql);
-
-// Jika query gagal, hentikan eksekusi
-if (!$result) {
-    exit;
-}
+$stRapel = $koneksi->prepare($sql);
+$stRapel->execute($params);
+$result = $stRapel;
 
 // Looping data (jika num_rows == 0, while loop ini tidak akan jalan dan output kosong)
 $no = 1;
-while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch()) {
     $id_rapel = intval($row['id_rapel']);
     $id_karyawan = intval($row['id_karyawan']);
     $nik_karyawan = escapeHtml($row['nik_karyawan']);
@@ -131,6 +129,4 @@ while ($row = $result->fetch_assoc()) {
     $no++;
 }
 
-// Free result
-$result->free();
 ?>

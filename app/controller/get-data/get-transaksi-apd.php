@@ -9,18 +9,23 @@ $karyawan   = $_GET['karyawan'] ?? '';
 
 // Build Kondisi WHERE
 $where = ["1=1"];
+$params = [];
 
 if (!empty($site)) {
-    $where[] = "c.id_site = '" . mysqli_real_escape_string($koneksi, $site) . "'";
+    $where[] = "c.id_site = ?";
+    $params[] = $site;
 }
 if (!empty($departemen)) {
-    $where[] = "c.id_departemen = '" . mysqli_real_escape_string($koneksi, $departemen) . "'";
+    $where[] = "c.id_departemen = ?";
+    $params[] = $departemen;
 }
 if (!empty($jabatan)) {
-    $where[] = "c.id_jabatan = '" . mysqli_real_escape_string($koneksi, $jabatan) . "'";
+    $where[] = "c.id_jabatan = ?";
+    $params[] = $jabatan;
 }
 if (!empty($karyawan)) {
-    $where[] = "p.id_karyawan = '" . mysqli_real_escape_string($koneksi, $karyawan) . "'";
+    $where[] = "p.id_karyawan = ?";
+    $params[] = $karyawan;
 }
 
 $whereClause = implode(" AND ", $where);
@@ -38,12 +43,14 @@ $sql = "SELECT p.*, k.nama_lengkap, k.nik_karyawan, a.nama_apd, a.kategori_apd,
         WHERE $whereClause
         ORDER BY p.tanggal_pengambilan DESC";
 
-$query = mysqli_query($koneksi, $sql);
+$stTransaksi = $koneksi->prepare($sql);
+$stTransaksi->execute($params);
+$rowsTransaksi = $stTransaksi->fetchAll();
 
-if (mysqli_num_rows($query) == 0) {
+if (count($rowsTransaksi) == 0) {
     echo '<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada riwayat transaksi.</td></tr>';
 } else {
-    while ($row = mysqli_fetch_assoc($query)) {
+    foreach ($rowsTransaksi as $row) {
         // Ambil nama jabatan, jika kosong tampilkan teks default
         $jabatan = $row['nama_jabatan'] ? $row['nama_jabatan'] : 'Belum ada jabatan';
 

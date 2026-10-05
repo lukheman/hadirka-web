@@ -1,12 +1,12 @@
 <?php
 include __DIR__ . "/../../config/koneksi.php";
 
-$query = mysqli_query($koneksi, "SELECT * FROM tb_priode ORDER BY tgl_mulai DESC");
+$rowsPeriode = $koneksi->query("SELECT * FROM tb_priode ORDER BY tgl_mulai DESC")->fetchAll();
 
-if (mysqli_num_rows($query) == 0) {
+if (count($rowsPeriode) == 0) {
     echo '<tr><td colspan="4" class="text-center py-5 text-muted">Belum ada data periode.</td></tr>';
 } else {
-    while ($row = mysqli_fetch_assoc($query)) {
+    foreach ($rowsPeriode as $row) {
         $status     = $row['status_priode']; 
         $nextStatus = ($status === 'Open') ? 'Closed' : 'Open';
         $badgeClass = ($status === 'Open') ? 'bg-label-success' : 'bg-label-secondary';

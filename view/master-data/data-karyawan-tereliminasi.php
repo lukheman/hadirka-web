@@ -1,7 +1,39 @@
 <style>
     .fade-in { animation: fadeIn 300ms ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.2rem 0.6rem; }
+    /* Kontrol DataTables (Search/Length atas, Info/Pagination bawah) */
+    .dataTables_wrapper .row:first-child {
+        padding: 0.75rem 0.25rem 0.5rem 0.25rem;
+        margin: 0;
+        align-items: center;
+    }
+    .dataTables_wrapper .row:last-child {
+        padding: 0.5rem 0.25rem 0.25rem 0.25rem;
+        margin: 0;
+        align-items: center;
+    }
+    .dataTables_wrapper .dataTables_paginate .pagination {
+        margin-bottom: 0;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
+    }
+    .dataTables_wrapper .dataTables_info { padding-top: 0.4rem; }
+    .dataTables_filter label,
+    .dataTables_length label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0;
+        justify-content: flex-end;
+    }
+    .dataTables_length label { justify-content: flex-start; }
+    @media (max-width: 767px) {
+        .dataTables_wrapper .dataTables_paginate .pagination { justify-content: center; }
+        .dataTables_wrapper .dataTables_info { text-align: center; margin-bottom: 0.5rem; }
+        .dataTables_filter label,
+        .dataTables_length label { justify-content: center; }
+    }
     .modal-body { max-height: 70vh; overflow-y: auto; }
     .info-table { width: 100%; margin-bottom: 0; }
     .info-table td { padding: 0.2rem 0 !important; vertical-align: top; color: #566a7f; }
@@ -335,6 +367,11 @@
         tableTereliminasi = $('#tableTereliminasi').DataTable({
             processing: true,
             serverSide: false,
+            autoWidth: false,
+            deferRender: true,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
+            pagingType: "simple_numbers",
             ajax: {
                 url: "app/controller/get-data/get-karyawan-tereliminasi.php",
                 type: "POST",
@@ -350,18 +387,55 @@
                 }
             },
             columns: [
-                { data: "no", className: "text-center", width: "45px" },
+                {
+                    // Nomor urut dari posisi tampil agar konsisten saat pindah halaman/filter/sort.
+                    data: null,
+                    className: "text-center",
+                    width: "45px",
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
                 { data: "foto", className: "text-center", orderable: false },
                 { data: "nama" },
                 { data: "nik", className: "text-center" },
                 { data: "site", className: "text-center" },
                 { data: "jabatan", className: "text-center" },
                 { data: "status_karyawan", className: "text-center" },
-                { data: "tgl_keluar", className: "text-center" },
+                {
+                    // Tampilkan format dd-mm-yyyy, tapi sort pakai ISO yyyy-mm-dd
+                    // agar urutan kronologis benar di semua halaman pagination.
+                    data: "tgl_keluar_raw",
+                    className: "text-center",
+                    render: function(data, type, row) {
+                        if (type === "sort" || type === "type") return data || "";
+                        if (type === "filter") return ((row.tgl_keluar || "") + " " + (data || ""));
+                        return row.tgl_keluar || "-";
+                    }
+                },
                 { data: "jenis_keluar", className: "text-center" },
                 { data: "action", orderable: false, className: "text-center" }
             ],
-            order: [[7, "desc"]]
+            order: [[7, "desc"]],
+            language: {
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(difilter dari _MAX_ total data)",
+                zeroRecords: "Data tidak ditemukan",
+                emptyTable: "Belum ada data karyawan tereliminasi",
+                loadingRecords: "Memuat...",
+                processing: "Memproses...",
+                paginate: {
+                    first: "Pertama",
+                    last: "Terakhir",
+                    next: "Berikutnya",
+                    previous: "Sebelumnya"
+                }
+            }
         });
 
         $("#filterSiteTer, #filterJabatanTer, #filterJenisTer, #filterBulanTer").on("change", function() {

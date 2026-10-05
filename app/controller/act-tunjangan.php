@@ -32,9 +32,9 @@ try {
         $action = $_POST['action'] ?? '';
 
         // Variabel umum
-        $id_tun = isset($_POST['id_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['id_tunjangan'])) : '';
-        $id_kar = isset($_POST['id_karier']) ? mysqli_real_escape_string($koneksi, decrypt(trim($_POST['id_karier']))) : '';
-        $jumlah = isset($_POST['jumlah_tunjangan']) ? mysqli_real_escape_string($koneksi, trim($_POST['jumlah_tunjangan'])) : '';
+        $id_tun = isset($_POST['id_tunjangan']) ? trim($_POST['id_tunjangan']) : '';
+        $id_kar = isset($_POST['id_karier']) ? decrypt(trim($_POST['id_karier'])) : '';
+        $jumlah = isset($_POST['jumlah_tunjangan']) ? trim($_POST['jumlah_tunjangan']) : '';
         $nama_raw = trim($_POST['nama_tunjangan'] ?? '');
         $jenis_raw = strtolower(trim($_POST['jenis_tunjangan'] ?? 'tetap'));
         if (!in_array($jenis_raw, ['tetap', 'tidak_tetap'], true)) {
@@ -55,7 +55,7 @@ try {
                 throw new Exception("Nama tunjangan tidak valid: [$nama_raw]");
             }
 
-            $nama = mysqli_real_escape_string($koneksi, $nama_raw);
+            $nama = $nama_raw;
 
             // Cek kelengkapan (menggunakan === '' agar angka 0 tetap lolos)
             if (empty($nama) || $jumlah === '') {
@@ -65,41 +65,44 @@ try {
             if ($action == "add") {
                 if (empty($id_kar)) throw new Exception("ID Karier tidak valid");
 
-                $q = $koneksi->query("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) VALUES ('$id_kar', '$nama', '$jenis', '$jumlah', '$tampil')");
-                if ($q) {
+                $q = $koneksi->prepare("INSERT INTO tb_tunjangan (id_karier, nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template) VALUES (?, ?, ?, ?, ?)");
+                if ($q->execute([$id_kar, $nama, $jenis, $jumlah, $tampil])) {
                     $response = ["status" => "success", "message" => "Data berhasil ditambahkan"];
                 } else {
-                    throw new Exception("Query gagal: " . $koneksi->error);
+                    throw new Exception("Query gagal.");
                 }
-            } 
+            }
             elseif ($action == "edit") {
                 if (empty($id_tun)) throw new Exception("ID Tunjangan tidak valid");
 
-                $q = $koneksi->query("UPDATE tb_tunjangan SET nama_tunjangan='$nama', jenis_tunjangan='$jenis', jumlah_tunjangan='$jumlah', tampil_template='$tampil' WHERE id_tunjangan='$id_tun'");
-                if ($q) {
+                $q = $koneksi->prepare("UPDATE tb_tunjangan SET nama_tunjangan=?, jenis_tunjangan=?, jumlah_tunjangan=?, tampil_template=? WHERE id_tunjangan=?");
+                if ($q->execute([$nama, $jenis, $jumlah, $tampil, $id_tun])) {
                     $response = ["status" => "success", "message" => "Data berhasil diupdate"];
                 } else {
-                    throw new Exception("Query gagal: " . $koneksi->error);
+                    throw new Exception("Query gagal.");
                 }
             }
-        } 
+        }
         // Proses Hapus Data (Tidak memedulikan nama tunjangan)
         elseif ($action == "delete") {
             if (empty($id_tun)) {
                 throw new Exception("ID tidak valid");
             }
 
-            $q = $koneksi->query("DELETE FROM tb_tunjangan WHERE id_tunjangan='$id_tun'");
-            if ($q) {
+            $q = $koneksi->prepare("DELETE FROM tb_tunjangan WHERE id_tunjangan=?");
+            if ($q->execute([$id_tun])) {
                 $response = ["status" => "success", "message" => "Data berhasil dihapus"];
             } else {
-                throw new Exception("Query gagal: " . $koneksi->error);
+                throw new Exception("Query gagal.");
             }
         }
     }
+} catch (PDOException $e) {
+    $response = ["status" => "error", "message" => "Terjadi kesalahan database."];
+    error_log("Error di act-tunjangan.php: " . $e->getMessage());
 } catch (Exception $e) {
     $response = ["status" => "error", "message" => $e->getMessage()];
-    error_log("Error di act-tunjangan.php: " . $e->getMessage()); 
+    error_log("Error di act-tunjangan.php: " . $e->getMessage());
 }
 
 echo json_encode($response);

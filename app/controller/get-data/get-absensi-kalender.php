@@ -27,44 +27,50 @@ while ($cur <= $end) {
 
 // Absen karyawan
 $absenAll = [];
-$absenQ = $koneksi->query("SELECT tgl_absen, jam_kerja, ket_absen
+$stAbsen = $koneksi->prepare("SELECT tgl_absen, jam_kerja, ket_absen
                            FROM tb_absen
-                           WHERE id_karyawan='$id_karyawan'
-                           AND tgl_absen BETWEEN '$tgl_a' AND '$tgl_b'");
+                           WHERE id_karyawan = ?
+                           AND tgl_absen BETWEEN ? AND ?");
+$stAbsen->execute([$id_karyawan, $tgl_a, $tgl_b]);
+$absenQ = $stAbsen;
 if ($absenQ) {
-    while ($a = $absenQ->fetch_assoc()) {
+    while ($a = $absenQ->fetch()) {
         $absenAll[$a['tgl_absen']] = $a;
     }
 }
 
 // Izin yang disetujui
 $izinAll = [];
-$qIzin = $koneksi->query("
+$stIzin = $koneksi->prepare("
     SELECT DATE(tgl_izin) as tanggal
     FROM tb_pengajuan_izin
-    WHERE id_karyawan='$id_karyawan'
-    AND DATE(tgl_izin) <= '$tgl_b'
-    AND DATE(tgl_izin) >= '$tgl_a'
+    WHERE id_karyawan = ?
+    AND DATE(tgl_izin) <= ?
+    AND DATE(tgl_izin) >= ?
     AND status_izin = 'disetujui'
 ");
+$stIzin->execute([$id_karyawan, $tgl_b, $tgl_a]);
+$qIzin = $stIzin;
 if ($qIzin) {
-    while ($r = $qIzin->fetch_assoc()) {
+    while ($r = $qIzin->fetch()) {
         $izinAll[] = $r['tanggal'];
     }
 }
 
 // Sakit yang disetujui
 $sakitAll = [];
-$qSakit = $koneksi->query("
+$stSakit = $koneksi->prepare("
     SELECT tgl_awal_sakit AS awal, tgl_akhir_sakit AS akhir
     FROM tb_sakit
-    WHERE id_karyawan='$id_karyawan'
-    AND tgl_awal_sakit <= '$tgl_b'
-    AND tgl_akhir_sakit >= '$tgl_a'
+    WHERE id_karyawan = ?
+    AND tgl_awal_sakit <= ?
+    AND tgl_akhir_sakit >= ?
     AND status_sakit = 'disetujui'
 ");
+$stSakit->execute([$id_karyawan, $tgl_b, $tgl_a]);
+$qSakit = $stSakit;
 if ($qSakit) {
-    while ($r = $qSakit->fetch_assoc()) {
+    while ($r = $qSakit->fetch()) {
         $sakitAll[] = $r;
     }
 }
@@ -72,13 +78,14 @@ if ($qSakit) {
 // Info karyawan
 $nama = '-';
 $nik = '-';
-$karyawanQ = $koneksi->query("SELECT k.nama_lengkap, k.nik_karyawan, COALESCE(j.nama_jabatan, '-') AS nama_jabatan
+$stKaryawan = $koneksi->prepare("SELECT k.nama_lengkap, k.nik_karyawan, COALESCE(j.nama_jabatan, '-') AS nama_jabatan
     FROM tb_karyawan k
     LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan
     LEFT JOIN tb_jabatan j ON j.id_jabatan = kar.id_jabatan
-    WHERE k.id_karyawan='$id_karyawan' LIMIT 1");
-if ($karyawanQ && $karyawanQ->num_rows > 0) {
-    $kar = $karyawanQ->fetch_assoc();
+    WHERE k.id_karyawan = ? LIMIT 1");
+$stKaryawan->execute([$id_karyawan]);
+$kar = $stKaryawan->fetch();
+if ($kar) {
     $nama = $kar['nama_lengkap'];
     $nik = $kar['nik_karyawan'];
     $jabatan = $kar['nama_jabatan'];

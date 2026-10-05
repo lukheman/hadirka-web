@@ -263,16 +263,18 @@ function ipipJenisKeluar($value)
     return null;
 }
 
-function ipipAddUpdateField(&$fields, $column, $value, $allowNull = false)
+function ipipAddUpdateField(&$fields, &$params, $column, $value, $allowNull = false)
 {
     if ($allowNull) {
         if ($value === null || $value === '') {
             $fields[] = "$column = NULL";
         } else {
-            $fields[] = "$column = '$value'";
+            $fields[] = "$column = ?";
+            $params[] = $value;
         }
     } elseif ($value !== '' && $value !== null) {
-        $fields[] = "$column = '$value'";
+        $fields[] = "$column = ?";
+        $params[] = $value;
     }
 }
 
@@ -335,44 +337,51 @@ if (!$dryRun) {
 
 // ---------------------------------------------------------------- cache master
 
-$cache_site = [];
-$qSite = $koneksi->query("SELECT id_site, LOWER(TRIM(nama_site)) as nama FROM tb_site ORDER BY id_site ASC");
-if ($qSite) while ($r = $qSite->fetch_assoc()) {
-    // Master mengandung duplikat nama: pakai id terkecil agar konsisten.
-    if (!isset($cache_site[$r['nama']])) $cache_site[$r['nama']] = $r['id_site'];
-}
+try {
+    $cache_site = [];
+    $qSite = $koneksi->query("SELECT id_site, LOWER(TRIM(nama_site)) as nama FROM tb_site ORDER BY id_site ASC");
+    while ($r = $qSite->fetch()) {
+        // Master mengandung duplikat nama: pakai id terkecil agar konsisten.
+        if (!isset($cache_site[$r['nama']])) $cache_site[$r['nama']] = $r['id_site'];
+    }
 
-$cache_dept = [];
-$qDept = $koneksi->query("SELECT id_departemen, LOWER(TRIM(nama_departemen)) as nama FROM tb_departemen ORDER BY id_departemen ASC");
-if ($qDept) while ($r = $qDept->fetch_assoc()) {
-    if (!isset($cache_dept[$r['nama']])) $cache_dept[$r['nama']] = $r['id_departemen'];
-}
+    $cache_dept = [];
+    $qDept = $koneksi->query("SELECT id_departemen, LOWER(TRIM(nama_departemen)) as nama FROM tb_departemen ORDER BY id_departemen ASC");
+    while ($r = $qDept->fetch()) {
+        if (!isset($cache_dept[$r['nama']])) $cache_dept[$r['nama']] = $r['id_departemen'];
+    }
 
-$cache_jabatan = [];
-$qJabatan = $koneksi->query("SELECT id_jabatan, LOWER(TRIM(nama_jabatan)) as nama FROM tb_jabatan ORDER BY id_jabatan ASC");
-if ($qJabatan) while ($r = $qJabatan->fetch_assoc()) {
-    if (!isset($cache_jabatan[$r['nama']])) $cache_jabatan[$r['nama']] = $r['id_jabatan'];
-}
+    $cache_jabatan = [];
+    $qJabatan = $koneksi->query("SELECT id_jabatan, LOWER(TRIM(nama_jabatan)) as nama FROM tb_jabatan ORDER BY id_jabatan ASC");
+    while ($r = $qJabatan->fetch()) {
+        if (!isset($cache_jabatan[$r['nama']])) $cache_jabatan[$r['nama']] = $r['id_jabatan'];
+    }
 
-$cache_jenis_keluar = [];
-$qJenis = $koneksi->query("SELECT id_jenis_keluar, LOWER(TRIM(nama_kategori)) as nama FROM m_jenis_keluar ORDER BY id_jenis_keluar ASC");
-if ($qJenis) while ($r = $qJenis->fetch_assoc()) {
-    if (!isset($cache_jenis_keluar[$r['nama']])) $cache_jenis_keluar[$r['nama']] = $r['id_jenis_keluar'];
-}
+    $cache_jenis_keluar = [];
+    $qJenis = $koneksi->query("SELECT id_jenis_keluar, LOWER(TRIM(nama_kategori)) as nama FROM m_jenis_keluar ORDER BY id_jenis_keluar ASC");
+    while ($r = $qJenis->fetch()) {
+        if (!isset($cache_jenis_keluar[$r['nama']])) $cache_jenis_keluar[$r['nama']] = $r['id_jenis_keluar'];
+    }
 
-// Nama master untuk laporan perubahan (id -> nama).
-$nama_site = [];
-$q = $koneksi->query("SELECT id_site, nama_site FROM tb_site");
-if ($q) while ($r = $q->fetch_assoc()) $nama_site[(int)$r['id_site']] = $r['nama_site'];
-$nama_dept = [];
-$q = $koneksi->query("SELECT id_departemen, nama_departemen FROM tb_departemen");
-if ($q) while ($r = $q->fetch_assoc()) $nama_dept[(int)$r['id_departemen']] = $r['nama_departemen'];
-$nama_jabatan = [];
-$q = $koneksi->query("SELECT id_jabatan, nama_jabatan FROM tb_jabatan");
-if ($q) while ($r = $q->fetch_assoc()) $nama_jabatan[(int)$r['id_jabatan']] = $r['nama_jabatan'];
-$nama_jenis_keluar = [];
-$q = $koneksi->query("SELECT id_jenis_keluar, nama_kategori FROM m_jenis_keluar");
-if ($q) while ($r = $q->fetch_assoc()) $nama_jenis_keluar[(int)$r['id_jenis_keluar']] = $r['nama_kategori'];
+    // Nama master untuk laporan perubahan (id -> nama).
+    $nama_site = [];
+    $q = $koneksi->query("SELECT id_site, nama_site FROM tb_site");
+    while ($r = $q->fetch()) $nama_site[(int)$r['id_site']] = $r['nama_site'];
+    $nama_dept = [];
+    $q = $koneksi->query("SELECT id_departemen, nama_departemen FROM tb_departemen");
+    while ($r = $q->fetch()) $nama_dept[(int)$r['id_departemen']] = $r['nama_departemen'];
+    $nama_jabatan = [];
+    $q = $koneksi->query("SELECT id_jabatan, nama_jabatan FROM tb_jabatan");
+    while ($r = $q->fetch()) $nama_jabatan[(int)$r['id_jabatan']] = $r['nama_jabatan'];
+    $nama_jenis_keluar = [];
+    $q = $koneksi->query("SELECT id_jenis_keluar, nama_kategori FROM m_jenis_keluar");
+    while ($r = $q->fetch()) $nama_jenis_keluar[(int)$r['id_jenis_keluar']] = $r['nama_kategori'];
+} catch (PDOException $e) {
+    error_log('csv-karyawan-ipip cache master: ' . $e->getMessage());
+    $response["error"] = "Gagal memuat data master.";
+    echo json_encode($response);
+    exit;
+}
 
 // ---------------------------------------------------------------- proses
 
@@ -440,8 +449,10 @@ try {
             // NIK baru -> insert. Sel kosong pada baris update = pertahankan data lama.
             $existing_id = 0;
             if ($nik_karyawan !== '') {
-                $cek = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nik_karyawan' LIMIT 1");
-                if ($cek && ($tmp = $cek->fetch_assoc())) $existing_id = (int)$tmp['id_karyawan'];
+                $stmtCekNik = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan=? LIMIT 1");
+                $stmtCekNik->execute([$nik_karyawan]);
+                $tmp = $stmtCekNik->fetch();
+                if ($tmp) $existing_id = (int)$tmp['id_karyawan'];
             }
 
             $jenis_kelamin = ipipJenisKelamin($row['D'] ?? '');
@@ -461,9 +472,10 @@ try {
             $id_jabatan = $cache_jabatan[$jabKey] ?? null;
             if ($id_jabatan === null && trim($raw_jabatan) !== '') {
                 // Cek ulang ke DB (anti balapan: mungkin baru ditambahkan).
-                $kunci = $koneksi->real_escape_string($jabKey);
-                if (($qj = $koneksi->query("SELECT id_jabatan FROM tb_jabatan WHERE LOWER(TRIM(nama_jabatan))='$kunci' ORDER BY id_jabatan ASC LIMIT 1"))
-                    && ($tj = $qj->fetch_assoc())) {
+                $stmtJab = $koneksi->prepare("SELECT id_jabatan FROM tb_jabatan WHERE LOWER(TRIM(nama_jabatan))=? ORDER BY id_jabatan ASC LIMIT 1");
+                $stmtJab->execute([$jabKey]);
+                $tj = $stmtJab->fetch();
+                if ($tj) {
                     $id_jabatan = (int)$tj['id_jabatan'];
                     $cache_jabatan[$jabKey] = $id_jabatan;
                 }
@@ -485,10 +497,14 @@ try {
                     throw new Exception("Jabatan '$raw_jabatan' belum disetujui untuk ditambahkan ke master. Ulangi pratinjau dan centang persetujuannya.");
                 }
                 // Disetujui: tambahkan ke tb_jabatan (tulisan Cina sudah dibuang).
-                if (!$koneksi->query("INSERT INTO tb_jabatan (nama_jabatan) VALUES ('" . $koneksi->real_escape_string($jabBaru) . "')")) {
-                    throw new Exception('Gagal menambah jabatan: ' . $koneksi->error);
+                try {
+                    $stmtJabBaru = $koneksi->prepare("INSERT INTO tb_jabatan (nama_jabatan) VALUES (?)");
+                    $stmtJabBaru->execute([$jabBaru]);
+                } catch (PDOException $e) {
+                    error_log('csv-karyawan-ipip jabatan: ' . $e->getMessage());
+                    throw new Exception('Gagal menambah jabatan.');
                 }
-                $id_jabatan = $koneksi->insert_id;
+                $id_jabatan = (int)$koneksi->lastInsertId();
                 $cache_jabatan[$jabKey] = $id_jabatan;
                 $nama_jabatan[$id_jabatan] = $jabBaru;
                 if (!in_array($jabBaru, $response['jabatan_ditambah'], true)) {
@@ -613,73 +629,87 @@ try {
             if ($dryRun) {
                 // Pratinjau: catat tanpa menulis database.
                 $response['berhasil']++;
-                $response['baru_list'][] = ['nik' => $nik_karyawan, 'nama' => trim(stripslashes($nama_lengkap))];
+                $response['baru_list'][] = ['nik' => $nik_karyawan, 'nama' => trim($nama_lengkap)];
                 $response['debug'][] = "Baris $rowNum: Pratinjau - NIK '$nik_karyawan' akan ditambah.";
                 continue;
             }
 
-            $koneksi->begin_transaction();
+            $koneksi->beginTransaction();
             $transaction_started = true;
 
-            $sqlKaryawan = "INSERT INTO tb_karyawan (
+            $stmtKaryawan = $koneksi->prepare("INSERT INTO tb_karyawan (
                     nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir,
                     email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp,
                     status_karyawan, password
                 ) VALUES (
-                    '$nik_karyawan', '$nama_lengkap', '$jenis_kelamin',
-                    " . ($tgl_lahir ? "'$tgl_lahir'" : "NULL") . ",
-                    '$tempat_lahir', '$email_pribadi', '$no_telp', '$nationality',
-                    '$agama', '$status_pernikahan', '', '$status_karyawan', ''
-            )";
-            if (!$koneksi->query($sqlKaryawan)) throw new Exception("Error insert tb_karyawan: " . $koneksi->error);
-            $id_karyawan = $koneksi->insert_id;
+                    ?, ?, ?,
+                    ?,
+                    ?, ?, ?, ?,
+                    ?, ?, '', ?, ''
+            )");
+            $stmtKaryawan->execute([
+                $nik_karyawan, $nama_lengkap, $jenis_kelamin,
+                ($tgl_lahir ?: null),
+                $tempat_lahir, $email_pribadi, $no_telp, $nationality,
+                $agama, $status_pernikahan, $status_karyawan
+            ]);
+            $id_karyawan = (int)$koneksi->lastInsertId();
 
-            $sqlIdentitas = "INSERT INTO tb_identitas (
+            $stmtIdentitas = $koneksi->prepare("INSERT INTO tb_identitas (
                     id_karyawan, nik_ktp, kk_number, npwp, bpjs_tk, bpjs_kes,
                     alamat_ktp, provinsi, kabupaten, kecamatan, desa, rt_rw, nama_ibu,
                     last_education, major, education_level, nama_bank, no_rek, atas_nama_rek
                 ) VALUES (
-                    '$id_karyawan', '$nik_ktp', '$kk_number', '$npwp', '$bpjs_tk',
-                    '$bpjs_kes', '$alamat_ktp', '$provinsi', '$kabupaten', '$kecamatan',
-                    '$desa', '$rt_rw', '$nama_ibu', '$last_education', '$major',
-                    '$education_level', '$nama_bank', '$no_rek', '$atas_nama_rek'
-                )";
-            if (!$koneksi->query($sqlIdentitas)) throw new Exception("Error insert tb_identitas: " . $koneksi->error);
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?
+                )");
+            $stmtIdentitas->execute([
+                $id_karyawan, $nik_ktp, $kk_number, $npwp, $bpjs_tk,
+                $bpjs_kes, $alamat_ktp, $provinsi, $kabupaten, $kecamatan,
+                $desa, $rt_rw, $nama_ibu, $last_education, $major,
+                $education_level, $nama_bank, $no_rek, $atas_nama_rek
+            ]);
 
             if ($nama_kontak1 !== '') {
-                $sqlKontak1 = "INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES ('$id_karyawan', '$nama_kontak1', '$hubungan1', '$no_telp_darurat1', 1)";
-                if (!$koneksi->query($sqlKontak1)) throw new Exception("Error insert kontak 1: " . $koneksi->error);
+                $stmtKontak1 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES (?,?,?,?,1)");
+                $stmtKontak1->execute([$id_karyawan, $nama_kontak1, $hubungan1, $no_telp_darurat1]);
             }
             if ($nama_kontak2 !== '') {
-                $sqlKontak2 = "INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES ('$id_karyawan', '$nama_kontak2', '$hubungan2', '$no_telp_darurat2', 2)";
-                if (!$koneksi->query($sqlKontak2)) throw new Exception("Error insert kontak 2: " . $koneksi->error);
+                $stmtKontak2 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES (?,?,?,?,2)");
+                $stmtKontak2->execute([$id_karyawan, $nama_kontak2, $hubungan2, $no_telp_darurat2]);
             }
 
             // Template IPIP tidak memuat tanggal selesai kontrak -> NULL.
-            $sqlKarierInsert = "INSERT INTO tb_karier (
+            $stmtKarier = $koneksi->prepare("INSERT INTO tb_karier (
                     id_karyawan, id_site, id_departemen, id_jabatan,
-                    spl, ot1_spl, ot2_spl, pot_izin, pot_mangkir,
                     tgl_mulai, tgl_selesai
                 ) VALUES (
-                    '$id_karyawan', '$id_site', '$id_departemen', '$id_jabatan',
-                    '', '', '', '', '',
-                    " . ($tgl_mulai ? "'$tgl_mulai'" : "NULL") . ",
+                    ?, ?, ?, ?,
+                    ?,
                     NULL
-                )";
-            if (!$koneksi->query($sqlKarierInsert)) throw new Exception("Error tb_karier: " . $koneksi->error);
+                )");
+            $stmtKarier->execute([
+                $id_karyawan, $id_site, $id_departemen, $id_jabatan,
+                ($tgl_mulai ?: null)
+            ]);
 
             if (strtolower($status_karyawan) !== 'aktif') {
                 $id_jenis_keluar = $cache_jenis_keluar[strtolower($status_karyawan)] ?? null;
                 if (!$id_jenis_keluar) throw new Exception("Jenis keluar '$status_karyawan' tidak ditemukan di m_jenis_keluar");
-                $cekEliminasi = $koneksi->query("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan='$id_karyawan'");
-                if ($cekEliminasi && $cekEliminasi->num_rows > 0) {
-                    $sqlEliminasi = "UPDATE tb_tereliminasi SET tgl_keluar = '$tgl_keluar', id_jenis_keluar = '$id_jenis_keluar', alasan_keluar = '$alasan_keluar' WHERE id_karyawan = '$id_karyawan'";
+                $stmtCekEliminasi = $koneksi->prepare("SELECT id_tereliminasi FROM tb_tereliminasi WHERE id_karyawan=?");
+                $stmtCekEliminasi->execute([$id_karyawan]);
+                if ($stmtCekEliminasi->fetch()) {
+                    $stmtEliminasi = $koneksi->prepare("UPDATE tb_tereliminasi SET tgl_keluar = ?, id_jenis_keluar = ?, alasan_keluar = ? WHERE id_karyawan = ?");
+                    $stmtEliminasi->execute([$tgl_keluar, $id_jenis_keluar, $alasan_keluar, $id_karyawan]);
                 } else {
-                    $sqlEliminasi = "INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at) VALUES ('$id_karyawan', '$tgl_keluar', '$id_jenis_keluar', '$alasan_keluar', NOW())";
+                    $stmtEliminasi = $koneksi->prepare("INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at) VALUES (?,?,?,?,NOW())");
+                    $stmtEliminasi->execute([$id_karyawan, $tgl_keluar, $id_jenis_keluar, $alasan_keluar]);
                 }
-                if (!$koneksi->query($sqlEliminasi)) throw new Exception("Error tb_tereliminasi: " . $koneksi->error);
             } else {
-                $koneksi->query("DELETE FROM tb_tereliminasi WHERE id_karyawan='$id_karyawan'");
+                $stmtDelEliminasi = $koneksi->prepare("DELETE FROM tb_tereliminasi WHERE id_karyawan=?");
+                $stmtDelEliminasi->execute([$id_karyawan]);
             }
 
             $response["berhasil"]++;
@@ -693,19 +723,30 @@ try {
             if ($nik_karyawan === '') {
                 throw new Exception('NIK (kolom B) kosong, tidak bisa mencocokkan data existing.');
             }
-            $rq = $koneksi->query("SELECT * FROM tb_karyawan WHERE id_karyawan='$existing_id' LIMIT 1");
-            $ex_k = $rq ? $rq->fetch_assoc() : null;
+            $stmtExK = $koneksi->prepare("SELECT * FROM tb_karyawan WHERE id_karyawan=? LIMIT 1");
+            $stmtExK->execute([$existing_id]);
+            $ex_k = $stmtExK->fetch();
             if (!$ex_k) throw new Exception("Data existing NIK '$nik_karyawan' tidak ditemukan.");
             $ex_i = [];
-            if (($q = $koneksi->query("SELECT * FROM tb_identitas WHERE id_karyawan='$existing_id' LIMIT 1")) && ($t = $q->fetch_assoc())) $ex_i = $t;
+            $stmtExI = $koneksi->prepare("SELECT * FROM tb_identitas WHERE id_karyawan=? LIMIT 1");
+            $stmtExI->execute([$existing_id]);
+            if (($t = $stmtExI->fetch())) $ex_i = $t;
             $ex_kr = [];
-            if (($q = $koneksi->query("SELECT * FROM tb_karier WHERE id_karyawan='$existing_id' ORDER BY id_karier DESC LIMIT 1")) && ($t = $q->fetch_assoc())) $ex_kr = $t;
+            $stmtExKr = $koneksi->prepare("SELECT * FROM tb_karier WHERE id_karyawan=? ORDER BY id_karier DESC LIMIT 1");
+            $stmtExKr->execute([$existing_id]);
+            if (($t = $stmtExKr->fetch())) $ex_kr = $t;
             $ex_c1 = [];
-            if (($q = $koneksi->query("SELECT * FROM tb_kontak_darurat WHERE id_karyawan='$existing_id' AND nomor_urut=1 LIMIT 1")) && ($t = $q->fetch_assoc())) $ex_c1 = $t;
+            $stmtExC1 = $koneksi->prepare("SELECT * FROM tb_kontak_darurat WHERE id_karyawan=? AND nomor_urut=1 LIMIT 1");
+            $stmtExC1->execute([$existing_id]);
+            if (($t = $stmtExC1->fetch())) $ex_c1 = $t;
             $ex_c2 = [];
-            if (($q = $koneksi->query("SELECT * FROM tb_kontak_darurat WHERE id_karyawan='$existing_id' AND nomor_urut=2 LIMIT 1")) && ($t = $q->fetch_assoc())) $ex_c2 = $t;
+            $stmtExC2 = $koneksi->prepare("SELECT * FROM tb_kontak_darurat WHERE id_karyawan=? AND nomor_urut=2 LIMIT 1");
+            $stmtExC2->execute([$existing_id]);
+            if (($t = $stmtExC2->fetch())) $ex_c2 = $t;
             $ex_t = [];
-            if (($q = $koneksi->query("SELECT * FROM tb_tereliminasi WHERE id_karyawan='$existing_id' LIMIT 1")) && ($t = $q->fetch_assoc())) $ex_t = $t;
+            $stmtExT = $koneksi->prepare("SELECT * FROM tb_tereliminasi WHERE id_karyawan=? LIMIT 1");
+            $stmtExT->execute([$existing_id]);
+            if (($t = $stmtExT->fetch())) $ex_t = $t;
             $ex_jenis_label = '';
             if (!empty($ex_t['id_jenis_keluar'])) {
                 $qid = (int)$ex_t['id_jenis_keluar'];
@@ -713,79 +754,85 @@ try {
             }
 
             $perubahan = []; // tiap entri: [label, lama, baru]
-            $setK = []; $setI = []; $setR = [];
+            $setK = []; $paramsK = []; $setI = []; $paramsI = []; $setR = []; $paramsR = [];
 
             // Bandingkan kolom teks: sel kosong -> lewati (pertahankan lama).
-            $cekTeks = function ($label, $kolom, $old, $newEsc, &$sets) use (&$perubahan) {
-                $n = trim(stripslashes((string)$newEsc));
+            $cekTeks = function ($label, $kolom, $old, $newEsc, &$sets, &$setParams) use (&$perubahan) {
+                $n = trim((string)$newEsc);
                 if ($n === '') return;
                 $o = trim((string)$old);
                 if ($o === $n) return;
                 $perubahan[] = [$label, $o === '' ? '-' : $o, $n];
-                $sets[] = "$kolom = '$newEsc'";
+                $sets[] = "$kolom = ?";
+                $setParams[] = $newEsc;
             };
             $namaFk = function ($map, $id) {
                 if ($id === null || $id === '') return '-';
                 return $map[(int)$id] ?? ('#' . $id);
             };
 
-            $cekTeks('Nama Lengkap', 'nama_lengkap', $ex_k['nama_lengkap'] ?? '', $nama_lengkap, $setK);
+            $cekTeks('Nama Lengkap', 'nama_lengkap', $ex_k['nama_lengkap'] ?? '', $nama_lengkap, $setK, $paramsK);
             if ($jenis_kelamin !== null) {
                 $o = trim((string)($ex_k['jenis_kelamin'] ?? ''));
                 if ($o !== $jenis_kelamin) {
                     $perubahan[] = ['Jenis Kelamin', $o === '' ? '-' : $o, $jenis_kelamin];
-                    $setK[] = "jenis_kelamin = '$jenis_kelamin'";
+                    $setK[] = "jenis_kelamin = ?";
+                    $paramsK[] = $jenis_kelamin;
                 }
             }
             if ($tgl_lahir !== null) {
                 $o = trim((string)($ex_k['tgl_lahir'] ?? ''));
                 if ($o !== $tgl_lahir) {
                     $perubahan[] = ['Tanggal Lahir', $o === '' ? '-' : $o, $tgl_lahir];
-                    $setK[] = "tgl_lahir = '$tgl_lahir'";
+                    $setK[] = "tgl_lahir = ?";
+                    $paramsK[] = $tgl_lahir;
                 }
             }
-            $cekTeks('Tempat Lahir', 'tempat_lahir', $ex_k['tempat_lahir'] ?? '', $tempat_lahir, $setK);
+            $cekTeks('Tempat Lahir', 'tempat_lahir', $ex_k['tempat_lahir'] ?? '', $tempat_lahir, $setK, $paramsK);
             // Email dibandingkan case-insensitive.
             $oEm = trim((string)($ex_k['email_pribadi'] ?? ''));
-            $nEm = trim(stripslashes($email_pribadi));
+            $nEm = trim((string)$email_pribadi);
             if ($nEm !== '' && strtolower($oEm) !== strtolower($nEm)) {
                 $perubahan[] = ['Email Pribadi', $oEm === '' ? '-' : $oEm, $nEm];
-                $setK[] = "email_pribadi = '$email_pribadi'";
+                $setK[] = "email_pribadi = ?";
+                $paramsK[] = $email_pribadi;
             }
             // Telepon dinormalisasi di kedua sisi sebelum dibandingkan.
             $oTel = ipipTelepon($ex_k['no_telp'] ?? '');
             if ($no_telp !== '' && $oTel !== $no_telp) {
-                $perubahan[] = ['No Telepon', $oTel === '' ? '-' : $oTel, trim(stripslashes($no_telp))];
-                $setK[] = "no_telp = '$no_telp'";
+                $perubahan[] = ['No Telepon', $oTel === '' ? '-' : $oTel, trim((string)$no_telp)];
+                $setK[] = "no_telp = ?";
+                $paramsK[] = $no_telp;
             }
-            $cekTeks('Kewarganegaraan', 'nationality', $ex_k['nationality'] ?? '', $nationality, $setK);
-            $cekTeks('Agama', 'agama', $ex_k['agama'] ?? '', $agama, $setK);
-            $cekTeks('Status Pernikahan', 'status_pernikahan', $ex_k['status_pernikahan'] ?? '', $status_pernikahan, $setK);
+            $cekTeks('Kewarganegaraan', 'nationality', $ex_k['nationality'] ?? '', $nationality, $setK, $paramsK);
+            $cekTeks('Agama', 'agama', $ex_k['agama'] ?? '', $agama, $setK, $paramsK);
+            $cekTeks('Status Pernikahan', 'status_pernikahan', $ex_k['status_pernikahan'] ?? '', $status_pernikahan, $setK, $paramsK);
             // Status selalu dibandingkan (ditentukan dari CJ8/CF8/CI8).
             $oSt = trim((string)($ex_k['status_karyawan'] ?? ''));
             if ($oSt !== $status_karyawan) {
                 $perubahan[] = ['Status Karyawan', $oSt === '' ? '-' : $oSt, $status_karyawan];
-                $setK[] = "status_karyawan = '$status_karyawan'";
+                $setK[] = "status_karyawan = ?";
+                $paramsK[] = $status_karyawan;
             }
 
-            $cekTeks('NIK KTP', 'nik_ktp', $ex_i['nik_ktp'] ?? '', $nik_ktp, $setI);
-            $cekTeks('No KK', 'kk_number', $ex_i['kk_number'] ?? '', $kk_number, $setI);
-            $cekTeks('NPWP', 'npwp', $ex_i['npwp'] ?? '', $npwp, $setI);
-            $cekTeks('BPJS TK', 'bpjs_tk', $ex_i['bpjs_tk'] ?? '', $bpjs_tk, $setI);
-            $cekTeks('BPJS Kesehatan', 'bpjs_kes', $ex_i['bpjs_kes'] ?? '', $bpjs_kes, $setI);
-            $cekTeks('Alamat KTP', 'alamat_ktp', $ex_i['alamat_ktp'] ?? '', $alamat_ktp, $setI);
-            $cekTeks('Provinsi', 'provinsi', $ex_i['provinsi'] ?? '', $provinsi, $setI);
-            $cekTeks('Kabupaten/Kota', 'kabupaten', $ex_i['kabupaten'] ?? '', $kabupaten, $setI);
-            $cekTeks('Kecamatan', 'kecamatan', $ex_i['kecamatan'] ?? '', $kecamatan, $setI);
-            $cekTeks('Desa/Kelurahan', 'desa', $ex_i['desa'] ?? '', $desa, $setI);
-            $cekTeks('RT/RW', 'rt_rw', $ex_i['rt_rw'] ?? '', $rt_rw, $setI);
-            $cekTeks('Nama Ibu Kandung', 'nama_ibu', $ex_i['nama_ibu'] ?? '', $nama_ibu, $setI);
-            $cekTeks('Pendidikan Terakhir', 'last_education', $ex_i['last_education'] ?? '', $last_education, $setI);
-            $cekTeks('Jurusan', 'major', $ex_i['major'] ?? '', $major, $setI);
-            $cekTeks('Jenjang Pendidikan', 'education_level', $ex_i['education_level'] ?? '', $education_level, $setI);
-            $cekTeks('Nama Bank', 'nama_bank', $ex_i['nama_bank'] ?? '', $nama_bank, $setI);
-            $cekTeks('Nomor Rekening', 'no_rek', $ex_i['no_rek'] ?? '', $no_rek, $setI);
-            $cekTeks('Atas Nama Rekening', 'atas_nama_rek', $ex_i['atas_nama_rek'] ?? '', $atas_nama_rek, $setI);
+            $cekTeks('NIK KTP', 'nik_ktp', $ex_i['nik_ktp'] ?? '', $nik_ktp, $setI, $paramsI);
+            $cekTeks('No KK', 'kk_number', $ex_i['kk_number'] ?? '', $kk_number, $setI, $paramsI);
+            $cekTeks('NPWP', 'npwp', $ex_i['npwp'] ?? '', $npwp, $setI, $paramsI);
+            $cekTeks('BPJS TK', 'bpjs_tk', $ex_i['bpjs_tk'] ?? '', $bpjs_tk, $setI, $paramsI);
+            $cekTeks('BPJS Kesehatan', 'bpjs_kes', $ex_i['bpjs_kes'] ?? '', $bpjs_kes, $setI, $paramsI);
+            $cekTeks('Alamat KTP', 'alamat_ktp', $ex_i['alamat_ktp'] ?? '', $alamat_ktp, $setI, $paramsI);
+            $cekTeks('Provinsi', 'provinsi', $ex_i['provinsi'] ?? '', $provinsi, $setI, $paramsI);
+            $cekTeks('Kabupaten/Kota', 'kabupaten', $ex_i['kabupaten'] ?? '', $kabupaten, $setI, $paramsI);
+            $cekTeks('Kecamatan', 'kecamatan', $ex_i['kecamatan'] ?? '', $kecamatan, $setI, $paramsI);
+            $cekTeks('Desa/Kelurahan', 'desa', $ex_i['desa'] ?? '', $desa, $setI, $paramsI);
+            $cekTeks('RT/RW', 'rt_rw', $ex_i['rt_rw'] ?? '', $rt_rw, $setI, $paramsI);
+            $cekTeks('Nama Ibu Kandung', 'nama_ibu', $ex_i['nama_ibu'] ?? '', $nama_ibu, $setI, $paramsI);
+            $cekTeks('Pendidikan Terakhir', 'last_education', $ex_i['last_education'] ?? '', $last_education, $setI, $paramsI);
+            $cekTeks('Jurusan', 'major', $ex_i['major'] ?? '', $major, $setI, $paramsI);
+            $cekTeks('Jenjang Pendidikan', 'education_level', $ex_i['education_level'] ?? '', $education_level, $setI, $paramsI);
+            $cekTeks('Nama Bank', 'nama_bank', $ex_i['nama_bank'] ?? '', $nama_bank, $setI, $paramsI);
+            $cekTeks('Nomor Rekening', 'no_rek', $ex_i['no_rek'] ?? '', $no_rek, $setI, $paramsI);
+            $cekTeks('Atas Nama Rekening', 'atas_nama_rek', $ex_i['atas_nama_rek'] ?? '', $atas_nama_rek, $setI, $paramsI);
 
             // Master penempatan: hanya dicek bila sel template terisi
             // (site selalu terisi karena default PT. IPIP).
@@ -802,7 +849,8 @@ try {
                 $nName = $namaFk($nama_site, $id_site);
                 if (strtolower(trim($oName)) !== strtolower(trim($nName))) {
                     $perubahan[] = ['Site', $oName, $nName];
-                    $setR[] = "id_site = '$id_site'";
+                    $setR[] = "id_site = ?";
+                    $paramsR[] = $id_site;
                 }
             }
             if ($id_departemen !== null) {
@@ -810,7 +858,8 @@ try {
                 $nName = $namaFk($nama_dept, $id_departemen);
                 if (strtolower(trim($oName)) !== strtolower(trim($nName))) {
                     $perubahan[] = ['Departemen', $oName, $nName];
-                    $setR[] = "id_departemen = '$id_departemen'";
+                    $setR[] = "id_departemen = ?";
+                    $paramsR[] = $id_departemen;
                 }
             }
             if ($id_jabatan !== null) {
@@ -818,14 +867,16 @@ try {
                 $nName = $namaFk($nama_jabatan, $id_jabatan);
                 if (strtolower(trim($oName)) !== strtolower(trim($nName))) {
                     $perubahan[] = ['Jabatan', $oName, $nName];
-                    $setR[] = "id_jabatan = '$id_jabatan'";
+                    $setR[] = "id_jabatan = ?";
+                    $paramsR[] = $id_jabatan;
                 }
             }
             if ($tgl_mulai !== null) {
                 $o = trim((string)($ex_kr['tgl_mulai'] ?? ''));
                 if ($o !== $tgl_mulai) {
                     $perubahan[] = ['Tgl Masuk Site', $o === '' ? '-' : $o, $tgl_mulai];
-                    $setR[] = "tgl_mulai = '$tgl_mulai'";
+                    $setR[] = "tgl_mulai = ?";
+                    $paramsR[] = $tgl_mulai;
                 }
             }
 
@@ -834,20 +885,20 @@ try {
             foreach ([1 => [$ex_c1, $nama_kontak1, $hubungan1, $no_telp_darurat1],
                        2 => [$ex_c2, $nama_kontak2, $hubungan2, $no_telp_darurat2]] as $urut => $slot) {
                 [$ex_c, $nmEsc, $hubEsc, $telEsc] = $slot;
-                $n = trim(stripslashes($nmEsc));
+                $n = trim((string)$nmEsc);
                 if ($n === '') continue;
-                $h = trim(stripslashes($hubEsc));
-                $t = trim(stripslashes($telEsc));
+                $h = trim((string)$hubEsc);
+                $t = trim((string)$telEsc);
                 if (empty($ex_c)) {
                     $perubahan[] = ["Kontak Darurat $urut", '-', "$n / $h / $t"];
-                    $kontakOps[] = "INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES ('$existing_id', '$nmEsc', '$hubEsc', '$telEsc', $urut)";
+                    $kontakOps[] = ['sql' => "INSERT INTO tb_kontak_darurat (id_karyawan, nama_kontak, hubungan, no_telp_darurat, nomor_urut) VALUES (?,?,?,?,?)", 'params' => [$existing_id, $nmEsc, $hubEsc, $telEsc, $urut]];
                 } else {
                     $oN = trim((string)($ex_c['nama_kontak'] ?? ''));
                     $oH = trim((string)($ex_c['hubungan'] ?? ''));
                     $oT = ipipTelepon($ex_c['no_telp_darurat'] ?? '');
                     if ($oN !== $n || $oH !== $h || $oT !== $t) {
                         $perubahan[] = ["Kontak Darurat $urut", "$oN / $oH / $oT", "$n / $h / $t"];
-                        $kontakOps[] = "UPDATE tb_kontak_darurat SET nama_kontak='$nmEsc', hubungan='$hubEsc', no_telp_darurat='$telEsc' WHERE id_karyawan='$existing_id' AND nomor_urut=$urut";
+                        $kontakOps[] = ['sql' => "UPDATE tb_kontak_darurat SET nama_kontak=?, hubungan=?, no_telp_darurat=? WHERE id_karyawan=? AND nomor_urut=?", 'params' => [$nmEsc, $hubEsc, $telEsc, $existing_id, $urut]];
                     }
                 }
             }
@@ -857,23 +908,23 @@ try {
             if (strtolower($status_karyawan) !== 'aktif') {
                 $id_jenis_keluar = $cache_jenis_keluar[strtolower($status_karyawan)] ?? null;
                 if (!$id_jenis_keluar) throw new Exception("Jenis keluar '$status_karyawan' tidak ditemukan di m_jenis_keluar");
-                $nAl = trim(stripslashes($alasan_keluar));
+                $nAl = trim((string)$alasan_keluar);
                 if (empty($ex_t)) {
                     $perubahan[] = ['Data Keluar', '-', "$status_karyawan, $tgl_keluar"];
-                    $elimOps[] = "INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at) VALUES ('$existing_id', '$tgl_keluar', '$id_jenis_keluar', '$alasan_keluar', NOW())";
+                    $elimOps[] = ['sql' => "INSERT INTO tb_tereliminasi (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at) VALUES (?,?,?,?,NOW())", 'params' => [$existing_id, $tgl_keluar, $id_jenis_keluar, $alasan_keluar]];
                 } else {
                     $oTgl = trim((string)($ex_t['tgl_keluar'] ?? ''));
                     $oAl = trim((string)($ex_t['alasan_keluar'] ?? ''));
                     if ($oTgl !== $tgl_keluar || $ex_jenis_label !== $status_karyawan || $oAl !== $nAl) {
                         $oR = trim("$ex_jenis_label, $oTgl, $oAl", ', ');
                         $perubahan[] = ['Data Keluar', $oR === '' ? '-' : $oR, "$status_karyawan, $tgl_keluar, $nAl"];
-                        $elimOps[] = "UPDATE tb_tereliminasi SET tgl_keluar='$tgl_keluar', id_jenis_keluar='$id_jenis_keluar', alasan_keluar='$alasan_keluar' WHERE id_karyawan='$existing_id'";
+                        $elimOps[] = ['sql' => "UPDATE tb_tereliminasi SET tgl_keluar=?, id_jenis_keluar=?, alasan_keluar=? WHERE id_karyawan=?", 'params' => [$tgl_keluar, $id_jenis_keluar, $alasan_keluar, $existing_id]];
                     }
                 }
             } elseif (!empty($ex_t)) {
                 $oR = trim("$ex_jenis_label, " . ($ex_t['tgl_keluar'] ?? ''), ', ');
                 $perubahan[] = ['Data Keluar', $oR === '' ? 'ada' : $oR, 'dihapus (kembali Aktif)'];
-                $elimOps[] = "DELETE FROM tb_tereliminasi WHERE id_karyawan='$existing_id'";
+                $elimOps[] = ['sql' => "DELETE FROM tb_tereliminasi WHERE id_karyawan=?", 'params' => [$existing_id]];
             }
 
             if (empty($perubahan)) {
@@ -882,7 +933,7 @@ try {
                 continue;
             }
 
-            $namaTampil = trim(stripslashes($nama_lengkap)) !== '' ? trim(stripslashes($nama_lengkap)) : trim((string)($ex_k['nama_lengkap'] ?? ''));
+            $namaTampil = trim((string)$nama_lengkap) !== '' ? trim((string)$nama_lengkap) : trim((string)($ex_k['nama_lengkap'] ?? ''));
             $daftar = [];
             foreach ($perubahan as $p) $daftar[] = "{$p[0]}: '{$p[1]}' → '{$p[2]}'";
             $response['diupdate']++;
@@ -893,41 +944,38 @@ try {
                 continue;
             }
 
-            $koneksi->begin_transaction();
+            $koneksi->beginTransaction();
             $transaction_started = true;
 
             if (!empty($setK)) {
-                if (!$koneksi->query("UPDATE tb_karyawan SET " . implode(', ', $setK) . " WHERE id_karyawan='$existing_id'")) {
-                    throw new Exception('Error update tb_karyawan: ' . $koneksi->error);
-                }
+                $stmtUpK = $koneksi->prepare("UPDATE tb_karyawan SET " . implode(', ', $setK) . " WHERE id_karyawan=?");
+                $stmtUpK->execute(array_merge($paramsK, [$existing_id]));
             }
             if (!empty($setI)) {
                 if (!empty($ex_i)) {
-                    if (!$koneksi->query("UPDATE tb_identitas SET " . implode(', ', $setI) . " WHERE id_karyawan='$existing_id'")) {
-                        throw new Exception('Error update tb_identitas: ' . $koneksi->error);
-                    }
+                    $stmtUpI = $koneksi->prepare("UPDATE tb_identitas SET " . implode(', ', $setI) . " WHERE id_karyawan=?");
+                    $stmtUpI->execute(array_merge($paramsI, [$existing_id]));
                 } else {
-                    $sqlI = "INSERT INTO tb_identitas (id_karyawan, nik_ktp, kk_number, npwp, bpjs_tk, bpjs_kes, alamat_ktp, provinsi, kabupaten, kecamatan, desa, rt_rw, nama_ibu, last_education, major, education_level, nama_bank, no_rek, atas_nama_rek)
-                        VALUES ('$existing_id', '$nik_ktp', '$kk_number', '$npwp', '$bpjs_tk', '$bpjs_kes', '$alamat_ktp', '$provinsi', '$kabupaten', '$kecamatan', '$desa', '$rt_rw', '$nama_ibu', '$last_education', '$major', '$education_level', '$nama_bank', '$no_rek', '$atas_nama_rek')";
-                    if (!$koneksi->query($sqlI)) throw new Exception('Error insert tb_identitas: ' . $koneksi->error);
+                    $stmtInsI = $koneksi->prepare("INSERT INTO tb_identitas (id_karyawan, nik_ktp, kk_number, npwp, bpjs_tk, bpjs_kes, alamat_ktp, provinsi, kabupaten, kecamatan, desa, rt_rw, nama_ibu, last_education, major, education_level, nama_bank, no_rek, atas_nama_rek)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                    $stmtInsI->execute([$existing_id, $nik_ktp, $kk_number, $npwp, $bpjs_tk, $bpjs_kes, $alamat_ktp, $provinsi, $kabupaten, $kecamatan, $desa, $rt_rw, $nama_ibu, $last_education, $major, $education_level, $nama_bank, $no_rek, $atas_nama_rek]);
                 }
             }
             if (!empty($setR)) {
                 if (!empty($ex_kr)) {
-                    if (!$koneksi->query("UPDATE tb_karier SET " . implode(', ', $setR) . " WHERE id_karier='" . (int)$ex_kr['id_karier'] . "'")) {
-                        throw new Exception('Error update tb_karier: ' . $koneksi->error);
-                    }
+                    $stmtUpR = $koneksi->prepare("UPDATE tb_karier SET " . implode(', ', $setR) . " WHERE id_karier=?");
+                    $stmtUpR->execute(array_merge($paramsR, [(int)$ex_kr['id_karier']]));
                 } else {
-                    $sqlR = "INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, spl, ot1_spl, ot2_spl, pot_izin, pot_mangkir, tgl_mulai, tgl_selesai)
-                        VALUES ('$existing_id', '$id_site', '$id_departemen', '$id_jabatan', '', '', '', '', '', " . ($tgl_mulai ? "'$tgl_mulai'" : 'NULL') . ", NULL)";
-                    if (!$koneksi->query($sqlR)) throw new Exception('Error insert tb_karier: ' . $koneksi->error);
+                    $stmtInsR = $koneksi->prepare("INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, tgl_mulai, tgl_selesai)
+                        VALUES (?,?,?,?,?,NULL)");
+                    $stmtInsR->execute([$existing_id, $id_site, $id_departemen, $id_jabatan, ($tgl_mulai ?: null)]);
                 }
             }
-            foreach ($kontakOps as $sqlOp) {
-                if (!$koneksi->query($sqlOp)) throw new Exception('Error kontak darurat: ' . $koneksi->error);
+            foreach ($kontakOps as $op) {
+                $koneksi->prepare($op['sql'])->execute($op['params']);
             }
-            foreach ($elimOps as $sqlOp) {
-                if (!$koneksi->query($sqlOp)) throw new Exception('Error tb_tereliminasi: ' . $koneksi->error);
+            foreach ($elimOps as $op) {
+                $koneksi->prepare($op['sql'])->execute($op['params']);
             }
 
             $koneksi->commit();
@@ -936,9 +984,16 @@ try {
             $response['debug'][] = "Baris $rowNum: Diupdate - NIK '$nik_karyawan' (" . count($perubahan) . ' perubahan).';
             }
         } catch (Exception $e) {
-            if ($transaction_started) $koneksi->rollback();
-            $response["gagal"]++;
-            $response["errors"][] = "Baris $rowNum: " . $e->getMessage();
+            if ($transaction_started && $koneksi->inTransaction()) $koneksi->rollBack();
+            if ($e instanceof PDOException && (($e->errorInfo[1] ?? null) == 1062)) {
+                error_log("csv-karyawan-ipip duplikat baris $rowNum: " . $e->getMessage());
+                $response["dilewati"]++;
+                $response["debug"][] = "Baris $rowNum: Dilewati - data duplikat.";
+            } else {
+                if ($e instanceof PDOException) error_log("csv-karyawan-ipip DB baris $rowNum: " . $e->getMessage());
+                $response["gagal"]++;
+                $response["errors"][] = "Baris $rowNum: " . ($e instanceof PDOException ? "Gagal menyimpan data." : $e->getMessage());
+            }
         }
     }
 

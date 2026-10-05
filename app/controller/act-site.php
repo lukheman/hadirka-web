@@ -21,9 +21,12 @@ switch ($action) {
         }
 
         $sql = $koneksi->prepare("INSERT INTO tb_site (nama_site, lokasi) VALUES (?, ?)");
-        $sql->bind_param("ss", $nama, $lokasi);
-
-        $response["status"] = $sql->execute() ? "success" : "error";
+        try {
+            $response["status"] = $sql->execute([$nama, $lokasi]) ? "success" : "error";
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            $response["status"] = "error";
+        }
         echo json_encode($response);
         exit;
 
@@ -34,9 +37,12 @@ switch ($action) {
         $lokasi = $_POST['lokasi'] ?? '';
 
         $sql = $koneksi->prepare("UPDATE tb_site SET nama_site=?, lokasi=? WHERE id_site=?");
-        $sql->bind_param("ssi", $nama, $lokasi, $id);
-
-        $response["status"] = $sql->execute() ? "success" : "error";
+        try {
+            $response["status"] = $sql->execute([$nama, $lokasi, $id]) ? "success" : "error";
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            $response["status"] = "error";
+        }
         echo json_encode($response);
         exit;
 
@@ -45,9 +51,12 @@ switch ($action) {
         $id = $_POST['id_site'] ?? '';
 
         $sql = $koneksi->prepare("DELETE FROM tb_site WHERE id_site=?");
-        $sql->bind_param("i", $id);
-
-        $response["status"] = $sql->execute() ? "success" : "error";
+        try {
+            $response["status"] = $sql->execute([$id]) ? "success" : "error";
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            $response["status"] = "error";
+        }
         echo json_encode($response);
         exit;
 }

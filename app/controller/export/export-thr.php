@@ -27,15 +27,19 @@ header("Expires: 0");
 // BUILD WHERE CLAUSE SESUAI FILTER
 // ----------------------------------------------------
 $where = [];
+$params = [];
 
 if (!empty($periode)) {
-    $where[] = "r.periode = '" . intval($periode) . "'";
+    $where[] = "r.periode = ?";
+    $params[] = (int)$periode;
 }
 if (!empty($site)) {
-    $where[] = "s.nama_site = '" . $koneksi->real_escape_string($site) . "'";
+    $where[] = "s.nama_site = ?";
+    $params[] = $site;
 }
 if (!empty($jabatan)) {
-    $where[] = "j.nama_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+    $where[] = "j.nama_jabatan = ?";
+    $params[] = $jabatan;
 }
 if (!empty($bank)) {
     // Normalisasi pencarian Bank
@@ -44,7 +48,8 @@ if (!empty($bank)) {
     } else if ($bank == 'LAINNYA') {
         $where[] = "(i.nama_bank NOT LIKE '%MANDIRI%' AND i.nama_bank NOT LIKE '%BRI%' AND i.nama_bank NOT LIKE '%BNI%' AND i.nama_bank NOT LIKE '%BCA%' AND i.nama_bank IS NOT NULL AND i.nama_bank != 'BELUM PUNYA REKENING')";
     } else {
-        $where[] = "i.nama_bank LIKE '%" . $koneksi->real_escape_string($bank) . "%'";
+        $where[] = "i.nama_bank LIKE ?";
+        $params[] = "%$bank%";
     }
 }
 
@@ -72,7 +77,10 @@ $sql = "SELECT
         $whereClause
         ORDER BY r.periode DESC, k.nama_lengkap ASC";
 
-$q = $koneksi->query($sql);
+$stmt = $koneksi->prepare($sql);
+$stmt->execute($params);
+$rowsThr = $stmt->fetchAll();
+$q = $rowsThr;
 ?>
 
 <table border="1">
@@ -91,9 +99,9 @@ $q = $koneksi->query($sql);
     </thead>
     <tbody>
         <?php
-        if ($q && $q->num_rows > 0) {
+        if (count($q) > 0) {
             $no = 1;
-            while ($row = $q->fetch_assoc()) {
+            foreach ($q as $row) {
                 // Tangani nilai kosong
                 $site = $row['nama_site'] ? $row['nama_site'] : '-';
                 $jabatan = $row['nama_jabatan'] ? $row['nama_jabatan'] : '-';

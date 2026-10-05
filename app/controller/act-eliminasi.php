@@ -8,8 +8,7 @@ $action = $_POST['action'] ?? '';
 
 function input($data)
 {
-    global $koneksi;
-    return isset($_POST[$data]) ? $koneksi->real_escape_string(trim($_POST[$data])) : '';
+    return isset($_POST[$data]) ? trim($_POST[$data]) : '';
 }
 
 if ($action == "get") { // Ambil data eliminasi untuk koreksi
@@ -18,9 +17,11 @@ if ($action == "get") { // Ambil data eliminasi untuk koreksi
         echo json_encode(["status" => "error", "msg" => "ID Karyawan tidak valid"]);
         exit;
     }
-    $q = $koneksi->query("SELECT id_tereliminasi, id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar FROM tb_tereliminasi WHERE id_karyawan = '$id_karyawan' LIMIT 1");
-    if ($q && $q->num_rows > 0) {
-        echo json_encode(["status" => "ok", "data" => $q->fetch_assoc()]);
+    $st = $koneksi->prepare("SELECT id_tereliminasi, id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar FROM tb_tereliminasi WHERE id_karyawan = ? LIMIT 1");
+    $st->execute([$id_karyawan]);
+    $row = $st->fetch();
+    if ($row) {
+        echo json_encode(["status" => "ok", "data" => $row]);
     } else {
         echo json_encode(["status" => "error", "msg" => "Data eliminasi tidak ditemukan"]);
     }
@@ -28,37 +29,45 @@ if ($action == "get") { // Ambil data eliminasi untuk koreksi
 }
 
 if ($action == "reaktivasi") { // Kembalikan karyawan menjadi Aktif
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
     try {
         $id_karyawan = isset($_POST['id_karyawan']) ? (int)$_POST['id_karyawan'] : 0;
         if ($id_karyawan <= 0) {
             throw new Exception("ID Karyawan tidak valid.");
         }
 
-        $cek = $koneksi->query("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE id_karyawan = '$id_karyawan'");
-        if (!$cek || $cek->num_rows === 0) {
+        $cek = $koneksi->prepare("SELECT id_karyawan, nama_lengkap FROM tb_karyawan WHERE id_karyawan = ?");
+        $cek->execute([$id_karyawan]);
+        $cekRow = $cek->fetch();
+        if (!$cekRow) {
             throw new Exception("Karyawan tidak ditemukan.");
         }
-        $nama = $cek->fetch_assoc()['nama_lengkap'];
+        $nama = $cekRow['nama_lengkap'];
 
-        if (!$koneksi->query("UPDATE tb_karyawan SET status_karyawan = 'Aktif' WHERE id_karyawan = '$id_karyawan'")) {
-            throw new Exception("Gagal mengaktifkan karyawan: " . $koneksi->error);
+        $upd = $koneksi->prepare("UPDATE tb_karyawan SET status_karyawan = 'Aktif' WHERE id_karyawan = ?");
+        if (!$upd->execute([$id_karyawan])) {
+            throw new Exception("Gagal mengaktifkan karyawan.");
         }
-        if (!$koneksi->query("DELETE FROM tb_tereliminasi WHERE id_karyawan = '$id_karyawan'")) {
-            throw new Exception("Gagal menghapus data eliminasi: " . $koneksi->error);
+        $del = $koneksi->prepare("DELETE FROM tb_tereliminasi WHERE id_karyawan = ?");
+        if (!$del->execute([$id_karyawan])) {
+            throw new Exception("Gagal menghapus data eliminasi.");
         }
 
         $koneksi->commit();
         echo json_encode(["status" => "ok", "msg" => "Karyawan $nama berhasil diaktifkan kembali."]);
+    } catch (PDOException $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal memproses reaktivasi."]);
     } catch (Exception $e) {
-        $koneksi->rollback();
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
         echo json_encode(["status" => "error", "msg" => $e->getMessage()]);
     }
     exit;
 }
 
 if ($action == "eliminasi") { // Proses eliminasi
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
 
     try {
         // Ambil data dari form
@@ -77,53 +86,57 @@ if ($action == "eliminasi") { // Proses eliminasi
 
 
         // Cari id_karyawan berdasarkan NIK
-        $sql_check = "SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = '$nik_karyawan'";
-        $result = $koneksi->query($sql_check);
+        $stCheck = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
+        $stCheck->execute([$nik_karyawan]);
+        $row = $stCheck->fetch();
 
-        if ($result->num_rows === 0) {
+        if (!$row) {
             throw new Exception("Karyawan dengan NIK $nik_karyawan tidak ditemukan.");
         }
 
-        $row = $result->fetch_assoc();
         $id_karyawan = $row['id_karyawan'];
 
         // Cari nama_kategori berdasarkan id_jenis_keluar
-        $sql_jenis = "SELECT id_jenis_keluar FROM m_jenis_keluar WHERE id_jenis_keluar = '$id_jenis_keluar'";
-        $result_jenis = $koneksi->query($sql_jenis);
+        $stJenis = $koneksi->prepare("SELECT id_jenis_keluar FROM m_jenis_keluar WHERE id_jenis_keluar = ?");
+        $stJenis->execute([$id_jenis_keluar]);
+        $row_jenis = $stJenis->fetch();
 
-        if ($result_jenis->num_rows === 0) {
+        if (!$row_jenis) {
             throw new Exception("Jenis keluar tidak valid.");
         }
 
-        $row_jenis = $result_jenis->fetch_assoc();
         $id_jenis_keluar = $row_jenis['id_jenis_keluar'];
 
 
         // cek apakah sudah ada eliminasi
-        $cekEliminasi = $koneksi->query("
-            SELECT id_tereliminasi 
-            FROM tb_tereliminasi 
-            WHERE id_karyawan = '$id_karyawan'
+        $cekEliminasi = $koneksi->prepare("
+            SELECT id_tereliminasi
+            FROM tb_tereliminasi
+            WHERE id_karyawan = ?
         ");
+        $cekEliminasi->execute([$id_karyawan]);
+        $elimAda = $cekEliminasi->fetch();
 
-        if ($cekEliminasi->num_rows > 0) {
+        if ($elimAda) {
             // UPDATE (koreksi data eliminasi)
-            $sqlEliminasi = "UPDATE tb_tereliminasi SET
-                tgl_keluar = '$tgl_keluar',
-                id_jenis_keluar = '$id_jenis_keluar',
-                alasan_keluar = '$alasan_keluar',
+            $stElim = $koneksi->prepare("UPDATE tb_tereliminasi SET
+                tgl_keluar = ?,
+                id_jenis_keluar = ?,
+                alasan_keluar = ?,
                 created_at = NOW()
-            WHERE id_karyawan = '$id_karyawan'";
+            WHERE id_karyawan = ?");
+            $okElim = $stElim->execute([$tgl_keluar, $id_jenis_keluar, $alasan_keluar, $id_karyawan]);
         } else {
             // INSERT (eliminasi baru)
-            $sqlEliminasi = "INSERT INTO tb_tereliminasi
+            $stElim = $koneksi->prepare("INSERT INTO tb_tereliminasi
                 (id_karyawan, tgl_keluar, id_jenis_keluar, alasan_keluar, created_at)
             VALUES
-                ('$id_karyawan', '$tgl_keluar', '$id_jenis_keluar', '$alasan_keluar', NOW())";
+                (?, ?, ?, ?, NOW())");
+            $okElim = $stElim->execute([$id_karyawan, $tgl_keluar, $id_jenis_keluar, $alasan_keluar]);
         }
 
-        if (!$koneksi->query($sqlEliminasi)) {
-            throw new Exception("Gagal menyimpan data eliminasi: " . $koneksi->error);
+        if (!$okElim) {
+            throw new Exception("Gagal menyimpan data eliminasi.");
         }
 
         // 2. Update status_karyawan di tb_karyawan menjadi 'Resign' atau 'Cut'
@@ -148,12 +161,12 @@ if ($action == "eliminasi") { // Proses eliminasi
         }
 
 
-        $sql_update = "UPDATE tb_karyawan 
-                      SET status_karyawan = '$status_baru' 
-                      WHERE id_karyawan = '$id_karyawan'";
+        $stUpd = $koneksi->prepare("UPDATE tb_karyawan
+                      SET status_karyawan = ?
+                      WHERE id_karyawan = ?");
 
-        if (!$koneksi->query($sql_update)) {
-            throw new Exception("Gagal update status karyawan: " . $koneksi->error);
+        if (!$stUpd->execute([$status_baru, $id_karyawan])) {
+            throw new Exception("Gagal update status karyawan.");
         }
 
         $koneksi->commit();
@@ -161,8 +174,15 @@ if ($action == "eliminasi") { // Proses eliminasi
             "status" => "ok",
             "msg" => "Karyawan berhasil dieliminasi dengan status: $status_baru"
         ]);
+    } catch (PDOException $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        echo json_encode([
+            "status" => "error",
+            "msg" => "Gagal memproses eliminasi."
+        ]);
     } catch (Exception $e) {
-        $koneksi->rollback();
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
         echo json_encode([
             "status" => "error",
             "msg" => $e->getMessage()

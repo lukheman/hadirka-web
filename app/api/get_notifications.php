@@ -3,18 +3,25 @@ include 'koneksi-api.php';
 
 // Query untuk mengambil semua notifikasi, diurutkan berdasarkan waktu terbaru
 $sql = "SELECT * FROM tb_pengumuman ORDER BY waktu_buat DESC";
-$result = $koneksi->query($sql);
+
+try {
+    $stmt = $koneksi->query($sql);
+    $rows = $stmt->fetchAll();
+} catch (PDOException $e) {
+    error_log('get_notifications gagal: ' . $e->getMessage());
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Terjadi kesalahan database.', 'data' => []]);
+    exit;
+}
 
 $notifications = array();
 
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        // Konversi waktu_buat menjadi format yang mudah dibaca (opsional, bisa dilakukan di Flutter)
-        // Untuk contoh ini, kita kirimkan sebagai string waktu
-        $row['time_display'] = time_ago($row['waktu_buat']); // Asumsi ada fungsi time_ago()
-        
-        $notifications[] = $row;
-    }
+foreach ($rows as $row) {
+    // Konversi waktu_buat menjadi format yang mudah dibaca (opsional, bisa dilakukan di Flutter)
+    // Untuk contoh ini, kita kirimkan sebagai string waktu
+    $row['time_display'] = time_ago($row['waktu_buat']); // Asumsi ada fungsi time_ago()
+    
+    $notifications[] = $row;
 }
 
 // Fungsi dummy untuk menghitung selisih waktu (Anda bisa menggunakan library yang lebih solid)
@@ -33,6 +40,4 @@ function time_ago($timestamp) {
 
 header('Content-Type: application/json');
 echo json_encode(['status' => 'success', 'data' => $notifications]);
-
-$koneksi->close();
 ?>

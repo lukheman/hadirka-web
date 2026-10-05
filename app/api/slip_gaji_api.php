@@ -99,8 +99,6 @@ if (!$id_karyawan || !$startDate || !$endDate) {
 
 $core = generateSlipGajiById($id_karyawan, $startDate, $endDate);
 
-if (isset($koneksi) && is_object($koneksi)) $koneksi->close();
-
 if (isset($core['error'])) {
     http_response_code(404);
     echo json_encode($core);

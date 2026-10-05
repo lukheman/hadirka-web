@@ -1,7 +1,7 @@
 <?php
 // File: app/api/periods_list.php
 
-// Panggil file koneksi database Anda (Asumsi $koneksi adalah objek/resource mysqli)
+// Panggil file koneksi database Anda (Asumsi $koneksi adalah objek PDO)
 include 'koneksi-api.php'; 
 
 header('Content-Type: application/json; charset=utf-8');
@@ -38,20 +38,15 @@ try {
             tgl_mulai DESC
     ";
     
-    $q = mysqli_query($koneksi, $sql);
-
-    if (!$q) {
-        sendResponse(['error' => 'Query database gagal: ' . mysqli_error($koneksi)], 500);
-    }
-    
-    $periods = [];
-    while ($r = mysqli_fetch_assoc($q)) {
-        $periods[] = $r;
-    }
+    $stmt = $koneksi->query($sql);
+    $periods = $stmt->fetchAll();
 
     // Mengirimkan hasil sebagai array JSON
     sendResponse($periods);
 
+} catch (PDOException $e) {
+    error_log('periode_absen gagal: ' . $e->getMessage());
+    sendResponse(['error' => 'Query database gagal.'], 500);
 } catch (Exception $e) {
     sendResponse(['error' => 'General Error: ' . $e->getMessage()], 500);
 }

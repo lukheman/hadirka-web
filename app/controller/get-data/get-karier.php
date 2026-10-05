@@ -18,9 +18,8 @@ if ($id) {
         INNER JOIN tb_site s ON k.id_site = s.id_site
         WHERE k.id_karyawan=? 
         ORDER BY k.tgl_mulai DESC");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $q = $stmt->get_result();
+    $stmt->execute([$id]);
+    $q = $stmt;
 } else {
     // Tampilan global dengan filter (import-karier.php)
     $site    = $_GET['site'] ?? '';
@@ -29,28 +28,33 @@ if ($id) {
     $bulan   = $_GET['bulan'] ?? '';
 
     $where = ["1=1"];
+    $params = [];
 
     if (!empty($site)) {
-        $where[] = "k.id_site = '" . $koneksi->real_escape_string($site) . "'";
+        $where[] = "k.id_site = ?";
+        $params[] = $site;
     }
-    
+
     if (!empty($jabatan)) {
-        $where[] = "k.id_jabatan = '" . $koneksi->real_escape_string($jabatan) . "'";
+        $where[] = "k.id_jabatan = ?";
+        $params[] = $jabatan;
     }
-    
+
     if (!empty($status)) {
-        $where[] = "kr.status_karyawan = '" . $koneksi->real_escape_string($status) . "'";
+        $where[] = "kr.status_karyawan = ?";
+        $params[] = $status;
     }
 
     if (!empty($bulan)) {
-        $where[] = "MONTH(k.tgl_selesai) = '" . $koneksi->real_escape_string($bulan) . "'";
+        $where[] = "MONTH(k.tgl_selesai) = ?";
+        $params[] = $bulan;
         // Jika ingin spesifik mencari habis kontrak HANYA di TAHUN INI, hilangkan komentar baris di bawah:
         $where[] = "YEAR(k.tgl_selesai) = YEAR(CURDATE())"; 
     }
 
     $where_sql = implode(" AND ", $where);
 
-    $q = $koneksi->query("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap 
+    $stKarier = $koneksi->prepare("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap
         FROM tb_karier k
         INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
         INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
@@ -58,9 +62,11 @@ if ($id) {
         INNER JOIN tb_site s ON k.id_site = s.id_site
         WHERE $where_sql
         ORDER BY kr.nik_karyawan ASC");
+    $stKarier->execute($params);
+    $q = $stKarier;
 }
 
-while ($r = $q->fetch_assoc()) { ?>
+while ($r = $q->fetch()) { ?>
     <tr class="text-center">
         <?php if ($id) { ?>
         <td><?= $no ?></td>
@@ -76,14 +82,8 @@ while ($r = $q->fetch_assoc()) { ?>
         <td><?= $r['nama_departemen'] ?></td>
         <td><?= $r['nama_jabatan'] ?></td>
 
-        <!-- Gaji Pokok -->
+        <!-- Gaji Pokok (harian) -->
         <td><?= rupiah($r['gaji_pokok']) ?></td>
-        <!-- OT -->
-        <td><?= rupiah($r['lembur']) ?></td>
-
-        <!-- Potongan -->
-        <td><?= rupiah($r['pot_izin']) ?></td>
-        <td><?= rupiah($r['pot_mangkir']) ?></td>
 
         <!-- Tanggal -->
         <td><?= $r['tgl_mulai'] ?></td>
@@ -120,11 +120,6 @@ while ($r = $q->fetch_assoc()) { ?>
                 data-id_jabatan="<?= $r['id_jabatan'] ?>"
 
                 data-gaji_pokok="<?= $r['gaji_pokok'] ?>"
-
-                data-lembur="<?= $r['lembur'] ?>"
-
-                data-pot_izin="<?= $r['pot_izin'] ?>"
-                data-pot_mangkir="<?= $r['pot_mangkir'] ?>"
 
                 data-tgl_mulai="<?= $r['tgl_mulai'] ?>"
                 data-tgl_selesai="<?= $r['tgl_selesai'] ?>"

@@ -1,15 +1,15 @@
 <?php
 include "../../config/koneksi.php";
 
-$query = mysqli_query($koneksi, "SELECT * FROM master_apd ORDER BY created_at DESC");
-$total = mysqli_num_rows($query);
+$rowsApd = $koneksi->query("SELECT * FROM master_apd ORDER BY created_at DESC")->fetchAll();
+$total = count($rowsApd);
 $aktif = 0;
 $html = "";
 
 if ($total == 0) {
     $html = '<tr><td colspan="5" class="text-center py-4">Belum ada data APD</td></tr>';
 } else {
-    while ($row = mysqli_fetch_assoc($query)) {
+    foreach ($rowsApd as $row) {
         if($row['status_aktif'] == 'aktif') $aktif++;
         
         $badge = ($row['status_aktif'] == 'aktif') ? 'bg-label-success' : 'bg-label-danger';

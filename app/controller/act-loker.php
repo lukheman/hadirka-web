@@ -10,12 +10,15 @@ if ($action == "add") {
     $status = $_POST['status_loker'];
 
     $sql = $koneksi->prepare("INSERT INTO tb_loker (id_jabatan, status_loker) VALUES (?, ?)");
-    $sql->bind_param("is", $id_jabatan, $status);
-    
-    if ($sql->execute()) {
-        echo json_encode(["status" => "success"]);
-    } else {
-        echo json_encode(["status" => "error", "msg" => "Gagal Tambah: " . $sql->error]);
+    try {
+        if ($sql->execute([$id_jabatan, $status])) {
+            echo json_encode(["status" => "success"]);
+        } else {
+            echo json_encode(["status" => "error", "msg" => "Gagal menambah data."]);
+        }
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal menambah data."]);
     }
     exit;
 }
@@ -26,26 +29,32 @@ if ($action == "edit") {
     $status = $_POST['status_loker'];
 
     $sql = $koneksi->prepare("UPDATE tb_loker SET id_jabatan=?, status_loker=? WHERE id_loker=?");
-    $sql->bind_param("isi", $id_jabatan, $status, $id_loker);
-    
-    if ($sql->execute()) {
-        echo json_encode(["status" => "success"]);
-    } else {
-        echo json_encode(["status" => "error", "msg" => "Gagal Update: " . $sql->error]);
+    try {
+        if ($sql->execute([$id_jabatan, $status, $id_loker])) {
+            echo json_encode(["status" => "success"]);
+        } else {
+            echo json_encode(["status" => "error", "msg" => "Gagal memperbarui data."]);
+        }
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal memperbarui data."]);
     }
     exit;
 }
 
 if ($action == "delete") {
     $id_loker = $_POST['id_loker'];
-    
+
     $sql = $koneksi->prepare("DELETE FROM tb_loker WHERE id_loker=?");
-    $sql->bind_param("i", $id_loker);
-    
-    if ($sql->execute()) {
-        echo json_encode(["status" => "success"]);
-    } else {
-        echo json_encode(["status" => "error", "msg" => "Gagal Hapus: " . $sql->error]);
+    try {
+        if ($sql->execute([$id_loker])) {
+            echo json_encode(["status" => "success"]);
+        } else {
+            echo json_encode(["status" => "error", "msg" => "Gagal menghapus data."]);
+        }
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal menghapus data."]);
     }
     exit;
 }

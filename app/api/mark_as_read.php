@@ -13,20 +13,16 @@ $notification_id = $_GET['id'] ?? null;
 
 if ($notification_id) {
     // Menggunakan Prepared Statements untuk mencegah SQL Injection
-    $stmt = $koneksi->prepare("UPDATE tb_pengumuman SET is_dibaca = TRUE WHERE id = ?");
-    
-    // 'i' menunjukkan tipe data integer untuk parameter $notification_id
-    $stmt->bind_param("i", $notification_id);
-    
-    if ($stmt->execute()) {
+    try {
+        $stmt = $koneksi->prepare("UPDATE tb_pengumuman SET is_dibaca = TRUE WHERE id = ?");
+        $stmt->execute([(int)$notification_id]);
         // Jika berhasil diupdate
         $response = ['status' => 'success', 'message' => 'Notifikasi ID ' . $notification_id . ' berhasil ditandai sudah dibaca.'];
-    } else {
-        // Jika gagal dieksekusi
-        $response = ['status' => 'error', 'message' => 'Gagal memperbarui status: ' . $stmt->error];
+    } catch (PDOException $e) {
+        // Jika gagal dieksekusi (detail hanya di log)
+        error_log('mark_as_read gagal: ' . $e->getMessage());
+        $response = ['status' => 'error', 'message' => 'Gagal memperbarui status. Terjadi kesalahan database.'];
     }
-    
-    $stmt->close();
 } else {
     // Jika ID tidak ditemukan di parameter GET
     $response = ['status' => 'error', 'message' => 'ID Notifikasi tidak ditemukan di parameter request.'];
@@ -34,7 +30,4 @@ if ($notification_id) {
 
 // Mengembalikan response dalam format JSON
 echo json_encode($response);
-
-// Tutup koneksi database
-$koneksi->close();
 ?>

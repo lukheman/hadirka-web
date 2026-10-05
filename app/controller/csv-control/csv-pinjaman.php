@@ -33,7 +33,13 @@ try {
     $errors = [];
     $startRow = 2; // Lewati header
 
-    mysqli_begin_transaction($koneksi); // Gunakan transaksi agar aman
+    $koneksi->beginTransaction(); // Gunakan transaksi agar aman
+
+    // Prepare sekali di luar loop (dipakai ulang per baris/tenor).
+    $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
+    $stmtCheck = $koneksi->prepare("SELECT id_pinjaman FROM tb_pinjaman WHERE id_karyawan = ? AND tgl_bayar_pinjaman = ? AND ket_pinjaman = ? AND tgl_pinjaman = ?");
+    $stmtUpd = $koneksi->prepare("UPDATE tb_pinjaman SET nominal_pinjaman=?, tgl_pinjaman=? WHERE id_karyawan=? AND tgl_bayar_pinjaman=? AND ket_pinjaman=?");
+    $stmtIns = $koneksi->prepare("INSERT INTO tb_pinjaman (id_karyawan, nominal_pinjaman, tgl_pinjaman, tgl_bayar_pinjaman, ket_pinjaman) VALUES (?,?,?,?,?)");
 
     for ($i = $startRow; $i <= count($data); $i++) {
         $row = $data[$i];
@@ -46,11 +52,8 @@ try {
         if (empty($nik)) continue;
 
         // 1. Cari ID Karyawan
-        $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
-        $stmtK->bind_param("s", $nik);
-        $stmtK->execute();
-        $resK = $stmtK->get_result()->fetch_assoc();
-        $stmtK->close();
+        $stmtK->execute([$nik]);
+        $resK = $stmtK->fetch();
 
         if (!$resK) {
             $errors[] = "Baris $i: NIK $nik tidak ada di database.";
@@ -120,29 +123,19 @@ try {
             }
 
             // Cek duplikat
-            $stmtCheck = $koneksi->prepare("SELECT id_pinjaman FROM tb_pinjaman WHERE id_karyawan = ? AND tgl_bayar_pinjaman = ? AND ket_pinjaman = ? AND tgl_pinjaman = ?");
-            $stmtCheck->bind_param("isss", $id_karyawan, $tgl_jatuh_tempo, $ket_cicilan, $tgl_pinjaman);
-            $stmtCheck->execute();
-            $resCheck = $stmtCheck->get_result();
-            $isDuplicate = $resCheck->num_rows > 0;
-            $stmtCheck->close();
+            $stmtCheck->execute([$id_karyawan, $tgl_jatuh_tempo, $ket_cicilan, $tgl_pinjaman]);
+            $isDuplicate = (bool)$stmtCheck->fetch();
 
             if ($isDuplicate) {
-                $stmtUpd = $koneksi->prepare("UPDATE tb_pinjaman SET nominal_pinjaman=?, tgl_pinjaman=? WHERE id_karyawan=? AND tgl_bayar_pinjaman=? AND ket_pinjaman=?");
-                $stmtUpd->bind_param("dsiss", $nominal_cicilan_ini, $tgl_pinjaman, $id_karyawan, $tgl_jatuh_tempo, $ket_cicilan);
-                $stmtUpd->execute();
-                $stmtUpd->close();
+                $stmtUpd->execute([$nominal_cicilan_ini, $tgl_pinjaman, $id_karyawan, $tgl_jatuh_tempo, $ket_cicilan]);
             } else {
-                $stmtIns = $koneksi->prepare("INSERT INTO tb_pinjaman (id_karyawan, nominal_pinjaman, tgl_pinjaman, tgl_bayar_pinjaman, ket_pinjaman) VALUES (?,?,?,?,?)");
-                $stmtIns->bind_param("idsss", $id_karyawan, $nominal_cicilan_ini, $tgl_pinjaman, $tgl_jatuh_tempo, $ket_cicilan);
-                $stmtIns->execute();
-                $stmtIns->close();
+                $stmtIns->execute([$id_karyawan, $nominal_cicilan_ini, $tgl_pinjaman, $tgl_jatuh_tempo, $ket_cicilan]);
             }
         }
         $successCount++;
     }
 
-    mysqli_commit($koneksi); // Simpan semua perubahan
+    $koneksi->commit(); // Simpan semua perubahan
 
     echo json_encode([
         'status' => ($errorCount > 0 && $successCount == 0) ? 'error' : (($errorCount > 0) ? 'warning' : 'success'),
@@ -150,7 +143,8 @@ try {
     ]);
 
 } catch (Exception $e) {
-    if(isset($koneksi)) mysqli_rollback($koneksi);
-    echo json_encode(['status' => 'error', 'message' => 'System Error: ' . $e->getMessage()]);
+    error_log('csv-pinjaman: ' . $e->getMessage());
+    if (isset($koneksi) && $koneksi instanceof PDO && $koneksi->inTransaction()) $koneksi->rollBack();
+    echo json_encode(['status' => 'error', 'message' => 'System Error: gagal memproses file.']);
 }
 ?>

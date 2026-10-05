@@ -37,9 +37,10 @@
                         <select id="periodeDropdown" class="form-select form-select-sm fw-bold cursor-pointer" onchange="loadDashboard(this.value)">
                             <?php
                             // Ambil khusus type_priode = 'slip gaji'
-                            $qPeriode = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC");
-                            if (mysqli_num_rows($qPeriode) > 0) {
-                                while ($rowP = mysqli_fetch_assoc($qPeriode)) {
+                            $qPeriode = $koneksi->query("SELECT * FROM tb_priode WHERE type_priode = 'slip gaji' ORDER BY tgl_mulai DESC");
+                            $rowsPeriode = $qPeriode ? $qPeriode->fetchAll() : [];
+                            if (count($rowsPeriode) > 0) {
+                                foreach ($rowsPeriode as $rowP) {
                                     $tgl_str = date('d/m/Y', strtotime($rowP['tgl_mulai'])) . " - " . date('d/m/Y', strtotime($rowP['tgl_selesai']));
                                     echo "<option value='{$rowP['id_priode']}'>{$tgl_str}</option>";
                                 }
@@ -108,9 +109,10 @@
                     <select id="siteDropdown" class="form-select form-select-sm w-auto cursor-pointer" onchange="loadStatistikKaryawan()">
                         <option value="">Semua Site</option>
                         <?php
-                        $qSite = mysqli_query($koneksi, "SELECT id_site, nama_site FROM tb_site ORDER BY nama_site ASC");
-                        if ($qSite && mysqli_num_rows($qSite) > 0) {
-                            while($rowS = mysqli_fetch_assoc($qSite)){
+                        $qSite = $koneksi->query("SELECT id_site, nama_site FROM tb_site ORDER BY nama_site ASC");
+                        $rowsSite = $qSite ? $qSite->fetchAll() : [];
+                        if ($qSite && count($rowsSite) > 0) {
+                            foreach ($rowsSite as $rowS){
                                 echo "<option value='{$rowS['id_site']}'>{$rowS['nama_site']}</option>";
                             }
                         }

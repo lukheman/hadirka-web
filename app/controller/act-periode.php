@@ -7,48 +7,65 @@ $action = $_GET['action'] ?? '';
 $response = ['status' => 'error', 'message' => 'Gagal memproses permintaan'];
 
 if ($action == 'get-single') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    $res = mysqli_query($koneksi, "SELECT * FROM tb_priode WHERE id_priode = '$id'");
-    echo json_encode(mysqli_fetch_assoc($res));
+    $id = $_GET['id'];
+    $res = $koneksi->prepare("SELECT * FROM tb_priode WHERE id_priode = ?");
+    $res->execute([$id]);
+    $row = $res->fetch();
+    echo json_encode($row === false ? null : $row);
     exit;
 }
 
 if ($action == 'save') {
-    $id      = mysqli_real_escape_string($koneksi, $_POST['id_priode']);
-    $type    = mysqli_real_escape_string($koneksi, $_POST['type_priode']);
-    $mulai   = mysqli_real_escape_string($koneksi, $_POST['tgl_mulai']);
-    $selesai = mysqli_real_escape_string($koneksi, $_POST['tgl_selesai']);
+    $id      = $_POST['id_priode'];
+    $type    = $_POST['type_priode'];
+    $mulai   = $_POST['tgl_mulai'];
+    $selesai = $_POST['tgl_selesai'];
 
-    if (empty($id)) {
-        $sql = "INSERT INTO tb_priode (type_priode, tgl_mulai, tgl_selesai, status_priode) 
-                VALUES ('$type', '$mulai', '$selesai', 'Open')";
-    } else {
-        $sql = "UPDATE tb_priode SET type_priode='$type', tgl_mulai='$mulai', tgl_selesai='$selesai' WHERE id_priode='$id'";
+    try {
+        if (empty($id)) {
+            $st = $koneksi->prepare("INSERT INTO tb_priode (type_priode, tgl_mulai, tgl_selesai, status_priode)
+                    VALUES (?, ?, ?, 'Open')");
+            $st->execute([$type, $mulai, $selesai]);
+        } else {
+            $st = $koneksi->prepare("UPDATE tb_priode SET type_priode=?, tgl_mulai=?, tgl_selesai=? WHERE id_priode=?");
+            $st->execute([$type, $mulai, $selesai, $id]);
+        }
+        $response = ['status' => 'success'];
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        $response = ['status' => 'error', 'message' => 'Gagal menyimpan data.'];
     }
-
-    if (mysqli_query($koneksi, $sql)) $response = ['status' => 'success'];
 }
 
 if ($action == 'toggle-status') {
     $input  = json_decode(file_get_contents('php://input'), true);
-    $id     = mysqli_real_escape_string($koneksi, $input['id']);
-    $status = mysqli_real_escape_string($koneksi, $input['status']); 
+    $id     = $input['id'];
+    $status = $input['status'];
 
     // Jika meng-Open, tutup yang lain dengan tipe yang sama
-    // if ($status === 'Open') {
-    //     $q_info = mysqli_query($koneksi, "SELECT type_priode FROM tb_priode WHERE id_priode='$id'");
-    //     $d_info = mysqli_fetch_assoc($q_info);
-    //     $type   = $d_info['type_priode'];
-    //     mysqli_query($koneksi, "UPDATE tb_priode SET status_priode = 'Closed' WHERE type_priode = '$type'");
-    // }
+    // (logika lama, tetap dinonaktifkan)
+    // if ($status === 'Open') { ... }
 
-    $sql = "UPDATE tb_priode SET status_priode = '$status' WHERE id_priode = '$id'";
-    if (mysqli_query($koneksi, $sql)) $response = ['status' => 'success'];
+    try {
+        $st = $koneksi->prepare("UPDATE tb_priode SET status_priode = ? WHERE id_priode = ?");
+        $st->execute([$status, $id]);
+        $response = ['status' => 'success'];
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        $response = ['status' => 'error', 'message' => 'Gagal memperbarui status.'];
+    }
 }
 
 if ($action == 'delete') {
-    $id = mysqli_real_escape_string($koneksi, $_GET['id']);
-    if (mysqli_query($koneksi, "DELETE FROM tb_priode WHERE id_priode='$id'")) $response = ['status' => 'success'];
+    $id = $_GET['id'];
+    try {
+        $st = $koneksi->prepare("DELETE FROM tb_priode WHERE id_priode=?");
+        $st->execute([$id]);
+        $response = ['status' => 'success'];
+    } catch (PDOException $e) {
+        error_log($e->getMessage());
+        $response = ['status' => 'error', 'message' => 'Gagal menghapus data.'];
+    }
 }
 
 echo json_encode($response);

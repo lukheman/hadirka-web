@@ -6,14 +6,14 @@ $sql = "SELECT pa.*, k.nama_lengkap, k.nik_karyawan, m.nama_apd
         JOIN tb_karyawan k ON k.id_karyawan = pa.id_karyawan 
         JOIN master_apd m ON m.id_apd = pa.id_apd
         ORDER BY pa.tgl_pengajuan DESC";
-$q = mysqli_query($koneksi, $sql);
+$rowsApd = $koneksi->query($sql)->fetchAll();
 
-if (mysqli_num_rows($q) == 0) {
+if (count($rowsApd) == 0) {
     echo '<tr><td colspan="7" class="text-center py-5 text-muted">Belum ada data pengajuan APD.</td></tr>';
     exit;
 }
 
-while ($row = mysqli_fetch_assoc($q)) {
+foreach ($rowsApd as $row) {
     $id = $row['id_pengajuan_apd'];
     $status = $row['status_pengajuan'];
     

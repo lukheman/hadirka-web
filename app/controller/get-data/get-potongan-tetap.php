@@ -6,11 +6,13 @@ require '../../config/function.php';
 $id_karier = decrypt($_GET['id']);
 
 // Gunakan ORDER BY agar data terbaru muncul di atas
-$q = $koneksi->query("SELECT * FROM tb_potongan WHERE id_karier='$id_karier' ORDER BY id_potongan DESC");
+$stPot = $koneksi->prepare("SELECT * FROM tb_potongan WHERE id_karier = ? ORDER BY id_potongan DESC");
+$stPot->execute([$id_karier]);
+$rowsPot = $stPot->fetchAll();
 
 $no = 1;
-if ($q->num_rows > 0) {
-    while ($r = $q->fetch_assoc()) {
+if (count($rowsPot) > 0) {
+    foreach ($rowsPot as $r) {
         $nama_esc = htmlspecialchars($r['jenis_potongan'], ENT_QUOTES);
         echo "
         <tr>

@@ -32,10 +32,8 @@ $stmt = $koneksi->prepare(
     "LEFT JOIN tb_identitas idn ON idn.id_karyawan = k.id_karyawan " .
     "WHERE k.id_karier = ? LIMIT 1"
 );
-$stmt->bind_param("i", $id_karier);
-$stmt->execute();
-$kar = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+$stmt->execute([$id_karier]);
+$kar = $stmt->fetch();
 if (!$kar) {
     exit('Data karier tidak ditemukan.');
 }
@@ -44,13 +42,14 @@ if (!$kar) {
 $id_jabatan = (int)($kar['id_jabatan'] ?? 0);
 $tpl = null;
 if ($id_jabatan > 0) {
-    $qt = $koneksi->query(
+    $stTpl = $koneksi->prepare(
         "SELECT t.id_template, t.nama_kontrak, t.`file`, t.nama_asli " .
         "FROM tb_template_kontrak_jabatan p " .
         "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-        "WHERE p.id_jabatan = '$id_jabatan' ORDER BY t.id_template DESC LIMIT 1"
+        "WHERE p.id_jabatan = ? ORDER BY t.id_template DESC LIMIT 1"
     );
-    $tpl = ($qt && $qt->num_rows > 0) ? $qt->fetch_assoc() : null;
+    $stTpl->execute([$id_jabatan]);
+    $tpl = $stTpl->fetch() ?: null;
 }
 if (!$tpl) {
     exit('Belum ada template kontrak untuk jabatan ini. Upload dulu di menu Template Kontrak.');
@@ -85,16 +84,8 @@ $rp = function ($v) use ($num) {
 
 // Tunjangan milik karier (dinormalkan per nama).
 // Hanya yang tampil_template=1 yang dirender di dokumen.
+// Tabel tb_tunjangan dihapus (penyederhanaan gaji Okt 2026): tidak ada tunjangan.
 $tunj = [];
-$q = $koneksi->query("SELECT nama_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan WHERE id_karier = '$id_karier'");
-if ($q) {
-    while ($r = $q->fetch_assoc()) {
-        if ((int)($r['tampil_template'] ?? 1) !== 1) continue;
-        $key = strtolower(trim((string)$r['nama_tunjangan']));
-        $val = $num($r['jumlah_tunjangan']);
-        $tunj[$key] = ($tunj[$key] ?? 0) + $val;
-    }
-}
 $cariTunj = function (array $names) use ($tunj) {
     foreach ($names as $x) {
         if (isset($tunj[strtolower($x)])) {

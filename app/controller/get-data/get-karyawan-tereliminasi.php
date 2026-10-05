@@ -16,31 +16,36 @@ require_once __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../config/function.php';
 
 try {
-    $filter_site   = isset($_POST['site']) ? $koneksi->real_escape_string($_POST['site']) : '';
-    $filter_jabatan = isset($_POST['jabatan']) ? $koneksi->real_escape_string($_POST['jabatan']) : '';
-    $filter_jenis  = isset($_POST['jenis']) ? $koneksi->real_escape_string($_POST['jenis']) : '';
-    $filter_bulan  = isset($_POST['bulan']) ? $koneksi->real_escape_string($_POST['bulan']) : '';
+    $filter_site   = isset($_POST['site']) ? $_POST['site'] : '';
+    $filter_jabatan = isset($_POST['jabatan']) ? $_POST['jabatan'] : '';
+    $filter_jenis  = isset($_POST['jenis']) ? $_POST['jenis'] : '';
+    $filter_bulan  = isset($_POST['bulan']) ? $_POST['bulan'] : '';
 
     $where = [];
+    $params = [];
 
     // Wajib: hanya yang sudah dieliminasi
     $allowed_status = ['Habis Kontrak', 'Pensiun', 'PHK', 'Resign', 'Black List'];
     if (!empty($filter_jenis) && in_array($filter_jenis, $allowed_status, true)) {
-        $where[] = "kar.status_karyawan = '$filter_jenis'";
+        $where[] = "kar.status_karyawan = ?";
+        $params[] = $filter_jenis;
     } else {
         $where[] = "kar.status_karyawan != 'Aktif'";
     }
 
     if (!empty($filter_site)) {
-        $where[] = "k.id_site = '$filter_site'";
+        $where[] = "k.id_site = ?";
+        $params[] = $filter_site;
     }
 
     if (!empty($filter_jabatan)) {
-        $where[] = "k.id_jabatan = '$filter_jabatan'";
+        $where[] = "k.id_jabatan = ?";
+        $params[] = $filter_jabatan;
     }
 
     if (!empty($filter_bulan)) {
-        $where[] = "MONTH(te.tgl_keluar) = '$filter_bulan'";
+        $where[] = "MONTH(te.tgl_keluar) = ?";
+        $params[] = $filter_bulan;
         $where[] = "YEAR(te.tgl_keluar) = YEAR(CURDATE())";
     }
 
@@ -79,16 +84,14 @@ try {
         ORDER BY te.tgl_keluar DESC, kar.nama_lengkap ASC
     ";
 
-    $result = $koneksi->query($query);
-
-    if (!$result) {
-        throw new Exception("Query Error: " . $koneksi->error);
-    }
+    $stmt = $koneksi->prepare($query);
+    $stmt->execute($params);
+    $result = $stmt;
 
     $data = [];
     $no = 1;
 
-    while ($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch()) {
         $usia = '';
         if (!empty($row['tgl_lahir'])) {
             try {

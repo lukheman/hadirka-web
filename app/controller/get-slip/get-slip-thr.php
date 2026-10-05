@@ -38,26 +38,16 @@ $sql = "SELECT r.*, k.nik_karyawan, k.nama_lengkap
 
 $stmt = $koneksi->prepare($sql);
 
-// Jaga-jaga kalau query masih salah/kolom tidak ditemukan
-if (!$stmt) {
-    ob_clean();
-    http_response_code(500);
-    echo json_encode(['error' => 'Query SQL Error: ' . $koneksi->error]);
-    exit;
-}
+$stmt->execute([$id_karyawan, $tahun]);
 
-$stmt->bind_param("is", $id_karyawan, $tahun);
-$stmt->execute();
-$result = $stmt->get_result();
+$data = $stmt->fetch();
 
-if ($result->num_rows === 0) {
+if (!$data) {
     ob_clean();
     http_response_code(404);
     echo json_encode(['error' => 'Data THR untuk karyawan ini tidak ditemukan.']);
     exit;
 }
-
-$data = $result->fetch_assoc();
 
 // Susun data untuk dikirim ke Javascript
 $response = [
@@ -77,7 +67,4 @@ $response = [
 // 4. BERSIHKAN BUFFER LALU KIRIM JSON MURNI
 ob_clean();
 echo json_encode($response, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-
-$stmt->close();
-$koneksi->close();
 ?>

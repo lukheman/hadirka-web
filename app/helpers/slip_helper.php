@@ -1,14 +1,23 @@
 <?php
 // slip_helper.php — HELPER perhitungan slip gaji (satu-satunya sumber, DRY).
 //
+// RUMUS SEDERHANA (berlaku sejak penyederhanaan Okt 2026):
+//   gaji_bersih = jumlah_hadir x gaji_pokok_harian
+// - gaji_pokok di tb_karier dianggap UPAH HARIAN.
+// - HADIR = hari dengan jam_kerja > 0 dan ket bukan IZIN/SAKIT/CUTI/ALPHA/RESIGN/NEW.
+//   Termasuk hari SPL/lembur (ket OFF/SPL/LEMBUR + jam > 0): dihitung 1 hadir TANPA multiplier.
+// - IZIN/SAKIT/CUTI/OFF(murni)/MANGKIR/ALPHA/RESIGN = tidak dibayar (0).
+// - Tunjangan, potongan, lembur-multiplier, rapel, pinjaman, THR: DIABAIKAN (0).
+//
 // Cara pakai ulang di mana saja (controller / API / view), cukup:
-//   global $koneksi; // pastikan koneksi mysqli $koneksi sudah ada
+//   global $koneksi; // pastikan koneksi PDO $koneksi sudah ada
 //   require_once __DIR__ . '/../helpers/slip_helper.php'; // sesuaikan path relatif dari file pemanggil
 //   $slip = generateSlipGajiById($id_karyawan, $startDate, $endDate); // by ID, atau
 //   $slip = generateSlipGaji($nik, $startDate, $endDate);             // by NIK (wrapper)
 //
-// Return: array slip canonical (snake_case: gaji_bersih, total_pendapatan,
-// total_potongan, pot_pkwt, absen[], ...) atau ['error' => ...] / ['skip' => true, ...].
+// Return: array slip canonical (snake_case) atau ['error' => ...] / ['skip' => true, ...].
+// Key lama dipertahankan (bernilai 0/array kosong) agar semua konsumen
+// (get-payrol, get-slip, posting-payroll, slip print, API mobile) tetap jalan.
 // File lama app/config/function-slip.php kini hanya shim yang me-require file ini.
 // header('Content-Type: application/json; charset=utf-8');
 
@@ -18,26 +27,32 @@ if (!function_exists('generateSlipGajiById')) {
     {
         global $koneksi;
 
-        $id_karyawan = mysqli_real_escape_string($koneksi, (string)$id_karyawan);
-        $startDate = mysqli_real_escape_string($koneksi, (string)$startDate);
-        $endDate = mysqli_real_escape_string($koneksi, (string)$endDate);
+        $id_karyawan = (int)$id_karyawan;
+        if ($id_karyawan <= 0) return ['error' => 'ID karyawan tidak valid'];
+        $d1 = DateTime::createFromFormat('!Y-m-d', (string)$startDate);
+        $d2 = DateTime::createFromFormat('!Y-m-d', (string)$endDate);
+        if (!$d1 || !$d2 || $d1 > $d2) return ['error' => 'Rentang periode tidak valid (YYYY-MM-DD).'];
+        $startDate = $d1->format('Y-m-d');
+        $endDate = $d2->format('Y-m-d');
 
         // ================= 1) Get Karyawan =================
-        // JOIN dengan tb_tereliminasi untuk mengambil tgl_keluar
-        $sql = "SELECT k.*, t.tgl_keluar
+        try {
+            $stmt = $koneksi->prepare("SELECT k.*, t.tgl_keluar
                 FROM tb_karyawan k
                 LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan
-                WHERE k.id_karyawan='$id_karyawan' LIMIT 1";
-        $q = mysqli_query($koneksi, $sql);
-        $k = mysqli_fetch_assoc($q);
+                WHERE k.id_karyawan = ? LIMIT 1");
+            $stmt->execute([$id_karyawan]);
+            $k = $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log('slip_helper karyawan: ' . $e->getMessage());
+            return ['error' => 'Gagal mengambil data karyawan'];
+        }
 
         if (!$k) return ['error' => 'Karyawan tidak ditemukan'];
 
-        // --- TAMBAHAN LOGIKA FILTER KARYAWAN KELUAR ---
-        // Jika status BUKAN Aktif, dan tgl_keluar ada, dan tgl_keluar SEBELUM startDate
+        // Karyawan keluar sebelum periode -> skip (tetap dipertahankan)
         if ($k['status_karyawan'] !== 'Aktif' && !empty($k['tgl_keluar'])) {
             if (strtotime($k['tgl_keluar']) < strtotime($startDate)) {
-                // Berikan flag 'skip' agar diabaikan oleh frontend
                 return [
                     'skip' => true,
                     'error' => 'Karyawan telah keluar sebelum rentang periode ini.'
@@ -45,183 +60,59 @@ if (!function_exists('generateSlipGajiById')) {
             }
         }
 
-        $id_karyawan = $k['id_karyawan'];
+        $id_karyawan = (int)$k['id_karyawan'];
 
-        // ================= 2) Get Karier terbaru (tanpa pengecekan aktif periode) =================
-        $sqlKarier = "SELECT kar.*, jab.nama_jabatan
+        // ================= 2) Get Karier terbaru =================
+        try {
+            $stmt = $koneksi->prepare("SELECT kar.*, jab.nama_jabatan
             FROM tb_karier kar
             LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
-            WHERE kar.id_karyawan = '$id_karyawan'
-            ORDER BY kar.tgl_mulai DESC LIMIT 1";
-        $qk = mysqli_query($koneksi, $sqlKarier);
-        $karier = mysqli_fetch_assoc($qk);
+            WHERE kar.id_karyawan = ?
+            ORDER BY kar.tgl_mulai DESC LIMIT 1");
+            $stmt->execute([$id_karyawan]);
+            $karier = $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log('slip_helper karier: ' . $e->getMessage());
+            return ['error' => 'Gagal mengambil data karier'];
+        }
         if (!$karier) return ['error' => 'Data karier karyawan tidak ditemukan'];
 
-        $gaji_pokok = $karier['gaji_pokok'] ?? null;
-        if ($gaji_pokok === null || $gaji_pokok === '' || (float)$gaji_pokok <= 0) {
+        $gaji_pokok = floatval($karier['gaji_pokok'] ?? 0);
+        if ($gaji_pokok <= 0) {
             return [
                 'error' => 'Slip gaji tidak dapat dibuat karena gaji pokok karyawan belum terisi.'
             ];
         }
 
-        $tgl_mulai_karier = $karier['tgl_mulai'];
         $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
 
-        // Ambil Nilai Dasar Lembur Bulanan/Karier
-        $base_lembur = floatval($karier['lembur'] ?? 0);
-
-        // ================= 2a) Ambil data mentah tunjangan terlebih dahulu (diproses setelah loop absen) tb_tunjangan =================
-        $tunjanganRawRows = []; // KOREKSI: Inisialisasi variabel harus sama dengan yang diisi di dalam loop
-        $total_tunjangan = 0;
-        $sqlTunj = "SELECT nama_tunjangan, jumlah_tunjangan
-            FROM tb_tunjangan
-            WHERE id_karier = '" . $karier['id_karier'] . "'";
-        $qt = mysqli_query($koneksi, $sqlTunj);
-        while ($tr = mysqli_fetch_assoc($qt)) {
-            $tunjanganRawRows[] = $tr;
-        }
-
-        // ================= Ambil Potongan (BPJS/JHT/PPH21 dll) dari tb_potongan =================
-        $potonganRows = [];
-        $total_potongan_tunjangan = 0;
-        $sqlPot = "SELECT jenis_potongan, jumlah_potongan
-                   FROM tb_potongan
-                   WHERE id_karier = '" . $karier['id_karier'] . "'";
-        $qp = mysqli_query($koneksi, $sqlPot);
-        while ($p = mysqli_fetch_assoc($qp)) {
-            $row = [
-                'nama' => $p['jenis_potongan'],
-                'jumlah' => floatval($p['jumlah_potongan'])
-            ];
-            $potonganRows[] = $row;
-            $total_potongan_tunjangan += floatval($p['jumlah_potongan']);
-        }
-
-        // dari potonganRows, ekstrak bpjs/jht/pph angka (jika perlu di output)
-        $bpjs_kesehatan = 0;
-        $jht = 0;
-        $pph21 = 0;
-        foreach ($potonganRows as $pr) {
-            $n = strtolower($pr['nama']);
-            if (strpos($n, 'bpjs') !== false) {
-                $bpjs_kesehatan += $pr['jumlah'];
-            } elseif (strpos($n, 'jht') !== false) {
-                $jht += $pr['jumlah'];
-            } elseif (strpos($n, 'pph') !== false) {
-                $pph21 += $pr['jumlah'];
-            }
-        }
-
-        // ================= 3) Get Rapel =================
-        $total_rapel = 0;
-        $rapelRows = [];
-        $sqlRapel = "SELECT tgl_rapel, nominal_rapel, ket_rapel
-             FROM tb_rapel
-             WHERE id_karyawan = '$id_karyawan'
-             AND tgl_rapel BETWEEN '$startDate' AND '$endDate'";
-        $qRapel = mysqli_query($koneksi, $sqlRapel);
-        while ($r = mysqli_fetch_assoc($qRapel)) {
-            $nominal = floatval($r['nominal_rapel']);
-            $total_rapel += $nominal;
-            $rapelRows[] = [
-                'tanggal' => $r['tgl_rapel'],
-                'nama' => $r['ket_rapel'],
-                'jumlah' => $nominal
-            ];
-        }
-
-        // ================= 3b) Hitung Pinjaman berdasarkan jatuh tempo =================
-        $total_potongan_pinjaman = 0;
-        $pinjamanRows = [];
-        $sqlPinjaman = "SELECT nominal_pinjaman, ket_pinjaman, tgl_bayar_pinjaman
-                FROM tb_pinjaman
-                WHERE id_karyawan = '$id_karyawan'
-                AND tgl_bayar_pinjaman BETWEEN '$startDate' AND '$endDate'";
-        $qpin = mysqli_query($koneksi, $sqlPinjaman);
-        while ($pin = mysqli_fetch_assoc($qpin)) {
-            $nominal = floatval($pin['nominal_pinjaman']);
-            $total_potongan_pinjaman += $nominal;
-            $pinjamanRows[] = [
-                'nama' => $pin['ket_pinjaman'],
-                'jumlah' => $nominal,
-                'tgl_jatuh_tempo' => $pin['tgl_bayar_pinjaman']
-            ];
-        }
-
-        // ================= 3c) Hitung Potongan Tidak Tetap =================
-        $total_potongan_lainnya = 0;
-        $potonganLainRows = [];
-        $sqlPotLain = "SELECT nominal_potongan, jenis_potongan, tgl_potongan, ket_potongan
-                       FROM tb_potongan_tidak_tetap
-                       WHERE id_karyawan = '$id_karyawan'
-                       AND tgl_potongan BETWEEN '$startDate' AND '$endDate'";
-        $qpotlain = mysqli_query($koneksi, $sqlPotLain);
-        while ($potlain = mysqli_fetch_assoc($qpotlain)) {
-            $nominal = floatval($potlain['nominal_potongan']);
-            $total_potongan_lainnya += $nominal;
-
-            // Gabungkan Jenis dan Keterangan (Jika Keterangan tidak kosong)
-            $namaPotongan = $potlain['jenis_potongan'];
-            $ket = trim((string)$potlain['ket_potongan']);
-            if (!empty($ket)) {
-                $namaPotongan .= " (" . $ket . ")";
-            }
-
-            $potonganLainRows[] = [
-                'nama' => $namaPotongan, // Sekarang berisi misal: "Denda (Helm Hilang)"
-                'jumlah' => $nominal,
-                'tgl_potong' => $potlain['tgl_potongan']
-            ];
-        }
-
-        // ================= 4) Get Absen =================
-        $absenRows = [];
-        $sqlAbs = "SELECT tgl_absen, jam_kerja, ket_absen
+        // ================= 3) Get Absen =================
+        try {
+            $stmt = $koneksi->prepare("SELECT tgl_absen, jam_kerja, ket_absen
            FROM tb_absen
-           WHERE id_karyawan='$id_karyawan'
-           AND tgl_absen BETWEEN '$startDate' AND '$endDate'
-           ORDER BY tgl_absen ASC";
-        $qabs = mysqli_query($koneksi, $sqlAbs);
-        while ($r = mysqli_fetch_assoc($qabs)) {
-            $absenRows[$r['tgl_absen']] = $r; // pakai index tanggal
+           WHERE id_karyawan = ?
+           AND tgl_absen BETWEEN ? AND ?
+           ORDER BY tgl_absen ASC");
+            $stmt->execute([$id_karyawan, $startDate, $endDate]);
+            $absenRows = [];
+            while ($r = $stmt->fetch()) {
+                $absenRows[$r['tgl_absen']] = $r; // index tanggal
+            }
+        } catch (PDOException $e) {
+            error_log('slip_helper absen: ' . $e->getMessage());
+            return ['error' => 'Gagal mengambil data absensi'];
         }
 
-        // ================= Hitung izin/sakit/cuti langsung dari tb_absen =================
+        // ================= 4) Klasifikasi per hari =================
+        $absenForUI = [];
+        $hadir_count = 0;   // HADIR + SPL (berbayar)
+        $spl_count = 0;     // subset hadir (info)
+        $mangkir_count = 0;
         $izin_days = 0;
         $sakit_days = 0;
         $cuti_days = 0;
-
-        foreach ($absenRows as $r) {
-            $ketRawUpper = strtoupper(trim((string)$r['ket_absen']));
-
-            if ($ketRawUpper === 'IZIN')  $izin_days++;
-            if ($ketRawUpper === 'SAKIT') $sakit_days++;
-            if ($ketRawUpper === 'CUTI')  $cuti_days++;
-        }
-
-        // ================= 5) Hitung Absen Bulanan & Jam Lembur =================
-        $absenForUI = [];
-        $hari_kerja_count = 0;
-        $mangkir_count = 0;
+        $off_days = 0;
         $resign_count = 0;
-
-        $total_lembur = 0;
-        $total_overtime = 0;
-
-        $total_spl_1_7 = 0;
-        $total_spl_8 = 0;
-        $total_spl_9_up = 0;
-
-        $total_jam_wl = 0;
-        $total_jam_ot = 0;
-
-        $total_jam_spl_1_7 = 0;
-        $total_jam_spl_8 = 0;
-        $total_jam_spl_9_up = 0;
-
-        $total_potongan_perjam = 0;
-        $total_jam_kurang = 0;
-
         $new_count = 0;
 
         $period = new DatePeriod(
@@ -231,293 +122,70 @@ if (!function_exists('generateSlipGajiById')) {
         );
 
         foreach ($period as $date) {
-
             $tgl = $date->format('Y-m-d');
-            $hariNama = strtolower(date('l', strtotime($tgl)));
-            $normal_hours = ($hariNama === 'friday') ? 5 : 7;
+            $ket = 'MANGKIR';
+            $jam = 0;
 
-            // =========== NEW DI ABSEN SEBELUM TGL MASUK ===========
-            // if ($tgl < $tgl_mulai_karier) {
-            //     $isMinggu = ($hariNama === 'sunday');
-            //     $absenForUI[] = [
-            //         'tanggal' => $tgl,
-            //         'jam' => 0,
-            //         'wl' => 0,
-            //         'ot' => 0,
-            //         'ket' => 'NEW'
-            //     ];
-            //     // Hanya tambah count jika BUKAN hari minggu
-            //     if (!$isMinggu) {
-            //         $new_count++;
-            //     }
-            //     continue;
-            // }
-
-            // ================= ADA DATA ABSEN =================
             if (isset($absenRows[$tgl])) {
-
                 $ketAbsen = strtoupper(trim((string)$absenRows[$tgl]['ket_absen']));
-                $jamRaw   = trim((string)$absenRows[$tgl]['jam_kerja']);
-                $jam      = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
+                $jamRaw = trim((string)$absenRows[$tgl]['jam_kerja']);
+                $jam = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
 
-                // ===== NEW =====
                 if ($ketAbsen === 'NEW') {
-                    $absenForUI[] = [
-                        'tanggal' => $tgl,
-                        'jam' => 0,
-                        'wl' => 0,
-                        'ot' => 0,
-                        'ket' => 'NEW'
-                    ];
+                    $ket = 'NEW';
                     $new_count++;
-                    continue;
+                } elseif ($ketAbsen === 'RESIGN' || $ketAbsen === 'R') {
+                    $ket = 'RESIGN';
+                    $resign_count++;
+                } elseif (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'], true)) {
+                    $ket = $ketAbsen;
+                    if ($ketAbsen === 'IZIN') $izin_days++;
+                    elseif ($ketAbsen === 'SAKIT') $sakit_days++;
+                    else $cuti_days++;
+                } elseif ($ketAbsen === 'ALPHA' || ($jam <= 0 && $ketAbsen !== 'OFF')) {
+                    // ALPHA atau tanpa jam (selain OFF murni) = mangkir
+                    $ket = 'MANGKIR';
+                    $mangkir_count++;
+                } elseif ($ketAbsen === 'OFF' && $jam <= 0) {
+                    $ket = 'OFF';
+                    $off_days++;
+                } elseif ($jam > 0 && (strpos($ketAbsen, 'OFF') !== false || strpos($ketAbsen, 'SPL') !== false || strpos($ketAbsen, 'LEMBUR') !== false)) {
+                    // SPL/lembur: 1 hadir, tanpa multiplier
+                    $ket = 'SPL';
+                    $spl_count++;
+                    $hadir_count++;
+                } elseif ($jam > 0) {
+                    // HADIR: ket HADIR, kosong, atau lainnya dengan jam > 0
+                    $ket = 'HADIR';
+                    $hadir_count++;
+                } else {
+                    $ket = 'MANGKIR';
+                    $mangkir_count++;
                 }
-
-                // ===== RESIGN =====
-                if ($ketAbsen === 'RESIGN' || $ketAbsen === 'R') {
-                    $absenForUI[] = [
-                        'tanggal' => $tgl,
-                        'jam' => 0,
-                        'wl' => 0,
-                        'ot' => 0,
-                        'ket' => 'RESIGN'
-                    ];
-                    $resign_count++; // Ini akan menambah total pemotong PKWT di bawah
-                    continue;
-                }
-
-                // ===== IZIN / SAKIT / CUTI =====
-                if (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'])) {
-                    $absenForUI[] = [
-                        'tanggal' => $tgl,
-                        'jam' => 0,
-                        'wl' => 0,
-                        'ot' => 0,
-                        'ket' => $ketAbsen
-                    ];
-                    continue;
-                }
-
-                // ===== OFF MURNI (tidak ada jam kerja) =====
-                if ($ketAbsen === 'OFF' && $jam == 0) {
-                    $absenForUI[] = [
-                        'tanggal' => $tgl,
-                        'jam' => 0,
-                        'wl' => 0,
-                        'ot' => 0,
-                        'ket' => 'OFF'
-                    ];
-                    continue;
-                }
-
-                // ===== SPL (ket OFF/SPL/LEMBUR dengan jam kerja) =====
-                if (
-                    $jam > 0 &&
-                    (
-                        strpos($ketAbsen, 'OFF') !== false ||
-                        strpos($ketAbsen, 'SPL') !== false ||
-                        strpos($ketAbsen, 'LEMBUR') !== false
-                    )
-                ) {
-
-                    // SPL: Normal selalu 7 jam di semua hari (termasuk Jumat)
-                    // OT1 jam ke-8, OT2 jam ke-9+
-                    $h1_7 = min(7, $jam);
-                    $h8   = ($jam > 7) ? min(1, $jam - 7) : 0;
-                    $h9up = max(0, $jam - 8);
-
-                    // Pengalian Baru SPL berbasis 1 kolom 'lembur'
-                    $total_spl_1_7  += $h1_7 * ($base_lembur * 2);
-                    $total_spl_8    += $h8   * ($base_lembur * 3);
-                    $total_spl_9_up += $h9up * ($base_lembur * 4);
-
-                    $total_jam_spl_1_7  += $h1_7;
-                    $total_jam_spl_8    += $h8;
-                    $total_jam_spl_9_up += $h9up;
-
-                    $absenForUI[] = [
-                        'tanggal' => $tgl,
-                        'jam' => $jam,
-                        'wl' => 0,
-                        'ot' => 0,
-                        'ket' => 'SPL'
-                    ];
-                    continue;
-                }
-
-                // ===== HADIR (ket bukan OFF/SPL/LEMBUR/IZIN/SAKIT/CUTI) =====
-                if ($jam > 0) {
-
-                    $wl = 0;
-                    $ot = 0;
-
-                    if ($hariNama === 'friday') {
-                        // Jumat: Normal wajib 5 jam, jam ke-6 lembur pertama (1.5x), jam 7+ (2x)
-                        $wl = min(1, max(0, $jam - 5));
-                        $ot = max(0, $jam - 5 - $wl);
-                    } else {
-                        // Hari Biasa: Normal wajib 7 jam, jam ke-8 lembur pertama (1.5x), jam 9+ (2x)
-                        $wl = min(1, max(0, $jam - 7));
-                        $ot = max(0, $jam - 7 - $wl);
-                    }
-
-                    $total_lembur   += $wl * ($base_lembur * 1.5);
-                    $total_overtime += $ot * ($base_lembur * 2.0);
-                    $total_jam_wl   += $wl;
-                    $total_jam_ot   += $ot;
-
-                    // Potongan jika jam kerja kurang dari normal
-                    if ($jam < $normal_hours) {
-                        $kurang = $normal_hours - $jam;
-                        $total_jam_kurang += $kurang;
-                        $total_potongan_perjam += $kurang * (floatval($karier['pot_izin']) / $normal_hours);
-                    }
-
-                    $hari_kerja_count++;
-
-                    $absenForUI[] = [
-                        'tanggal' => $tgl,
-                        'jam' => $jam,
-                        'wl' => $wl,
-                        'ot' => $ot,
-                        'ket' => 'HADIR'
-                    ];
-                    continue;
+            } else {
+                // Tanpa data absen: resign bila lewat tgl selesai karier, selain itu mangkir
+                if (!empty($tgl_selesai_karier) && $tgl > $tgl_selesai_karier) {
+                    $ket = 'RESIGN';
+                    $resign_count++;
+                } else {
+                    $ket = 'MANGKIR';
+                    $mangkir_count++;
                 }
             }
-
-            // ================= TIDAK ADA DATA ABSEN =================
-            // ================= CEK RESIGN =================
-            if (!empty($tgl_selesai_karier) && $tgl > $tgl_selesai_karier) {
-                $resign_count++;
-
-                $absenForUI[] = [
-                    'tanggal' => $tgl,
-                    'jam' => 0,
-                    'wl' => 0,
-                    'ot' => 0,
-                    'ket' => 'RESIGN'
-                ];
-                continue;
-            }
-
-            // Jika bukan resign, berarti mangkir
-            $mangkir_count++;
 
             $absenForUI[] = [
                 'tanggal' => $tgl,
-                'jam' => 0,
+                'jam' => $jam,
                 'wl' => 0,
                 'ot' => 0,
-                'ket' => 'MANGKIR'
+                'ket' => $ket,
             ];
         }
 
-        // ================= 6) Logika Baru: Kalkulasi Tunjangan Dinamis =================
-        $tunjanganRows = [];
-        $total_tunjangan = 0;
+        // ================= 5) RUMUS: hadir x gaji pokok harian =================
+        $gaji_bersih = $hadir_count * $gaji_pokok;
 
-        // --- LOGIKA KHUSUS OPERATOR CRANE LOGISTIK ---
-        $nik_khusus = ['TJS-00168', 'TJS-00169', 'TJS-00245', 'TJS-00275'];
-        $is_khusus = in_array($k['nik_karyawan'], $nik_khusus);
-
-        // Menghitung total ketidakhadiran sebagai acuan bonus
-        if ($is_khusus) {
-            // Cuti tidak dihitung sebagai ketidakhadiran penghangus bonus
-            $total_ketidakhadiran = $sakit_days + $izin_days + $mangkir_count + $new_count + $resign_count;
-            $batas_absen = 5; // Maksimal absen 5 hari
-        } else {
-            // Reguler: Cuti dihitung
-            $total_ketidakhadiran = $sakit_days + $izin_days + $cuti_days + $mangkir_count + $new_count + $resign_count;
-            $batas_absen = 3; // Maksimal absen 3 hari
-        }
-
-        $potongan_cuti_khusus = 0; // Inisialisasi potongan cuti
-
-        foreach ($tunjanganRawRows as $tr) {
-            $nama_t = (string)$tr['nama_tunjangan'];
-            $jumlah_t = floatval($tr['jumlah_tunjangan']);
-
-            // A. Logika Tunjangan Makan: Hanya per masuk kerja hari biasa
-            if (!empty($nama_t) && stripos($nama_t, 'makan') !== false) {
-                $jumlah_t = $jumlah_t * $hari_kerja_count;
-            }
-
-            // B. Logika Bonus Kehadiran
-            if (!empty($nama_t) && (stripos($nama_t, 'performance') !== false || stripos($nama_t, 'kehadiran') !== false)) {
-                $nama_t = "Bonus Kehadiran";
-                $original_bonus = $jumlah_t; // Simpan nilai asli sebelum dihanguskan
-
-                // Hitung Potongan Cuti Khusus (Hanya jika NIK Khusus dan ada hari cuti)
-                if ($is_khusus && $cuti_days > 0) {
-                    $satuan_potongan_cuti = $original_bonus / 12;
-                    $potongan_cuti_khusus = $satuan_potongan_cuti * $cuti_days;
-                }
-
-                // Terapkan batas absen
-                if ($total_ketidakhadiran > $batas_absen) {
-                    $jumlah_t = 0;
-                    $nama_t .= " (Hangus: Absen > $batas_absen Hari)";
-                }
-            }
-
-            $tunjanganRows[] = [
-                'nama' => $nama_t,
-                'jumlah' => $jumlah_t
-            ];
-            $total_tunjangan += $jumlah_t;
-        }
-
-        // ================= Perhitungan Gaji Pokok & Potongan =================
-        $basic = (float)$gaji_pokok;
-
-        $total_pot_izin = floatval($karier['pot_izin']) * $izin_days;
-        $total_pot_mangkir = floatval($karier['pot_mangkir']) * $mangkir_count;
-
-        // PKWT potongan untuk hari NEW
-        $total_potongan_pkwt = 0;
-        if ($new_count > 0) {
-            $total_potongan_pkwt = (($total_tunjangan + $basic) / 25) * $new_count;
-        }
-
-        // PKWT potongan untuk hari RESIGN
-        if ($resign_count > 0) {
-            $total_potongan_pkwt += (($total_tunjangan + $basic) / 25) * $resign_count;
-        }
-
-        $total_potongan =
-            $total_potongan_tunjangan +
-            $total_potongan_pinjaman +
-            $total_potongan_lainnya +
-            $total_pot_izin +
-            $total_pot_mangkir +
-            $total_potongan_perjam +
-            $total_potongan_pkwt +
-            $potongan_cuti_khusus;
-
-        // ===== Perhitungan kelebihan hari kerja (jika hari kerja > 25) =====
-        // $kelebihan_hari = 0;
-        // $pendapatan_kelebihan_hari = 0;
-        // if ($hari_kerja_count > 25) {
-        //     $kelebihan_hari = $hari_kerja_count - 25;
-        //     $pendapatan_kelebihan_hari = $kelebihan_hari * ($basic / 25);
-        // }
-
-        // ================= Hitung total pendapatan =================
-        $total_pendapatan =
-            $basic +
-            $total_tunjangan +
-            $total_lembur +
-            $total_overtime +
-            $total_spl_1_7 +
-            $total_spl_8 +
-            $total_spl_9_up +
-            $total_rapel;
-        // $pendapatan_kelebihan_hari;
-
-        $gaji_bersih = $total_pendapatan - $total_potongan;
-
-        // ================= Build response =================
+        // ================= Build response (key lama dipertahankan) =================
         return [
             'nik' => $k['nik_karyawan'],
             'nama' => $k['nama_lengkap'],
@@ -525,70 +193,75 @@ if (!function_exists('generateSlipGajiById')) {
             'period' => "$startDate - $endDate",
             'new' => $new_count,
             'resign' => $resign_count,
-            'rapel' => $rapelRows,
-            'total_rapel' => $total_rapel,
+            'rapel' => [],
+            'total_rapel' => 0,
 
-            // 'kelebihan_hari' => $kelebihan_hari,
-            // 'pendapatan_kelebihan_hari' => $pendapatan_kelebihan_hari,
+            'basic' => $gaji_pokok,
 
-            'basic' => $basic,
+            'total_lembur' => 0,
+            'total_overtime' => 0,
+            'total_spl_1_7' => 0,
+            'total_spl_8' => 0,
+            'total_spl_9_up' => 0,
 
-            'total_lembur' => $total_lembur,
-            'total_overtime' => $total_overtime,
-            'total_spl_1_7' => $total_spl_1_7,
-            'total_spl_8' => $total_spl_8,
-            'total_spl_9_up' => $total_spl_9_up,
+            'total_jam_wl' => 0,
+            'total_jam_ot' => 0,
+            'total_jam_spl_1_7' => 0,
+            'total_jam_spl_8' => 0,
+            'total_jam_spl_9_up' => 0,
 
-            'total_jam_wl' => $total_jam_wl,
-            'total_jam_ot' => $total_jam_ot,
-            'total_jam_spl_1_7' => $total_jam_spl_1_7,
-            'total_jam_spl_8' => $total_jam_spl_8,
-            'total_jam_spl_9_up' => $total_jam_spl_9_up,
+            'bpjs_kesehatan' => 0,
+            'jht' => 0,
+            'pph21' => 0,
+            'pot_pkwt' => 0,
 
-            'bpjs_kesehatan' => $bpjs_kesehatan,
-            'jht' => $jht,
-            'pph21' => $pph21,
-            'pot_pkwt' => $total_potongan_pkwt,
-
-            'pot_izin' => $total_pot_izin,
-            'pot_mangkir' => $total_pot_mangkir,
-            'total_pendapatan' => $total_pendapatan,
-            'total_potongan' => $total_potongan,
+            'pot_izin' => 0,
+            'pot_mangkir' => 0,
+            'total_pendapatan' => $gaji_bersih,
+            'total_potongan' => 0,
             'gaji_bersih' => $gaji_bersih,
-            'hari_kerja' => $hari_kerja_count,
+            'hari_kerja' => $hadir_count,
+            'hadir' => $hadir_count,
+            'spl' => $spl_count,
+            'off' => $off_days,
             'izin' => $izin_days,
             'sakit' => $sakit_days,
             'cuti' => $cuti_days,
 
-            'tunjangan_pendapatan' => $tunjanganRows,
-            'total_tunjangan_pendapatan' => $total_tunjangan,
-            'potongan_tunjangan' => $potonganRows,
-            'total_potongan_tunjangan' => $total_potongan_tunjangan,
+            'tunjangan_pendapatan' => [],
+            'total_tunjangan_pendapatan' => 0,
+            'potongan_tunjangan' => [],
+            'total_potongan_tunjangan' => 0,
 
-            'pinjaman' => $pinjamanRows,
-            'total_potongan_pinjaman' => $total_potongan_pinjaman,
-            'potongan_lain' => $potonganLainRows,
-            'total_potongan_lainnya' => $total_potongan_lainnya,
+            'pinjaman' => [],
+            'total_potongan_pinjaman' => 0,
+            'potongan_lain' => [],
+            'total_potongan_lainnya' => 0,
             'mangkir' => $mangkir_count,
-            'total_jam_kurang' => $total_jam_kurang,
-            'potongan_perjam' => $total_potongan_perjam,
-            'potongan_cuti_khusus' => $potongan_cuti_khusus,
-            'absen' => $absenForUI
+            'total_jam_kurang' => 0,
+            'potongan_perjam' => 0,
+            'potongan_cuti_khusus' => 0,
+            'absen' => $absenForUI,
         ];
     }
 }
 
 if (!function_exists('generateSlipGaji')) {
-    // Wrapper kompatibilitas: pemanggil lama pakai NIK
-    // (get-slip-gaji.php, get-payrol.php, get-home.php, get-pengajuan-pinjaman.php, act-posting-payroll.php).
-    // DRY: tidak ada perhitungan di sini, delegasi ke generateSlipGajiById() di atas.
+    // Wrapper kompatibilitas: pemanggil lama pakai NIK. DRY: delegasi ke generateSlipGajiById().
     function generateSlipGaji($nik, $startDate, $endDate)
     {
         global $koneksi;
-        $nikEsc = mysqli_real_escape_string($koneksi, (string)$nik);
-        $q = mysqli_query($koneksi, "SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan='$nikEsc' LIMIT 1");
-        $row = $q ? mysqli_fetch_assoc($q) : null;
+        $nik = trim((string)$nik);
+        if ($nik === '') return ['error' => 'NIK tidak valid'];
+        try {
+            $stmt = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ? LIMIT 1");
+            $stmt->execute([$nik]);
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log('slip_helper nik: ' . $e->getMessage());
+            return ['error' => 'Gagal mencari karyawan'];
+        }
         if (!$row) return ['error' => 'Karyawan tidak ditemukan'];
-        return generateSlipGajiById($row['id_karyawan'], $startDate, $endDate);
+        return generateSlipGajiById((int)$row['id_karyawan'], $startDate, $endDate);
     }
 }

@@ -15,19 +15,21 @@ require_once __DIR__ . '/../../config/function.php';
 
 try {
     // Ambil filter dari POST
-    $filter_site = isset($_POST['site']) ? $koneksi->real_escape_string($_POST['site']) : '';
-    $filter_jabatan = isset($_POST['jabatan']) ? $koneksi->real_escape_string($_POST['jabatan']) : '';
-    $filter_status = isset($_POST['status']) ? $koneksi->real_escape_string($_POST['status']) : '';
-    $filter_bulan = isset($_POST['bulan']) ? $koneksi->real_escape_string($_POST['bulan']) : '';
+    $filter_site = isset($_POST['site']) ? $_POST['site'] : '';
+    $filter_jabatan = isset($_POST['jabatan']) ? $_POST['jabatan'] : '';
+    $filter_status = isset($_POST['status']) ? $_POST['status'] : '';
+    $filter_bulan = isset($_POST['bulan']) ? $_POST['bulan'] : '';
 
 
     // Build WHERE clause
     $where = ["1=1"];
+    $params = [];
 
     if (!empty($filter_status)) {
         if ($filter_status !== 'Semua') {
             // Jika memilih status spesifik (Aktif, Resign, dll)
-            $where[] = "kar.status_karyawan = '$filter_status'";
+            $where[] = "kar.status_karyawan = ?";
+            $params[] = $filter_status;
         }
     } else {
         // Jika filter status kosong, tampilkan semua karyawan aktif
@@ -35,20 +37,23 @@ try {
     }
 
     if (!empty($filter_site)) {
-        $where[] = "k.id_site = '$filter_site'";
+        $where[] = "k.id_site = ?";
+        $params[] = $filter_site;
     }
 
     if (!empty($filter_jabatan)) {
-        $where[] = "k.id_jabatan = '$filter_jabatan'";
+        $where[] = "k.id_jabatan = ?";
+        $params[] = $filter_jabatan;
     }
 
     if (!empty($filter_bulan)) {
         // Asumsi tgl_selesai ada di tb_karier yang di-alias sebagai 'k'
-        $where[] = "MONTH(k.tgl_selesai) = '$filter_bulan'";
-        
-        // Opsional: Jika Anda ingin memfilter spesifik hanya di tahun ini juga, 
+        $where[] = "MONTH(k.tgl_selesai) = ?";
+        $params[] = $filter_bulan;
+
+        // Opsional: Jika Anda ingin memfilter spesifik hanya di tahun ini juga,
         // Anda bisa meng-uncomment baris di bawah ini:
-        $where[] = "YEAR(k.tgl_selesai) = YEAR(CURDATE())"; 
+        $where[] = "YEAR(k.tgl_selesai) = YEAR(CURDATE())";
     }
 
     $where_sql = implode(" AND ", $where);
@@ -86,16 +91,14 @@ try {
         ORDER BY kar.nik_karyawan ASC
     ";
 
-    $result = $koneksi->query($query);
-
-    if (!$result) {
-        throw new Exception("Query Error: " . $koneksi->error);
-    }
+    $stmt = $koneksi->prepare($query);
+    $stmt->execute($params);
+    $result = $stmt;
 
     $data = [];
     $no = 1;
 
-    while ($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch()) {
         // Hitung usia
         $usia = '';
         if (!empty($row['tgl_lahir'])) {

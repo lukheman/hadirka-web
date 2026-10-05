@@ -13,9 +13,57 @@
         }
     }
 
-    /* pastikan table responsive */
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-        padding: 0.2rem 0.6rem;
+    /* Kontrol DataTables (Search/Length atas, Info/Pagination bawah) */
+    .dataTables_wrapper .row:first-child {
+        padding: 0.75rem 0.25rem 0.5rem 0.25rem;
+        margin: 0;
+        align-items: center;
+    }
+
+    .dataTables_wrapper .row:last-child {
+        padding: 0.5rem 0.25rem 0.25rem 0.25rem;
+        margin: 0;
+        align-items: center;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .pagination {
+        margin-bottom: 0;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        padding-top: 0.4rem;
+    }
+
+    .dataTables_filter label,
+    .dataTables_length label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0;
+        justify-content: flex-end;
+    }
+
+    .dataTables_length label {
+        justify-content: flex-start;
+    }
+
+    @media (max-width: 767px) {
+        .dataTables_wrapper .dataTables_paginate .pagination {
+            justify-content: center;
+        }
+
+        .dataTables_wrapper .dataTables_info {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .dataTables_filter label,
+        .dataTables_length label {
+            justify-content: center;
+        }
     }
 
     .modal-body {
@@ -1104,6 +1152,11 @@
         tableKaryawan = $('#tableKaryawan').DataTable({
             processing: true,
             serverSide: false,
+            autoWidth: false,
+            deferRender: true,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
+            pagingType: "simple_numbers",
             ajax: {
                 url: "app/controller/get-data/get-karyawan.php",
                 type: "POST",
@@ -1116,9 +1169,16 @@
                 dataSrc: "data"
             },
             columns: [{
-                    data: "no",
+                    // Nomor urut dihitung dari posisi tampil (halaman/filter/sort),
+                    // bukan dari field statis server agar tidak acak saat pindah halaman.
+                    data: null,
                     className: "text-center",
-                    width: "45px"
+                    width: "45px",
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
                 },
                 {
                     data: "foto",
@@ -1147,24 +1207,42 @@
                 }
             ],
             order: [
-                [0, "asc"]
+                [2, "asc"]
             ],
             language: {
-                // url: "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(difilter dari _MAX_ total data)",
+                zeroRecords: "Data tidak ditemukan",
+                emptyTable: "Belum ada data karyawan",
+                loadingRecords: "Memuat...",
+                processing: "Memproses...",
+                paginate: {
+                    first: "Pertama",
+                    last: "Terakhir",
+                    next: "Berikutnya",
+                    previous: "Sebelumnya"
+                }
             }
         });
 
-        // Sembunyikan kolom action jika bukan karyawan aktif
-        $('#filterStatus').on('change', function() {
-            let status = $(this).val();
+        // Status "Aktif" berarti semua baris sama → kolom status disembunyikan.
+        // "Semua" berisi status campuran → kolom status WAJIB tampil.
+        function syncStatusColumn(redraw) {
+            let status = $("#filterStatus").val();
+            tableKaryawan.column(5).visible(status !== "Aktif", redraw !== false);
+        }
+        syncStatusColumn(false);
 
-            if (status === 'Aktif' || status === 'Semua') {
-                tableKaryawan.column(5).visible(false);
-            } else {
-                tableKaryawan.column(5).visible(true);
+        // Satu handler filter: tahan posisi pagination (null, false) agar
+        // ganti filter tidak me-reset halaman secara paksa lewat reload ganda.
+        $("#filterSite, #filterJabatan, #filterStatus, #filterBulan").on("change", function() {
+            if (this.id === "filterStatus") {
+                syncStatusColumn(false);
             }
-
-            tableKaryawan.ajax.reload();
+            tableKaryawan.ajax.reload(null, false);
         });
 
 
@@ -1189,11 +1267,6 @@
                         riwayatBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Gagal memuat riwayat karier.</td></tr>';
                     });
             }
-        });
-
-        // 5. Filter Reload
-        $("#filterSite, #filterJabatan, #filterStatus, #filterBulan").on("change", function() {
-            tableKaryawan.ajax.reload();
         });
 
         // 6. ACTION: TAMBAH DATA

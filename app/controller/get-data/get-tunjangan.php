@@ -4,10 +4,12 @@ require '../../config/function.php';
 
 $id_karier = decrypt($_GET['id']);
 
-$q = $koneksi->query("SELECT * FROM tb_tunjangan WHERE id_karier='$id_karier' ORDER BY id_tunjangan DESC");
+$stTunj = $koneksi->prepare("SELECT * FROM tb_tunjangan WHERE id_karier = ? ORDER BY id_tunjangan DESC");
+$stTunj->execute([$id_karier]);
+$q = $stTunj;
 
 $no = 1;
-while ($r = $q->fetch_assoc()) {
+while ($r = $q->fetch()) {
     $nama_esc = htmlspecialchars($r['nama_tunjangan'], ENT_QUOTES);
     $jenis = $r['jenis_tunjangan'] ?? 'tetap';
     $badge = $jenis === 'tidak_tetap'

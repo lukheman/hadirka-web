@@ -17,34 +17,34 @@ $action = $_POST['action'] ?? '';
 
 function input($data)
 {
-    global $koneksi;
-    return isset($_POST[$data]) ? $koneksi->real_escape_string(trim($_POST[$data])) : '';
+    return isset($_POST[$data]) ? trim($_POST[$data]) : '';
 }
 
 if ($action == "get") {
     $id = intval($_POST['id_karyawan']);
     // 1. Ambil data utama (Karyawan, Identitas, Karier)
     // Kita tidak men-JOIN kontak darurat di sini agar tidak terjadi duplikasi baris jika kontak > 1
-    $sql = "SELECT k.*, i.*, 
+    $sql = "SELECT k.*, i.*,
             kar.id_site, kar.id_departemen, kar.id_jabatan, kar.tgl_mulai, kar.tgl_selesai
-            FROM tb_karyawan k 
-            LEFT JOIN tb_identitas i ON i.id_karyawan = k.id_karyawan 
+            FROM tb_karyawan k
+            LEFT JOIN tb_identitas i ON i.id_karyawan = k.id_karyawan
             LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan
-            WHERE k.id_karyawan = '$id'";
+            WHERE k.id_karyawan = ?";
 
-    $q = $koneksi->query($sql);
-    $r = $q->fetch_assoc();
+    $q = $koneksi->prepare($sql);
+    $q->execute([$id]);
+    $r = $q->fetch();
 
     if ($r) {
         // Never send the stored password hash to the browser.
         unset($r['password']);
 
         // 2. Ambil data Kontak Darurat secara terpisah
-        $sql_kontak = "SELECT * FROM tb_kontak_darurat WHERE id_karyawan = '$id' ORDER BY nomor_urut ASC";
-        $q_kontak = $koneksi->query($sql_kontak);
+        $q_kontak = $koneksi->prepare("SELECT * FROM tb_kontak_darurat WHERE id_karyawan = ? ORDER BY nomor_urut ASC");
+        $q_kontak->execute([$id]);
 
         $contacts = [];
-        while ($row = $q_kontak->fetch_assoc()) {
+        while ($row = $q_kontak->fetch()) {
             $contacts[] = $row;
         }
 
@@ -69,12 +69,12 @@ if ($action == "get") {
 
 if ($action == "add") {
 
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
 
     try {
         // insert tb_karyawan (TANPA FOTO DULU)
         // Siapkan variabel tanggal lahir
-        $tgl_lahir_val = input('tgl_lahir') === '' ? "NULL" : "'" . input('tgl_lahir') . "'";
+        $tgl_lahir_val = input('tgl_lahir') === '' ? null : input('tgl_lahir');
 
         // Ambil NIK dari inputan form
         $nik_input = input('nik_karyawan');
@@ -96,133 +96,140 @@ if ($action == "add") {
             if (strlen($add_password) < 8) {
                 throw new Exception("Password minimal 8 karakter.");
             }
-            $password_sql = "'" . md5($add_password) . "'";
+            $password_sql = md5($add_password);
         } else {
-            $password_sql = "'" . md5($nik_input) . "'";
+            $password_sql = md5($nik_input);
         }
         // Bersihkan nama untuk nama file (hilangkan spasi dan karakter aneh)
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
 
-        $sql1 = "INSERT INTO tb_karyawan 
+        $st1 = $koneksi->prepare("INSERT INTO tb_karyawan
         (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, status_karyawan, foto, password)
-        VALUES (
-            '" . input('nik_karyawan') . "',
-            '" . input('nama_lengkap') . "',
-            '" . input('jenis_kelamin') . "',
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktif', '', ?)");
+        $ok1 = $st1->execute([
+            input('nik_karyawan'),
+            input('nama_lengkap'),
+            input('jenis_kelamin'),
             $tgl_lahir_val,
-            '" . input('tempat_lahir') . "',
-            '" . input('email_pribadi') . "',
-            '" . input('no_telp') . "',
-            '" . input('nationality') . "',
-            '" . input('agama') . "',
-            '" . input('status_pernikahan') . "',
-            '" . input('status_ptkp') . "',
-            'Aktif',
-            '',
+            input('tempat_lahir'),
+            input('email_pribadi'),
+            input('no_telp'),
+            input('nationality'),
+            input('agama'),
+            input('status_pernikahan'),
+            input('status_ptkp'),
             $password_sql
-        )";
+        ]);
 
-        if (!$koneksi->query($sql1)) {
+        if (!$ok1) {
             throw new Exception("Gagal insert tb_karyawan");
         }
 
-        $id_karyawan = $koneksi->insert_id;
+        $id_karyawan = (int)$koneksi->lastInsertId();
 
         // PROSES UPLOAD FOTO (Gunakan NIK)
         if (isset($_FILES['foto']['name']) && $_FILES['foto']['name'] != '') {
             $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
             // Format: NIK-NamaKaryawan.ext
             $foto_name = $nik_input . '-' . strtolower($nama_bersih) . '.' . strtolower($ext);
-            
+
             $target_dir = '../uploads/profil/';
             if (!file_exists($target_dir)) { mkdir($target_dir, 0755, true); }
 
             if (move_uploaded_file($_FILES['foto']['tmp_name'], $target_dir . $foto_name)) {
                 // Update nama foto ke database
-                $koneksi->query("UPDATE tb_karyawan SET foto = '$foto_name' WHERE id_karyawan = '$id_karyawan'");
+                $stFoto = $koneksi->prepare("UPDATE tb_karyawan SET foto = ? WHERE id_karyawan = ?");
+                $stFoto->execute([$foto_name, $id_karyawan]);
             }
         }
 
         // insert tb_identitas
-        $sql2 = "INSERT INTO tb_identitas 
+        $st2 = $koneksi->prepare("INSERT INTO tb_identitas
         (id_karyawan, nik_ktp, kk_number, npwp, bpjs_tk, bpjs_kes, alamat_ktp, provinsi, kabupaten, kecamatan, desa, rt_rw, nama_ibu, last_education, major, education_level, nama_bank, atas_nama_rek, no_rek)
-        VALUES (
-            '$id_karyawan',
-            '" . input('nik_ktp') . "',
-            '" . input('kk_number') . "',
-            '" . input('npwp') . "',
-            '" . input('bpjs_tk') . "',
-            '" . input('bpjs_kes') . "',
-            '" . input('alamat_ktp') . "',
-            '" . input('provinsi') . "',
-            '" . input('kabupaten') . "',
-            '" . input('kecamatan') . "',
-            '" . input('desa') . "',
-            '" . input('rt_rw') . "',
-            '" . input('nama_ibu') . "',
-            '" . input('last_education') . "',
-            '" . input('major') . "',
-            '" . input('education_level') . "',
-            '" . input('nama_bank') . "',
-            '" . input('atas_nama_rek') . "',
-            '" . input('no_rek') . "'
-        )";
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $ok2 = $st2->execute([
+            $id_karyawan,
+            input('nik_ktp'),
+            input('kk_number'),
+            input('npwp'),
+            input('bpjs_tk'),
+            input('bpjs_kes'),
+            input('alamat_ktp'),
+            input('provinsi'),
+            input('kabupaten'),
+            input('kecamatan'),
+            input('desa'),
+            input('rt_rw'),
+            input('nama_ibu'),
+            input('last_education'),
+            input('major'),
+            input('education_level'),
+            input('nama_bank'),
+            input('atas_nama_rek'),
+            input('no_rek')
+        ]);
 
-        if (!$koneksi->query($sql2)) {
+        if (!$ok2) {
             throw new Exception("Gagal insert tb_identitas");
         }
 
         // insert tb_karier
-        // Siapkan variabel tanggal (Jika kosong jadikan NULL, jika ada isinya bungkus dengan kutip)
-        $tgl_mulai_val   = input('tgl_mulai') === '' ? "NULL" : "'" . input('tgl_mulai') . "'";
-        $tgl_selesai_val = input('tgl_selesai') === '' ? "NULL" : "'" . input('tgl_selesai') . "'";
+        // Siapkan variabel tanggal (Jika kosong jadikan NULL)
+        $tgl_mulai_val   = input('tgl_mulai') === '' ? null : input('tgl_mulai');
+        $tgl_selesai_val = input('tgl_selesai') === '' ? null : input('tgl_selesai');
         // ID relasi kosong ('' dari dropdown "-- Pilih --") wajib jadi NULL,
         // karena kolom INT menolak string kosong (Incorrect integer value).
-        $id_site_val       = input('id_site') === '' ? "NULL" : "'" . input('id_site') . "'";
-        $id_departemen_val = input('id_departemen') === '' ? "NULL" : "'" . input('id_departemen') . "'";
-        $id_jabatan_val    = input('id_jabatan') === '' ? "NULL" : "'" . input('id_jabatan') . "'";
+        $id_site_val       = input('id_site') === '' ? null : input('id_site');
+        $id_departemen_val = input('id_departemen') === '' ? null : input('id_departemen');
+        $id_jabatan_val    = input('id_jabatan') === '' ? null : input('id_jabatan');
 
-        $sql3 = "INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, spl, ot1_spl, ot2_spl, pot_izin, pot_mangkir, tgl_mulai, tgl_selesai)
-        VALUES (
-            '$id_karyawan',
+        $st3 = $koneksi->prepare("INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, tgl_mulai, tgl_selesai)
+        VALUES (?, ?, ?, ?, ?, ?)");
+        $ok3 = $st3->execute([
+            $id_karyawan,
             $id_site_val,
             $id_departemen_val,
             $id_jabatan_val,
-            '', '', '', '', '',
-            $tgl_mulai_val, 
+            $tgl_mulai_val,
             $tgl_selesai_val
-        )";
+        ]);
 
-        if (!$koneksi->query($sql3)) {
+        if (!$ok3) {
             throw new Exception("Gagal insert tb_karier");
         }
 
         // insert tb_kontak_darurat
         if (input('nama_kontak1') != "") {
-            $sql_k1 = "INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                '$id_karyawan', 1,
-                '" . input('nama_kontak1') . "',
-                '" . input('hubungan1') . "',
-                '" . input('no_telp_darurat1') . "'
-            )";
-            $koneksi->query($sql_k1);
+            $st_k1 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
+                ?, 1, ?, ?, ?)");
+            $st_k1->execute([
+                $id_karyawan,
+                input('nama_kontak1'),
+                input('hubungan1'),
+                input('no_telp_darurat1')
+            ]);
         }
 
         // Kontak 2
         if (input('nama_kontak2') != "") {
-            $sql_k2 = "INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                '$id_karyawan', 2,
-                '" . input('nama_kontak2') . "',
-                '" . input('hubungan2') . "',
-                '" . input('no_telp_darurat2') . "'
-            )";
-            $koneksi->query($sql_k2);
+            $st_k2 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
+                ?, 2, ?, ?, ?)");
+            $st_k2->execute([
+                $id_karyawan,
+                input('nama_kontak2'),
+                input('hubungan2'),
+                input('no_telp_darurat2')
+            ]);
         }
 
         $koneksi->commit();
         echo json_encode(["status" => "ok"]);
+    } catch (PDOException $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal menyimpan data karyawan."]);
     } catch (Exception $e) {
-        $koneksi->rollback();
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
         echo json_encode(["status" => "error", "msg" => $e->getMessage()]);
     }
     exit;
@@ -230,7 +237,7 @@ if ($action == "add") {
 
 
 if ($action == "edit") {
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
 
     try {
         // Ambil ID dari POST
@@ -272,22 +279,23 @@ if ($action == "edit") {
             $nik_input = input('nik_karyawan');
             // Bersihkan nama
             $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
-            
+
             $target_dir = '../uploads/profil/';
             if (!file_exists($target_dir)) { mkdir($target_dir, 0755, true); }
 
             // Cari foto lama untuk dihapus
-            $q_old = $koneksi->query("SELECT foto FROM tb_karyawan WHERE id_karyawan = '$id'");
-            if ($r_old = $q_old->fetch_assoc()) {
+            $q_old = $koneksi->prepare("SELECT foto FROM tb_karyawan WHERE id_karyawan = ?");
+            $q_old->execute([$id]);
+            if ($r_old = $q_old->fetch()) {
                 if (!empty($r_old['foto']) && file_exists($target_dir . $r_old['foto'])) {
                     @unlink($target_dir . $r_old['foto']);
                 }
             }
-            
+
             // Upload foto baru...
             $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
             $foto_name = $nik_input . '-' . strtolower($nama_bersih) . '.' . strtolower($ext);
-            
+
             if (move_uploaded_file($_FILES['foto']['tmp_name'], $target_dir . $foto_name)) {
                 // Masukkan nama foto ke dalam array untuk diupdate
                 $k_data['foto'] = $foto_name;
@@ -295,17 +303,21 @@ if ($action == "edit") {
         }
 
         $upd_k = [];
+        $params_k = [];
         foreach ($k_data as $key => $val) {
-            // CEK: Jika tgl_lahir kosong, set NULL. Selain itu bungkus pakai kutip.
+            // CEK: Jika tgl_lahir kosong, set NULL. Selain itu pakai placeholder.
             if ($val === '' && $key === 'tgl_lahir') {
                 $upd_k[] = "$key = NULL";
             } else {
-                $upd_k[] = "$key = '$val'";
+                $upd_k[] = "$key = ?";
+                $params_k[] = $val;
             }
         }
-        $sql_k = "UPDATE tb_karyawan SET " . implode(", ", $upd_k) . " WHERE id_karyawan = '$id'";
+        $params_k[] = $id;
+        $sql_k = "UPDATE tb_karyawan SET " . implode(", ", $upd_k) . " WHERE id_karyawan = ?";
 
-        $koneksi->query($sql_k);
+        $stmtUpK = $koneksi->prepare($sql_k);
+        $stmtUpK->execute($params_k);
 
         if ($new_password !== '') {
             // Keep employee mobile login compatible with its legacy MD5 check.
@@ -313,29 +325,26 @@ if ($action == "edit") {
             $password_stmt = $koneksi->prepare(
                 'UPDATE tb_karyawan SET password = ? WHERE id_karyawan = ?'
             );
-            if (!$password_stmt) {
-                throw new Exception('Gagal menyiapkan perubahan password.');
-            }
-            $password_stmt->bind_param('si', $password_hash, $id);
-            if (!$password_stmt->execute() || $password_stmt->affected_rows !== 1) {
+            $password_stmt->execute([$password_hash, $id]);
+            if ($password_stmt->rowCount() !== 1) {
                 throw new Exception('Password karyawan gagal diubah.');
             }
 
             $verify_stmt = $koneksi->prepare('SELECT password FROM tb_karyawan WHERE id_karyawan = ?');
-            $verify_stmt->bind_param('i', $id);
-            $verify_stmt->execute();
-            $stored_password = $verify_stmt->get_result()->fetch_assoc()['password'] ?? '';
+            $verify_stmt->execute([$id]);
+            $stored_password = $verify_stmt->fetch()['password'] ?? '';
             if (!hash_equals($stored_password, md5($new_password))) {
                 throw new Exception('Password karyawan gagal diverifikasi setelah disimpan.');
             }
         }
 
         // VALIDASI: Jika ID tidak ditemukan di tb_karyawan
-        if ($koneksi->affected_rows === 0) {
+        if ($stmtUpK->rowCount() === 0 && $new_password === '') {
             // Kita tidak throw error di sini karena bisa jadi data memang tidak ada perubahan (isinya sama)
             // Tapi untuk testing, mari kita pastikan ID nya ada
-            $check = $koneksi->query("SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = '$id'");
-            if ($check->num_rows === 0) {
+            $check = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ?");
+            $check->execute([$id]);
+            if (!$check->fetch()) {
                 throw new Exception("Gagal Update: ID Karyawan ($id) tidak ditemukan di database.");
             }
         }
@@ -363,11 +372,15 @@ if ($action == "edit") {
         ];
 
         $upd_i = [];
+        $params_i = [];
         foreach ($i_data as $key => $val) {
-            $upd_i[] = "$key = '$val'";
+            $upd_i[] = "$key = ?";
+            $params_i[] = $val;
         }
-        $sql_i = "UPDATE tb_identitas SET " . implode(", ", $upd_i) . " WHERE id_karyawan = '$id'";
-        $koneksi->query($sql_i);
+        $params_i[] = $id;
+        $sql_i = "UPDATE tb_identitas SET " . implode(", ", $upd_i) . " WHERE id_karyawan = ?";
+        $stmtUpI = $koneksi->prepare($sql_i);
+        $stmtUpI->execute($params_i);
 
         // 3. Update data karier (hanya jika field penempatan dikirim form;
         //    form edit karyawan tidak lagi memuatnya, jadi lewati agar tidak menimpa)
@@ -379,51 +392,62 @@ if ($action == "edit") {
 
         if (!empty($karier_data)) {
             $upd_kar = [];
+            $params_kar = [];
             foreach ($karier_data as $k => $v) {
                 // CEK: Jika data kosong dan field-nya adalah tanggal, set sebagai NULL (tanpa kutip)
                 if ($v === '' && in_array($k, ['tgl_mulai', 'tgl_selesai'])) {
                     $upd_kar[] = "$k = NULL";
                 } else {
-                    $upd_kar[] = "$k = '$v'"; // Set normal pakai kutip
+                    $upd_kar[] = "$k = ?"; // Set normal pakai placeholder
+                    $params_kar[] = $v;
                 }
             }
 
-            $sql_kar = "UPDATE tb_karier SET " . implode(",", $upd_kar) . " WHERE id_karyawan='$id'";
-            $koneksi->query($sql_kar);
+            $params_kar[] = $id;
+            $sql_kar = "UPDATE tb_karier SET " . implode(",", $upd_kar) . " WHERE id_karyawan=?";
+            $stmtUpKar = $koneksi->prepare($sql_kar);
+            $stmtUpKar->execute($params_kar);
         }
 
         // 4. Update data kontak darurat
         // Strategi: Hapus semua kontak lama milik karyawan ini, lalu insert ulang yang baru dari form.
         // Ini menangani kasus perubahan data, penambahan kontak ke-2, atau penghapusan kontak.
-        $koneksi->query("DELETE FROM tb_kontak_darurat WHERE id_karyawan='$id'");
+        $delKon = $koneksi->prepare("DELETE FROM tb_kontak_darurat WHERE id_karyawan=?");
+        $delKon->execute([$id]);
 
         // Insert Ulang Kontak 1
         if (input('nama_kontak1') != "") {
-            $sql_kon1 = "INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                '$id', 1,
-                '" . input('nama_kontak1') . "',
-                '" . input('hubungan1') . "',
-                '" . input('no_telp_darurat1') . "'
-            )";
-            $koneksi->query($sql_kon1);
+            $st_kon1 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
+                ?, 1, ?, ?, ?)");
+            $st_kon1->execute([
+                $id,
+                input('nama_kontak1'),
+                input('hubungan1'),
+                input('no_telp_darurat1')
+            ]);
         }
 
         // Insert Ulang Kontak 2
         if (input('nama_kontak2') != "") {
-            $sql_kon2 = "INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                '$id', 2,
-                '" . input('nama_kontak2') . "',
-                '" . input('hubungan2') . "',
-                '" . input('no_telp_darurat2') . "'
-            )";
-            $koneksi->query($sql_kon2);
+            $st_kon2 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
+                ?, 2, ?, ?, ?)");
+            $st_kon2->execute([
+                $id,
+                input('nama_kontak2'),
+                input('hubungan2'),
+                input('no_telp_darurat2')
+            ]);
         }
 
 
         $koneksi->commit();
         echo json_encode(["status" => "ok", "msg" => "Update berhasil untuk ID: $id"]);
+    } catch (PDOException $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal memperbarui data karyawan."]);
     } catch (Exception $e) {
-        $koneksi->rollback();
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
         echo json_encode(["status" => "error", "msg" => $e->getMessage()]);
     }
     exit;
@@ -431,24 +455,33 @@ if ($action == "edit") {
 // 3. DELETE (Opsional, tetap disertakan jika Anda butuh menghapus)
 if ($action == "delete") {
     $id = intval($_POST['id_karyawan']);
-    $koneksi->begin_transaction();
+    $koneksi->beginTransaction();
     try {
         // Hapus file fisik foto
-        $q_foto = $koneksi->query("SELECT foto FROM tb_karyawan WHERE id_karyawan = '$id'");
-        if ($r_foto = $q_foto->fetch_assoc()) {
+        $q_foto = $koneksi->prepare("SELECT foto FROM tb_karyawan WHERE id_karyawan = ?");
+        $q_foto->execute([$id]);
+        if ($r_foto = $q_foto->fetch()) {
             if (!empty($r_foto['foto']) && file_exists('../uploads/profil/' . $r_foto['foto'])) {
                 @unlink('../uploads/profil/' . $r_foto['foto']);
             }
         }
 
-        $koneksi->query("DELETE FROM tb_identitas WHERE id_karyawan = '$id'");
-        $koneksi->query("DELETE FROM tb_karier WHERE id_karyawan = '$id'");
-        $koneksi->query("DELETE FROM tb_karyawan WHERE id_karyawan = '$id'");
-        $koneksi->query("DELETE FROM tb_kontak_darurat WHERE id_karyawan = '$id'");
+        $d1 = $koneksi->prepare("DELETE FROM tb_identitas WHERE id_karyawan = ?");
+        $d1->execute([$id]);
+        $d2 = $koneksi->prepare("DELETE FROM tb_karier WHERE id_karyawan = ?");
+        $d2->execute([$id]);
+        $d3 = $koneksi->prepare("DELETE FROM tb_karyawan WHERE id_karyawan = ?");
+        $d3->execute([$id]);
+        $d4 = $koneksi->prepare("DELETE FROM tb_kontak_darurat WHERE id_karyawan = ?");
+        $d4->execute([$id]);
         $koneksi->commit();
         echo json_encode(["status" => "ok"]);
+    } catch (PDOException $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal menghapus data"]);
     } catch (Exception $e) {
-        $koneksi->rollback();
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
         echo json_encode(["status" => "error", "msg" => "Gagal menghapus data"]);
     }
     exit;

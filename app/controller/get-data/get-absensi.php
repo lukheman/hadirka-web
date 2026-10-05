@@ -37,9 +37,16 @@ $allDates = dateRangeArray($tgl_a, $tgl_b);
 $absenAll = []; // [id_karyawan][tgl] => row
 $sqlAbs = "SELECT id_karyawan, tgl_absen, jam_kerja, ket_absen
            FROM tb_absen
-           WHERE tgl_absen BETWEEN '$tgl_a' AND '$tgl_b'";
-$resAbs = mysqli_query($koneksi, $sqlAbs);
-while ($r = mysqli_fetch_assoc($resAbs)) {
+           WHERE tgl_absen BETWEEN ? AND ?";
+try {
+    $stAbs = $koneksi->prepare($sqlAbs);
+    $stAbs->execute([$tgl_a, $tgl_b]);
+    $resAbs = $stAbs;
+} catch (PDOException $e) {
+    error_log('get-absensi absen: ' . $e->getMessage());
+    exit;
+}
+while ($r = $resAbs->fetch()) {
     $id = $r['id_karyawan'];
     $tgl = $r['tgl_absen'];
     // Simpan raw values (trim utk safety)
@@ -53,7 +60,12 @@ while ($r = mysqli_fetch_assoc($resAbs)) {
 // -------------------------
 // Struktur join menyesuaikan DB-mu: beberapa project menyimpan jabatan/dept di tb_karier.
 // Ubah nama kolom join bila berbeda.
-$whereJab = $jabatan ? " AND kar.id_jabatan = '$jabatan' " : "";
+$paramsKar = [$site];
+$whereJab = "";
+if ($jabatan) {
+    $whereJab = " AND kar.id_jabatan = ? ";
+    $paramsKar[] = $jabatan;
+}
 
 $sqlKar = "
 SELECT k.id_karyawan, k.nik_karyawan, k.nama_lengkap,
@@ -66,20 +78,24 @@ LEFT JOIN tb_karier kar ON kar.id_karyawan = k.id_karyawan
 LEFT JOIN tb_jabatan j ON j.id_jabatan = kar.id_jabatan
 LEFT JOIN tb_departemen d ON d.id_departemen = kar.id_departemen
 LEFT JOIN tb_site s ON s.id_site = kar.id_site
-WHERE kar.id_site = '$site'
+WHERE kar.id_site = ?
 $whereJab
 GROUP BY k.id_karyawan
 ORDER BY k.nama_lengkap ASC
 ";
 
-$qKar = mysqli_query($koneksi, $sqlKar);
-if (!$qKar) {
-    echo "<tr><td colspan='16' class='text-center text-danger'>Query karyawan error: " . mysqli_error($koneksi) . "</td></tr>";
+try {
+    $stKar = $koneksi->prepare($sqlKar);
+    $stKar->execute($paramsKar);
+    $qKar = $stKar;
+} catch (PDOException $e) {
+    error_log('get-absensi karyawan: ' . $e->getMessage());
+    echo "<tr><td colspan='16' class='text-center text-danger'>Query karyawan error.</td></tr>";
     exit;
 }
 
 $no = 1;
-while ($k = mysqli_fetch_assoc($qKar)) {
+while ($k = $qKar->fetch()) {
     $idk = $k['id_karyawan'];
 
     // Inisialisasi counters
@@ -217,5 +233,3 @@ while ($k = mysqli_fetch_assoc($qKar)) {
 
     $no++;
 }
-
-$koneksi->close();

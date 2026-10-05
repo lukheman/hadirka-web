@@ -13,12 +13,13 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 $bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';
 $whereClause = "";
+$params = [];
 $judulFile = "Data_Pinjaman";
 
 if (!empty($bulan)) {
-    $bulan_safe = $koneksi->real_escape_string($bulan);
-    $whereClause = " WHERE p.tgl_pinjaman LIKE '$bulan_safe%' ";
-    $judulFile .= "_" . $bulan_safe;
+    $whereClause = " WHERE p.tgl_pinjaman LIKE ? ";
+    $params[] = $bulan . '%';
+    $judulFile .= "_" . $bulan;
 } else {
     $judulFile .= "_SemuaBulan";
 }
@@ -39,7 +40,9 @@ $sql = "SELECT
         GROUP BY p.id_pinjaman
         ORDER BY p.tgl_pinjaman DESC, k.nama_lengkap ASC";
 
-$result = $koneksi->query($sql);
+$stmt = $koneksi->prepare($sql);
+$stmt->execute($params);
+$result = $stmt;
 
 $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
@@ -55,7 +58,7 @@ $sheet->getStyle('A1:J1')->applyFromArray([
 ]);
 
 $rowEx = 2; $no = 1;
-while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch()) {
     $sheet->setCellValue('A'.$rowEx, $no);
     $sheet->setCellValue('B'.$rowEx, $row['nik_karyawan']);
     $sheet->setCellValue('C'.$rowEx, $row['nama_lengkap']);

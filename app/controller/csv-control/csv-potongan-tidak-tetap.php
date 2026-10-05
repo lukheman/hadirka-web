@@ -34,6 +34,11 @@ try {
     $errors = [];
     $startRow = 2; // Lewati header
 
+    $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
+    $stmtCheck = $koneksi->prepare("SELECT id_potongan_tidak_tetap FROM tb_potongan_tidak_tetap WHERE id_karyawan = ? AND tgl_potongan = ? AND jenis_potongan = ? AND ket_potongan = ?");
+    $stmtUpd = $koneksi->prepare("UPDATE tb_potongan_tidak_tetap SET nominal_potongan=? WHERE id_karyawan=? AND tgl_potongan=? AND jenis_potongan=? AND ket_potongan=?");
+    $stmtIns = $koneksi->prepare("INSERT INTO tb_potongan_tidak_tetap (id_karyawan, tgl_potongan, nominal_potongan, jenis_potongan, ket_potongan) VALUES (?,?,?,?,?)");
+
     for ($i = $startRow; $i <= count($data); $i++) {
         $row = $data[$i];
         
@@ -41,11 +46,8 @@ try {
         if (empty($nik)) continue;
 
         // 1. Cari ID Karyawan
-        $stmtK = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ?");
-        $stmtK->bind_param("s", $nik);
-        $stmtK->execute();
-        $resK = $stmtK->get_result()->fetch_assoc();
-        $stmtK->close();
+        $stmtK->execute([$nik]);
+        $resK = $stmtK->fetch();
 
         if (!$resK) {
             $errors[] = "Baris $i: NIK $nik tidak ada di database.";
@@ -82,25 +84,15 @@ try {
         }
 
         // 5. Cek Duplikat atau Update
-        $stmtCheck = $koneksi->prepare("SELECT id_potongan_tidak_tetap FROM tb_potongan_tidak_tetap WHERE id_karyawan = ? AND tgl_potongan = ? AND jenis_potongan = ? AND ket_potongan = ?");
-        $stmtCheck->bind_param("isss", $id_karyawan, $tgl_potongan, $jenis_potongan, $ket_potongan);
-        $stmtCheck->execute();
-        $resCheck = $stmtCheck->get_result();
-        $isDuplicate = $resCheck->num_rows > 0;
-        $stmtCheck->close();
+        $stmtCheck->execute([$id_karyawan, $tgl_potongan, $jenis_potongan, $ket_potongan]);
+        $isDuplicate = (bool)$stmtCheck->fetch();
 
         if ($isDuplicate) {
             // Jika data sudah ada, Update HANYA nominalnya
-            $stmtUpd = $koneksi->prepare("UPDATE tb_potongan_tidak_tetap SET nominal_potongan=? WHERE id_karyawan=? AND tgl_potongan=? AND jenis_potongan=? AND ket_potongan=?");
-            $stmtUpd->bind_param("disss", $nominal_potongan, $id_karyawan, $tgl_potongan, $jenis_potongan, $ket_potongan);
-            $stmtUpd->execute();
-            $stmtUpd->close();
+            $stmtUpd->execute([$nominal_potongan, $id_karyawan, $tgl_potongan, $jenis_potongan, $ket_potongan]);
         } else {
             // Jika data belum ada, Insert sebagai data baru
-            $stmtIns = $koneksi->prepare("INSERT INTO tb_potongan_tidak_tetap (id_karyawan, tgl_potongan, nominal_potongan, jenis_potongan, ket_potongan) VALUES (?,?,?,?,?)");
-            $stmtIns->bind_param("isdss", $id_karyawan, $tgl_potongan, $nominal_potongan, $jenis_potongan, $ket_potongan);
-            $stmtIns->execute();
-            $stmtIns->close();
+            $stmtIns->execute([$id_karyawan, $tgl_potongan, $nominal_potongan, $jenis_potongan, $ket_potongan]);
         }
         $successCount++;
     }
@@ -111,6 +103,7 @@ try {
     ]);
 
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => 'System Error: ' . $e->getMessage()]);
+    error_log('csv-potongan-tidak-tetap: ' . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'System Error: gagal memproses file.']);
 }
 ?>
