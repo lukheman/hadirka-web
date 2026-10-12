@@ -1,10 +1,21 @@
 <?php
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../config/koneksi.php';
 require_once __DIR__ . '/../config/function.php';
 
 header("Content-Type: application/json");
 
 $action = $_POST['action'] ?? '';
+
+// Finance (level 6) read-only: blokir eliminasi/reaktivasi.
+// Aksi "get" tetap diizinkan karena hanya membaca.
+if ((($_SESSION['level'] ?? 99) == 6) && in_array($action, ['eliminasi', 'reaktivasi'], true)) {
+    echo json_encode(["status" => "error", "msg" => "Akses ditolak: akun Finance hanya boleh melihat data karyawan."]);
+    exit;
+}
 
 function input($data)
 {

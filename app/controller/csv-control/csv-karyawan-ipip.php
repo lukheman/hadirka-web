@@ -86,6 +86,16 @@ ini_set('max_execution_time', '300');
 
 header("Content-Type: application/json");
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+// Finance (level 6) read-only: tolak import karyawan.
+if ((($_SESSION['level'] ?? 99) == 6)) {
+    echo json_encode(["success" => false, "error" => "Akses ditolak: akun Finance hanya boleh melihat data karyawan."]);
+    exit;
+}
+
 require __DIR__ . '/../../config/koneksi.php';
 require __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../config/Excel.php'; // Excel::parseDateFlexible()/esc()

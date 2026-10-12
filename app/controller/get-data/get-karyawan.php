@@ -10,8 +10,15 @@ header("Content-Type: application/json");
 error_reporting(E_ALL);
 ini_set('display_errors', 0); // Matikan error display agar tidak corrupt JSON
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../config/function.php';
+
+// Finance (level 6) hanya boleh melihat: sembunyikan tombol ubah di kolom aksi.
+$is_finance_readonly = (($_SESSION['level'] ?? 99) == 6);
 
 try {
     // Ambil filter dari POST
@@ -280,7 +287,14 @@ try {
         // Di bagian build action buttons
         $eliminatedStatuses = ['Habis Kontrak', 'Pensiun', 'PHK', 'Resign', 'Black List'];
 
-        if (in_array($row['status_karyawan'], $eliminatedStatuses)) {
+        if ($is_finance_readonly) {
+            // Finance read-only: hanya boleh lihat detail.
+            $action = "
+                <button class='btn btn-sm btn-info btnDetail' title='Lihat Detail'>
+                    <i class='fa fa-eye'></i>
+                </button>
+            ";
+        } elseif (in_array($row['status_karyawan'], $eliminatedStatuses)) {
             $action = "
                 <button class='btn btn-sm btn-info btnDetail' title='Lihat Detail'>
                     <i class='fa fa-eye'></i>

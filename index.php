@@ -79,8 +79,9 @@ $routes = [
 $user_level = $_SESSION['level'] ?? 99;
 
 // 1. Modul HRD Umum (Hanya Master, Direktur, HRD, Supervisor, Admin)
+// CATATAN: 'data-karyawan' dikeluarkan dari daftar ini agar Finance (level 6)
+// bisa akses read-only. Lihat $karyawan_view_pages di bawah.
 $hrd_pages = [
-    'data-karyawan',
     'data-karyawan-tereliminasi',
     'data-site',
     'data-departemen',
@@ -104,6 +105,13 @@ $hrd_pages = [
 
 if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
     echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master, Direktur, HRD, Supervisor, dan Admin.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
+    exit;
+}
+
+// 1.a Data Karyawan read-only untuk Finance (Master, Direktur, HRD, Supervisor, Admin, Finance)
+$karyawan_view_pages = ['data-karyawan'];
+if (!in_array($user_level, [0, 1, 2, 3, 5, 6]) && in_array($page, $karyawan_view_pages)) {
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master, Direktur, HRD, Supervisor, Admin, dan Finance.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;
 }
 

@@ -183,6 +183,17 @@ function isMenuOpen($pages_array, $current_page)
 
     <!-- Hanya Tampil jika Master, Direktur, HRD, Finance -->
     <?php if (in_array($user_level, [0, 1, 2, 6])): ?>
+        <?php if ($user_level == 6): ?>
+        <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Data Karyawan</span>
+        </li>
+        <li class="menu-item <?= isActive('data-karyawan', $current_page); ?>">
+            <a href="?page=data-karyawan" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user"></i>
+                <div data-i18n="Data Karyawan">Data Karyawan</div>
+            </a>
+        </li>
+        <?php endif; ?>
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Finance & Payroll</span>
         </li>

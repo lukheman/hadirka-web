@@ -15,6 +15,13 @@ header("Content-Type: application/json");
 
 $action = $_POST['action'] ?? '';
 
+// Finance (level 6) read-only: blokir semua aksi tulis via endpoint ini.
+// Aksi "get" tetap diizinkan karena hanya membaca satu record (dipakai modal detail).
+if ((($_SESSION['level'] ?? 99) == 6) && in_array($action, ['add', 'edit', 'delete'], true)) {
+    echo json_encode(["status" => "error", "msg" => "Akses ditolak: akun Finance hanya boleh melihat data karyawan."]);
+    exit;
+}
+
 function input($data)
 {
     return isset($_POST[$data]) ? trim($_POST[$data]) : '';

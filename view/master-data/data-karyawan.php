@@ -147,9 +147,16 @@
         <h4 class="fw-bold mb-3">
             <span class="text-muted fw-light">Master Data /</span> Data Karyawan
         </h4>
+        <?php $is_finance_readonly = (($_SESSION['level'] ?? 99) == 6); ?>
+        <?php if ($is_finance_readonly): ?>
+        <div class="alert alert-info py-2 small" role="alert">
+            <i class="fa fa-eye me-1"></i> Mode lihat saja: Finance dapat melihat detail, memfilter, dan mengekspor data. Penambahan, pengubahan, dan penghapusan dinonaktifkan.
+        </div>
+        <?php endif; ?>
         <div class="pb-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
+                    <?php if (!$is_finance_readonly): ?>
                     <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalTambahKaryawan">
                         <i class="fa fa-plus"></i> Tambah Karyawan
                     </button>
@@ -159,6 +166,7 @@
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#ModalImportIPIP" title="Klik untuk mengimpor data karyawan dari template baru IPIP (header baris 5, data mulai baris 8)">
                         <i class="fa fa-upload"></i> Import IPIP
                     </button>
+                    <?php endif; ?>
                     <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel">
                         <i class="fa fa-file-export"></i> Export Data
                     </button>
