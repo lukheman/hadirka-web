@@ -1,13 +1,17 @@
 <?php
 // slip_helper.php — HELPER perhitungan slip gaji (satu-satunya sumber, DRY).
 //
-// RUMUS SEDERHANA (berlaku sejak penyederhanaan Okt 2026):
-//   gaji_bersih = jumlah_hadir x gaji_pokok_harian
+// RUMUS SEDERHANA (berlaku sejak penyederhanaan Okt 2026, revisi panjar):
+//   gaji_bersih = total_nilai_kehadiran x gaji_pokok_harian - panjar
 // - gaji_pokok di tb_karier dianggap UPAH HARIAN.
-// - HADIR = hari dengan jam_kerja > 0 dan ket bukan IZIN/SAKIT/CUTI/ALPHA/RESIGN/NEW.
-//   Termasuk hari SPL/lembur (ket OFF/SPL/LEMBUR + jam > 0): dihitung 1 hadir TANPA multiplier.
-// - IZIN/SAKIT/CUTI/OFF(murni)/MANGKIR/ALPHA/RESIGN = tidak dibayar (0).
-// - Tunjangan, potongan, lembur-multiplier, rapel, pinjaman, THR: DIABAIKAN (0).
+// - total_nilai_kehadiran = SUM(tb_absen.jam_kerja) untuk hari berbayar
+//   (HADIR + SPL; nilai per hari 0/0.5/1/1.5/2 dari import PAYROLL ANTAM).
+// - IZIN/SAKIT/CUTI/OFF(murni)/MANGKIR/ALPHA/RESIGN/NEW = tidak dibayar (0).
+// - panjar = SUM(tb_potongan_tidak_tetap.nominal_potongan)
+//   WHERE jenis_potongan='PANJAR' AND tgl_potongan BETWEEN start AND end.
+// - Tunjangan, potongan tetap, lembur-multiplier, rapel, pinjaman, THR: DIABAIKAN (0).
+// - Kolom overtime/lembur di tb_karier (lembur, ot_pertama, ot_kedua, spl,
+//   ot1_spl, ot2_spl, pot_izin, pot_mangkir) SUDAH DIHAPUS dari DB.
 //
 // Cara pakai ulang di mana saja (controller / API / view), cukup:
 //   global $koneksi; // pastikan koneksi PDO $koneksi sudah ada
@@ -105,7 +109,8 @@ if (!function_exists('generateSlipGajiById')) {
 
         // ================= 4) Klasifikasi per hari =================
         $absenForUI = [];
-        $hadir_count = 0;   // HADIR + SPL (berbayar)
+        $hadir_count = 0;   // jumlah hari HADIR + SPL (info tampilan)
+        $total_nilai_kehadiran = 0.0; // SUM nilai jam_kerja hari berbayar (untuk rumus gaji)
         $spl_count = 0;     // subset hadir (info)
         $mangkir_count = 0;
         $izin_days = 0;
@@ -150,14 +155,17 @@ if (!function_exists('generateSlipGajiById')) {
                     $ket = 'OFF';
                     $off_days++;
                 } elseif ($jam > 0 && (strpos($ketAbsen, 'OFF') !== false || strpos($ketAbsen, 'SPL') !== false || strpos($ketAbsen, 'LEMBUR') !== false)) {
-                    // SPL/lembur: 1 hadir, tanpa multiplier
+                    // SPL/lembur: nilai jam_kerja dijumlahkan apa adanya, tanpa multiplier
                     $ket = 'SPL';
                     $spl_count++;
                     $hadir_count++;
+                    $total_nilai_kehadiran += $jam;
                 } elseif ($jam > 0) {
                     // HADIR: ket HADIR, kosong, atau lainnya dengan jam > 0
+                    // Nilai bisa 0.5/1/1.5/2 (PAYROLL ANTAM) -> jumlahkan apa adanya.
                     $ket = 'HADIR';
                     $hadir_count++;
+                    $total_nilai_kehadiran += $jam;
                 } else {
                     $ket = 'MANGKIR';
                     $mangkir_count++;
@@ -182,8 +190,24 @@ if (!function_exists('generateSlipGajiById')) {
             ];
         }
 
-        // ================= 5) RUMUS: hadir x gaji pokok harian =================
-        $gaji_bersih = $hadir_count * $gaji_pokok;
+        // ================= 5) RUMUS: total_nilai_kehadiran x gaji pokok - panjar =================
+        $panjar = 0.0;
+        try {
+            $stmt = $koneksi->prepare("SELECT COALESCE(SUM(nominal_potongan), 0)
+                FROM tb_potongan_tidak_tetap
+                WHERE id_karyawan = ?
+                AND UPPER(TRIM(jenis_potongan)) = 'PANJAR'
+                AND tgl_potongan BETWEEN ? AND ?");
+            $stmt->execute([$id_karyawan, $startDate, $endDate]);
+            $panjar = (float)$stmt->fetchColumn();
+        } catch (Throwable $e) {
+            error_log('slip_helper panjar: ' . $e->getMessage());
+            $panjar = 0.0;
+        }
+
+        $total_nilai_kehadiran = round($total_nilai_kehadiran, 2);
+        $gaji_kotor = $total_nilai_kehadiran * $gaji_pokok;
+        $gaji_bersih = $gaji_kotor - $panjar;
 
         // ================= Build response (key lama dipertahankan) =================
         return [
@@ -217,11 +241,14 @@ if (!function_exists('generateSlipGajiById')) {
 
             'pot_izin' => 0,
             'pot_mangkir' => 0,
-            'total_pendapatan' => $gaji_bersih,
-            'total_potongan' => 0,
+            'panjar' => $panjar,
+            'total_nilai_kehadiran' => $total_nilai_kehadiran,
+            'total_pendapatan' => $gaji_kotor,
+            'total_potongan' => $panjar,
             'gaji_bersih' => $gaji_bersih,
-            'hari_kerja' => $hadir_count,
+            'hari_kerja' => $total_nilai_kehadiran,
             'hadir' => $hadir_count,
+            'hadir_hari' => $hadir_count,
             'spl' => $spl_count,
             'off' => $off_days,
             'izin' => $izin_days,
@@ -235,8 +262,8 @@ if (!function_exists('generateSlipGajiById')) {
 
             'pinjaman' => [],
             'total_potongan_pinjaman' => 0,
-            'potongan_lain' => [],
-            'total_potongan_lainnya' => 0,
+            'potongan_lain' => $panjar > 0 ? [['nama' => 'Panjar', 'jumlah' => $panjar]] : [],
+            'total_potongan_lainnya' => $panjar,
             'mangkir' => $mangkir_count,
             'total_jam_kurang' => 0,
             'potongan_perjam' => 0,

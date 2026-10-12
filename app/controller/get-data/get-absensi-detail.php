@@ -113,9 +113,7 @@ $karyawan = $karyawanQ->fetch();
                 <th>NIK</th>
                 <th>Jabatan</th>
                 <th>Tanggal</th>
-                <th>Jam Normal (1-7)</th>
-                <th>OT1 (8)</th>
-                <th>OT2 (9 ke atas)</th>
+                <th>Jam (Nilai)</th>
                 <th>Keterangan</th>
                 <th>Aksi</th>
             </tr>
@@ -124,8 +122,6 @@ $karyawan = $karyawanQ->fetch();
             <?php
             $no = 1;
             $totalNormal = 0;
-            $totalOT1 = 0;
-            $totalOT2 = 0;
 
             foreach ($allDates as $tgl) {
                 $hariNama = strtolower(date('l', strtotime($tgl)));
@@ -133,7 +129,7 @@ $karyawan = $karyawanQ->fetch();
 
 
                 $absen = $absenAll[$tgl] ?? null;
-                $jamNormal = $ot1 = $ot2 = '-';
+                $jamNormal = '-';
                 $keterangan = 'Mangkir';
                 $rowClass = 'bg-danger text-white';
 
@@ -181,14 +177,6 @@ $karyawan = $karyawanQ->fetch();
                             $keterangan = "SPL";
                             $rowClass = "bg-warning text-dark";
                             $jamNormal = min($jk, $normal_hours);
-
-                            if ($hariNama === 'friday') {
-                                $ot1 = min(1, max(0, $jk - 5));
-                                $ot2 = max(0, $jk - 5 - $ot1);
-                            } else {
-                                $ot1 = min(1, max(0, $jk - 7));
-                                $ot2 = max(0, $jk - 7 - $ot1);
-                            }
                         } else {
                             $keterangan = "OFF";
                             $rowClass = "bg-warning text-dark";
@@ -198,14 +186,6 @@ $karyawan = $karyawanQ->fetch();
                         if ($jk > 0) {
 
                             $jamNormal = min($jk, $normal_hours);
-
-                            if ($hariNama === 'friday') {
-                                $ot1 = min(1, max(0, $jk - 5));
-                                $ot2 = max(0, $jk - 5 - $ot1);
-                            } else {
-                                $ot1 = min(1, max(0, $jk - 7));
-                                $ot2 = max(0, $jk - 7 - $ot1);
-                            }
 
                             $keterangan = "Masuk";
                             $rowClass = "";
@@ -233,8 +213,6 @@ $karyawan = $karyawanQ->fetch();
 
                 // ==== HITUNG TOTAL ====
                 $totalNormal += is_numeric($jamNormal) ? $jamNormal : 0;
-                $totalOT1 += is_numeric($ot1) ? $ot1 : 0;
-                $totalOT2 += is_numeric($ot2) ? $ot2 : 0;
             ?>
                 <tr class="<?= $rowClass ?>">
                     <td><?= $no ?></td>
@@ -243,8 +221,6 @@ $karyawan = $karyawanQ->fetch();
                     <td><?= htmlspecialchars($karyawan['nama_jabatan']) ?></td>
                     <td><?= tanggal_indo($tgl, true) ?></td>
                     <td><?= $jamNormal ?></td>
-                    <td><?= $ot1 ?></td>
-                    <td><?= $ot2 ?></td>
                     <td><?= $keterangan ?></td>
 
                     <td>
@@ -284,8 +260,6 @@ $karyawan = $karyawanQ->fetch();
             <tr class="bg-secondary text-white fw-bold">
                 <td colspan="5">Total</td>
                 <td><?= $totalNormal ?></td>
-                <td><?= $totalOT1 ?></td>
-                <td><?= $totalOT2 ?></td>
                 <td colspan="2">-</td>
             </tr>
         </tbody>

@@ -106,10 +106,9 @@ try {
                 }
             }
 
-            // Potongan Sistem (Mangkir/Izin) otomatis menambah pundi Pendapatan Lain-lain (3004)
-            // [PERBAIKAN]: Gunakan round() pada perhitungan bersistem desimal
-            $total_potong_denda += round($slip['pot_izin'] ?? 0);
-            $total_potong_denda += round($slip['pot_mangkir'] ?? 0);
+            // Kolom pot_izin/pot_mangkir sudah dihapus dari DB (rumus Okt 2026:
+            // bersih = total_nilai_kehadiran x gapok - panjar). Panjar masuk
+            // lewat $slip['potongan_lain'] di atas.
             $total_potong_denda += round($slip['pot_pkwt'] ?? 0);
             $total_potong_denda += round($slip['potongan_perjam'] ?? 0);
         }

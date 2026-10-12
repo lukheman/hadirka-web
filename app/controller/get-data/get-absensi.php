@@ -90,7 +90,7 @@ try {
     $qKar = $stKar;
 } catch (PDOException $e) {
     error_log('get-absensi karyawan: ' . $e->getMessage());
-    echo "<tr><td colspan='16' class='text-center text-danger'>Query karyawan error.</td></tr>";
+    echo "<tr><td colspan='9' class='text-center text-danger'>Query karyawan error.</td></tr>";
     exit;
 }
 
@@ -168,7 +168,7 @@ while ($k = $qKar->fetch()) {
                 $hadir += min($jk, $normal_hours);
                 $hadir_hari++;
 
-                // hitung WL & OT2 sama persis dengan function-slip.php
+                // hitung WL & OT (hanya untuk konsistensi internal; tidak ditampilkan)
                 $wl = 0;
                 $ot = 0;
 
@@ -205,9 +205,12 @@ while ($k = $qKar->fetch()) {
         }
     } // end foreach dates
 
-    // Cetak baris tabel sesuai kolom yang kamu mau (15 kolom)
+    // Cetak baris tabel (9 kolom: No, Nama, Kalender, Departemen, Jabatan, Site, Hadir, Mangkir, Cuti)
     $nama = htmlspecialchars($k['nama_lengkap'] ?? '-', ENT_QUOTES);
     $nik = htmlspecialchars($k['nik_karyawan'] ?? '-', ENT_QUOTES);
+    // Kolom Hadir = total nilai kehadiran (hari berbayar: hadir normal + SPL),
+    // sama dengan angka yang dipakai rumus gaji (SUM jam_kerja).
+    $total_hadir_str = rtrim(rtrim(number_format(round($hadir + $spl, 2), 2, '.', ''), '0'), '.');
     echo "
     <tr data-id='{$idk}'>
         <td class='text-center'>{$no}</td>
@@ -217,16 +220,9 @@ while ($k = $qKar->fetch()) {
         <td>{$k['nama_jabatan']}</td>
         <td>{$k['nama_site']}</td>
 
-        <td class='text-center'>{$hadir_hari} hari ({$hadir} jam)</td>
-        <td class='text-center'>{$ot1}</td>
-        <td class='text-center'>{$ot2}</td>
-        <td class='text-center'>{$spl_hari} hari ({$spl} jam)</td>
-        <td class='text-center'>{$ot1_spl}</td>
-        <td class='text-center'>{$ot2_spl}</td>
+        <td class='text-center'>{$total_hadir_str}</td>
 
         <td class='text-center'>{$mangkir}</td>
-        <td class='text-center'>{$izin}</td>
-        <td class='text-center'>{$sakit}</td>
         <td class='text-center'>{$cuti}</td>
     </tr>
     ";

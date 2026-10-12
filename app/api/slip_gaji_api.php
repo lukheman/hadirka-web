@@ -17,16 +17,12 @@ if (!function_exists('buildSlipGajiApiResponse')) {
             return $core;
         }
 
+        $totalNilai = $core['total_nilai_kehadiran'] ?? $core['hari_kerja'] ?? 0;
         $listPendapatan = array_merge(
-            [['nama' => 'Gaji Pokok', 'jumlah' => $core['basic'] ?? 0]],
+            [['nama' => 'Gaji Pokok (' . $totalNilai . ' x ' . ($core['basic'] ?? 0) . ')', 'jumlah' => $core['total_pendapatan'] ?? 0]],
             $core['tunjangan_pendapatan'] ?? [],
             $core['rapel'] ?? []
         );
-        if (($core['total_lembur'] ?? 0) > 0) $listPendapatan[] = ['nama' => 'Lembur WL (' . ($core['total_jam_wl'] ?? 0) . ' Jam)', 'jumlah' => $core['total_lembur']];
-        if (($core['total_overtime'] ?? 0) > 0) $listPendapatan[] = ['nama' => 'Lembur OT (' . ($core['total_jam_ot'] ?? 0) . ' Jam)', 'jumlah' => $core['total_overtime']];
-        if (($core['total_spl_1_7'] ?? 0) > 0) $listPendapatan[] = ['nama' => 'SPL 1-7 (' . ($core['total_jam_spl_1_7'] ?? 0) . ' Jam)', 'jumlah' => $core['total_spl_1_7']];
-        if (($core['total_spl_8'] ?? 0) > 0) $listPendapatan[] = ['nama' => 'SPL 8 (' . ($core['total_jam_spl_8'] ?? 0) . ' Jam)', 'jumlah' => $core['total_spl_8']];
-        if (($core['total_spl_9_up'] ?? 0) > 0) $listPendapatan[] = ['nama' => 'SPL 9+ (' . ($core['total_jam_spl_9_up'] ?? 0) . ' Jam)', 'jumlah' => $core['total_spl_9_up']];
 
         $listPotongan = array_merge(
             $core['potongan_tunjangan'] ?? [],
@@ -34,8 +30,7 @@ if (!function_exists('buildSlipGajiApiResponse')) {
             $core['potongan_lain'] ?? []
         );
 
-        if (($core['pot_izin'] ?? 0) > 0) $listPotongan[] = ['nama' => 'Potongan Izin', 'jumlah' => $core['pot_izin']];
-        if (($core['pot_mangkir'] ?? 0) > 0) $listPotongan[] = ['nama' => 'Potongan Mangkir', 'jumlah' => $core['pot_mangkir']];
+        if (($core['panjar'] ?? 0) > 0 && empty($core['potongan_lain'])) $listPotongan[] = ['nama' => 'Panjar', 'jumlah' => $core['panjar']];
         if (($core['potongan_perjam'] ?? 0) > 0) $listPotongan[] = ['nama' => 'Potongan Kurang Jam', 'jumlah' => $core['potongan_perjam']];
         if (($core['pot_pkwt'] ?? 0) > 0) $listPotongan[] = ['nama' => 'Potongan PKWT (NEW/RESIGN)', 'jumlah' => $core['pot_pkwt']];
         if (($core['potongan_cuti_khusus'] ?? 0) > 0) $listPotongan[] = ['nama' => 'Potongan Cuti Harian', 'jumlah' => $core['potongan_cuti_khusus']];
