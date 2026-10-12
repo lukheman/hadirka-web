@@ -1,3 +1,6 @@
+<?php // Bulan berjalan sebagai filter default (YYYY-MM), sama seperti Rekapitulasi Bulanan
+$bulanIni = date("Y-m");
+?>
 <style>
     /* Efek Zoom pada Lampiran */
     .preview-thumbnail {
@@ -32,12 +35,8 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Dari Tanggal</label>
-                    <input type="date" id="startDate" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Sampai Tanggal</label>
-                    <input type="date" id="endDate" class="form-control">
+                    <label class="form-label">Bulan</label>
+                    <input type="month" id="filterBulan" class="form-control" value="<?= $bulanIni ?>">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Site</label>
@@ -119,18 +118,6 @@
     const api_get = 'app/controller/get-data/get-pengajuan-izin.php';
     const api_act = 'app/controller/act-pengajuan-izin.php';
 
-    // Fungsi set default tanggal (1 s/d akhir bulan berjalan)
-    function setDefaultDateRange() {
-        let today = new Date();
-        let year = today.getFullYear();
-        let month = today.getMonth();
-        let lastDay = new Date(year, month + 1, 0).getDate();
-
-        const format = (y, m, d) => `${y}-${(m + 1).toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
-        document.getElementById("startDate").value = format(year, month, 1);
-        document.getElementById("endDate").value = format(year, month, lastDay);
-    }
-
     // Fungsi load Dropdown Site & Jabatan via API yang sudah ada
     async function loadFilterOptions() {
         try {
@@ -149,9 +136,12 @@
         }
     }
 
+    // Filter bulan (YYYY-MM) -> rentang 1 s/d akhir bulan via helper terpusat (assets/js/periode.js)
     async function loadTableIzin() {
-        const start = document.getElementById('startDate').value;
-        const end = document.getElementById('endDate').value;
+        const p = getPeriodeBulan('#filterBulan');
+        if (!p.awal) return showToast("Pilih Bulan terlebih dahulu!", "info");
+        const start = p.awal;
+        const end = p.akhir;
         const site = document.getElementById('filterSite').value;
         const jabatan = document.getElementById('filterJabatan').value;
 
@@ -169,13 +159,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-        setDefaultDateRange();
         await loadFilterOptions();
 
         loadTableIzin(); // Panggil fungsi load tabel terkait
 
         // Auto reload saat filter diubah
-        const filters = ['startDate', 'endDate', 'filterSite', 'filterJabatan'];
+        const filters = ['filterBulan', 'filterSite', 'filterJabatan'];
         filters.forEach(id => {
             document.getElementById(id).addEventListener('change', loadTableIzin);
         });

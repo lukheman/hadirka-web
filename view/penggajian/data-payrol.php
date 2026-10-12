@@ -1,3 +1,6 @@
+<?php // Bulan berjalan sebagai filter default (YYYY-MM), sama seperti Rekapitulasi Bulanan
+$bulanIni = date("Y-m");
+?>
 <style>
     /* --- MODERN VARIABLES --- */
     :root {
@@ -541,13 +544,8 @@
             
             <div class="row g-3">
                 <div class="col-lg-3 col-md-6">
-                    <label class="form-label icon-calendar">Dari Tanggal</label>
-                    <input type="date" id="startDate" class="form-control">
-                </div>
-
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label icon-calendar">Sampai Tanggal</label>
-                    <input type="date" id="endDate" class="form-control">
+                    <label class="form-label icon-calendar">Bulan</label>
+                    <input type="month" id="filterBulan" class="form-control" value="<?= $bulanIni ?>">
                 </div>
 
                 <div class="col-lg-3 col-md-6">
@@ -637,20 +635,12 @@
         document.getElementById("loadingOverlay").style.display = "none";
     }
 
-    function setDefaultDateRange() {
-        let today = new Date();
-        let year = today.getFullYear();
-        let month = today.getMonth();
-        let lastDay = new Date(year, month + 1, 0).getDate();
-
-        function f(yyyy, mm, dd) {
-            mm = (mm + 1).toString().padStart(2, "0");
-            dd = dd.toString().padStart(2, "0");
-            return `${yyyy}-${mm}-${dd}`;
-        }
-
-        document.getElementById("startDate").value = f(year, month, 1);
-        document.getElementById("endDate").value = f(year, month, lastDay);
+    // Filter bulan (YYYY-MM) -> rentang 1 s/d akhir bulan via helper terpusat (assets/js/periode.js).
+    // Default bulan berjalan diisi dari PHP ($bulanIni), sama seperti Rekapitulasi Bulanan.
+    function rangeBulanPayrol() {
+        const p = getPeriodeBulan('#filterBulan');
+        if (!p.awal) showToast("Pilih Bulan terlebih dahulu!", "info");
+        return p;
     }
 
     function populateFilters(data) {
@@ -900,8 +890,10 @@
 }
 
     function loadPayrol() {
-        let startDate = document.getElementById("startDate").value;
-        let endDate = document.getElementById("endDate").value;
+        const range = rangeBulanPayrol();
+        if (!range.awal) return;
+        let startDate = range.awal;
+        let endDate = range.akhir;
 
         // --- TAMBAHKAN 3 BARIS INI ---
     if ($.fn.DataTable.isDataTable('#payrolTable')) {
@@ -1002,19 +994,18 @@
         let wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Payroll");
 
-        let start = document.getElementById("startDate").value || "0000-00-00";
-        let end = document.getElementById("endDate").value || "0000-00-00";
+        const range = rangeBulanPayrol();
+        let start = range.awal || "0000-00-00";
+        let end = range.akhir || "0000-00-00";
 
         XLSX.writeFile(wb, `Payroll_${start}_sd_${end}.xlsx`);
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        setDefaultDateRange();
         loadPayrol();
 
         // Ganti 'blur' menjadi 'change' agar tabel langsung ter-refresh otomatis saat klik kalender
-        document.getElementById("startDate").addEventListener("change", loadPayrol);
-        document.getElementById("endDate").addEventListener("change", loadPayrol);
+        document.getElementById("filterBulan").addEventListener("change", loadPayrol);
 
         // Untuk filter Select (Dropdown), biarkan tetap 'change'
         document.getElementById("filterSite").addEventListener("change", () => renderTable(allPayrollData));
@@ -1026,8 +1017,10 @@
     });
 
     async function postingKeuangan() {
-        let startDate = document.getElementById("startDate").value;
-        let endDate = document.getElementById("endDate").value;
+        const range = rangeBulanPayrol();
+        if (!range.awal) return;
+        let startDate = range.awal;
+        let endDate = range.akhir;
 
         if (!(await confirmDialog(`Tutup Buku & Posting Payroll periode ini (${startDate} s/d ${endDate}) ke Laporan Keuangan?\n\nPastikan data absensi dan kasbon sudah final.`))) {
             return;
