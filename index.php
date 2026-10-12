@@ -128,6 +128,21 @@ $finance_pages = [
     'neraca-saldo'
 ];
 
+// DISEMBUNYIKAN (Okt 2026): Fitur Manajemen Keuangan disembunyikan sesuai permintaan.
+// Blokir akses langsung via URL agar tidak bisa dibuka walau URL diketahui.
+$hidden_finance_pages = [
+    'data-coa',
+    'kelola-transaksi',
+    'jurnal-umum',
+    'buku-besar',
+    'neraca-saldo',
+    'laporan-keuangan'
+];
+if (in_array($page, $hidden_finance_pages)) {
+    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'info',title:'Fitur Disembunyikan',text:'Fitur Manajemen Keuangan saat ini disembunyikan.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
+    exit;
+}
+
 if (!in_array($user_level, [0, 1, 2, 6]) && in_array($page, $finance_pages)) {
     echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Modul Keuangan khusus Master, Direktur, HRD, dan Finance.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
     exit;

@@ -151,11 +151,13 @@ function isMenuOpen($pages_array, $current_page)
                 <div data-i18n="Manajemen Absensi">Manajemen Absensi</div>
             </a>
             <ul class="menu-sub">
+                <!-- DISEMBUNYIKAN: Absensi Harian
                 <li class="menu-item <?= isActive('dayli-absen', $current_page); ?>">
                     <a class="menu-link" href="?page=dayli-absen">
                         <div>Absensi Harian</div>
                     </a>
                 </li>
+                -->
                 <li class="menu-item <?= isActive('rekapan-absensi', $current_page); ?>">
                     <a class="menu-link" href="?page=rekapan-absensi">
                         <div>Rekapitulasi Bulanan</div>
@@ -255,9 +257,11 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
+        // DISEMBUNYIKAN (Okt 2026): Fitur Manajemen Keuangan disembunyikan sesuai permintaan.
         // REVISI: Gabungkan sub-menu baru ke variabel deteksi accordion open
         $finance_pages = ['data-coa', 'kelola-transaksi', 'jurnal-umum', 'buku-besar', 'neraca-saldo', 'laporan-keuangan'];
         ?>
+        <?php if (false): // Manajemen Keuangan disembunyikan ?>
         <li class="menu-item <?= isMenuOpen($finance_pages, $current_page); ?>" data-menu="finance">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-spreadsheet"></i>
@@ -291,6 +295,7 @@ function isMenuOpen($pages_array, $current_page)
                 </li>
             </ul>
         </li>
+        <?php endif; // end sembunyi Manajemen Keuangan ?>
 
     <?php endif; ?>
 
