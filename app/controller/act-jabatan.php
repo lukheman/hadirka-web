@@ -56,10 +56,17 @@ if ($action == "delete") {
     $sql = $koneksi->prepare("DELETE FROM tb_jabatan WHERE id_jabatan=?");
     try {
         $sql->execute([$id]);
-        echo json_encode(["status" => "success"]);
+        if ($sql->rowCount() === 0) {
+            echo json_encode(["status" => "error", "msg" => "Data jabatan tidak ditemukan"]);
+        } else {
+            echo json_encode(["status" => "success"]);
+        }
     } catch (PDOException $e) {
         error_log($e->getMessage());
-        echo json_encode(["status" => "error"]);
+        $msg = (($e->errorInfo[1] ?? null) == 1451)
+            ? "Jabatan masih dipakai data lain (karyawan/loker/kontrak), tidak bisa dihapus"
+            : "Gagal menghapus jabatan";
+        echo json_encode(["status" => "error", "msg" => $msg]);
     }
     exit;
 }
