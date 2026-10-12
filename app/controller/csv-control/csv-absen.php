@@ -273,8 +273,8 @@ try {
         $sumberBulan = "bulan tampil ($bulanParam)";
     }
 
-    // Periode absen Open: dipakai bila form tak mengirim bulan, + selalu untuk
-    // tanggal posting panjar ($tglSelesai) agar konsisten dengan rumus gaji.
+    // Periode absen Open: dipakai bila form tak mengirim bulan.
+    // (Panjar diposting pada akhir bulan target import, bukan tgl periode aktif.)
     $stPeriodeAktif = $koneksi->prepare("SELECT id_priode, tgl_mulai, tgl_selesai FROM tb_priode WHERE type_priode = 'absen' AND status_priode = 'Open' ORDER BY tgl_mulai DESC LIMIT 1");
     $stPeriodeAktif->execute();
     $periodeAktif = $stPeriodeAktif->fetch();
@@ -489,15 +489,20 @@ try {
             }
 
             // --- panjar (AL): simpan ke potongan tidak tetap jenis PANJAR ---
+            // Tgl posting = akhir BULAN TARGET import (konsisten dgn rumus gaji
+            // BETWEEN awal-akhir bulan tampil). Jangan pakai $tglSelesai periode
+            // aktif: bulan import bisa beda dgn periode aktif (kasus Okt 2026:
+            // panjar Okt keposting 09-20 hingga Sept terhitung 2x, Okt 0x).
+            $tglPostingPanjar = $tglTargetSelesai;
             $ketPot = "Payroll ANTAM $proyek " . sprintf('%04d-%02d', $tahun, $bulan);
-            $stmtCheckPot->execute([$idKaryawan, $tglSelesai, 'PANJAR', $ketPot]);
+            $stmtCheckPot->execute([$idKaryawan, $tglPostingPanjar, 'PANJAR', $ketPot]);
             $adaPot = (bool)$stmtCheckPot->fetch();
             if ($panjar > 0) {
-                if ($adaPot) $stmtUpdPot->execute([$panjar, $idKaryawan, $tglSelesai, 'PANJAR', $ketPot]);
-                else $stmtInsPot->execute([$idKaryawan, $tglSelesai, $panjar, 'PANJAR', $ketPot]);
+                if ($adaPot) $stmtUpdPot->execute([$panjar, $idKaryawan, $tglPostingPanjar, 'PANJAR', $ketPot]);
+                else $stmtInsPot->execute([$idKaryawan, $tglPostingPanjar, $panjar, 'PANJAR', $ketPot]);
                 $panjarUpd++;
             } elseif ($adaPot) {
-                $stmtDelPot->execute([$idKaryawan, $tglSelesai, 'PANJAR', $ketPot]);
+                $stmtDelPot->execute([$idKaryawan, $tglPostingPanjar, 'PANJAR', $ketPot]);
             }
 
             // --- baris untuk JSON preview ---
