@@ -52,7 +52,7 @@
 
         <div class="pb-3 d-flex justify-content-between align-items-center">
             <div>
-                <a href="https://career.triputrajayasultra.com" target="_blank" class="btn btn-primary btn-sm">
+                <a href="https://career.indoteknikprimamekongga.com" target="_blank" class="btn btn-primary btn-sm">
                     <i class="fa fa-external-link-alt me-1"></i> Tambah Lamaran
                 </a>
             </div>

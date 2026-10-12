@@ -18,7 +18,7 @@ require_once 'app/controller/login.php'; // logic login ada di sini
     <meta charset="utf-8"/>
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
-    <title>Login || PT. TJS</title>
+    <title>Login || PT. IPM</title>
 
     <link rel="icon" type="image/x-icon" href="assets/img/logo/ipm-logo.png"/>
     <link rel="stylesheet" href="assets/vendor/fonts/boxicons.css"/>

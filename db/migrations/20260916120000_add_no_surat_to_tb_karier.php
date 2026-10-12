@@ -18,7 +18,7 @@ final class AddNoSuratToTbKarier extends AbstractMigration
                 'null' => true,
                 'default' => null,
                 'after' => 'file_kontrak',
-                'comment' => 'Nomor surat kontrak (mis. 344/TJS/V/2026)',
+                'comment' => 'Nomor surat kontrak (mis. 344/IPM/V/2026)',
             ])
             ->update();
     }

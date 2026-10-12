@@ -82,7 +82,7 @@ $bulanIni = date("Y-m");
                     <label for="searchKaryawan" class="form-label fw-bold text-primary">
                         <i class="fa fa-search fa-lg"></i> Cari Nama / NIK / ID
                     </label>
-                    <input type="search" id="searchKaryawan" class="form-control form-control-sm" placeholder="Contoh: tjs-00090" data-bs-toggle="tooltip" title="Ketik nama, NIK, atau ID karyawan untuk memfilter tabel">
+                    <input type="search" id="searchKaryawan" class="form-control form-control-sm" placeholder="Contoh: ipm-00090" data-bs-toggle="tooltip" title="Ketik nama, NIK, atau ID karyawan untuk memfilter tabel">
                 </div>
             </div>
             <!-- Spinner Loading -->
@@ -313,7 +313,7 @@ $bulanIni = date("Y-m");
         };
 
 
-        // Pencarian khusus Nama / NIK / ID (contoh: tjs-00090)
+        // Pencarian khusus Nama / NIK / ID (contoh: ipm-00090)
         document.getElementById("searchKaryawan").addEventListener("input", function() {
             if ($.fn.DataTable.isDataTable(".MyTableAbsensi")) {
                 $(".MyTableAbsensi").DataTable().search(this.value).draw();

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Migration baseline: merepresentasikan struktur database tjs_hris
+ * Migration baseline: merepresentasikan struktur database ipm_hris
  * yang SUDAH ADA (dibuat manual, sebelum pakai Phinx).
  *
  * - up()   : membuat seluruh 50 tabel dari dump schema-only (dipakai untuk

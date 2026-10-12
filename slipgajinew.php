@@ -470,7 +470,7 @@ require_once 'app/controller/read.php';
             <div class="company" style="display:flex; align-items:center; gap:10px;">
                 <img src="assets/img/logo/ipm-logo.png" alt="Logo Perusahaan" style="height:50px; object-fit:contain;">
                 <div>
-                    <div style="font-size:16px; font-weight:800;">PT. TRIPUTRA JAYASULTRA</div>
+                    <div style="font-size:16px; font-weight:800;">PT. INDOTEKNIK PRIMA MEKONGGA</div>
                     <small>JL. EKONOMI · TLP/WA 0852-5526-4538</small>
                     <small>POMALAA, KABUPATEN KOLAKA</small>
                 </div>

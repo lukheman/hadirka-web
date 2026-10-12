@@ -2,9 +2,9 @@
 function nama_pt($call)
 {
     if($call == 'singkat'){
-        return 'PT. TJS';
+        return 'PT. IPM';
     }else{
-        return 'PT. Triputra Jaya Sultra';
+        return 'PT. Indoteknik Prima Mekongga';
     }
 }
 

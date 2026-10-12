@@ -120,7 +120,7 @@
                         </div>
                         <div class="col-md-6">
                             <label>No Surat (Bisa Prefix/Utuh)</label>
-                            <input type="text" name="no_surat" class="form-control" placeholder="Ex: 344/TJS/V/2026" required>
+                            <input type="text" name="no_surat" class="form-control" placeholder="Ex: 344/IPM/V/2026" required>
                         </div>
                         <div class="col-md-6">
                             <label>Tanggal Surat</label>
@@ -165,7 +165,7 @@
         <!-- Header Kop Surat -->
         <div style="position: relative; text-align: center; padding-bottom: 10px;">
             <img src="assets/img/logo/ipm-logo.png" style="position: absolute; left: 0; top: 0; height: 85px;">
-            <h4 style="margin: 0; color: #000000; font-weight: bold; font-size: 26px; letter-spacing: 0.5px;">PT. TRIPUTRA JAYA SULTRA</h4>
+            <h4 style="margin: 0; color: #000000; font-weight: bold; font-size: 26px; letter-spacing: 0.5px;">PT. INDOTEKNIK PRIMA MEKONGGA</h4>
             <p style="margin: 3px 0; font-size: 15px; font-weight: bold;">KONTRAKTOR DAN PERDAGANGAN UMUM PUSAT POMALAA</p>
             <p style="margin: 0; font-size: 14px;">Jl. Nusantara No.82 Pomalaa, 93562, Kolaka - Sulawesi Tenggara</p>
             <p style="margin: 0; font-size: 14px;">Telp: (0405) 2310860</p>
@@ -267,7 +267,7 @@
                 <div style="height: 120px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center;">
                     <img src="assets/img/ttd/hrd.png" alt="TTD HRD" style="max-height: 120px; max-width: 100%; mix-blend-mode: multiply;">
                 </div>
-                <p style="margin: 0; margin-top: -25px;">HRD PT Triputra Jaya Sultra.</p>
+                <p style="margin: 0; margin-top: -25px;">HRD PT Indoteknik Prima Mekongga.</p>
             `;
 
             let kontenSurat = "";
@@ -282,7 +282,7 @@
                         Kami sampaikan kepada Saudara, bahwa anda telah melakukan tindakan atau perilaku pelanggaran berat prosedur operasi yaitu <strong>${d.keterangan_tambahan}</strong>, yang bertentangan dengan peraturan Perusahaan tempat anda bekerja. Berdasarkan hal tersebut, maka Perusahaan memutuskan untuk melakukan Pemutusan Hubungan Kerja (PHK) dengan Saudara.
                     </p>
                     <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
-                        Perusahaan mengucapkan terima kasih atas dedikasi dan kinerja Saudara selama bergabung di PT. Triputra Jaya Sultra. Segala hak dan kewajiban terkait pemutusan hubungan kerja ini akan diselesaikan sesuai dengan ketentuan yang berlaku.
+                        Perusahaan mengucapkan terima kasih atas dedikasi dan kinerja Saudara selama bergabung di PT. Indoteknik Prima Mekongga. Segala hak dan kewajiban terkait pemutusan hubungan kerja ini akan diselesaikan sesuai dengan ketentuan yang berlaku.
                     </p>
                     <p style="margin-bottom: 40px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
                         Demikian surat ini kami sampaikan agar dapat dimaklumi.
@@ -294,7 +294,7 @@
                 kontenSurat = `
                     <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5;">Dengan hormat,</p>
                     <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
-                        Melalui surat ini, kami memberitahukan kepada Saudara bahwa masa perjanjian kerja Saudara telah berakhir sesuai dengan ketentuan <strong>${d.keterangan_tambahan}</strong>. Oleh karena itu, hubungan kerja Saudara dengan PT. Triputra Jaya Sultra resmi berakhir dan Perusahaan memutuskan untuk tidak memperpanjang masa kontrak kerja Saudara.
+                        Melalui surat ini, kami memberitahukan kepada Saudara bahwa masa perjanjian kerja Saudara telah berakhir sesuai dengan ketentuan <strong>${d.keterangan_tambahan}</strong>. Oleh karena itu, hubungan kerja Saudara dengan PT. Indoteknik Prima Mekongga resmi berakhir dan Perusahaan memutuskan untuk tidak memperpanjang masa kontrak kerja Saudara.
                     </p>
                     <p style="margin-bottom: 10px; text-align: justify; font-size: 15px; line-height: 1.5; text-indent: 40px;">
                         Kami mengucapkan terima kasih atas kerja keras dan kontribusi yang telah Saudara berikan selama menjadi bagian dari Perusahaan. Kami berharap kesuksesan untuk Saudara di masa mendatang.

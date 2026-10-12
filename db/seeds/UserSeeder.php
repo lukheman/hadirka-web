@@ -6,7 +6,7 @@ use Phinx\Seed\AbstractSeed;
 
 /**
  * Seed user "master" dengan level tertinggi (level = 0), mengikuti
- * konvensi yang sudah dipakai di data existing (user 'triputra',
+ * konvensi yang sudah dipakai di data existing (user 'master',
  * jabatan "Master", level = 0).
  *
  * Jalankan dengan:

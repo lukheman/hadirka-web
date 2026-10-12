@@ -102,15 +102,15 @@ $mail = new PHPMailer(true);
 try {
     // KONFIGURASI SMTP HOSTING
     $mail->isSMTP();
-    $mail->Host       = 'mail.triputrajayasultra.com'; // Biasanya mail.namadomain.com atau cek di cPanel (Email Routing)
+    $mail->Host       = 'mail.indoteknikprimamekongga.com'; // Biasanya mail.namadomain.com atau cek di cPanel (Email Routing)
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'info@triputrajayasultra.com'; // Email yang Anda buat
-    $mail->Password   = '@Triputra1505'; // Password email admin Anda
+    $mail->Username   = 'info@indoteknikprimamekongga.com'; // Email yang Anda buat
+    $mail->Password   = 'GANTI_DENGAN_PASSWORD_EMAIL_BARU'; // Password email admin Anda — wajib diganti mengikuti mailbox baru
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Gunakan ENCRYPTION_STARTTLS jika port 587
     $mail->Port       = 465; // Port SMTP SSL (Gunakan 587 jika TLS)
 
     // Pengirim & Penerima
-    $mail->setFrom('admin@triputrajayasultra.com', 'HRIS Triputra Jaya Sultra');
+    $mail->setFrom('admin@indoteknikprimamekongga.com', 'HRIS Indoteknik Prima Mekongga');
     $mail->addAddress($email_tujuan); // Email karyawan
 
     // Konten Email

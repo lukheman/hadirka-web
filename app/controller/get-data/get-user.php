@@ -2,7 +2,7 @@
 require __DIR__ . '/../../config/koneksi.php';
 header('Content-Type: text/html; charset=utf-8');
 
-// Variabel Base URL dari fungsi Anda (Pastikan url() mengembalikan contoh: http://localhost/tjs-outsoorsing/)
+// Variabel Base URL dari fungsi Anda (Pastikan url() mengembalikan contoh: http://localhost/ipm-hris/)
 $base_url = url();
 
 $stUser = $koneksi->query("SELECT * FROM tb_user ORDER BY nama_user ASC");
@@ -49,7 +49,7 @@ foreach ($stUser->fetchAll() as $row) {
     $html .= "<tr>";
     $html .= "<td class=\"text-center\">{$no}</td>";
     
-    // Trik onerror: Jika foto asli hilang di folder (tapi namanya ada di database), otomatis ganti ke logo TJS
+    // Trik onerror: Jika foto asli hilang di folder (tapi namanya ada di database), otomatis ganti ke logo IPM
     $html .= "<td><img src=\"{$foto_url_esc}\" onerror=\"this.onerror=null;this.src='{$default_logo_esc}';\" width=\"40\" class=\"rounded-circle\" style=\"object-fit: cover; aspect-ratio: 1/1;\"></td>";
 
     $html .= "<td>{$username}</td>";

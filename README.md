@@ -1,6 +1,6 @@
-# TJS Outsourcing — HRIS & Payroll
+# IPM HRIS & Payroll
 
-Sistem informasi outsourcing **PT Triputra Jaya Sultra**: database karyawan & kandidat,
+Sistem informasi outsourcing **PT Indoteknik Prima Mekongga**: database karyawan & kandidat,
 kehadiran (absensi, izin, cuti, SKS), penggajian (payroll, pinjaman, rapel, THR, potongan),
 keuangan (kas, jurnal, buku besar, laporan), K3/APD, surat peringatan, plus REST API
 untuk aplikasi mobile karyawan.
@@ -25,7 +25,7 @@ untuk aplikasi mobile karyawan.
 ## Instalasi
 
 ```bash
-git clone <repo> && cd tjs-outsoorsing
+git clone <repo> && cd ipm-hris
 
 # 1. Dependensi PHP (folder vendor/ tidak di-commit)
 composer install
@@ -35,7 +35,7 @@ composer install
 cp .env.example .env
 # isi: APP_URL, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
 
-# 3. Import database (47 tabel, lihat tjs_hris_structure.sql bila ada)
+# 3. Import database (47 tabel, lihat ipm_hris_structure.sql bila ada)
 mysql -u user -p nama_db < struktur.sql
 
 # 4. Folder upload harus writable oleh web server

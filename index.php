@@ -368,7 +368,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
                 <div class="app-brand demo">
                     <a href="?page=home" class="app-brand-link">
-                        <img src="assets/img/logo/ipm-logo.png" alt="Logo TJS">
+                        <img src="assets/img/logo/ipm-logo.png" alt="Logo IPM">
                     </a>
                     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
                         <i class="bx bx-chevron-left bx-sm align-middle"></i>
@@ -501,7 +501,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
         // - 'layout-menu-collapsed' di <html>  -> navbar/footer/konten menyesuaikan
         // - 'menu-collapsed' di #layout-menu   -> lebar sidebar jadi 5.25rem (core.css)
         (function() {
-            var KEY = 'tjs-sidebar-collapsed';
+            var KEY = 'ipm-sidebar-collapsed';
             function apply(collapse) {
                 document.documentElement.classList.toggle('layout-menu-collapsed', collapse);
                 var menu = document.getElementById('layout-menu') || document.querySelector('.layout-menu');
@@ -617,8 +617,8 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
          * Mendukung type: success/error/warning/info (+ alias bahasa).
          * Mendukung message string maupun object {message|msg}.
          */
-        if (typeof window.__TJS_TOAST_V2__ === 'undefined') {
-        window.__TJS_TOAST_V2__ = true;
+        if (typeof window.__IPM_TOAST_V2__ === 'undefined') {
+        window.__IPM_TOAST_V2__ = true;
         window.showToast = function(message, type = "success", position = "top-right", duration = 5000) {
             var allowed = ["success", "error", "warning", "info"];
             var t = String(type || "success").toLowerCase();
@@ -756,7 +756,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             }
             return Promise.resolve(window["confirm"](text));
         };
-        } // end __TJS_TOAST_V2__ guard
+        } // end __IPM_TOAST_V2__ guard
     </script>
 </body>
 

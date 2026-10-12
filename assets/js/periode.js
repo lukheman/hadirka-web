@@ -9,8 +9,8 @@
 
 (function() {
     'use strict';
-    if (typeof window.__TJS_PERIODE_V1__ !== 'undefined') return;
-    window.__TJS_PERIODE_V1__ = true;
+    if (typeof window.__IPM_PERIODE_V1__ !== 'undefined') return;
+    window.__IPM_PERIODE_V1__ = true;
 
     function pad2(n) {
         return String(n).padStart(2, '0');
