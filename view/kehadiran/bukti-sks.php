@@ -92,22 +92,16 @@
     const api_get_sks = 'app/controller/get-data/get-bukti-sks.php';
     const api_act_sks = 'app/controller/act-bukti-sks.php';
 
-    // Fungsi set default tanggal (21 bln kemarin - 20 bln ini)
+    // Fungsi set default tanggal (1 s/d akhir bulan berjalan)
     function setDefaultDateRange() {
         let today = new Date();
         let year = today.getFullYear();
         let month = today.getMonth();
-        let prevMonth = month - 1;
-        let prevYear = year;
-
-        if (prevMonth < 0) {
-            prevMonth = 11;
-            prevYear = year - 1;
-        }
+        let lastDay = new Date(year, month + 1, 0).getDate();
 
         const format = (y, m, d) => `${y}-${(m + 1).toString().padStart(2, "0")}-${d.toString().padStart(2, "0")}`;
-        document.getElementById("startDate").value = format(prevYear, prevMonth, 21);
-        document.getElementById("endDate").value = format(year, month, 20);
+        document.getElementById("startDate").value = format(year, month, 1);
+        document.getElementById("endDate").value = format(year, month, lastDay);
     }
 
     // Fungsi load Dropdown Site & Jabatan via API yang sudah ada

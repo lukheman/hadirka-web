@@ -641,14 +641,7 @@
         let today = new Date();
         let year = today.getFullYear();
         let month = today.getMonth();
-
-        let prevMonth = month - 1;
-        let prevYear = year;
-
-        if (prevMonth < 0) {
-            prevMonth = 11;
-            prevYear = year - 1;
-        }
+        let lastDay = new Date(year, month + 1, 0).getDate();
 
         function f(yyyy, mm, dd) {
             mm = (mm + 1).toString().padStart(2, "0");
@@ -656,8 +649,8 @@
             return `${yyyy}-${mm}-${dd}`;
         }
 
-        document.getElementById("startDate").value = f(prevYear, prevMonth, 21);
-        document.getElementById("endDate").value = f(year, month, 20);
+        document.getElementById("startDate").value = f(year, month, 1);
+        document.getElementById("endDate").value = f(year, month, lastDay);
     }
 
     function populateFilters(data) {

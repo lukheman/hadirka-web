@@ -17,7 +17,7 @@ $show_notif = false;
 // 1. Notif pinjaman dihapus bersama tabelnya (penyederhanaan gaji Okt 2026).
 // 2. Admin (Level 5) -> Notif Izin, Cuti & Bukti SKS Pending
 if ($user_level == 5) {
-    $start_date = date('Y-m-21', strtotime(date('Y-m-01') . ' -1 month'));
+    $start_date = date('Y-m-01');
     $end_date   = date('Y-m-d');
 
     $q_izin = ($koneksi->query("SELECT COUNT(*) as jml FROM tb_pengajuan_izin WHERE status_izin = 'pending' AND tgl_izin BETWEEN '$start_date' AND '$end_date'")->fetch());

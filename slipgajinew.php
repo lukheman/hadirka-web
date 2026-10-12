@@ -538,7 +538,7 @@ require_once 'app/controller/read.php';
         </div>
 
         <p class="notes">
-            GAJI = JUMLAH HADIR &times; GAJI POKOK HARIAN (termasuk hari SPL, tanpa multiplier)
+            GAJI BERSIH = (TOTAL NILAI KEHADIRAN &times; GAJI POKOK HARIAN) &minus; PANJAR
         </p>
 
         <!-- Absensi: tampilan lama (tabel) + tampilan kalender, default kalender -->
@@ -612,12 +612,13 @@ require_once 'app/controller/read.php';
         <tr><td>GAJI POKOK (HARIAN)</td><td class="right">${fmt(data.basic)}</td></tr>
     `;
 
-            // 2) JUMLAH HADIR (termasuk SPL, tanpa multiplier)
+            // 2) TOTAL NILAI KEHADIRAN (SUM nilai harian, bisa desimal mis. 27.5)
+            const totalNilai = data.total_nilai_kehadiran ?? data.hari_kerja ?? 0;
             pendBody.innerHTML += `
-        <tr><td>HADIR (${data.hari_kerja || 0} HARI)</td><td class="right">${data.hari_kerja || 0} HARI</td></tr>
+        <tr><td>HADIR (${totalNilai} HARI)</td><td class="right">${totalNilai} HARI</td></tr>
     `;
 
-            // 3) TOTAL PENDAPATAN = HADIR x GAJI POKOK
+            // 3) TOTAL PENDAPATAN = NILAI HADIR x GAJI POKOK
             pendBody.innerHTML += `
         <tr class="bold">
             <td>JUMLAH PENDAPATAN</td>
@@ -626,10 +627,17 @@ require_once 'app/controller/read.php';
     `;
 
             // =======================================================
-            // ===============     POTONGAN (tidak ada)     ===============
+            // ===============     POTONGAN (panjar)     ===============
             // =======================================================
             const potBody = document.getElementById("potonganBody");
             potBody.innerHTML = "";
+
+            // PANJAR (uang muka periode ini)
+            if (Number(data.panjar || 0) > 0) {
+                potBody.innerHTML += `
+        <tr><td>PANJAR</td><td class="right">${fmt(data.panjar)}</td></tr>
+    `;
+            }
 
             // TOTAL POTONGAN
             potBody.innerHTML += `
@@ -914,18 +922,13 @@ require_once 'app/controller/read.php';
             html2pdf().set(opt).from(slipElem).save();
         }
 
-        // auto set default period (21st previous - 20th current logic)
+        // auto set default period (1st - last day of current month)
         (function setDefaultDates() {
             const today = new Date();
-            let start, end;
-            if (today.getDate() <= 20) {
-                start = new Date(today.getFullYear(), today.getMonth() - 1, 22);
-                end = new Date(today.getFullYear(), today.getMonth(), 21);
-            } else {
-                start = new Date(today.getFullYear(), today.getMonth() - 1, 22);
-                end = new Date(today.getFullYear(), today.getMonth(), 21);
-            }
-            const f = d => d.toISOString().substring(0, 10);
+            const start = new Date(today.getFullYear(), today.getMonth(), 1);
+            const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            const pad = n => String(n).padStart(2, '0');
+            const f = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
             document.getElementById('startDate').value = f(start);
             document.getElementById('endDate').value = f(end);
         })();
