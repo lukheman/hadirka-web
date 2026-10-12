@@ -1,111 +1,7 @@
 <?php
-// Bulan sekarang
-$bulan_ini = date('m');
-$tahun_ini = date('Y');
-
-// Ambil bulan sebelumnya
-$bulan_lalu = date('m', strtotime('-1 month'));
-$tahun_lalu = date('Y', strtotime('-1 month'));
-
-// Set periode tetap: 21 bulan lalu — 20 bulan ini
-$tglAwal = date("$tahun_lalu-$bulan_lalu-21");
-$tglAkhir = date("$tahun_ini-$bulan_ini-20");
+// Bulan berjalan sebagai filter default (YYYY-MM)
+$bulanIni = date("Y-m");
 ?>
-
-<style>
-    .kal-scroll {
-        overflow-x: auto;
-    }
-    .kal-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
-        min-width: 720px;
-    }
-    .kal-head {
-        text-align: center;
-        font-weight: 700;
-        font-size: 0.8rem;
-        color: #566a7f;
-        padding: 6px 0;
-        background: #f0f2f4;
-        border-radius: 6px;
-    }
-    .kal-month {
-        grid-column: 1 / -1;
-        font-weight: 700;
-        color: #fff;
-        background: #1D5C96;
-        border-radius: 6px;
-        padding: 4px 12px;
-        margin-top: 4px;
-        font-size: 0.85rem;
-    }
-    .kal-day {
-        min-height: 88px;
-        border-radius: 8px;
-        padding: 6px;
-        border: 1px solid #e3e6ea;
-        background: #fff;
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-    }
-    .kal-day.empty {
-        background: transparent;
-        border-style: dashed;
-    }
-    .kal-date {
-        font-weight: 700;
-        font-size: 0.95rem;
-        line-height: 1;
-    }
-    .kal-date small {
-        font-weight: 400;
-        color: #8C8C8C;
-    }
-    .kal-status {
-        font-size: 0.68rem;
-        font-weight: 700;
-        border-radius: 20px;
-        padding: 1px 8px;
-        display: inline-block;
-        width: fit-content;
-    }
-    .kal-jam {
-        font-size: 0.7rem;
-        color: #566a7f;
-        line-height: 1.3;
-    }
-    .kal-Masuk { background: #e8fadf; border-color: #71dd37; }
-    .kal-Masuk .kal-status { background: #71dd37; color: #fff; }
-    .kal-SPL { background: #FDE6C6; border-color: #F2921D; }
-    .kal-SPL .kal-status { background: #F2921D; color: #fff; }
-    .kal-OFF { background: #f1f2f4; border-color: #d9dee3; }
-    .kal-OFF .kal-status { background: #8C8C8C; color: #fff; }
-    .kal-Izin { background: #CFE3F2; border-color: #1D5C96; }
-    .kal-Izin .kal-status { background: #1D5C96; color: #fff; }
-    .kal-Sakit { background: #CFE3F2; border-color: #2E7BB8; }
-    .kal-Sakit .kal-status { background: #2E7BB8; color: #fff; }
-    .kal-Cuti { background: #ede4f7; border-color: #6f42c1; }
-    .kal-Cuti .kal-status { background: #6f42c1; color: #fff; }
-    .kal-Mangkir { background: #ffe0db; border-color: #ff3e1d; }
-    .kal-Mangkir .kal-status { background: #ff3e1d; color: #fff; }
-    .kal-Resign, .kal-New { background: #e9eaec; border-color: #8C8C8C; }
-    .kal-Resign .kal-status, .kal-New .kal-status { background: #566a7f; color: #fff; }
-    .kal-legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-    .kal-legend span {
-        font-size: 0.7rem;
-        font-weight: 700;
-        border-radius: 20px;
-        padding: 2px 10px;
-        color: #fff;
-    }
-</style>
 
 <div class="container-xxl mt-3 fade-in">
 
@@ -117,18 +13,16 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
     </button> -->
 
 
-    <!-- Import CSV -->
+    <!-- Import Payroll ANTAM -->
     <div class="mb-4 p-3 bg-light rounded-3 shadow-sm">
         <p class="instruction-text mb-3">
-            Unggah file Excel/CSV sesuai format kolom untuk memperbarui database secara masal. Dengan Ketentuan Warna:
+            Unggah file Excel format <b>Payroll ANTAM</b> (sheet bulan, mis. <code>09</code>):
+            <code>B NAMA | C JABATAN | D PROYEK | E-AH tgl 1-30 | AI HARI | AJ POKOK | AK GAJI | AL PANJAR | AM BERSIH | AN BANK | AO REKENING | AP A/N</code>,
+            baris 8-45, baris dengan kolom B kosong dilewati. Nilai absen = <b>hari</b> (0 / 0,5 / 1 / 1,5 / 2) disimpan apa adanya;
+            Minggu &gt; 0 = <code>OFF</code> (SPL), Minggu 0 = <code>OFF</code>, hari kerja 0 = <code>ALPHA</code>.
+            Nama baru otomatis dibuatkan karyawan (NIK <code>IPM-xxxxx</code>), <code>POKOK</code> disinkron ke karier,
+            <code>PANJAR</code> ke potongan tidak tetap (<code>PANJAR</code>), rekening ke identitas (string, nol depan utuh).
         </p>
-        <div class="d-flex flex-wrap gap-2 mb-3">
-            <span class='badge' style="background-color: yellow; color: black;">SPL / OFF</span>
-            <span class='badge bg-primary'>IZIN</span>
-            <span class='badge bg-info'>SAKIT / SD</span>
-            <span class='badge bg-warning'>CUTI / CM</span>
-            <span class='badge bg-danger'>MANGKIR / RESIGN</span>
-        </div>
         <label for="file_csv" class="form-label fw-bold text-primary">
             <i class="fa fa-upload fa-lg"></i> Import File Excel Absensi
         </label>
@@ -140,7 +34,6 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                 </button>
             </div>
         </form>
-        <a href="assets/template-csv/Format_Impor_Rekapitulasi_Absensi.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
     </div>
 
     <!-- Filter Tanggal -->
@@ -168,16 +61,10 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
             </select>
         </div>
         <div class="col-md-3">
-            <label for="tglAwal" class="form-label fw-bold text-primary">
-                <i class="fa fa-calendar fa-lg"></i> Dari Tanggal
+            <label for="filterBulan" class="form-label fw-bold text-primary">
+                <i class="fa fa-calendar fa-lg"></i> Bulan
             </label>
-            <input type="date" id="tglAwal" class="form-control form-control-sm" value="<?= $tglAwal ?>" data-bs-toggle="tooltip" title="Pilih tanggal mulai periode absensi">
-        </div>
-        <div class="col-md-3">
-            <label for="tglAkhir" class="form-label fw-bold text-primary">
-                <i class="fa fa-calendar fa-lg"></i> Sampai Tanggal
-            </label>
-            <input type="date" id="tglAkhir" class="form-control form-control-sm" value="<?= $tglAkhir ?>" data-bs-toggle="tooltip" title="Pilih tanggal akhir periode absensi">
+            <input type="month" id="filterBulan" class="form-control form-control-sm" value="<?= $bulanIni ?>" data-bs-toggle="tooltip" title="Pilih bulan periode absensi">
         </div>
     </div>
 
@@ -216,14 +103,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                             <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
                             <th class="text-center"><i class="fa fa-map-marker"></i> Site</th>
                             <th class="text-center"><i class="fa fa-check-circle text-success"></i> Hadir</th>
-                            <th class="text-center"><i class="fa fa-clock"></i>Overtime 1</th>
-                            <th class="text-center"><i class="fa fa-clock"></i>Overtime 2</th>
-                            <th class="text-center"><i class="fa fa-sun"></i> SPL</th>
-                            <th class="text-center"><i class="fa fa-clock"></i>Overtime 1 SPL</th>
-                            <th class="text-center"><i class="fa fa-clock"></i>Overtime 2 SPL</th>
                             <th class="text-center"><i class="fa fa-times-circle text-danger"></i> Mangkir</th>
-                            <th class="text-center"><i class="fa fa-exclamation-triangle text-warning"></i> Izin</th>
-                            <th class="text-center"><i class="fa fa-medkit text-info"></i> Sakit</th>
                             <th class="text-center"><i class="fa fa-plane text-purple"></i> Cuti</th>
                         </tr>
                     </thead>
@@ -302,22 +182,30 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
     </div>
 </div>
 
-<!-- Modal Kalender Rekap Bulanan -->
+<!-- Modal Rekap Kehadiran Harian -->
 <div class="modal fade" id="modalKalenderAbsensi" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title text-white"><i class="fa fa-calendar"></i> Rekap Kalender — <span id="kalNama">-</span></h5>
+                <h5 class="modal-title text-white"><i class="fa fa-calendar"></i> Rekap Kehadiran — <span id="kalNama">-</span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                    <div class="small text-muted" id="kalPeriode">-</div>
-                    <div class="kal-legend" id="kalLegend"></div>
-                </div>
+                <div class="small text-muted mb-2" id="kalPeriode">-</div>
                 <div class="alert alert-info py-2 mb-3 small" id="kalSummary">Memuat...</div>
-                <div class="kal-scroll">
-                    <div class="kal-grid" id="kalGrid"></div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-info">
+                            <tr>
+                                <th class="text-center">No</th>
+                                <th class="text-center">Tanggal</th>
+                                <th class="text-center">Nilai Kehadiran</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kalBody">
+                            <tr><td colspan="3" class="text-center">Memuat...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer">
@@ -336,8 +224,23 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         const modalEl = document.getElementById("modalDetailAbsensi");
         const modal = new bootstrap.Modal(modalEl);
         const modalBody = document.getElementById("detailAbsensiBody");
-        const tglAwalInput = document.getElementById("tglAwal");
-        const tglAkhirInput = document.getElementById("tglAkhir");
+        const filterBulan = document.getElementById("filterBulan");
+
+        // Filter bulan (YYYY-MM) -> rentang tanggal 1 s/d akhir bulan
+        function rangeBulan() {
+            const ym = filterBulan.value;
+            if (!ym) return null;
+            const parts = ym.split("-");
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            if (!y || !m) return null;
+            const last = new Date(y, m, 0).getDate();
+            const mm = String(m).padStart(2, "0");
+            return {
+                a: `${y}-${mm}-01`,
+                b: `${y}-${mm}-${String(last).padStart(2, "0")}`
+            };
+        }
         const filterSite = document.getElementById("filterSite");
         const filterJabatan = document.getElementById("filterJabatan");
 
@@ -368,12 +271,12 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         window.loadAbsensi = function() {
             const site = filterSite.value;
             const jabatan = filterJabatan.value;
-            const tgl_a = tglAwalInput.value;
-            const tgl_b = tglAkhirInput.value;
+            const range = rangeBulan();
 
             if (!site) return showToast("Pilih Site terlebih dahulu!", "info");
-            if (!tgl_a || !tgl_b) return showToast("Tanggal tidak boleh kosong!", "info");
-            if (new Date(tgl_a) > new Date(tgl_b)) return showToast("Tanggal awal tidak boleh lebih besar dari tanggal akhir!", "info");
+            if (!range) return showToast("Pilih Bulan terlebih dahulu!", "info");
+            const tgl_a = range.a;
+            const tgl_b = range.b;
 
             const spinner = document.getElementById("loadingSpinner");
             spinner.style.display = "block";
@@ -418,7 +321,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         });
 
         // Auto load saat halaman terbuka jika filter lengkap
-        if (filterSite.value && tglAwalInput.value && tglAkhirInput.value) {
+        if (filterSite.value && filterBulan.value) {
             loadAbsensi();
         }
 
@@ -435,6 +338,8 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
 
             const formData = new FormData();
             formData.append("file_csv", fileInput.files[0]);
+            // Bulan target = bulan yang tampil di filter.
+            if (filterBulan.value) formData.append("bulan", filterBulan.value);
 
             // 🔵 TOMBOL BERUBAH LOADING
             btnImport.disabled = true;
@@ -453,6 +358,12 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                 .then(data => {
                     if (data.status === "success") {
                         showToast(data.message, "success");
+                        // Langsung arahkan filter ke bulan yang baru diimport.
+                        // Tanpa ini tabel tetap menampilkan bulan berjalan (yang
+                        // belum ada datanya) sehingga semua terbaca mangkir.
+                        if (data.periode && data.periode.mulai) {
+                            filterBulan.value = data.periode.mulai.slice(0, 7);
+                        }
                         loadAbsensi();
                     } else {
                         showToast(data.message, "error");
@@ -475,12 +386,12 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         document.getElementById("btnExportExcel").addEventListener("click", function() {
             const site = filterSite.value;
             const jabatan = filterJabatan.value;
-            const tgl_a = tglAwalInput.value;
-            const tgl_b = tglAkhirInput.value;
+            const range = rangeBulan();
 
             if (!site) return showToast("Pilih Site terlebih dahulu sebelum export!", "info");
-            if (!tgl_a || !tgl_b) return showToast("Tanggal tidak boleh kosong!", "info");
-            if (new Date(tgl_a) > new Date(tgl_b)) return showToast("Tanggal awal tidak boleh lebih besar dari tanggal akhir!", "info");
+            if (!range) return showToast("Pilih Bulan terlebih dahulu sebelum export!", "info");
+            const tgl_a = range.a;
+            const tgl_b = range.b;
 
             // Arahkan ke file export dengan membawa parameter filter
             const exportUrl = `app/controller/export/export-absensi.php?site=${site}&jabatan=${jabatan}&tgl_a=${tgl_a}&tgl_b=${tgl_b}`;
@@ -490,50 +401,47 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
         // Auto reload filter
         filterSite.addEventListener("change", loadAbsensi);
         filterJabatan.addEventListener("change", loadAbsensi);
-        tglAwalInput.addEventListener("change", loadAbsensi);
-        tglAkhirInput.addEventListener("change", loadAbsensi);
+        filterBulan.addEventListener("change", loadAbsensi);
 
 
-        // ============ KALENDER REKAP BULANAN ============
-        const kalGrid = document.getElementById("kalGrid");
+        // ============ REKAP KEHADIRAN HARIAN (TABEL) ============
+        const kalBody = document.getElementById("kalBody");
         const kalModal = new bootstrap.Modal(document.getElementById("modalKalenderAbsensi"));
-        const KAL_COLOR = {
-            "Masuk": "#71dd37", "SPL": "#F2921D", "OFF": "#8C8C8C",
-            "Izin": "#1D5C96", "Sakit": "#2E7BB8", "Cuti": "#6f42c1",
-            "Mangkir": "#ff3e1d", "Resign": "#566a7f", "New": "#566a7f"
-        };
-        const KAL_NAMA_HARI = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
-        const KAL_NAMA_BULAN = {
-            "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
-            "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
-            "09": "September", "10": "Oktober", "11": "November", "12": "Desember"
-        };
 
-        function kalStatusKey(ket) {
-            if (ket.indexOf("Izin") === 0) return "Izin";
-            if (ket.indexOf("Sakit") === 0) return "Sakit";
-            return ket;
+        function fmtNilaiHadir(v) {
+            return String(Math.round((+v || 0) * 100) / 100);
         }
 
         window.openKalender = function(idKaryawan) {
             document.getElementById("kalNama").textContent = "Memuat...";
             document.getElementById("kalPeriode").textContent = "-";
-            document.getElementById("kalSummary").textContent = "Memuat data kalender...";
-            kalGrid.innerHTML = `<div class="text-center py-4" style="grid-column:1/-1"><div class="spinner-border text-primary"></div></div>`;
+            document.getElementById("kalSummary").textContent = "Memuat data kehadiran...";
+            kalBody.innerHTML = `<tr><td colspan="3" class="text-center"><div class="spinner-border text-primary"></div></td></tr>`;
+
+            if (!idKaryawan) {
+                showToast("Pilih karyawan terlebih dahulu!", "info");
+                return;
+            }
+            // Jangan fetch bila filter bulan kosong (server menjawab "Parameter tidak lengkap").
+            const range = rangeBulan();
+            if (!range) {
+                showToast("Pilih Bulan terlebih dahulu!", "info");
+                return;
+            }
             kalModal.show();
 
-            const url = `app/controller/get-data/get-absensi-kalender.php?id_karyawan=${idKaryawan}&tgl_a=${tglAwalInput.value}&tgl_b=${tglAkhirInput.value}`;
+            const url = `app/controller/get-data/get-absensi-kalender.php?id_karyawan=${idKaryawan}&tgl_a=${range.a}&tgl_b=${range.b}`;
             fetch(url)
                 .then(res => res.json())
                 .then(res => {
                     if (res.status !== "success") {
-                        kalGrid.innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">${res.message || "Gagal memuat data"}</div>`;
+                        kalBody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">${res.message || "Gagal memuat data"}</td></tr>`;
                         return;
                     }
                     renderKalender(res);
                 })
                 .catch(() => {
-                    kalGrid.innerHTML = `<div class="alert alert-danger" style="grid-column:1/-1">Terjadi kesalahan sistem.</div>`;
+                    kalBody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">Terjadi kesalahan sistem.</td></tr>`;
                 });
         };
 
@@ -542,50 +450,30 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
             document.getElementById("kalPeriode").textContent = `Periode ${res.periode.dari} s/d ${res.periode.sampai} • ${res.jabatan}`;
 
             const t = res.totals;
+            // Total nilai kehadiran = hari berbayar (hadir normal + SPL),
+            // sama dengan angka yang dipakai rumus gaji.
+            const totalHadir = Math.round(((+t.hadir_jam || 0) + (+t.spl_jam || 0)) * 100) / 100;
             document.getElementById("kalSummary").innerHTML =
-                `Hadir: <b>${t.hadir_hari} hari (${t.hadir_jam} jam)</b> • ` +
-                `SPL: <b>${t.spl_hari} hari (${t.spl_jam} jam)</b> • ` +
-                `OT1: <b>${t.ot1}</b> • OT2: <b>${t.ot2}</b> • ` +
-                `Mangkir: <b>${t.mangkir}</b> • Izin: <b>${t.izin}</b> • ` +
-                `Sakit: <b>${t.sakit}</b> • Cuti: <b>${t.cuti}</b>`;
+                `Hadir: <b>${totalHadir}</b> • ` +
+                `Mangkir: <b>${t.mangkir}</b> • Cuti: <b>${t.cuti}</b>`;
 
-            document.getElementById("kalLegend").innerHTML = Object.keys(KAL_COLOR)
-                .map(k => `<span style="background:${KAL_COLOR[k]}">${k}</span>`).join("");
-
-            let html = KAL_NAMA_HARI.map(h => `<div class="kal-head">${h}</div>`).join("");
-            let lastMonth = "";
-
+            let html = "";
             res.days.forEach((d, idx) => {
-                // Pembatas bulan saat ganti bulan
-                if (d.month_key !== lastMonth) {
-                    const [y, m] = d.month_key.split("-");
-                    html += `<div class="kal-month">${KAL_NAMA_BULAN[m]} ${y}</div>`;
-                    lastMonth = d.month_key;
-                }
-                // Sel kosong penyelarasan minggu pertama tiap bulan
-                if (idx === 0 || res.days[idx - 1].month_key !== d.month_key) {
-                    for (let i = 1; i < d.weekday; i++) html += `<div class="kal-day empty"></div>`;
-                }
-
-                const key = kalStatusKey(d.ket);
-                const jamInfo = (d.ket === "Masuk" || d.ket === "SPL")
-                    ? `<div class="kal-jam">${d.normal} jam${d.ot1 > 0 ? ` • OT1 ${d.ot1}` : ""}${d.ot2 > 0 ? ` • OT2 ${d.ot2}` : ""}</div>`
-                    : "";
-                const title = `${d.day} ${d.month} — ${d.ket}` +
-                    ((d.ket === "Masuk" || d.ket === "SPL") ? ` (${d.jam} jam, normal ${d.normal}, OT1 ${d.ot1}, OT2 ${d.ot2})` : "");
-
-                html += `<div class="kal-day kal-${key}" title="${title}">
-                    <div class="kal-date">${d.day} <small>${d.month}</small></div>
-                    <span class="kal-status">${d.ket}</span>
-                    ${jamInfo}
-                </div>`;
+                const tahun = d.month_key.split("-")[0];
+                html += `<tr>
+                    <td class="text-center">${idx + 1}</td>
+                    <td class="text-center">${d.day} ${d.month} ${tahun}</td>
+                    <td class="text-center">${fmtNilaiHadir(d.jam)}</td>
+                </tr>`;
             });
 
-            kalGrid.innerHTML = html;
+            kalBody.innerHTML = html;
         }
 
         // Reload Detail Absensi
         function loadDetailAbsensi() {            if (!currentIdKaryawan) return;
+            const range = rangeBulan();
+            if (!range) return;
 
             modalBody.innerHTML = `
                 <div class="text-center">
@@ -594,7 +482,7 @@ $tglAkhir = date("$tahun_ini-$bulan_ini-20");
                 </div>
             `;
 
-            fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${currentIdKaryawan}&tgl_a=${tglAwalInput.value}&tgl_b=${tglAkhirInput.value}`)
+            fetch(`app/controller/get-data/get-absensi-detail.php?id_karyawan=${currentIdKaryawan}&tgl_a=${range.a}&tgl_b=${range.b}`)
                 .then(res => res.text())
                 .then(html => {
                     modalBody.innerHTML = html;
