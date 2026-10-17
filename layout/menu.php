@@ -143,7 +143,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $absensi_pages = ['dayli-absen', 'rekapan-absensi', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks'];
+        $absensi_pages = ['dayli-absen', 'rekapan-absensi', 'absen-mobile', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks'];
         ?>
         <li class="menu-item <?= isMenuOpen($absensi_pages, $current_page); ?>" data-menu="absensi">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -161,6 +161,11 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('rekapan-absensi', $current_page); ?>">
                     <a class="menu-link" href="?page=rekapan-absensi">
                         <div>Rekapitulasi Bulanan</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('absen-mobile', $current_page); ?>">
+                    <a class="menu-link" href="?page=absen-mobile">
+                        <div>Absensi Mobile (GPS)</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('pengajuan-izin', $current_page); ?>">
@@ -201,7 +206,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $payroll_pages = ['data-periode', 'payroll', 'data-thr'];
+        $payroll_pages = ['data-periode', 'payroll', 'pengajuan-pinjaman', 'slip-aplikasi', 'data-thr'];
         ?>
         <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>" data-menu="payroll">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -222,6 +227,16 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('slip-gaji', $current_page); ?>">
                     <a class="menu-link" href="slipgajinew.php" target="_blank">
                         <div>Slip Gaji Karyawan</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('pengajuan-pinjaman', $current_page); ?>">
+                    <a class="menu-link" href="?page=pengajuan-pinjaman">
+                        <div>Pengajuan Pinjaman</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('slip-aplikasi', $current_page); ?>">
+                    <a class="menu-link" href="?page=slip-aplikasi">
+                        <div>Slip Gaji Aplikasi</div>
                     </a>
                 </li>
                 <!-- DISEMBUNYIKAN (tabel di-drop pada penyederhanaan gaji Okt 2026)
@@ -344,6 +359,12 @@ function isMenuOpen($pages_array, $current_page)
             <a href="?page=pengumuman" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-bullseye"></i>
                 <div data-i18n="Broadcast">Broadcast Pengumuman</div>
+            </a>
+        </li>
+        <li class="menu-item <?= isActive('notifikasi-app', $current_page); ?>">
+            <a href="?page=notifikasi-app" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-bell"></i>
+                <div data-i18n="Notifikasi">Notifikasi Aplikasi</div>
             </a>
         </li>
     <?php endif; ?>

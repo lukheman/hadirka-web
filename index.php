@@ -45,12 +45,15 @@ $routes = [
     'pengajuan-izin'  => 'view/kehadiran/pengajuan-izin.php',
     'pengajuan-cuti'  => 'view/kehadiran/pengajuan-cuti.php',
     'bukti-sks'       => 'view/kehadiran/bukti-sks.php',
+    'absen-mobile'    => 'view/kehadiran/absen-mobile.php',
 
     // Penggajian & Finance
     'data-periode'    => 'view/finance-payrol/data-periode.php',
     'payroll'         => 'view/penggajian/data-payrol.php',
     // 'slipgajinew'       => 'view/penggajian/slipgajinew.php',
     'data-thr'        => 'view/penggajian/data-thr.php',
+    'pengajuan-pinjaman' => 'view/penggajian/pengajuan-pinjaman.php',
+    'slip-aplikasi'   => 'view/penggajian/slip-aplikasi.php',
 
     // --- ROUTE BARU AKUNTANSI ---
     'data-coa' => 'view/finance-payrol/data-coa.php',
@@ -67,6 +70,7 @@ $routes = [
 
     // Lainnya
     'pengumuman'      => 'view/broadcast/broadcast.php',
+    'notifikasi-app'  => 'view/broadcast/notifikasi-app.php',
     'data-users-login' => 'view/users.php',
 
     // Sistem
@@ -98,7 +102,9 @@ $hrd_pages = [
     'pengajuan-izin',
     'pengajuan-cuti',
     'bukti-sks',
+    'absen-mobile',
     'pengumuman',
+    'notifikasi-app',
     'master-pelanggaran',
     'surat-peringatan'
 ];
@@ -120,6 +126,8 @@ $finance_pages = [
     'data-periode',
     'payroll',
     'data-thr',
+    'pengajuan-pinjaman',
+    'slip-aplikasi',
     'laporan-keuangan',
     'kelola-transaksi',
     'data-coa',
