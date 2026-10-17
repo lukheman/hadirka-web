@@ -10,12 +10,14 @@ $no = 1;
 
 if ($id) {
     // Tampilan detail dari profil spesifik (data-karier.php)
+    // Site/Departemen/Jabatan pakai LEFT JOIN: hasil import hanya mengisi jabatan
+    // (site/departemen bisa NULL) — baris tetap tampil dengan tanda '-'.
     $stmt = $koneksi->prepare("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap
         FROM tb_karyawan kr
         INNER JOIN tb_karier k ON k.id_karyawan = kr.id_karyawan
-        INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
-        INNER JOIN tb_departemen d ON k.id_departemen = d.id_departemen
-        INNER JOIN tb_site s ON k.id_site = s.id_site
+        LEFT JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
+        LEFT JOIN tb_departemen d ON k.id_departemen = d.id_departemen
+        LEFT JOIN tb_site s ON k.id_site = s.id_site
         WHERE k.id_karyawan=? 
         ORDER BY k.tgl_mulai DESC");
     $stmt->execute([$id]);
@@ -57,9 +59,9 @@ if ($id) {
     $stKarier = $koneksi->prepare("SELECT k.*, j.nama_jabatan, d.nama_departemen, s.nama_site, kr.nik_karyawan, kr.nama_lengkap
         FROM tb_karier k
         INNER JOIN tb_karyawan kr ON k.id_karyawan = kr.id_karyawan
-        INNER JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
-        INNER JOIN tb_departemen d ON k.id_departemen = d.id_departemen
-        INNER JOIN tb_site s ON k.id_site = s.id_site
+        LEFT JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
+        LEFT JOIN tb_departemen d ON k.id_departemen = d.id_departemen
+        LEFT JOIN tb_site s ON k.id_site = s.id_site
         WHERE $where_sql
         ORDER BY kr.nik_karyawan ASC");
     $stKarier->execute($params);
@@ -78,16 +80,16 @@ while ($r = $q->fetch()) { ?>
         <td><?= $r['nik_karyawan'] ?></td>
         <td><?= $r['nama_lengkap'] ?></td>
         <?php } ?>
-        <td><?= $r['nama_site'] ?></td>
-        <td><?= $r['nama_departemen'] ?></td>
-        <td><?= $r['nama_jabatan'] ?></td>
+        <td><?= trim((string)($r['nama_site'] ?? '')) !== '' ? htmlspecialchars($r['nama_site']) : '-' ?></td>
+        <td><?= trim((string)($r['nama_departemen'] ?? '')) !== '' ? htmlspecialchars($r['nama_departemen']) : '-' ?></td>
+        <td><?= trim((string)($r['nama_jabatan'] ?? '')) !== '' ? htmlspecialchars($r['nama_jabatan']) : '-' ?></td>
 
         <!-- Gaji Pokok (harian) -->
         <td><?= rupiah($r['gaji_pokok']) ?></td>
 
         <!-- Tanggal -->
-        <td><?= $r['tgl_mulai'] ?></td>
-        <td><?= $r['tgl_selesai'] ?></td>
+        <td><?= !empty($r['tgl_mulai']) ? $r['tgl_mulai'] : '-' ?></td>
+        <td><?= !empty($r['tgl_selesai']) ? $r['tgl_selesai'] : '-' ?></td>
 
         <!-- No Surat Kontrak -->
         <td><?= htmlspecialchars($r['no_surat'] ?? '', ENT_QUOTES) ?></td>
