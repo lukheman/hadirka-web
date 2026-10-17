@@ -17,14 +17,144 @@ $action = $_POST['action'] ?? '';
 
 // Finance (level 6) read-only: blokir semua aksi tulis via endpoint ini.
 // Aksi "get" tetap diizinkan karena hanya membaca satu record (dipakai modal detail).
-if ((($_SESSION['level'] ?? 99) == 6) && in_array($action, ['add', 'edit', 'delete'], true)) {
+if ((($_SESSION['level'] ?? 99) == 6) && in_array($action, ['add', 'edit', 'delete', 'delete_selected', 'delete_all'], true)) {
     echo json_encode(["status" => "error", "msg" => "Akses ditolak: akun Finance hanya boleh melihat data karyawan."]);
+    exit;
+}
+
+// Hapus massal (terpilih / semua sesuai filter) hanya untuk user Master (level 0).
+if (in_array($action, ['delete_selected', 'delete_all'], true) && (int)($_SESSION['level'] ?? 99) !== 0) {
+    echo json_encode(["status" => "error", "msg" => "Akses ditolak: hanya user Master yang boleh menghapus data karyawan secara massal."]);
     exit;
 }
 
 function input($data)
 {
     return isset($_POST[$data]) ? trim($_POST[$data]) : '';
+}
+
+/**
+ * Hapus 1 karyawan beserta seluruh data turunannya.
+ * - Tabel dengan ON DELETE CASCADE (tb_identitas, tb_karier, tb_kontak_darurat,
+ *   tb_absen, tb_cuti, dll) ikut terhapus otomatis.
+ * - tb_reset_otp & tb_tereliminasi tidak punya CASCADE, jadi dibersihkan manual.
+ * - File foto fisik baru dihapus setelah baris database benar-benar terhapus.
+ *
+ * @return bool true bila baris tb_karyawan berhasil terhapus.
+ * @throws PDOException bila masih terikat foreign key yang tidak bisa dilepas.
+ */
+function hapus_karyawan_lengkap(PDO $koneksi, int $id): bool
+{
+    $q_foto = $koneksi->prepare("SELECT foto FROM tb_karyawan WHERE id_karyawan = ?");
+    $q_foto->execute([$id]);
+    $r_foto = $q_foto->fetch();
+
+    if (!$r_foto) {
+        return false; // data tidak ditemukan / sudah terhapus
+    }
+
+    $koneksi->prepare("DELETE FROM tb_reset_otp WHERE id_karyawan = ?")->execute([$id]);
+    $koneksi->prepare("DELETE FROM tb_tereliminasi WHERE id_karyawan = ?")->execute([$id]);
+    $koneksi->prepare("DELETE FROM tb_identitas WHERE id_karyawan = ?")->execute([$id]);
+    $koneksi->prepare("DELETE FROM tb_karier WHERE id_karyawan = ?")->execute([$id]);
+    $koneksi->prepare("DELETE FROM tb_kontak_darurat WHERE id_karyawan = ?")->execute([$id]);
+
+    $del = $koneksi->prepare("DELETE FROM tb_karyawan WHERE id_karyawan = ?");
+    $del->execute([$id]);
+
+    if ($del->rowCount() > 0) {
+        if (!empty($r_foto['foto']) && file_exists('../uploads/profil/' . $r_foto['foto'])) {
+            @unlink('../uploads/profil/' . $r_foto['foto']);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Hapus banyak karyawan dalam 1 transaksi (dipakai delete_selected & delete_all).
+ * Tiap karyawan memakai SAVEPOINT agar 1 kegagalan (mis. masih terikat data THR)
+ * tidak ikut membatalkan karyawan lain yang sudah berhasil dihapus.
+ *
+ * @param int[] $ids
+ * @return array{berhasil:int, dilewati:int, gagal:string[]}
+ */
+function hapus_karyawan_massal(PDO $koneksi, array $ids): array
+{
+    $hasil = ['berhasil' => 0, 'dilewati' => 0, 'gagal' => []];
+
+    if (empty($ids)) {
+        return $hasil;
+    }
+
+    // Ambil identitas karyawan yang benar-benar ada (untuk pesan hasil)
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $q = $koneksi->prepare("SELECT id_karyawan, nik_karyawan, nama_lengkap FROM tb_karyawan WHERE id_karyawan IN ($placeholders)");
+    $q->execute($ids);
+
+    $info = [];
+    while ($r = $q->fetch()) {
+        $info[(int)$r['id_karyawan']] = $r;
+    }
+
+    foreach ($ids as $id) {
+        if (!isset($info[$id])) {
+            $hasil['dilewati']++;
+            continue;
+        }
+
+        $koneksi->exec("SAVEPOINT sp_hapus_karyawan");
+        try {
+            if (hapus_karyawan_lengkap($koneksi, $id)) {
+                $hasil['berhasil']++;
+            } else {
+                $hasil['dilewati']++;
+            }
+        } catch (PDOException $e) {
+            $koneksi->exec("ROLLBACK TO SAVEPOINT sp_hapus_karyawan");
+            error_log("Hapus karyawan id={$id} gagal: " . $e->getMessage());
+
+            // 1451 = tidak bisa dihapus karena masih direferensikan tabel lain (mis. tb_thr tanpa CASCADE).
+            $alasan = (($e->errorInfo[1] ?? 0) === 1451)
+                ? 'masih terhubung dengan data lain (mis. riwayat THR/payroll)'
+                : 'terjadi kendala database';
+
+            $hasil['gagal'][] = htmlspecialchars($info[$id]['nik_karyawan'] ?? '-') . ' - ' .
+                htmlspecialchars($info[$id]['nama_lengkap'] ?? '-') . ' (' . $alasan . ')';
+        }
+    }
+
+    return $hasil;
+}
+
+/**
+ * Susun respons JSON standar untuk hasil hapus massal.
+ *
+ * @param array{berhasil:int, dilewati:int, gagal:string[]} $hasil
+ */
+function respon_hapus_massal(array $hasil): array
+{
+    $berhasil = (int)$hasil['berhasil'];
+    $dilewati = (int)$hasil['dilewati'];
+    $gagal    = count($hasil['gagal']);
+
+    $msg = "Berhasil menghapus {$berhasil} karyawan.";
+    if ($dilewati > 0) {
+        $msg .= " {$dilewati} data dilewati (tidak ditemukan).";
+    }
+    if ($gagal > 0) {
+        $msg .= " {$gagal} data gagal dihapus karena masih terhubung dengan data lain.";
+    }
+
+    return [
+        "status"       => $berhasil > 0 ? "ok" : "error",
+        "msg"          => $msg,
+        "berhasil"     => $berhasil,
+        "dilewati"     => $dilewati,
+        "gagal"        => $gagal,
+        "gagal_detail" => $hasil['gagal'],
+    ];
 }
 
 if ($action == "get") {
@@ -459,30 +589,24 @@ if ($action == "edit") {
     }
     exit;
 }
-// 3. DELETE (Opsional, tetap disertakan jika Anda butuh menghapus)
+// 3. DELETE (hapus permanen 1 karyawan beserta data turunannya)
 if ($action == "delete") {
     $id = intval($_POST['id_karyawan']);
+    if ($id <= 0) {
+        echo json_encode(["status" => "error", "msg" => "ID karyawan tidak valid."]);
+        exit;
+    }
+
     $koneksi->beginTransaction();
     try {
-        // Hapus file fisik foto
-        $q_foto = $koneksi->prepare("SELECT foto FROM tb_karyawan WHERE id_karyawan = ?");
-        $q_foto->execute([$id]);
-        if ($r_foto = $q_foto->fetch()) {
-            if (!empty($r_foto['foto']) && file_exists('../uploads/profil/' . $r_foto['foto'])) {
-                @unlink('../uploads/profil/' . $r_foto['foto']);
-            }
-        }
-
-        $d1 = $koneksi->prepare("DELETE FROM tb_identitas WHERE id_karyawan = ?");
-        $d1->execute([$id]);
-        $d2 = $koneksi->prepare("DELETE FROM tb_karier WHERE id_karyawan = ?");
-        $d2->execute([$id]);
-        $d3 = $koneksi->prepare("DELETE FROM tb_karyawan WHERE id_karyawan = ?");
-        $d3->execute([$id]);
-        $d4 = $koneksi->prepare("DELETE FROM tb_kontak_darurat WHERE id_karyawan = ?");
-        $d4->execute([$id]);
+        $terhapus = hapus_karyawan_lengkap($koneksi, $id);
         $koneksi->commit();
-        echo json_encode(["status" => "ok"]);
+
+        if ($terhapus) {
+            echo json_encode(["status" => "ok"]);
+        } else {
+            echo json_encode(["status" => "error", "msg" => "Data tidak ditemukan atau sudah terhapus."]);
+        }
     } catch (PDOException $e) {
         if ($koneksi->inTransaction()) $koneksi->rollBack();
         error_log($e->getMessage());
@@ -490,6 +614,111 @@ if ($action == "delete") {
     } catch (Exception $e) {
         if ($koneksi->inTransaction()) $koneksi->rollBack();
         echo json_encode(["status" => "error", "msg" => "Gagal menghapus data"]);
+    }
+    exit;
+}
+
+// 4. DELETE MASSAL: hapus karyawan yang dipilih via checkbox — khusus Master.
+if ($action == "delete_selected") {
+    $ids = $_POST['id_karyawan'] ?? [];
+    if (!is_array($ids)) {
+        $ids = explode(',', (string)$ids);
+    }
+
+    $ids = array_values(array_unique(array_filter(
+        array_map('intval', $ids),
+        function ($v) {
+            return $v > 0;
+        }
+    )));
+
+    if (empty($ids)) {
+        echo json_encode(["status" => "error", "msg" => "Tidak ada karyawan yang dipilih untuk dihapus."]);
+        exit;
+    }
+
+    $koneksi->beginTransaction();
+    try {
+        $hasil = hapus_karyawan_massal($koneksi, $ids);
+        $koneksi->commit();
+        echo json_encode(respon_hapus_massal($hasil));
+    } catch (Exception $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal menghapus data karyawan."]);
+    }
+    exit;
+}
+
+// 5. DELETE ALL: hapus semua karyawan sesuai filter aktif tabel — khusus Master.
+if ($action == "delete_all") {
+    $filter_site    = $_POST['site'] ?? '';
+    $filter_jabatan = $_POST['jabatan'] ?? '';
+    $filter_status  = $_POST['status'] ?? '';
+    $filter_bulan   = $_POST['bulan'] ?? '';
+
+    // WHERE harus identik dengan filter tabel di get-data/get-karyawan.php
+    // (kar = tb_karyawan, k = data karier terbaru).
+    $where = ["1=1"];
+    $params = [];
+
+    if (!empty($filter_status)) {
+        if ($filter_status !== 'Semua') {
+            $where[] = "kar.status_karyawan = ?";
+            $params[] = $filter_status;
+        }
+    } else {
+        $where[] = "kar.status_karyawan = 'Aktif'";
+    }
+
+    if (!empty($filter_site)) {
+        $where[] = "k.id_site = ?";
+        $params[] = $filter_site;
+    }
+
+    if (!empty($filter_jabatan)) {
+        $where[] = "k.id_jabatan = ?";
+        $params[] = $filter_jabatan;
+    }
+
+    if (!empty($filter_bulan)) {
+        $where[] = "MONTH(k.tgl_selesai) = ?";
+        $params[] = $filter_bulan;
+        $where[] = "YEAR(k.tgl_selesai) = YEAR(CURDATE())";
+    }
+
+    $where_sql = implode(" AND ", $where);
+
+    $q = $koneksi->prepare("SELECT kar.id_karyawan
+        FROM tb_karyawan kar
+        LEFT JOIN tb_karier k ON kar.id_karyawan = k.id_karyawan
+            AND k.id_karier = (SELECT MAX(k2.id_karier) FROM tb_karier k2 WHERE k2.id_karyawan = kar.id_karyawan)
+        WHERE $where_sql
+        ORDER BY kar.nik_karyawan ASC");
+    $q->execute($params);
+
+    $ids = [];
+    while ($r = $q->fetch()) {
+        $ids[] = (int)$r['id_karyawan'];
+    }
+    $ids = array_values(array_unique(array_filter($ids, function ($v) {
+        return $v > 0;
+    })));
+
+    if (empty($ids)) {
+        echo json_encode(["status" => "error", "msg" => "Tidak ada karyawan yang cocok dengan filter aktif."]);
+        exit;
+    }
+
+    $koneksi->beginTransaction();
+    try {
+        $hasil = hapus_karyawan_massal($koneksi, $ids);
+        $koneksi->commit();
+        echo json_encode(respon_hapus_massal($hasil));
+    } catch (Exception $e) {
+        if ($koneksi->inTransaction()) $koneksi->rollBack();
+        error_log($e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Gagal menghapus data karyawan."]);
     }
     exit;
 }

@@ -148,6 +148,7 @@
             <span class="text-muted fw-light">Master Data /</span> Data Karyawan
         </h4>
         <?php $is_finance_readonly = (($_SESSION['level'] ?? 99) == 6); ?>
+        <?php $is_master = ((int)($_SESSION['level'] ?? 99) === 0); ?>
         <?php if ($is_finance_readonly): ?>
         <div class="alert alert-info py-2 small" role="alert">
             <i class="fa fa-eye me-1"></i> Mode lihat saja: Finance dapat melihat detail, memfilter, dan mengekspor data. Penambahan, pengubahan, dan penghapusan dinonaktifkan.
@@ -167,6 +168,14 @@
                     <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel">
                         <i class="fa fa-file-export"></i> Export Data
                     </button>
+                    <?php if ($is_master): ?>
+                    <button class="btn btn-sm btn-outline-danger" id="btnHapusTerpilih" disabled data-bs-toggle="tooltip" title="Hapus karyawan yang dicentang (bisa lintas halaman)">
+                        <i class="fa fa-trash"></i> Hapus Terpilih (<span id="jumlahTerpilih">0</span>)
+                    </button>
+                    <button class="btn btn-sm btn-danger" id="btnHapusSemua" data-bs-toggle="tooltip" title="Hapus SEMUA karyawan sesuai filter aktif">
+                        <i class="fa fa-trash"></i> Hapus Semua
+                    </button>
+                    <?php endif; ?>
                 </div>
 
                 <div class="d-flex align-items-center gap-2" style="max-width: 520px;">
@@ -228,6 +237,11 @@
                     <table id="tableKaryawan" class="table table-hover table-bordered table-striped">
                         <thead class="table-info">
                             <tr>
+                                <?php if ($is_master): ?>
+                                <th class="text-center" style="width: 38px;">
+                                    <input type="checkbox" class="form-check-input" id="checkAllKaryawan" title="Pilih semua baris di halaman ini" aria-label="Pilih semua baris di halaman ini">
+                                </th>
+                                <?php endif; ?>
                                 <th class="text-center"><i class="fa fa-hashtag"></i> No</th>
                                 <th class="text-center"><i class="fa fa-image"></i> Foto</th>
                                 <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
@@ -991,6 +1005,9 @@
     }
 
     let tableKaryawan = null;
+    const isMasterKaryawan = <?= $is_master ? 'true' : 'false' ?>;
+    // Menyimpan id karyawan yang dicentang (dipakai fitur hapus terpilih).
+    const selectedKaryawan = new Set();
 
     $(document).ready(function() {
         $(document).on("click", ".toggle-password", function() {
@@ -1113,6 +1130,87 @@
         });
 
 
+        // Kolom checkbox pemilihan baris hanya tampil untuk Master
+        // (dipakai fitur "Hapus Terpilih"). Kolom lain ikut bergeser 1.
+        const kolomKaryawan = [];
+
+        if (isMasterKaryawan) {
+            kolomKaryawan.push({
+                data: "id_karyawan",
+                className: "text-center",
+                width: "38px",
+                orderable: false,
+                searchable: false,
+                render: function(data) {
+                    return '<input type="checkbox" class="form-check-input row-checkbox-karyawan" value="' + data + '" aria-label="Pilih karyawan">';
+                }
+            });
+        }
+
+        kolomKaryawan.push({
+                // Nomor urut dihitung dari posisi tampil (halaman/filter/sort),
+                // bukan dari field statis server agar tidak acak saat pindah halaman.
+                data: null,
+                className: "text-center",
+                width: "45px",
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                }
+            },
+            {
+                data: "foto",
+                className: "text-center",
+                orderable: false
+            },
+            {
+                data: "nama"
+            },
+            {
+                data: "nik",
+                className: "text-center"
+            },
+            {
+                data: "jabatan",
+                className: "text-center"
+            },
+            {
+                data: "status_karyawan",
+                className: "text-center"
+            },
+            {
+                data: "action",
+                orderable: false,
+                className: "text-center"
+            }
+        );
+
+        // Index kolom status bergantung pada ada/tidaknya kolom checkbox di depan.
+        const idxKolomStatus = isMasterKaryawan ? 6 : 5;
+
+        // Perbarui label tombol "Hapus Terpilih" + status checkbox header.
+        function updateSelectionKaryawan() {
+            const jumlah = selectedKaryawan.size;
+            $("#jumlahTerpilih").text(jumlah);
+            $("#btnHapusTerpilih").prop("disabled", jumlah === 0);
+
+            if (!isMasterKaryawan) return;
+            const $baris = $("#tableKaryawan tbody .row-checkbox-karyawan");
+            const checked = $baris.filter(":checked").length;
+            const head = document.getElementById("checkAllKaryawan");
+            if (!head) return;
+            head.checked = $baris.length > 0 && checked === $baris.length;
+            head.indeterminate = checked > 0 && checked < $baris.length;
+        }
+
+        // Bersihkan pilihan (mis. setelah ganti filter atau selesai hapus massal).
+        function clearSelectionKaryawan() {
+            selectedKaryawan.clear();
+            $("#tableKaryawan tbody .row-checkbox-karyawan").prop("checked", false);
+            updateSelectionKaryawan();
+        }
+
         // 3. Inisialisasi DataTable
         tableKaryawan = $('#tableKaryawan').DataTable({
             processing: true,
@@ -1133,46 +1231,18 @@
                 },
                 dataSrc: "data"
             },
-            columns: [{
-                    // Nomor urut dihitung dari posisi tampil (halaman/filter/sort),
-                    // bukan dari field statis server agar tidak acak saat pindah halaman.
-                    data: null,
-                    className: "text-center",
-                    width: "45px",
-                    orderable: false,
-                    searchable: false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }
-                },
-                {
-                    data: "foto",
-                    className: "text-center",
-                    orderable: false
-                },
-                {
-                    data: "nama"
-                },
-                {
-                    data: "nik",
-                    className: "text-center"
-                },
-                {
-                    data: "jabatan",
-                    className: "text-center"
-                },
-                {
-                    data: "status_karyawan",
-                    className: "text-center"
-                },
-                {
-                    data: "action",
-                    orderable: false,
-                    className: "text-center"
-                }
-            ],
+            columns: kolomKaryawan,
+            // Pulihkan centang saat baris digambar ulang (pindah halaman/sort).
+            rowCallback: function(row, data) {
+                if (!isMasterKaryawan) return;
+                const cb = row.querySelector(".row-checkbox-karyawan");
+                if (cb) cb.checked = selectedKaryawan.has(String(data.id_karyawan));
+            },
+            drawCallback: function() {
+                if (isMasterKaryawan) updateSelectionKaryawan();
+            },
             order: [
-                [2, "asc"]
+                [isMasterKaryawan ? 3 : 2, "asc"]
             ],
             language: {
                 search: "Cari:",
@@ -1197,15 +1267,19 @@
         // "Semua" berisi status campuran → kolom status WAJIB tampil.
         function syncStatusColumn(redraw) {
             let status = $("#filterStatus").val();
-            tableKaryawan.column(5).visible(status !== "Aktif", redraw !== false);
+            tableKaryawan.column(idxKolomStatus).visible(status !== "Aktif", redraw !== false);
         }
         syncStatusColumn(false);
 
         // Satu handler filter: tahan posisi pagination (null, false) agar
         // ganti filter tidak me-reset halaman secara paksa lewat reload ganda.
+        // Pilihan checkbox direset karena baris yang tampil berubah.
         $("#filterSite, #filterJabatan, #filterStatus, #filterBulan").on("change", function() {
             if (this.id === "filterStatus") {
                 syncStatusColumn(false);
+            }
+            if (isMasterKaryawan) {
+                clearSelectionKaryawan();
             }
             tableKaryawan.ajax.reload(null, false);
         });
@@ -1505,6 +1579,163 @@
                     }
                 });
             }
+        });
+
+        // 11.b ACTION: PILIH BARIS UNTUK DIHAPUS (checkbox, khusus Master)
+        $('#tableKaryawan tbody').on('change', '.row-checkbox-karyawan', function() {
+            const id = String($(this).val());
+            if (this.checked) {
+                selectedKaryawan.add(id);
+            } else {
+                selectedKaryawan.delete(id);
+            }
+            updateSelectionKaryawan();
+        });
+
+        // "Pilih semua" berlaku untuk baris di halaman yang sedang tampil.
+        $("#checkAllKaryawan").on("change", function() {
+            const checked = this.checked;
+            $("#tableKaryawan tbody .row-checkbox-karyawan").each(function() {
+                const id = String($(this).val());
+                if (checked) {
+                    selectedKaryawan.add(id);
+                } else {
+                    selectedKaryawan.delete(id);
+                }
+            });
+            $("#tableKaryawan tbody .row-checkbox-karyawan").prop("checked", checked);
+            updateSelectionKaryawan();
+        });
+
+        // Ringkasan filter aktif untuk teks konfirmasi "Hapus Semua".
+        function deskripsiFilterAktif() {
+            const site = $("#filterSite option:selected").text().trim();
+            const jabatan = $("#filterJabatan option:selected").text().trim();
+            const status = $("#filterStatus option:selected").text().trim();
+            const bulan = $("#filterBulan option:selected").text().trim();
+            return `- Site: ${site}\n- Jabatan: ${jabatan}\n- Status: ${status}\n- Bulan: ${bulan}`;
+        }
+
+        // Tampilkan daftar karyawan yang gagal dihapus (jika ada).
+        function tampilkanGagalHapus(detail) {
+            console.warn("Karyawan gagal dihapus:", detail);
+            if (typeof Swal !== "undefined") {
+                const items = detail.map(function(teks) {
+                    return "<li>" + teks + "</li>";
+                }).join("");
+                Swal.fire({
+                    icon: "warning",
+                    title: "Sebagian Data Gagal Dihapus",
+                    html: '<p class="small text-start mb-2">Data berikut tidak dapat dihapus:</p>' +
+                        '<ul style="text-align:left;font-size:13px;padding-left:1.2rem;margin:0;">' + items + "</ul>",
+                    confirmButtonText: "OK"
+                });
+            }
+        }
+
+        // Tangani respons hapus massal: muat ulang tabel + bersihkan pilihan.
+        function tanganiHasilHapusMassal(res) {
+            clearSelectionKaryawan();
+            tableKaryawan.ajax.reload(null, false);
+
+            if (res && res.status === "ok") {
+                showToast(res.msg || "Data berhasil dihapus.", "success");
+            } else {
+                showToast((res && res.msg) || "Gagal menghapus data.", "danger");
+            }
+
+            if (res && res.gagal_detail && res.gagal_detail.length) {
+                tampilkanGagalHapus(res.gagal_detail);
+            }
+        }
+
+        // 11.c ACTION: HAPUS TERPILIH (bulk via checkbox, khusus Master)
+        $("#btnHapusTerpilih").on("click", async function() {
+            const ids = Array.from(selectedKaryawan);
+            if (ids.length === 0) {
+                showToast("Pilih dulu karyawan yang ingin dihapus.", "warning");
+                return;
+            }
+
+            if (!(await confirmDialog(
+                    `Anda akan menghapus ${ids.length} karyawan yang dipilih.\n\nSeluruh data terkait (identitas, karier, kontak, foto) akan dihapus permanen dan tidak dapat dikembalikan.`, {
+                        title: "Hapus Karyawan Terpilih",
+                        confirmText: "Ya, Hapus Sekarang"
+                    }))) {
+                return;
+            }
+
+            const $btn = $(this);
+            $btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Menghapus...');
+
+            $.ajax({
+                url: "app/controller/act-karyawan.php",
+                type: "POST",
+                data: {
+                    action: "delete_selected",
+                    id_karyawan: ids
+                },
+                dataType: "json",
+                success: function(res) {
+                    tanganiHasilHapusMassal(res);
+                },
+                error: function(xhr) {
+                    console.error("Gagal hapus terpilih:", xhr.responseText);
+                    showToast("Terjadi kesalahan server saat menghapus data.", "danger");
+                },
+                complete: function() {
+                    $btn.html('<i class="fa fa-trash"></i> Hapus Terpilih (<span id="jumlahTerpilih">0</span>)');
+                    updateSelectionKaryawan();
+                }
+            });
+        });
+
+        // 11.d ACTION: HAPUS SEMUA SESUAI FILTER (khusus Master)
+        $("#btnHapusSemua").on("click", async function() {
+            const deskripsi = deskripsiFilterAktif();
+
+            if (!(await confirmDialog(
+                    `Anda akan menghapus SEMUA karyawan yang cocok dengan filter aktif:\n${deskripsi}\n\nSeluruh data terkait (identitas, karier, kontak, foto) akan dihapus permanen dan tidak dapat dikembalikan.`, {
+                        title: "Hapus Semua Sesuai Filter",
+                        confirmText: "Lanjutkan"
+                    }))) {
+                return;
+            }
+
+            // Konfirmasi kedua khusus aksi yang sangat berbahaya ini.
+            if (!(await confirmDialog(
+                    `Konfirmasi terakhir.\n\nYakin ingin menghapus semua karyawan dengan filter:\n${deskripsi}\n\nTindakan ini tidak dapat dibatalkan.`, {
+                        title: "Konfirmasi Terakhir",
+                        confirmText: "Ya, Hapus Semua"
+                    }))) {
+                return;
+            }
+
+            const $btn = $(this);
+            $btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i> Menghapus...');
+
+            $.ajax({
+                url: "app/controller/act-karyawan.php",
+                type: "POST",
+                data: {
+                    action: "delete_all",
+                    site: $("#filterSite").val(),
+                    jabatan: $("#filterJabatan").val(),
+                    status: $("#filterStatus").val(),
+                    bulan: $("#filterBulan").val()
+                },
+                dataType: "json",
+                success: function(res) {
+                    tanganiHasilHapusMassal(res);
+                },
+                error: function(xhr) {
+                    console.error("Gagal hapus semua:", xhr.responseText);
+                    showToast("Terjadi kesalahan server saat menghapus data.", "danger");
+                },
+                complete: function() {
+                    $btn.prop("disabled", false).html('<i class="fa fa-trash"></i> Hapus Semua');
+                }
+            });
         });
 
         // 12. ACTION: IMPORT EXCEL 
