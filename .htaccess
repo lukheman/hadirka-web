@@ -1,6 +1,10 @@
 RewriteEngine On
 Options -indexes
 
+# API aplikasi absensi mobile -> SATU front controller (app/api/index.php).
+# Semua URL /api/... ditangani di sana (lihat docs/INTEGRASI-ABSEN-MOBILE.md).
+RewriteRule ^api(/.*)?$ app/api/index.php [L,QSA]
+
 RewriteRule ^data-saya cetak.php
 
 RewriteCond %{REQUEST_FILENAME} !-d

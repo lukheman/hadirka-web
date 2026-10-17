@@ -22,6 +22,12 @@ if ($path !== '/') {
     }
 }
 
+// 1b. API aplikasi absensi mobile -> SATU front controller (app/api/index.php).
+if (preg_match('#^/api(/|$)#', $path)) {
+    require __DIR__ . '/app/api/index.php';
+    return true;
+}
+
 // 2. Pretty URL -> $_GET (urutan sama seperti .htaccess).
 $pretty = [
     '#^/karier/([^/\.]+)/?$#'         => ['page' => 'karier', 'id' => 1],
