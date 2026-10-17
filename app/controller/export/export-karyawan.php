@@ -1,4 +1,10 @@
 <?php
+// Export 44 kolom (data lengkap) — sekarang dipakai halaman "Data Karyawan Tereliminasi"
+// (dipanggil dengan status=TERELIMINASI).
+// Halaman "Data Karyawan" (daftar utama) memakai: export-karyawan-template.php
+// (format template import 8 kolom: NO. | NAMA | JABATAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N,
+//  hasilnya bisa diedit lalu di-import kembali).
+//
 // Matikan error reporting agar file excel tidak corrupt
 error_reporting(0);
 ini_set('display_errors', 0);

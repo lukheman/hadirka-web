@@ -165,7 +165,7 @@
                         <i class="fa fa-upload"></i> Import Data
                     </button>
                     <?php endif; ?>
-                    <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel">
+                    <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel (format template import — hasilnya bisa diedit lalu di-import kembali)">
                         <i class="fa fa-file-export"></i> Export Data
                     </button>
                     <?php if ($is_master): ?>
@@ -286,6 +286,7 @@
             <div class="modal-body">
                 <p class="instruction-text mb-3">
                     Unggah file Excel/CSV sesuai format kolom untuk memperbarui database secara masal.
+                    Hasil tombol <b>Export Data</b> sudah memakai format template di bawah, jadi bisa langsung diedit lalu di-import kembali.
                 </p>
                 <label for="file_excel" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
                 <input type="file" name="file_excel" id="file_excel" class="form-control" accept=".xls,.xlsx" required data-bs-toggle="tooltip" title="Pilih file Excel untuk import data karyawan">
@@ -1917,8 +1918,8 @@
             let status = document.getElementById("filterStatus").value;
             let bulan = document.getElementById("filterBulan").value;
 
-            // Arahkan ke file export-karyawan.php
-            let url = `app/controller/export/export-karyawan.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
+            // Arahkan ke file export format template import (8 kolom, bisa di-import balik)
+            let url = `app/controller/export/export-karyawan-template.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
             window.location.href = url;
         };
     });
