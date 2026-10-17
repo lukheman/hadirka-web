@@ -13,8 +13,7 @@ untuk aplikasi mobile karyawan.
 | Frontend | Bootstrap 5 (template Sneat), jQuery, DataTables, Select2, SweetAlert2, Toastr, Flatpickr |
 | Cetak/Unduh | html2pdf.js, JSZip + FileSaver, SheetJS (XLSX) |
 | Import/Export server | PhpSpreadsheet (`composer.json` root) |
-| Email/OTP mobile | PHPMailer (`app/api/composer.json`) |
-| Mobile API | `app/api/*.php` (JSON, dipakai aplikasi mobile karyawan) |
+| Mobile API | `app/api/index.php` — satu route `app/api/` (aplikasi absen mobile, dipasang di `/api/*`) |
 
 ## Syarat
 
@@ -29,7 +28,6 @@ git clone <repo> && cd ipm-hris
 
 # 1. Dependensi PHP (folder vendor/ tidak di-commit)
 composer install
-(cd app/api && composer install)
 
 # 2. Konfigurasi environment
 cp .env.example .env
@@ -39,12 +37,12 @@ cp .env.example .env
 mysql -u user -p nama_db < struktur.sql
 
 # 4. Folder upload harus writable oleh web server
-mkdir -p app/uploads/{profil,template-kontrak,kontrak,cuti,izin,pinjaman,sks,apd,bukti_transaksi} \
+mkdir -p app/uploads/{profil,absensi,template-kontrak,kontrak,cuti,izin,pinjaman,sks,apd,bukti_transaksi} \
          assets/img/user-pic
 chmod -R 775 app/uploads assets/img/user-pic
 
-# 5. Jalankan (dev)
-php -S localhost:8000
+# 5. Jalankan (dev) — router.php wajib agar /api/* dan URL cantik aktif
+php -S localhost:8000 router.php
 # buka http://localhost:8000/login.php
 ```
 
@@ -66,7 +64,8 @@ app/
     get-data/              # JSON untuk tabel (56 endpoint)
     get-slip/              # JSON untuk slip gaji
     surat/                 # surat peringatan & pelanggaran
-  api/                     # REST API mobile (login OTP, absensi, pengajuan, slip)
+  api/                     # SATU API aplikasi absen mobile (index.php +
+                           # helpers.php + handlers_*.php; terpasang di /api/*)
 view/                      # halaman per modul (di-include index.php)
   master-data/ master-akses/ kehadiran/ penggajian/
   finance-payrol/ k3/ surat/ broadcast/
@@ -108,15 +107,27 @@ Master & Transaksi APD, Surat Peringatan, Pengumuman, Users.
 * **Hapus data:** konfirmasi via `confirmDialog`, hapus fisik file terkait
   (`@unlink`) seperti pola `act-kelola-transaksi.php`.
 
-## API Mobile (`app/api/`)
+## API Mobile — Satu Route (`app/api/`)
 
-Endpoint JSON untuk aplikasi karyawan: login + OTP (`login.php`,
-`send_otp_reset.php`, `verify_otp_reset.php`), profil, riwayat absensi,
-pengajuan izin/cuti/pinjaman/APD/SKS, slip gaji, pengumuman, upload
-kontrak/foto. Koneksi DB terpisah via `koneksi-api.php`.
+Seluruh API disajikan oleh **satu front controller**: `app/api/index.php`
+(tabel rute ada di dalamnya; helper & handler terpisah per domain:
+`helpers.php`, `handlers_auth.php`, `handlers_attendance.php`,
+`handlers_services.php`). Dipasang di `/api/*` via `.htaccess` (produksi)
+atau `router.php` (dev `php -S`), dengan kontrak respons JSON
+`{success:true,data}` / `{success:false,message}`.
+
+Sistem API lama sudah dihapus: file v1 (`app/api/*.php` — login OTP,
+aktivasi, APD, SKS, kontrak, dsb.) beserta `composer.json` PHPMailer-nya,
+dan folder `app/api/v2/`. Aplikasi absen mobile (Flutter, GPS + selfie)
+memakai API ini — satu database dengan website, backend Node.js lama tidak
+dipakai lagi. Modul pendukung di web: geofence di Data Site, Absensi Mobile
+(GPS), Notifikasi Aplikasi, Pengajuan Pinjaman, Slip Gaji Aplikasi.
+
+Panduan lengkap (endpoint, deploy, checklist go-live): `docs/INTEGRASI-ABSEN-MOBILE.md`.
 
 ## Dokumen Terkait
 
+* `docs/INTEGRASI-ABSEN-MOBILE.md` — integrasi aplikasi absen mobile (satu API `app/api/`, geofence, deploy)
 * `docs/ARSITEKTUR-APLIKASI.md` — arsitektur & alur data
 * `docs/RENCANA-REFACTOR-DRY.md` — status refactor DRY (toast, confirm,
   Excel.php, periode.js, hapus file mati)

@@ -55,7 +55,8 @@ Dependency transitive yang dipasang Composer:
 - `markbaker/matrix`.
 - `psr/simple-cache`.
 
-PHPMailer berada pada `app/api/vendor/` dan digunakan untuk kebutuhan email/OAuth tertentu.
+Catatan: PHPMailer (dulu di `app/api/vendor/` untuk OTP aplikasi mobile lama)
+sudah dihapus bersama penghapusan API v1.
 
 ## 3. Struktur Folder
 
@@ -192,25 +193,21 @@ app/controller/get-data/get-karyawan.php
 
 ### `app/api/`
 
-Endpoint JSON untuk aplikasi mobile atau integrasi eksternal.
+**Satu route API** untuk aplikasi absen mobile (Flutter) — seluruh URL `/api/...`
+masuk ke satu front controller `app/api/index.php` (lihat `.htaccess` /
+`router.php`), dengan kontrak JSON `{success, data|message}`.
 
-Fitur API meliputi:
+Isi folder:
 
-- Login karyawan.
-- Aktivasi akun.
-- Reset password dan OTP.
-- Riwayat absensi.
-- Pengajuan izin, cuti, pinjaman, dan APD.
-- Data slip gaji.
-- Upload dan download kontrak.
-- Pengumuman.
-- Update profil.
+- `index.php` — front controller + tabel rute (satu-satunya routing).
+- `helpers.php` — helper bersama (input JSON, envelope, Haversine, dsb.).
+- `handlers_auth.php` — login/aktivasi, profil, ganti password.
+- `handlers_attendance.php` — absensi GPS + selfie.
+- `handlers_services.php` — pengajuan (izin/cuti/SKS, pinjaman), geofence,
+  slip gaji aplikasi, users, notifikasi.
 
-Koneksi API berada di:
-
-```text
-app/api/koneksi-api.php
-```
+Sistem lama (v1 `app/api/*.php` + PHPMailer, dan v2 `app/api/v2/`) sudah
+dihapus. Dokumen integrasi & daftar endpoint: `docs/INTEGRASI-ABSEN-MOBILE.md`.
 
 ### `view/`
 
