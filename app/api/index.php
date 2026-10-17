@@ -46,6 +46,7 @@ $path = api_resolve_path();
 
 $routes = [
     ['POST', '#^/auth/login$#', 'api_auth_login'],
+    ['POST', '#^/auth/check$#', 'api_auth_check'],
     ['POST', '#^/auth/register$#', 'api_auth_register'],
     ['PUT', '#^/user/profile$#', 'api_user_profile'],
     ['PUT', '#^/user/password$#', 'api_user_password'],

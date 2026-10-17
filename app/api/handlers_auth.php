@@ -40,6 +40,45 @@ function api_auth_login(): void
 }
 
 /**
+ * Cek kelayakan aktivasi akun sebelum aplikasi meminta password.
+ * Hanya karyawan yang sudah dibuat HRD dan belum memiliki password yang boleh lanjut.
+ */
+function api_auth_check(): void
+{
+    $in = api_input();
+    $identifier = trim((string)($in['identifier'] ?? ($in['nik'] ?? '')));
+
+    if ($identifier === '') {
+        api_error(400, 'NIK / ID karyawan wajib diisi.');
+    }
+
+    $karyawan = api_find_karyawan($identifier);
+    if ($karyawan === null) {
+        api_error(404, 'NIK / ID karyawan belum terdaftar di HRD.');
+    }
+
+    if (!api_karyawan_boleh_login($karyawan)) {
+        api_error(403, 'Data karyawan tidak aktif. Hubungi HRD.');
+    }
+
+    if (trim((string)($karyawan['password'] ?? '')) !== '') {
+        api_error(409, 'Akun sudah diaktivasi. Silakan login menggunakan password Anda.');
+    }
+
+    api_out(200, [
+        'success' => true,
+        'data' => [
+            'eligible' => true,
+            'id' => (int)$karyawan['id_karyawan'],
+            'nik' => (string)($karyawan['nik_karyawan'] ?? ''),
+            'nama' => (string)($karyawan['nama_lengkap'] ?? ''),
+            'noHp' => (string)($karyawan['no_telp'] ?? ''),
+            'jabatan' => (string)($karyawan['jabatan'] ?? '-'),
+        ],
+    ]);
+}
+
+/**
  * Registrasi aplikasi = AKTIVASI akun karyawan yang sudah terdaftar di website.
  *
  * Karyawan tetap dibuat/dikelola HRD lewat menu Data Karyawan; aplikasi hanya
