@@ -34,6 +34,16 @@ function input($data)
 }
 
 /**
+ * Hak kelola akun karyawan mengikuti hak edit Data Karyawan.
+ * Finance (6) tetap read-only, sedangkan level lain sudah dibatasi oleh
+ * routing halaman utama.
+ */
+function boleh_kelola_akun_karyawan(): bool
+{
+    return in_array((int)($_SESSION['level'] ?? 99), [0, 1, 2, 3, 5], true);
+}
+
+/**
  * Hapus 1 karyawan beserta seluruh data turunannya.
  * - Tabel dengan ON DELETE CASCADE (tb_identitas, tb_karier, tb_kontak_darurat,
  *   tb_absen, tb_cuti, dll) ikut terhapus otomatis.
@@ -223,19 +233,20 @@ if ($action == "add") {
             throw new Exception("Jenis kelamin wajib dipilih (Laki-laki/Perempuan).");
         }
 
-        // Password: opsional dari form (khusus Master, min 8), default = md5(NIK)
+        // Password: opsional dari form (untuk user yang boleh edit data, min 8),
+        // default = password hash NIK agar akun baru langsung punya kredensial.
         // agar tidak error "Field 'password' doesn't have a default value".
         $add_password = $_POST['password_karyawan'] ?? '';
         if ($add_password !== '') {
-            if ((int)($_SESSION['level'] ?? 99) !== 0) {
-                throw new Exception("Hanya user Master yang boleh mengatur password karyawan.");
+            if (!boleh_kelola_akun_karyawan()) {
+                throw new Exception("Akses ditolak: Anda tidak boleh mengatur password karyawan.");
             }
             if (strlen($add_password) < 8) {
                 throw new Exception("Password minimal 8 karakter.");
             }
-            $password_sql = md5($add_password);
+            $password_sql = password_hash($add_password, PASSWORD_DEFAULT);
         } else {
-            $password_sql = md5($nik_input);
+            $password_sql = password_hash($nik_input, PASSWORD_DEFAULT);
         }
         // Bersihkan nama untuk nama file (hilangkan spasi dan karakter aneh)
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
@@ -372,6 +383,52 @@ if ($action == "add") {
     exit;
 }
 
+// Ubah password saja. Jangan jalankan update profil lengkap karena beberapa
+// kolom profil lama dapat gagal validasi dan membatalkan perubahan password.
+if ($action == "change_password") {
+    try {
+        $id = isset($_POST['id_karyawan']) ? intval($_POST['id_karyawan']) : 0;
+        $new_password = (string)($_POST['password_karyawan'] ?? '');
+
+        if ($id <= 0) {
+            throw new Exception("ID Karyawan tidak terdeteksi oleh sistem.");
+        }
+        if (!boleh_kelola_akun_karyawan()) {
+            throw new Exception("Akses ditolak: Anda tidak boleh mengubah password karyawan.");
+        }
+        if (strlen($new_password) < 8) {
+            throw new Exception("Password minimal 8 karakter.");
+        }
+
+        $check = $koneksi->prepare('SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ? LIMIT 1');
+        $check->execute([$id]);
+        if (!$check->fetch()) {
+            throw new Exception("Data karyawan tidak ditemukan.");
+        }
+
+        $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+        $password_stmt = $koneksi->prepare(
+            'UPDATE tb_karyawan SET password = ? WHERE id_karyawan = ?'
+        );
+        $password_stmt->execute([$password_hash, $id]);
+
+        $verify_stmt = $koneksi->prepare('SELECT password FROM tb_karyawan WHERE id_karyawan = ?');
+        $verify_stmt->execute([$id]);
+        $stored_password = (string)($verify_stmt->fetch()['password'] ?? '');
+        if (!password_verify($new_password, $stored_password)) {
+            throw new Exception('Password karyawan gagal diverifikasi setelah disimpan.');
+        }
+
+        echo json_encode(["status" => "ok", "msg" => "Password karyawan berhasil diubah."]);
+    } catch (PDOException $e) {
+        error_log('Ubah password karyawan gagal: ' . $e->getMessage());
+        echo json_encode(["status" => "error", "msg" => "Password karyawan gagal disimpan."]);
+    } catch (Exception $e) {
+        echo json_encode(["status" => "error", "msg" => $e->getMessage()]);
+    }
+    exit;
+}
+
 
 if ($action == "edit") {
     $koneksi->beginTransaction();
@@ -387,8 +444,8 @@ if ($action == "edit") {
 
         $new_password = $_POST['password_karyawan'] ?? '';
         if ($new_password !== '') {
-            if ((int)($_SESSION['level'] ?? 99) !== 0) {
-                throw new Exception("Hanya user Master yang boleh mengubah password karyawan.");
+            if (!boleh_kelola_akun_karyawan()) {
+                throw new Exception("Akses ditolak: Anda tidak boleh mengubah password karyawan.");
             }
             if (strlen($new_password) < 8) {
                 throw new Exception("Password minimal 8 karakter.");
@@ -466,8 +523,8 @@ if ($action == "edit") {
         $stmtUpK->execute($params_k);
 
         if ($new_password !== '') {
-            // Keep employee mobile login compatible with its legacy MD5 check.
-            $password_hash = md5($new_password);
+            // API login mendukung bcrypt dan password_hash lebih aman daripada MD5.
+            $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
             $password_stmt = $koneksi->prepare(
                 'UPDATE tb_karyawan SET password = ? WHERE id_karyawan = ?'
             );
@@ -479,7 +536,7 @@ if ($action == "edit") {
             $verify_stmt = $koneksi->prepare('SELECT password FROM tb_karyawan WHERE id_karyawan = ?');
             $verify_stmt->execute([$id]);
             $stored_password = $verify_stmt->fetch()['password'] ?? '';
-            if (!hash_equals($stored_password, md5($new_password))) {
+            if (!password_verify($new_password, $stored_password)) {
                 throw new Exception('Password karyawan gagal diverifikasi setelah disimpan.');
             }
         }

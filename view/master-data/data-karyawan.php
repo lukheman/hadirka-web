@@ -149,6 +149,7 @@
         </h4>
         <?php $is_finance_readonly = (($_SESSION['level'] ?? 99) == 6); ?>
         <?php $is_master = ((int)($_SESSION['level'] ?? 99) === 0); ?>
+        <?php $can_manage_employee_accounts = in_array((int)($_SESSION['level'] ?? 99), [0, 1, 2, 3, 5], true); ?>
         <?php if ($is_finance_readonly): ?>
         <div class="alert alert-info py-2 small" role="alert">
             <i class="fa fa-eye me-1"></i> Mode lihat saja: Finance dapat melihat detail, memfilter, dan mengekspor data. Penambahan, pengubahan, dan penghapusan dinonaktifkan.
@@ -565,7 +566,7 @@
                         <input type="text" class="form-control" name="no_telp_darurat2">
                     </div>
 
-                    <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
+                    <?php if ($can_manage_employee_accounts): ?>
                         <hr>
                         <h6>AKUN LOGIN</h6>
                         <div class="alert alert-warning py-2">
@@ -623,7 +624,7 @@
                             <i class="fa fa-user"></i> Data Karyawan
                         </button>
                     </li>
-                    <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
+                    <?php if ($can_manage_employee_accounts): ?>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tab-ubah-sandi" data-bs-toggle="tab"
                                 data-bs-target="#pane-ubah-sandi" type="button" role="tab">
@@ -792,7 +793,7 @@
                     <input type="text" class="form-control" name="no_telp_darurat2" id="edit_no_telp_darurat2">
                 </div>
                     </div><!-- /pane-data-karyawan -->
-                    <?php if ((int)($_SESSION['level'] ?? 99) === 0): ?>
+                    <?php if ($can_manage_employee_accounts): ?>
                     <div class="tab-pane fade" id="pane-ubah-sandi" role="tabpanel" aria-labelledby="tab-ubah-sandi">
                         <h6>UBAH SANDI</h6>
                         <div class="alert alert-info py-2">
@@ -1437,7 +1438,7 @@
         $("#formEdit").on("submit", function(e) {
             e.preventDefault();
 
-            // Validasi tab Ubah Sandi (hanya ada untuk Master)
+            // Validasi tab Ubah Sandi (hanya ada untuk user pengelola akun)
             if ($("#edit_password_karyawan").length) {
                 const pwBaru = $("#edit_password_karyawan").val();
                 if (pwBaru !== "") {
@@ -1455,6 +1456,40 @@
             }
 
             // Gunakan FormData agar file gambar ikut terkirim
+            // Jika password diisi, ubah password lewat endpoint khusus.
+            // Endpoint ini tidak ikut menyimpan ulang profil, identitas, dan kontak,
+            // sehingga data profil lama tidak dapat menggagalkan perubahan password.
+            const passwordBaru = $("#edit_password_karyawan").val();
+            if (passwordBaru !== "") {
+                const passwordData = new FormData();
+                passwordData.append("action", "change_password");
+                passwordData.append("id_karyawan", $("#edit_id_karyawan").val());
+                passwordData.append("password_karyawan", passwordBaru);
+
+                $.ajax({
+                    url: "app/controller/act-karyawan.php",
+                    type: "POST",
+                    data: passwordData,
+                    dataType: "json",
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        if (res.status === "ok") {
+                            $("#ModalEdit").modal("hide");
+                            tableKaryawan.ajax.reload(null, false);
+                            showToast(res.msg || "Password karyawan berhasil diubah!", "success");
+                        } else {
+                            showToast("Gagal: " + (res.msg || "Password karyawan gagal diubah."), "danger");
+                        }
+                    },
+                    error: function(xhr) {
+                        console.log(xhr.responseText);
+                        showToast("Terjadi kesalahan server saat mengubah password.", "danger");
+                    }
+                });
+                return;
+            }
+
             let formDataEdit = new FormData(this);
             formDataEdit.append("action", "edit");
 
