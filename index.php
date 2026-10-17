@@ -757,6 +757,81 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             return Promise.resolve(window["confirm"](text));
         };
         } // end __IPM_TOAST_V2__ guard
+
+        /**
+         * Upload file kontrak karier (PDF/JPG/PNG, maks 5MB).
+         * Dipakai tombol .btnUploadKontrak di halaman Karier & Data Karier.
+         * @param {HTMLElement} btn    tombol yang diklik (data-id = id_karier)
+         * @param {Function}    onDone callback setelah sukses (mis. loadKarier)
+         */
+        if (typeof window.__IPM_UPLOAD_KONTRAK__ === 'undefined') {
+        window.__IPM_UPLOAD_KONTRAK__ = true;
+        window.uploadKontrakKarier = function(btn, onDone) {
+            var idKarier = btn && btn.dataset ? String(btn.dataset.id || "") : "";
+            if (!/^\d+$/.test(idKarier) || idKarier === "0") {
+                window.showToast("ID karier tidak valid.", "error");
+                return;
+            }
+
+            var input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".pdf,.jpg,.jpeg,.png";
+            input.style.display = "none";
+
+            input.addEventListener("change", function() {
+                var file = input.files && input.files[0];
+                if (!file) { input.remove(); return; }
+
+                // Validasi cepat di sisi klien (server tetap memvalidasi ulang).
+                var ext = (file.name.split(".").pop() || "").toLowerCase();
+                if (["pdf", "jpg", "jpeg", "png"].indexOf(ext) === -1) {
+                    window.showToast("Format file harus PDF, JPG, atau PNG.", "error");
+                    input.remove();
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    window.showToast("Ukuran file maksimal 5MB.", "error");
+                    input.remove();
+                    return;
+                }
+
+                var fd = new FormData();
+                fd.append("action", "upload");
+                fd.append("id_karier", idKarier);
+                fd.append("file_kontrak", file);
+
+                var asli = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+                fetch("app/controller/act-kontrak.php", { method: "POST", body: fd })
+                    .then(function(res) { return res.json(); })
+                    .then(function(res) {
+                        if (res && res.status === "success") {
+                            window.showToast(res.message || "File kontrak berhasil diunggah.", "success");
+                            var reload = typeof onDone === "function" ? onDone : window.loadKarier;
+                            if (typeof reload === "function") { try { reload(); } catch (err) { /* abaikan */ } }
+                        } else {
+                            window.showToast((res && res.message) || "Gagal mengunggah file kontrak.", "error");
+                        }
+                    })
+                    .catch(function() {
+                        window.showToast("Terjadi kesalahan saat mengunggah file.", "error");
+                    })
+                    .finally(function() {
+                        btn.disabled = false;
+                        btn.innerHTML = asli;
+                        input.remove();
+                    });
+            });
+
+            // Batal memilih file (browser modern) -> bersihkan elemen input.
+            input.addEventListener("cancel", function() { input.remove(); });
+
+            document.body.appendChild(input);
+            input.click();
+        };
+        } // end __IPM_UPLOAD_KONTRAK__ guard
     </script>
 </body>
 

@@ -798,6 +798,13 @@
         });
 
 
+        // --- UPLOAD FILE KONTRAK (tombol di kolom aksi) ---
+        document.addEventListener("click", e => {
+            const btn = e.target.closest(".btnUploadKontrak");
+            if (!btn) return;
+            window.uploadKontrakKarier(btn, loadKarier);
+        });
+
         // --- Load awal ---
         window.reloadKarierTable = loadKarier;
         loadKarier();

@@ -6,6 +6,17 @@ error_reporting(E_ALL);
 
 header('Content-Type: application/json');
 
+// Guard sesi: hanya level yang boleh membuka halaman Karier (Master, Direktur,
+// HRD, Supervisor, Admin) yang boleh upload/hapus file kontrak.
+// Finance (6) read-only & pengguna tanpa sesi ditolak.
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+if (!in_array((int)($_SESSION['level'] ?? 99), [0, 1, 2, 3, 5], true)) {
+    echo json_encode(["status" => "error", "message" => "Akses ditolak."]);
+    exit;
+}
+
 $response = ["status" => "error", "message" => "Aksi tidak dikenal"];
 
 try {
