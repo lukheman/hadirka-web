@@ -322,6 +322,13 @@ try {
             ";
         }
 
+        // Status aktivasi akun: password terisi = sudah bisa login (diaktifkan),
+        // kosong = belum diaktifkan (belum bisa login / belum register di aplikasi).
+        $password = (string)($row['password'] ?? '');
+        $statusAkunBadge = $password !== ''
+            ? "<span class='badge bg-success'><i class='fa fa-check me-1'></i> Diaktifkan</span>"
+            : "<span class='badge bg-warning text-dark'><i class='fa fa-user-lock me-1'></i> Belum Diaktifkan</span>";
+
         $data[] = [
             'no' => $no++,
             'id_karyawan' => (int)($row['kar_id_karyawan'] ?? 0),
@@ -330,6 +337,7 @@ try {
             'nik' => htmlspecialchars($row['nik_karyawan'] ?? '-'),
             'jabatan' => htmlspecialchars($row['nama_jabatan'] ?? '-'),
             'status_karyawan' => htmlspecialchars($row['status_karyawan'] ?? '-'),
+            'status_akun' => $statusAkunBadge,
             'action' => $action,
             'detail' => $detail,
             'rowClass' => $rowClass

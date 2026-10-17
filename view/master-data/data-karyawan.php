@@ -248,6 +248,7 @@
                                 <th class="text-center"><i class="fa fa-id-card"></i> NIK</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
                                 <th class="text-center"><i class="fa fa-users"></i> Status</th>
+                                <th class="text-center"><i class="fa fa-key"></i> Status Akun</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
                             </tr>
                         </thead>
@@ -1179,6 +1180,12 @@
             {
                 data: "status_karyawan",
                 className: "text-center"
+            },
+            {
+                data: "status_akun",
+                className: "text-center",
+                orderable: false,
+                searchable: false
             },
             {
                 data: "action",
