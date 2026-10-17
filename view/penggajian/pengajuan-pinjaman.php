@@ -269,8 +269,12 @@ $akhirBulan = date('Y-m-t');
         const tbody = document.getElementById('tbodyPinjaman');
         document.getElementById('jumlahPinjaman').innerText = dataPinjaman.length + ' data';
 
+        // PENTING: Jangan taruh baris colspan di tbody sebelum init DataTable.
+        // Baris <td colspan="9"> menyebabkan baris itu terhitung 1 kolom vs 9 kolom
+        // thead -> Warning "Incorrect column count" (datatables tn/18).
+        // Saat kosong, biarkan tbody kosong (DataTables menampilkan "No data" bawaan).
         if (dataPinjaman.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">Belum ada pengajuan pinjaman pada periode ini.</td></tr>';
+            tbody.innerHTML = '';
         } else {
             tbody.innerHTML = dataPinjaman.map(d => {
                 const badge = badgePinjaman[d.status_pinjaman] || ['secondary', d.status_pinjaman];
