@@ -45,15 +45,10 @@
                     </select>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Tanggal Mulai</label>
-                        <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Tanggal Selesai</label>
-                        <input type="date" name="tgl_selesai" id="tgl_selesai" class="form-control" required>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold" for="bulan_periode">Bulan Periode</label>
+                    <input type="month" name="bulan_periode" id="bulan_periode" class="form-control" required>
+                    <div class="form-text" id="rentangOtomatis">Rentang otomatis: tanggal 1 s/d akhir bulan yang dipilih.</div>
                 </div>
             </div>
             <div class="modal-footer border-top">
@@ -93,9 +88,32 @@
     function addPeriode() {
         document.getElementById('formPeriode').reset();
         document.getElementById('id_priode').value = '';
+        const now = new Date();
+        document.getElementById('bulan_periode').value = now.toISOString().slice(0, 7);
+        tampilRentangOtomatis();
         document.getElementById('modalTitle').innerText = 'Tambah Periode Baru';
         myModal.show();
     }
+
+    // Pratinjau rentang otomatis 1 s/d akhir bulan.
+    function tampilRentangOtomatis() {
+        const el = document.getElementById('bulan_periode');
+        const info = document.getElementById('rentangOtomatis');
+        const v = el && el.value ? el.value : '';
+        const m = v.match(/^(\d{4})-(0[1-9]|1[0-2])$/);
+        if (!m) {
+            info.innerText = 'Rentang otomatis: tanggal 1 s/d akhir bulan yang dipilih.';
+            return;
+        }
+        const akhir = new Date(parseInt(m[1], 10), parseInt(m[2], 10), 0).getDate();
+        info.innerText = `Rentang otomatis: 1 s/d ${akhir} ${namaBulan(parseInt(m[2], 10))} ${m[1]}.`;
+    }
+
+    function namaBulan(b) {
+        return ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][b] || '';
+    }
+
+    document.getElementById('bulan_periode').addEventListener('change', tampilRentangOtomatis);
 
     // 3. Edit Data
     async function editData(id) {
@@ -104,8 +122,8 @@
             const data = await res.json();
             if (data.id_priode) {
                 document.getElementById('id_priode').value = data.id_priode;
-                document.getElementById('tgl_mulai').value = data.tgl_mulai;
-                document.getElementById('tgl_selesai').value = data.tgl_selesai;
+                document.getElementById('bulan_periode').value = data.bulan_periode || String(data.tgl_mulai || '').slice(0, 7);
+                tampilRentangOtomatis();
                 document.getElementById('type_priode').value = data.type_priode;
                 document.getElementById('modalTitle').innerText = 'Edit Periode';
                 myModal.show();

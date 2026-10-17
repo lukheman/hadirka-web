@@ -11,17 +11,42 @@ if ($action == 'get-single') {
     $res = $koneksi->prepare("SELECT * FROM tb_priode WHERE id_priode = ?");
     $res->execute([$id]);
     $row = $res->fetch();
+    if ($row !== false && isset($row['tgl_mulai'])) {
+        $row['bulan_periode'] = substr((string)$row['tgl_mulai'], 0, 7);
+    }
     echo json_encode($row === false ? null : $row);
     exit;
 }
 
 if ($action == 'save') {
-    $id      = $_POST['id_priode'];
-    $type    = $_POST['type_priode'];
-    $mulai   = $_POST['tgl_mulai'];
-    $selesai = $_POST['tgl_selesai'];
+    $id      = $_POST['id_priode'] ?? '';
+    $type    = $_POST['type_priode'] ?? '';
+    $bulan   = trim((string)($_POST['bulan_periode'] ?? ''));
+
+    // Kompatibilitas: bila klien lama masih mengirim tgl_mulai, turunkan bulan dari sana.
+    if ($bulan === '' && !empty($_POST['tgl_mulai']) && preg_match('/^(\d{4})-(0[1-9]|1[0-2])-\d{2}$/', (string)$_POST['tgl_mulai'], $m)) {
+        $bulan = $m[1] . '-' . $m[2];
+    }
 
     try {
+        if (!in_array($type, ['absen', 'slip gaji'], true)) {
+            throw new Exception('Tipe periode tidak valid.');
+        }
+        if (preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $bulan, $mm) !== 1) {
+            throw new Exception('Bulan periode tidak valid (format YYYY-MM).');
+        }
+        // Otomatis: tanggal 1 s/d akhir bulan.
+        $mulai   = sprintf('%04d-%02d-01', (int)$mm[1], (int)$mm[2]);
+        $selesai = sprintf('%04d-%02d-%02d', (int)$mm[1], (int)$mm[2], (int)date('t', strtotime($mulai)));
+
+        // Cegah duplikat: satu tipe hanya boleh punya satu periode per bulan.
+        $cek = $koneksi->prepare("SELECT id_priode FROM tb_priode WHERE type_priode = ? AND tgl_mulai = ? LIMIT 1");
+        $cek->execute([$type, $mulai]);
+        $duplikat = $cek->fetch();
+        if ($duplikat && (empty($id) || (int)$duplikat['id_priode'] !== (int)$id)) {
+            throw new Exception("Periode $bulan untuk tipe \"$type\" sudah ada.");
+        }
+
         if (empty($id)) {
             $st = $koneksi->prepare("INSERT INTO tb_priode (type_priode, tgl_mulai, tgl_selesai, status_priode)
                     VALUES (?, ?, ?, 'Open')");
@@ -31,9 +56,9 @@ if ($action == 'save') {
             $st->execute([$type, $mulai, $selesai, $id]);
         }
         $response = ['status' => 'success'];
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         error_log($e->getMessage());
-        $response = ['status' => 'error', 'message' => 'Gagal menyimpan data.'];
+        $response = ['status' => 'error', 'message' => $e->getMessage()];
     }
 }
 

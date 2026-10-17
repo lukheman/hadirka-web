@@ -282,7 +282,7 @@ try {
         if (!$periodeAktif) {
             throw new Exception('Tidak ada periode absen yang Open. Buka dulu periodenya di menu Periode Penggajian.');
         }
-        // Bulan target = bulan tgl_selesai periode aktif (21 Agu-20 Sep => September).
+        // Bulan target = bulan tgl_selesai periode aktif (periode kalender: 1 Agu-31 Agu => Agustus).
         $tahun = (int)date('Y', strtotime($periodeAktif['tgl_selesai']));
         $bulan = (int)date('m', strtotime($periodeAktif['tgl_selesai']));
         $sumberBulan = 'periode aktif';
