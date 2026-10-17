@@ -395,9 +395,19 @@ if ($action == "edit") {
             }
         }
 
+        // Cek NIK duplikat (selain karyawan sendiri) sebelum update.
+        $nik_input = trim(input('nik_karyawan'));
+        if ($nik_input !== '') {
+            $stNik = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ? AND id_karyawan <> ? LIMIT 1");
+            $stNik->execute([$nik_input, $id]);
+            if ($stNik->fetch()) {
+                throw new Exception("NIK \"$nik_input\" sudah digunakan oleh karyawan lain.");
+            }
+        }
+
         // 1. UPDATE tb_karyawan
         $k_data = [
-            'nik_karyawan'      => input('nik_karyawan'),
+            'nik_karyawan'      => $nik_input,
             'nama_lengkap'      => input('nama_lengkap'),
             'jenis_kelamin'     => input('jenis_kelamin'),
             'tgl_lahir'         => input('tgl_lahir'),
@@ -412,8 +422,7 @@ if ($action == "edit") {
 
         // --- PROSES UPLOAD FOTO (EDIT) ---
         if (isset($_FILES['foto']['name']) && $_FILES['foto']['name'] != '') {
-            // Ambil NIK dari inputan form
-            $nik_input = input('nik_karyawan');
+            // $nik_input sudah diambil & divalidasi di atas
             // Bersihkan nama
             $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
 
@@ -582,7 +591,11 @@ if ($action == "edit") {
     } catch (PDOException $e) {
         if ($koneksi->inTransaction()) $koneksi->rollBack();
         error_log($e->getMessage());
-        echo json_encode(["status" => "error", "msg" => "Gagal memperbarui data karyawan."]);
+        $msg = "Gagal memperbarui data karyawan.";
+        if (strpos($e->getMessage(), "Duplicate entry") !== false) {
+            $msg = "Data gagal disimpan: ada data duplikat (NIK mungkin sudah digunakan).";
+        }
+        echo json_encode(["status" => "error", "msg" => $msg]);
     } catch (Exception $e) {
         if ($koneksi->inTransaction()) $koneksi->rollBack();
         echo json_encode(["status" => "error", "msg" => $e->getMessage()]);
