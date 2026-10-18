@@ -14,7 +14,7 @@ declare(strict_types=1);
  * Kontrak mengikuti backend Node.js lama:
  *   GET  /attendance?username=      daftar log absensi (sumber='mobile')
  *   POST /attendance/submit         { username, latitude, longitude, tipe,
- *                                     fotoPath, fotoBase64 }
+ *                                     accuracy, fotoPath, fotoBase64 }
  */
 
 function api_attendance_list(): void
@@ -74,6 +74,7 @@ function api_attendance_submit(): void
     $username = trim((string)($in['username'] ?? ''));
     $lat      = (float)($in['latitude'] ?? 0);
     $lng      = (float)($in['longitude'] ?? 0);
+    $accuracy = (float)($in['accuracy'] ?? 0);
     $tipe     = (string)($in['tipe'] ?? 'check_in');
     $fotoPath = trim((string)($in['fotoPath'] ?? ''));
     $fotoB64  = trim((string)($in['fotoBase64'] ?? ''));
@@ -85,9 +86,16 @@ function api_attendance_submit(): void
             : 'Username tidak valid.');
     }
 
+    if ($accuracy <= 0 || $accuracy > 100) {
+        api_error(422, 'Akurasi GPS tidak cukup. Aktifkan lokasi presisi dan coba lagi.');
+    }
+
     $db         = api_db();
     $idKaryawan = (int)$karyawan['id_karyawan'];
-    $site       = api_nearest_site($lat, $lng);
+    $site       = api_nearest_site($lat, $lng, $idKaryawan);
+    if ($site['id'] === null) {
+        api_error(422, 'Site penempatan karyawan belum memiliki koordinat GPS. Hubungi HRD.');
+    }
     $now        = api_wita_now();
     $tanggal    = $now->format('Y-m-d');
     $jamStr     = api_time_str($now);

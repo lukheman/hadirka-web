@@ -312,6 +312,7 @@ function api_loan_status(array $params): void
 function api_geofence_list(): void
 {
     $in = api_input();
+    $username = trim((string)($in['username'] ?? ''));
 
     // Hanya site aktif & berkoordinat yang dikirim ke aplikasi (site tanpa
     // koordinat dilewati supaya aplikasi tidak error saat menghitung jarak).
@@ -320,7 +321,35 @@ function api_geofence_list(): void
         $activeOnly = filter_var($in['activeOnly'], FILTER_VALIDATE_BOOLEAN);
     }
 
-    $sql = 'SELECT * FROM tb_site WHERE latitude IS NOT NULL AND longitude IS NOT NULL';
+    $sql = 'SELECT DISTINCT s.*
+            FROM tb_site s
+            WHERE s.latitude IS NOT NULL AND s.longitude IS NOT NULL';
+    $params = [];
+
+    if ($username !== '') {
+        $karyawan = api_find_karyawan($username);
+        if ($karyawan === null) {
+            api_error(404, 'Karyawan tidak ditemukan.');
+        }
+
+        // Hanya site pada penempatan/karier terbaru karyawan ini.
+        // Site karyawan lain tidak boleh dikirim ke aplikasi.
+        $sql .= ' AND s.id_site = (
+            SELECT kr.id_site
+            FROM tb_karier kr
+            WHERE kr.id_karyawan = ?
+              AND kr.id_karier = (
+                  SELECT kr2.id_karier
+                  FROM tb_karier kr2
+                  WHERE kr2.id_karyawan = kr.id_karyawan
+                  ORDER BY (kr2.tgl_selesai IS NULL OR kr2.tgl_selesai >= CURDATE()) DESC,
+                           kr2.tgl_mulai DESC, kr2.id_karier DESC
+                  LIMIT 1
+              )
+            LIMIT 1
+        )';
+        $params[] = (int)$karyawan['id_karyawan'];
+    }
     if ($activeOnly) {
         $sql .= ' AND is_aktif = 1';
     }
@@ -328,7 +357,10 @@ function api_geofence_list(): void
 
     $data = [];
 
-    foreach (api_db()->query($sql)->fetchAll() as $row) {
+    $st = api_db()->prepare($sql);
+    $st->execute($params);
+
+    foreach ($st->fetchAll() as $row) {
         $data[] = [
             'id'        => (int)$row['id_site'],
             'kode'      => (string)($row['kode_lokasi'] ?? ''),

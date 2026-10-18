@@ -344,18 +344,41 @@ function api_haversine_m(float $lat1, float $lng1, float $lat2, float $lng2): fl
 
 /**
  * Site (geofence) terdekat dari titik absen.
- * Fallback: site aktif pertama; terakhir: tanpa site.
+ * Jika id karyawan diberikan, pencarian dibatasi ke site penempatan terbaru.
  *
  * @return array{id:?int,nama:string,jarak:float}
  */
-function api_nearest_site(float $lat, float $lng): array
+function api_nearest_site(float $lat, float $lng, ?int $idKaryawan = null): array
 {
     $db = api_db();
 
-    $sites = $db->query(
-        'SELECT id_site, nama_site, latitude, longitude FROM tb_site
-         WHERE is_aktif = 1 AND latitude IS NOT NULL AND longitude IS NOT NULL'
-    )->fetchAll();
+    if ($idKaryawan !== null && $idKaryawan > 0) {
+        $st = $db->prepare(
+            'SELECT s.id_site, s.nama_site, s.latitude, s.longitude
+             FROM tb_site s
+             JOIN tb_karier kr ON kr.id_site = s.id_site
+             WHERE kr.id_karyawan = ?
+               AND kr.id_karier = (
+                   SELECT kr2.id_karier
+                   FROM tb_karier kr2
+                   WHERE kr2.id_karyawan = kr.id_karyawan
+                   ORDER BY (kr2.tgl_selesai IS NULL OR kr2.tgl_selesai >= CURDATE()) DESC,
+                            kr2.tgl_mulai DESC, kr2.id_karier DESC
+                   LIMIT 1
+               )
+               AND s.is_aktif = 1
+               AND s.latitude IS NOT NULL
+               AND s.longitude IS NOT NULL
+             LIMIT 1'
+        );
+        $st->execute([$idKaryawan]);
+        $sites = $st->fetchAll();
+    } else {
+        $sites = $db->query(
+            'SELECT id_site, nama_site, latitude, longitude FROM tb_site
+             WHERE is_aktif = 1 AND latitude IS NOT NULL AND longitude IS NOT NULL'
+        )->fetchAll();
+    }
 
     $best = null;
     $bestJarak = null;
@@ -374,6 +397,10 @@ function api_nearest_site(float $lat, float $lng): array
             'nama'  => (string)$best['nama_site'],
             'jarak' => round((float)$bestJarak, 2),
         ];
+    }
+
+    if ($idKaryawan !== null && $idKaryawan > 0) {
+        return ['id' => null, 'nama' => '', 'jarak' => 0.0];
     }
 
     $fallback = $db->query('SELECT id_site, nama_site FROM tb_site WHERE is_aktif = 1 ORDER BY id_site ASC LIMIT 1')->fetch();

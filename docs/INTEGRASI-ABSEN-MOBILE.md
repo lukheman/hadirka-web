@@ -93,12 +93,12 @@ Daftar rute hanya ada di file itu; helper & handler dipisah per domain agar rapi
 | PUT | `/user/profile` | `{username, nama, noHp, fotoProfil(base64)}` |
 | PUT | `/user/password` | `{username, oldPassword, newPassword}` |
 | GET | `/attendance` | `?username=` — riwayat absen |
-| POST | `/attendance/submit` | `{username, latitude, longitude, tipe: check_in/check_out, fotoPath, fotoBase64}` |
+| POST | `/attendance/submit` | `{username, latitude, longitude, accuracy, tipe: check_in/check_out, fotoPath, fotoBase64}` — `accuracy` wajib maksimal 100 meter |
 | GET / POST | `/leave` | daftar & buat pengajuan (cuti/izin/SKS) |
 | PUT | `/leave/:id/status` | opsional `sumber=izin|cuti` (id izin & cuti bisa sama) |
 | GET / POST | `/loan` | daftar & buat pengajuan pinjaman (dibatasi `buka_pinjaman`) |
 | PUT | `/loan/:id/status` | parity: tidak mengubah apa pun |
-| GET | `/geofence` | site aktif (`is_aktif=1`) yang sudah punya koordinat |
+| GET | `/geofence` | site penempatan karyawan aktif (`?username=IPM-00001`), sudah punya koordinat |
 | PUT | `/geofence/:id` | update titik dari aplikasi |
 | GET / POST | `/payslip` | daftar & buat slip gaji aplikasi |
 | DELETE | `/payslip/:id` | hapus slip |
