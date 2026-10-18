@@ -255,6 +255,11 @@ function api_save_base64_image(string $base64, string $subdir, string $filename,
         return null;
     }
 
+    // Pastikan payload benar-benar gambar, bukan base64 teks dengan ekstensi .jpg.
+    if (@getimagesizefromstring($bytes) === false) {
+        return null;
+    }
+
     $dir = __DIR__ . '/../uploads/' . trim($subdir, '/');
     if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
         return null;

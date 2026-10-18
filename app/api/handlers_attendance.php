@@ -79,6 +79,10 @@ function api_attendance_submit(): void
     $fotoPath = trim((string)($in['fotoPath'] ?? ''));
     $fotoB64  = trim((string)($in['fotoBase64'] ?? ''));
 
+    if ($fotoB64 === '') {
+        api_error(422, 'Foto selfie wajib dikirim. Ambil foto selfie terlebih dahulu.');
+    }
+
     $karyawan = api_find_karyawan($username);
     if ($karyawan === null) {
         api_error(404, $username !== ''
@@ -100,15 +104,12 @@ function api_attendance_submit(): void
     $tanggal    = $now->format('Y-m-d');
     $jamStr     = api_time_str($now);
 
-    // Simpan foto selfie bila aplikasi mengirim base64 (fitur baru).
-    // Bila tidak, simpan string dari aplikasi apa adanya (perilaku lama).
-    $fotoTersimpan = $fotoPath !== '' ? $fotoPath : null;
-    if ($fotoB64 !== '') {
-        $namaFile = 'absen_' . $now->format('Ymd_His') . '_' . api_safe_name((string)$karyawan['nik_karyawan']) . '.jpg';
-        $saved = api_save_base64_image($fotoB64, 'absensi', $namaFile);
-        if ($saved !== null) {
-            $fotoTersimpan = $saved;
-        }
+    // Path lokal perangkat tidak valid untuk server. Selalu simpan base64 ke
+    // folder upload server dan tulis path hasilnya ke tb_absen.
+    $namaFile = 'absen_' . $now->format('Ymd_His') . '_' . api_safe_name((string)$karyawan['nik_karyawan']) . '_' . bin2hex(random_bytes(3) ) . '.jpg';
+    $fotoTersimpan = api_save_base64_image($fotoB64, 'absensi', $namaFile);
+    if ($fotoTersimpan === null) {
+        api_error(422, 'Foto selfie tidak dapat disimpan. Ambil foto ulang dan coba lagi.');
     }
 
     // SATU baris per karyawan per hari (logikanya sama dengan import CSV & rekap).
@@ -176,7 +177,12 @@ function api_attendance_submit(): void
     } else {
         if ($log) {
             if (($log['sumber'] ?? 'web') === 'mobile') {
-                // Idempoten: sudah absen masuk hari ini, kembalikan log yang ada.
+                // Idempoten: pertahankan log, tetapi isi foto bila sebelumnya
+                // belum tersimpan. Ini memulihkan absen lama yang kehilangan foto.
+                if ($fotoTersimpan !== null && empty($log['foto_selfie_path'])) {
+                    $st = $db->prepare('UPDATE tb_absen SET foto_selfie_path = ? WHERE id_absen = ?');
+                    $st->execute([$fotoTersimpan, (int)$log['id_absen']]);
+                }
             } elseif ($perintahHrd($log) !== 'HADIR') {
                 api_error(409, 'Hari ini sudah diabsen HRD (' . trim((string)$log['ket_absen']) . '). Hubungi HRD untuk koreksi.');
             } else {
@@ -240,6 +246,7 @@ function api_attendance_submit(): void
             'waktu'            => $now->format('c'),
             'waktuIn'          => (string)($log['waktu_masuk'] ?? ''),
             'waktuOut'         => $log['waktu_keluar'],
+            'fotoPath'         => $log['foto_selfie_path'] ?? $fotoTersimpan,
             'status'           => (string)($log['status_kehadiran'] ?? ''),
             'durasiKerjaMenit' => api_durasi_menit($log['waktu_masuk'], $log['waktu_keluar']),
         ],

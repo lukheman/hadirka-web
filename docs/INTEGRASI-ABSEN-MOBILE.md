@@ -139,7 +139,7 @@ Pengajuan pinjaman memakai controller yang sudah ada
 |---|---|
 | `lib/core/constants/api_constants.dart` | `setCustomUrl()` tidak lagi memaksa port `:3000`; alamat otomatis dirapikan + ditambah `/api`. Default dev pindah ke port 8000 |
 | `lib/core/widgets/dialog_pengaturan_server.dart` | Teks bantuan & contoh alamat diubah ke alamat website |
-| `lib/features/attendance/...` (service, repository, provider) | Submit absen ikut mengirim `fotoBase64` (selfie dibaca dari file lokal, maks 2MB) — server menyimpan ke `app/uploads/absensi/` |
+| `lib/features/attendance/...` (service, repository, provider) | Submit absen wajib mengirim `fotoBase64` (selfie JPEG dibaca dari file lokal, maksimal 7MB) — server menyimpan ke `app/uploads/absensi/` |
 | `.env` / `.env.example` | Contoh URL website + kandidat fallback baru |
 
 **Cara menyetel server di aplikasi:** buka dialog *Pengaturan Server* di aplikasi, isi:
