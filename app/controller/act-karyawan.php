@@ -233,9 +233,8 @@ if ($action == "add") {
             throw new Exception("Jenis kelamin wajib dipilih (Laki-laki/Perempuan).");
         }
 
-        // Password: opsional dari form (untuk user yang boleh edit data, min 8),
-        // default = password hash NIK agar akun baru langsung punya kredensial.
-        // agar tidak error "Field 'password' doesn't have a default value".
+        // Password opsional. Jika kosong, akun tetap belum diaktifkan.
+        // Aktivasi dilakukan karyawan melalui aplikasi atau HRD mengisi password.
         $add_password = $_POST['password_karyawan'] ?? '';
         if ($add_password !== '') {
             if (!boleh_kelola_akun_karyawan()) {
@@ -246,7 +245,7 @@ if ($action == "add") {
             }
             $password_sql = password_hash($add_password, PASSWORD_DEFAULT);
         } else {
-            $password_sql = password_hash($nik_input, PASSWORD_DEFAULT);
+            $password_sql = '';
         }
         // Bersihkan nama untuk nama file (hilangkan spasi dan karakter aneh)
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
