@@ -13,7 +13,7 @@ declare(strict_types=1);
  *
  * Data disimpan di database website (ipm_hris):
  *   tb_absen (log absen aplikasi, sumber='mobile'), tb_notifikasi,
- *   tb_slip_gaji, tb_site (geofence),
+ *   tb_site (geofence),
  *   tb_pengajuan_izin/tb_pengajuan_cuti/tb_pengajuan_pinjaman.
  */
 
