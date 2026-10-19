@@ -53,7 +53,6 @@ $routes = [
     // 'slipgajinew'       => 'view/penggajian/slipgajinew.php',
     'data-thr'        => 'view/penggajian/data-thr.php',
     'pengajuan-pinjaman' => 'view/penggajian/pengajuan-pinjaman.php',
-    'slip-aplikasi'   => 'view/penggajian/slip-aplikasi.php',
 
     // --- ROUTE BARU AKUNTANSI ---
     'data-coa' => 'view/finance-payrol/data-coa.php',
@@ -127,7 +126,6 @@ $finance_pages = [
     'payroll',
     'data-thr',
     'pengajuan-pinjaman',
-    'slip-aplikasi',
     'laporan-keuangan',
     'kelola-transaksi',
     'data-coa',

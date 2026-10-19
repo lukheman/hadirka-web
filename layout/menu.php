@@ -206,7 +206,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $payroll_pages = ['data-periode', 'payroll', 'pengajuan-pinjaman', 'slip-aplikasi', 'data-thr'];
+        $payroll_pages = ['data-periode', 'payroll', 'pengajuan-pinjaman', 'data-thr'];
         ?>
         <li class="menu-item <?= isMenuOpen($payroll_pages, $current_page); ?>" data-menu="payroll">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -232,11 +232,6 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('pengajuan-pinjaman', $current_page); ?>">
                     <a class="menu-link" href="?page=pengajuan-pinjaman">
                         <div>Pengajuan Pinjaman</div>
-                    </a>
-                </li>
-                <li class="menu-item <?= isActive('slip-aplikasi', $current_page); ?>">
-                    <a class="menu-link" href="?page=slip-aplikasi">
-                        <div>Slip Gaji Aplikasi</div>
                     </a>
                 </li>
                 <!-- DISEMBUNYIKAN (tabel di-drop pada penyederhanaan gaji Okt 2026)
