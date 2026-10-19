@@ -449,8 +449,10 @@ require_once 'app/controller/read.php';
             ?>
         </select>
 
-        <input type="date" id="startDate" />
-        <input type="date" id="endDate" />
+        <label for="monthFilter" style="display:flex;align-items:center;gap:6px;font-weight:600;">
+            Bulan
+            <input type="month" id="monthFilter" />
+        </label>
         <button onclick="generateSlip()">Generate Slip</button>
         <button onclick="downloadPDF()" id="downloadBtn" class="secondary">Download PDF</button>
         <button onclick="downloadSlipZip()" class="secondary">Download ZIP Semua Slip</button>
@@ -821,15 +823,31 @@ require_once 'app/controller/read.php';
         }
 
 
+        // Ambil rentang tanggal penuh dari bulan yang dipilih.
+        // Backend tetap menerima startDate/endDate agar kontrak endpoint lama tetap kompatibel.
+        function getSelectedMonthRange() {
+            const month = document.getElementById('monthFilter').value;
+            if (!/^\d{4}-\d{2}$/.test(month)) return null;
+
+            const [year, monthNumber] = month.split('-').map(Number);
+            const pad = n => String(n).padStart(2, '0');
+            const lastDay = new Date(year, monthNumber, 0).getDate();
+
+            return {
+                month,
+                start: `${year}-${pad(monthNumber)}-01`,
+                end: `${year}-${pad(monthNumber)}-${pad(lastDay)}`
+            };
+        }
+
         // generateSlip: fetch data slip dari backend get-slip-gaji.php
         async function generateSlip() {
             const nikSel = document.getElementById('nikSelect').value;
             const [nik, namaDefault, jabDefault] = nikSel.split('|');
-            const start = document.getElementById('startDate').value;
-            const end = document.getElementById('endDate').value;
+            const period = getSelectedMonthRange();
 
-            if (!start || !end) {
-                showSlipAlert("Tanggal mulai dan akhir wajib diisi.");
+            if (!period) {
+                showSlipAlert("Bulan wajib dipilih.");
                 return;
             }
 
@@ -846,8 +864,8 @@ require_once 'app/controller/read.php';
                     },
                     body: JSON.stringify({
                         nik,
-                        startDate: start,
-                        endDate: end
+                        startDate: period.start,
+                        endDate: period.end
                     })
                 });
 
@@ -894,10 +912,8 @@ require_once 'app/controller/read.php';
             const nama = document.getElementById('nama').textContent.trim().replace(/\s+/g, ' ') || 'karyawan';
             const jab = document.getElementById('jabatan').textContent.trim().replace(/\s+/g, ' ') || 'jabatan';
             
-            // --- MENGAMBIL PERIODE DARI INPUT ---
-            const startPeriod = document.getElementById('startDate').value;
-            const endPeriod = document.getElementById('endDate').value;
-            const periodeStr = `Periode ${startPeriod} sd ${endPeriod}`; 
+            const period = getSelectedMonthRange();
+            const periodeStr = period ? `Periode ${period.month}` : 'Periode';
             // ------------------------------------
 
             const safe = (s) => s.replace(/[\/\\:?<>|"]/g, '-'); // filter illegal filename chars
@@ -922,28 +938,24 @@ require_once 'app/controller/read.php';
             html2pdf().set(opt).from(slipElem).save();
         }
 
-        // auto set default period (1st - last day of current month)
+        // Auto-set bulan berjalan.
         (function setDefaultDates() {
             const today = new Date();
-            const start = new Date(today.getFullYear(), today.getMonth(), 1);
-            const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
             const pad = n => String(n).padStart(2, '0');
-            const f = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-            document.getElementById('startDate').value = f(start);
-            document.getElementById('endDate').value = f(end);
+            document.getElementById('monthFilter').value =
+                `${today.getFullYear()}-${pad(today.getMonth() + 1)}`;
         })();
 
         // DOWNLOAD SEKALIGUS FILE PDF SLIP GAJI
         async function downloadSlipZip() {
             const options = document.querySelectorAll("#nikSelect option");
-            const start = document.getElementById("startDate").value;
-            const end = document.getElementById("endDate").value;
+            const period = getSelectedMonthRange();
 
             // 1. Ambil nama Site yang sedang dipilih pada Dropdown
             const selectedSite = document.getElementById("siteFilter").value;
 
-            if (!start || !end) {
-                Swal.fire({ icon: 'warning', title: 'Perhatian', text: "Tanggal mulai & akhir wajib diisi." });
+            if (!period) {
+                Swal.fire({ icon: 'warning', title: 'Perhatian', text: "Bulan wajib dipilih." });
                 return;
             }
 
@@ -989,8 +1001,8 @@ require_once 'app/controller/read.php';
                     },
                     body: JSON.stringify({
                         nik,
-                        startDate: start,
-                        endDate: end
+                        startDate: period.start,
+                        endDate: period.end
                     })
                 });
 
@@ -1011,7 +1023,7 @@ require_once 'app/controller/read.php';
 
                 // Nama file PDF
                 // --- MENGGUNAKAN PERIODE YANG SUDAH DIDEKLARASIKAN DI AWAL FUNGSI ---
-                const periodeStr = `Periode ${start} sd ${end}`;
+                const periodeStr = `Periode ${period.month}`;
                 
                 const filename = `${safe(nama)}-${safe(jab)}-${periodeStr}.pdf`;
                 // --------------------------------------------------------------------
@@ -1053,7 +1065,7 @@ require_once 'app/controller/read.php';
                 // 3. MENGATUR NAMA FILE ZIP MENJADI DINAMIS
                 // Jika tidak milih site, namanya "Semua-Site"
                 const siteName = selectedSite ? safe(selectedSite) : "Semua-Site"; 
-                const zipFilename = `Batch-Slip-Gaji-${siteName}-Periode-${start}-sd-${end}.zip`;
+                const zipFilename = `Batch-Slip-Gaji-${siteName}-Periode-${period.month}.zip`;
                 
                 // Simpan dengan nama baru
                 saveAs(content, zipFilename);
