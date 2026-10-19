@@ -9,6 +9,23 @@
 $uri  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = rawurldecode($uri === '' ? '/' : $uri);
 
+// Path upload API tersimpan di app/uploads/, tetapi URL publik memakai
+// /uploads/... agar kompatibel dengan aplikasi mobile.
+if (preg_match('#^/uploads(?:/|$)#', $path)) {
+    $path = '/app' . $path;
+
+    // PHP built-in server serves original URI when router returns false,
+    // so stream mapped upload file explicitly.
+    $mappedFile = __DIR__ . $path;
+    if (is_file($mappedFile)) {
+        $mime = mime_content_type($mappedFile) ?: 'application/octet-stream';
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . (string)filesize($mappedFile));
+        readfile($mappedFile);
+        return true;
+    }
+}
+
 // 1. File yang benar-benar ada (aset, skrip .php langsung) → sajikan apa adanya.
 //    Termasuk varian tanpa ekstensi ala .htaccess ("login" -> "login.php").
 if ($path !== '/') {
