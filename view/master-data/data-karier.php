@@ -213,10 +213,10 @@
                             </select>
                         </div>
 
-                        <!-- Departemen -->
+                        <!-- Departemen (opsional di edit) -->
                         <div class="col-md-4">
                             <label>Departemen</label>
-                            <select name="id_departemen" class="form-control select-search" required>
+                            <select name="id_departemen" class="form-control select-search">
                                 <option value="">-- Pilih Departemen --</option>
                                 <?php
                                 $departemens = $koneksi->query("SELECT * FROM tb_departemen ORDER BY nama_departemen ASC");
