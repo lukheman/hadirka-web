@@ -9,6 +9,29 @@ $action = $_POST['action'] ?? '';
 
 $response = ["status" => "error"];
 
+/** Ambil latitude/longitude dari link Google Maps. */
+function ekstrak_koordinat_maps(string $url): ?array
+{
+    $url = rawurldecode($url);
+    $patterns = [
+        '/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/i',
+        '/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i',
+        '/(?:[?&](?:q|ll)=)(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i',
+    ];
+
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $url, $match)) {
+            $latitude = (float)$match[1];
+            $longitude = (float)$match[2];
+            if ($latitude >= -90 && $latitude <= 90 && $longitude >= -180 && $longitude <= 180) {
+                return [$latitude, $longitude];
+            }
+        }
+    }
+
+    return null;
+}
+
 /**
  * Normalisasi & validasi kolom geofence dari form site.
  * Koordinat kosong disimpan NULL = site belum dipetakan (tidak dikirim
@@ -16,8 +39,22 @@ $response = ["status" => "error"];
  */
 function ambil_geofence()
 {
-    $latitude = trim($_POST['latitude'] ?? '');
-    $longitude = trim($_POST['longitude'] ?? '');
+    $mapsUrl = trim($_POST['google_maps_url'] ?? '');
+    $latitude = '';
+    $longitude = '';
+
+    if ($mapsUrl !== '') {
+        $coordinates = ekstrak_koordinat_maps($mapsUrl);
+        if ($coordinates === null) {
+            echo json_encode(["status" => "error", "msg" => "Link Google Maps tidak berisi koordinat yang valid."]);
+            exit;
+        }
+        [$latitude, $longitude] = $coordinates;
+    } else {
+        // Kompatibilitas request lama dari client yang masih mengirim angka.
+        $latitude = trim($_POST['latitude'] ?? '');
+        $longitude = trim($_POST['longitude'] ?? '');
+    }
     $radius = trim($_POST['radius_meter'] ?? '');
 
     if ($latitude !== '' && (!is_numeric($latitude) || (float)$latitude < -90 || (float)$latitude > 90)) {
