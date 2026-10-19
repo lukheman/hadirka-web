@@ -131,7 +131,7 @@ try {
         // ---------------------
 
         $id_site       = intval($_POST['id_site']);
-        $id_departemen = intval($_POST['id_departemen']);
+        $id_departemen = !empty($_POST['id_departemen']) ? intval($_POST['id_departemen']) : null;
         $id_jabatan    = intval($_POST['id_jabatan']);
 
         $gaji_pokok  = floatOrZero($_POST['gaji_pokok']);
