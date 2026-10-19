@@ -93,7 +93,9 @@ foreach ($rows as $row) {
     $fotoCell = '<span class="badge bg-label-secondary"><i class="bx bx-minus"></i></span>';
     if (!empty($row['foto_selfie_path'])) {
         $pathRel = (string)$row['foto_selfie_path'];
-        $pathFs = __DIR__ . '/../../../' . $pathRel;
+        // Path DB relatif dari root publik: uploads/absensi/...
+        // File fisik tersimpan di app/uploads/absensi/...
+        $pathFs = __DIR__ . '/../../../app/' . ltrim($pathRel, '/');
 
         if (is_file($pathFs)) {
             $src = 'app/' . htmlspecialchars($pathRel, ENT_QUOTES);
