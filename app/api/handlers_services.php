@@ -433,103 +433,78 @@ function api_geofence_update(array $params): void
     api_out(200, ['success' => true, 'message' => 'Lokasi berhasil diperbarui.']);
 }
 
-/* ================================== SLIP GAJI ================================== */
+/* ================================ SLIP GAJI (READ-ONLY) ================================ */
 
+/**
+ * Daftar slip gaji hasil perhitungan payroll untuk aplikasi mobile.
+ * Perhitungan memakai helper payroll yang sama dengan slip web.
+ */
 function api_payslip_list(): void
 {
     $in = api_input();
-
     $username = trim((string)($in['username'] ?? ''));
 
-    $sql = 'SELECT s.*, k.nik_karyawan, k.nama_lengkap
-            FROM tb_slip_gaji s
-            JOIN tb_karyawan k ON k.id_karyawan = s.id_karyawan';
-    $params = [];
-
-    if ($username !== '') {
-        $sql .= ' WHERE LOWER(k.nik_karyawan) = LOWER(?) OR k.id_karyawan = ?';
-        $params = [$username, ctype_digit($username) ? (int)$username : 0];
-    }
-
-    $sql .= ' ORDER BY s.dibuat_pada DESC, s.id_slip_gaji DESC';
-
-    $st = api_db()->prepare($sql);
-    $st->execute($params);
-
-    $data = [];
-
-    foreach ($st->fetchAll() as $row) {
-        $data[] = [
-            'id'            => (int)$row['id_slip_gaji'],
-            'nik'           => (string)$row['nik_karyawan'],
-            'username'      => (string)$row['nik_karyawan'],
-            'nama'          => (string)$row['nama_lengkap'],
-            'periode'       => (string)$row['periode'],
-            'gajiPokok'     => (float)$row['gaji_pokok'],
-            'tunjangan'     => (float)$row['tunjangan'],
-            'potongan'      => (float)$row['potongan'],
-            'totalDiterima' => (float)$row['total_diterima'],
-            'status'        => (string)$row['status_rilis'],
-            'createdAt'     => api_iso($row['dibuat_pada']),
-        ];
-    }
-
-    api_out(200, ['success' => true, 'data' => $data]);
-}
-
-function api_payslip_create(): void
-{
-    $in = api_input();
-
-    $username = trim((string)($in['username'] ?? ''));
-    $periode  = trim((string)($in['periode'] ?? ''));
-
-    if ($periode === '') {
-        api_error(400, 'Periode wajib diisi.');
+    if ($username === '') {
+        api_error(400, 'Username / NIK wajib diisi.');
     }
 
     $karyawan = api_find_karyawan($username);
     if ($karyawan === null) {
-        api_error(404, $username !== ''
-            ? "Karyawan ($username) tidak ditemukan."
-            : 'Username tidak valid.');
+        api_error(404, 'Karyawan tidak ditemukan.');
     }
 
-    $gajiPokok = (float)($in['gajiPokok'] ?? 0);
-    $tunjangan = (float)($in['tunjangan'] ?? 0);
-    $potongan  = (float)($in['potongan'] ?? 0);
-    $total     = $gajiPokok + $tunjangan - $potongan;
+    // generateSlipGaji() memakai global $koneksi, sedangkan API memakai api_db().
+    // Pakai koneksi yang sama agar sumber data dan transaksi tetap konsisten.
+    global $koneksi;
+    $koneksi = api_db();
+    require_once __DIR__ . '/../helpers/slip_helper.php';
 
-    $st = api_db()->prepare(
-        'INSERT INTO tb_slip_gaji
-            (id_karyawan, periode, gaji_pokok, tunjangan, potongan, total_diterima, status_rilis, catatan)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NULL)'
-    );
-    $st->execute([
-        (int)$karyawan['id_karyawan'],
-        $periode,
-        $gajiPokok,
-        $tunjangan,
-        $potongan,
-        $total,
-        'DITERBITKAN',
-    ]);
+    $periodeFilter = trim((string)($in['periode'] ?? ''));
+    $params = [];
+    $sql = "SELECT id_priode, tgl_mulai, tgl_selesai
+            FROM tb_priode
+            WHERE type_priode = 'slip gaji'";
 
-    api_out(200, ['success' => true, 'message' => 'Slip gaji berhasil diterbitkan.']);
-}
-
-function api_payslip_delete(array $params): void
-{
-    $id = (int)($params[0] ?? 0);
-
-    $st = api_db()->prepare('DELETE FROM tb_slip_gaji WHERE id_slip_gaji = ?');
-    $st->execute([$id]);
-
-    if ($st->rowCount() === 0) {
-        api_error(404, 'Slip gaji tidak ditemukan.');
+    if ($periodeFilter !== '') {
+        if (ctype_digit($periodeFilter)) {
+            $sql .= ' AND id_priode = ?';
+            $params[] = (int)$periodeFilter;
+        } else {
+            $sql .= ' AND CONCAT(tgl_mulai, \' - \', tgl_selesai) = ?';
+            $params[] = $periodeFilter;
+        }
     }
 
-    api_out(200, ['success' => true, 'message' => 'Slip gaji berhasil dihapus.']);
+    $sql .= ' ORDER BY tgl_mulai DESC, id_priode DESC';
+    $st = $koneksi->prepare($sql);
+    $st->execute($params);
+
+    $data = [];
+    foreach ($st->fetchAll() as $period) {
+        $slip = generateSlipGajiById(
+            (int)$karyawan['id_karyawan'],
+            (string)$period['tgl_mulai'],
+            (string)$period['tgl_selesai']
+        );
+
+        if (!empty($slip['skip']) || isset($slip['error'])) {
+            continue;
+        }
+
+        $data[] = [
+            'id'            => (int)$period['id_priode'],
+            'periode'       => $slip['period'],
+            'gajiPokok'     => (float)$slip['basic'],
+            'tunjangan'     => (float)$slip['total_tunjangan_pendapatan'],
+            'potongan'      => (float)$slip['total_potongan'],
+            'totalDiterima' => (float)$slip['gaji_bersih'],
+            'status'        => 'TERSEDIA',
+            'createdAt'     => null,
+            'detail'        => $slip,
+        ];
+    }
+
+    api_out(200, ['success' => true, 'data' => $data]);
 }
 
 /* ================================ MANAJEMEN USER ================================ */

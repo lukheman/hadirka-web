@@ -66,8 +66,6 @@ $routes = [
     ['PUT', '#^/geofence/(\d+)$#', 'api_geofence_update'],
 
     ['GET', '#^/payslip$#', 'api_payslip_list'],
-    ['POST', '#^/payslip$#', 'api_payslip_create'],
-    ['DELETE', '#^/payslip/(\d+)$#', 'api_payslip_delete'],
 
     ['GET', '#^/users$#', 'api_users_list'],
     ['POST', '#^/users$#', 'api_users_create'],
