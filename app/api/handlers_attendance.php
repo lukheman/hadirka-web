@@ -50,6 +50,7 @@ function api_attendance_list(): void
             'tanggal'            => (string)$row['tgl_absen'],
             'waktuIn'            => (string)$row['waktu_masuk'],
             'waktuOut'           => $row['waktu_keluar'],
+            'metodeCheckout'     => $row['metode_checkout'] ?: null,
             'lokasiNama'         => (string)($row['nama_lokasi'] ?? ''),
             'latitude'           => (float)($row['latitude'] ?? 0),
             'longitude'          => (float)($row['longitude'] ?? 0),

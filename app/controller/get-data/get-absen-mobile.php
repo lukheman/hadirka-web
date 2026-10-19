@@ -44,7 +44,7 @@ $stmt->execute($params);
 $rows = $stmt->fetchAll();
 
 if (count($rows) === 0) {
-    echo '<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada log absensi aplikasi pada periode/filter ini.</td></tr>';
+    echo '<tr><td colspan="9" class="text-center py-5 text-muted">Belum ada log absensi aplikasi pada periode/filter ini.</td></tr>';
     exit;
 }
 
@@ -71,6 +71,15 @@ foreach ($rows as $row) {
     $keluar = !empty($row['waktu_keluar'])
         ? htmlspecialchars((string)$row['waktu_keluar'], ENT_QUOTES)
         : '<span class="badge bg-label-secondary"><i class="bx bx-minus"></i> Belum</span>';
+
+    $metodeCheckout = strtolower(trim((string)($row['metode_checkout'] ?? '')));
+    if ($metodeCheckout === 'manual') {
+        $metodeCheckoutCell = '<span class="badge bg-label-info"><i class="bx bx-camera me-1"></i> Manual</span>';
+    } elseif ($metodeCheckout === 'otomatis') {
+        $metodeCheckoutCell = '<span class="badge bg-label-warning"><i class="bx bx-map-pin me-1"></i> Otomatis</span>';
+    } else {
+        $metodeCheckoutCell = '<span class="badge bg-label-secondary"><i class="bx bx-minus"></i> -</span>';
+    }
 
     // --- Lokasi + peta ---
     $lat = (float)$row['latitude'];
@@ -112,6 +121,7 @@ foreach ($rows as $row) {
         <td>' . date('d M Y', strtotime((string)$row['tgl_absen'])) . '</td>
         <td><span class="fw-semibold text-dark">' . $masuk . '</span></td>
         <td>' . $keluar . '</td>
+        <td>' . $metodeCheckoutCell . '</td>
         <td>
             <div class="d-flex flex-column">
                 <span class="text-dark">' . $lokasi . $mapLink . '</span>

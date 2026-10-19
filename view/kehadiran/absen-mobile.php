@@ -77,6 +77,7 @@ $hariIni = date('Y-m-d');
                         <th>Tanggal</th>
                         <th>Jam Masuk</th>
                         <th>Jam Keluar</th>
+                        <th>Metode Checkout</th>
                         <th>Lokasi Absen</th>
                         <th>Status</th>
                         <th class="text-center">Foto Selfie</th>
