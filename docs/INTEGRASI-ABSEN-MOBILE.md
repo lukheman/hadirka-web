@@ -34,9 +34,9 @@ Migration:
 
 | Objek | Isi |
 |---|---|
-| `tb_absen` (diperluas) | **SATU tabel absen** untuk HRD, rekap, payroll, dan aplikasi. Kolom baru: `sumber` (`web`/`mobile`), `id_lokasi` (FK `tb_site`), `nama_lokasi`, `latitude`, `longitude`, `jarak_meter`, `foto_selfie_path`, `waktu_masuk`, `waktu_keluar`, `status_kehadiran`, `keterlambatan_menit`, `is_tepat_waktu`, `dibuat_pada` |
+| `tb_absen` (diperluas) | **SATU tabel absen** untuk HRD, rekap, payroll, dan aplikasi. Kolom baru: `sumber` (`web`/`mobile`), `id_lokasi` (FK `tb_site`), `nama_lokasi`, `latitude`, `longitude`, `jarak_meter`, `foto_selfie_path`, `waktu_masuk`, `waktu_keluar`, `metode_checkout` (`manual`/`otomatis`), `status_kehadiran`, `keterlambatan_menit`, `is_tepat_waktu`, `dibuat_pada` |
 | `tb_notifikasi` (baru) | Notifikasi aplikasi: judul, pesan, kategori, `is_dibaca` |
-| `tb_slip_gaji` (baru) | Slip versi aplikasi: periode, gaji pokok, tunjangan, potongan, total |
+| `tb_slip_gaji` | Dihapus; slip mobile dihitung langsung dari periode payroll dan data payroll utama |
 | `tb_site` (+kolom) | Geofence: `kode_lokasi`, `latitude`, `longitude`, `radius_meter` (default 80), `deskripsi_lokasi`, `is_aktif` |
 | `tb_pengajuan_pinjaman` (ubah) | `foto_wajah` & `foto_id_card` dibuat nullable (pengajuan dari aplikasi tanpa foto) |
 
@@ -62,6 +62,9 @@ Daftar rute hanya ada di file itu; helper & handler dipisah per domain agar rapi
 * `index.php` — SATU pintu masuk + tabel rute (satu-satunya routing).
 * `helpers.php` — input JSON, envelope, Haversine, status mapping, dsb.
 * `handlers_auth.php`, `handlers_attendance.php`, `handlers_services.php` — handler.
+
+Dokumentasi detail API pengajuan izin, cuti, dan SKS: `docs/API-PENGAJUAN-IZIN-CUTI-SKS.md`.
+Dokumentasi API slip gaji: `docs/API-SLIP-GAJI.md`.
 
 > **Konsolidasi:** sistem API lama sudah dihapus — seluruh file v1
 > (`app/api/*.php`: login OTP, aktivasi, APD, SKS, kontrak, dsb.) beserta
@@ -92,7 +95,7 @@ Daftar rute hanya ada di file itu; helper & handler dipisah per domain agar rapi
 | POST | `/auth/register` | Aktivasi akun: `{nik, nama, password, noHp}` — NIK harus ada di `tb_karyawan` |
 | PUT | `/user/profile` | `{username, nama, noHp, fotoProfil(base64)}` |
 | PUT | `/user/password` | `{username, oldPassword, newPassword}` |
-| GET | `/attendance` | `?username=` — riwayat absen |
+| GET | `/attendance` | `?username=` — riwayat absen; response menyertakan `metodeCheckout` (`manual`/`otomatis`/`null`) |
 | POST | `/attendance/submit` | `{username, latitude, longitude, accuracy, tipe: check_in/check_out, fotoPath, fotoBase64}` — `accuracy` wajib maksimal 100 meter |
 | GET / POST | `/leave` | daftar & buat pengajuan (cuti/izin/SKS) |
 | PUT | `/leave/:id/status` | opsional `sumber=izin|cuti` (id izin & cuti bisa sama) |
@@ -100,8 +103,7 @@ Daftar rute hanya ada di file itu; helper & handler dipisah per domain agar rapi
 | PUT | `/loan/:id/status` | parity: tidak mengubah apa pun |
 | GET | `/geofence` | site penempatan karyawan aktif (`?username=IPM-00001`), sudah punya koordinat |
 | PUT | `/geofence/:id` | update titik dari aplikasi |
-| GET / POST | `/payslip` | daftar & buat slip gaji aplikasi |
-| DELETE | `/payslip/:id` | hapus slip |
+| GET | `/payslip` | daftar slip gaji milik karyawan; read-only |
 | GET / POST / DELETE | `/users` | POST/DELETE membalas "dikelola dari website" |
 | GET | `/notifications` | `?username=` — notifikasi + tandai dibaca |
 
@@ -123,10 +125,9 @@ Daftar rute hanya ada di file itu; helper & handler dipisah per domain agar rapi
 | Kehadiran → Absensi Mobile (GPS) | `absen-mobile` | HRD | Monitoring log absen aplikasi: filter tanggal/site/status, lihat selfie |
 | Informasi → Notifikasi Aplikasi | `notifikasi-app` | HRD | Kirim notifikasi ke semua aktif / per site / per karyawan; daftar & hapus |
 | Payroll → Pengajuan Pinjaman | `pengajuan-pinjaman` | Finance/Master | Saklar buka/tutup akses pinjaman, ACC/tolak/cair (satuan & massal) |
-| Payroll → Slip Gaji Aplikasi | `slip-aplikasi` | Finance/Master | Terbitkan slip manual yang muncul di aplikasi; hapus |
 
-Controller: `app/controller/act-site.php`, `act-notifikasi.php`, `act-slip-aplikasi.php`,
-dan `app/controller/get-data/get-{site,absen-mobile,notifikasi,slip-aplikasi}.php`.
+Controller: `app/controller/act-site.php`, `act-notifikasi.php`,
+dan `app/controller/get-data/get-{site,absen-mobile,notifikasi}.php`.
 Pengajuan pinjaman memakai controller yang sudah ada
 (`get-data/get-pengajuan-pinjaman.php`, `act-pengajuan-pinjaman.php`).
 
@@ -180,7 +181,7 @@ Pengajuan pinjaman memakai controller yang sudah ada
   ikut berubah saat UPDATE (perilaku lama website, tidak diubah).
 * Token sesi dibuat tapi belum divalidasi; amankan endpoint publik lebih lanjut bila
   aplikasi dipakai di luar jaringan kantor.
-* Kolom `tb_pinjam`/`tb_slip_gaji`/`tb_notifikasi` memakai charset `utf8mb4_general_ci`
+* Kolom `tb_pinjam`/`tb_notifikasi` memakai charset `utf8mb4_general_ci`
   seperti tabel aplikasi; join dengan tabel website (sebagian `utf8mb4_unicode_ci`)
   memakai `COLLATE` eksplisit bila diperlukan.
 
@@ -195,12 +196,13 @@ Pengajuan pinjaman memakai controller yang sudah ada
 
 * API: `app/api/` — satu route di `index.php` + `helpers.php` + `handlers_*.php`
 * Migration: `db/migrations/20261017100000_integrasi_absen_mobile.php`,
-  `db/migrations/20261017200000_satukan_tb_absen.php`
+  `db/migrations/20261017200000_satukan_tb_absen.php`,
+  `db/migrations/20261020000000_drop_tb_slip_gaji.php`,
+  `db/migrations/20261020100000_add_metode_checkout_to_tb_absen.php`
 * View: `view/master-data/data-site.php`, `view/kehadiran/absen-mobile.php`,
   `view/broadcast/notifikasi-app.php`, `view/penggajian/pengajuan-pinjaman.php`,
-  `view/penggajian/slip-aplikasi.php`
-* Controller: `app/controller/{act-site,act-notifikasi,act-slip-aplikasi}.php`,
-  `app/controller/get-data/get-{site,absen-mobile,notifikasi,slip-aplikasi}.php`,
+* Controller: `app/controller/{act-site,act-notifikasi}.php`,
+  `app/controller/get-data/get-{site,absen-mobile,notifikasi}.php`,
   `app/controller/{act-pengajuan-pinjaman,get-data/get-pengajuan-pinjaman}.php`
 * Routing & menu: `index.php`, `layout/menu.php`, `.htaccess`, `router.php`
 * Aplikasi: `lib/core/constants/api_constants.dart`,
