@@ -59,17 +59,14 @@
                     <label>Kode Lokasi <small class="text-muted">(opsional)</small></label>
                     <input type="text" name="kode_lokasi" class="form-control mb-3" placeholder="Contoh: TJS-01">
 
-                    <div class="row">
-                        <div class="col-6">
-                            <label>Latitude</label>
-                            <input type="number" step="any" name="latitude" class="form-control mb-1" placeholder="-4.123456">
-                        </div>
-                        <div class="col-6">
-                            <label>Longitude</label>
-                            <input type="number" step="any" name="longitude" class="form-control mb-1" placeholder="121.123456">
-                        </div>
+                    <label>Link Google Maps</label>
+                    <input type="url" name="google_maps_url" class="form-control mb-1 maps-url-input"
+                        placeholder="https://www.google.com/maps/place/..." autocomplete="off">
+                    <small class="text-muted d-block mb-2">Tempel link lokasi Google Maps. Latitude dan longitude akan diambil otomatis.</small>
+                    <div class="site-map-preview mb-3" hidden>
+                        <iframe title="Preview lokasi site" class="w-100 rounded border" style="height: 220px;" loading="lazy"></iframe>
+                        <small class="site-map-coordinates text-muted d-block mt-1"></small>
                     </div>
-                    <small class="text-muted d-block mb-3">Titik koordinat kantor (untuk validasi radius absen aplikasi).</small>
 
                     <label>Radius Absen (meter)</label>
                     <input type="number" step="any" name="radius_meter" class="form-control mb-3" value="80">
@@ -108,17 +105,14 @@
                     <label>Kode Lokasi <small class="text-muted">(opsional)</small></label>
                     <input type="text" name="kode_lokasi" class="form-control mb-3" placeholder="Contoh: TJS-01">
 
-                    <div class="row">
-                        <div class="col-6">
-                            <label>Latitude</label>
-                            <input type="number" step="any" name="latitude" class="form-control mb-1" placeholder="-4.123456">
-                        </div>
-                        <div class="col-6">
-                            <label>Longitude</label>
-                            <input type="number" step="any" name="longitude" class="form-control mb-1" placeholder="121.123456">
-                        </div>
+                    <label>Link Google Maps</label>
+                    <input type="url" name="google_maps_url" class="form-control mb-1 maps-url-input"
+                        placeholder="https://www.google.com/maps/place/..." autocomplete="off">
+                    <small class="text-muted d-block mb-2">Tempel link lokasi Google Maps. Latitude dan longitude akan diambil otomatis.</small>
+                    <div class="site-map-preview mb-3" hidden>
+                        <iframe title="Preview lokasi site" class="w-100 rounded border" style="height: 220px;" loading="lazy"></iframe>
+                        <small class="site-map-coordinates text-muted d-block mt-1"></small>
                     </div>
-                    <small class="text-muted d-block mb-3">Titik koordinat kantor (untuk validasi radius absen aplikasi).</small>
 
                     <label>Radius Absen (meter)</label>
                     <input type="number" step="any" name="radius_meter" class="form-control mb-3" value="80">
@@ -142,6 +136,53 @@
             const tbody = document.getElementById("tbodySite");
             const formTambah = document.getElementById("formTambahSite");
             const formEdit = document.getElementById("formEditSite");
+
+            function extractCoordinates(value) {
+                const text = decodeURIComponent(String(value || ''));
+                const patterns = [
+                    /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/i,
+                    /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i,
+                    /(?:[?&](?:q|ll)=)(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i
+                ];
+
+                for (const pattern of patterns) {
+                    const match = text.match(pattern);
+                    if (match) {
+                        const latitude = Number(match[1]);
+                        const longitude = Number(match[2]);
+                        if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+                            return { latitude, longitude };
+                        }
+                    }
+                }
+                return null;
+            }
+
+            function updateMapPreview(form) {
+                const input = form.querySelector("input[name=google_maps_url]");
+                const preview = form.querySelector(".site-map-preview");
+                const frame = preview.querySelector("iframe");
+                const coordinates = preview.querySelector(".site-map-coordinates");
+                const point = extractCoordinates(input.value);
+
+                if (!point) {
+                    preview.hidden = true;
+                    frame.removeAttribute("src");
+                    coordinates.textContent = input.value.trim() ? "Koordinat tidak ditemukan dari link ini." : "";
+                    return;
+                }
+
+                const lat = point.latitude.toFixed(7);
+                const lng = point.longitude.toFixed(7);
+                frame.src = `https://www.google.com/maps?q=${lat},${lng}&z=17&output=embed`;
+                coordinates.textContent = `Latitude: ${lat} | Longitude: ${lng}`;
+                preview.hidden = false;
+            }
+
+            document.querySelectorAll(".maps-url-input").forEach(input => {
+                input.addEventListener("input", () => updateMapPreview(input.form));
+                input.addEventListener("change", () => updateMapPreview(input.form));
+            });
 
             // === LOAD DATA ===
             function loadSite() {
@@ -179,6 +220,7 @@
                             showToast("Berhasil menambah site!", "success");
                             bootstrap.Modal.getInstance(document.getElementById("modalTambahSite")).hide();
                             formTambah.reset();
+                            updateMapPreview(formTambah);
                             loadSite();
                         } else {
                             showToast(res.msg, "error");
@@ -218,8 +260,10 @@
                     formEdit.querySelector("input[name=nama_site]").value = btn.nama;
                     formEdit.querySelector("input[name=lokasi]").value = btn.lokasi;
                     formEdit.querySelector("input[name=kode_lokasi]").value = btn.kode || "";
-                    formEdit.querySelector("input[name=latitude]").value = btn.lat || "";
-                    formEdit.querySelector("input[name=longitude]").value = btn.lng || "";
+                    formEdit.querySelector("input[name=google_maps_url]").value = btn.lat && btn.lng
+                        ? `https://www.google.com/maps?q=${btn.lat},${btn.lng}`
+                        : "";
+                    updateMapPreview(formEdit);
                     formEdit.querySelector("input[name=radius_meter]").value = btn.radius || 80;
                     formEdit.querySelector("textarea[name=deskripsi_lokasi]").value = btn.deskripsi || "";
                     formEdit.querySelector("input[name=is_aktif]").checked = btn.aktif === "1";
