@@ -1,7 +1,6 @@
 <?php
-// Default filter: awal bulan s/d akhir bulan berjalan
-$awalBulan = date('Y-m-01');
-$akhirBulan = date('Y-m-t');
+// Default filter: bulan berjalan
+$bulanIni = date('Y-m');
 ?>
 <style>
     .preview-thumbnail {
@@ -44,15 +43,11 @@ $akhirBulan = date('Y-m-t');
     </div>
 
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body">
-            <div class="row g-3 align-items-end">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label">Tanggal Awal</label>
-                    <input type="date" id="filterAwal" class="form-control" value="<?= $awalBulan ?>">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Tanggal Akhir</label>
-                    <input type="date" id="filterAkhir" class="form-control" value="<?= $akhirBulan ?>">
+                    <label class="form-label">Bulan</label>
+                    <input type="month" id="filterBulan" class="form-control" value="<?= $bulanIni ?>">
                 </div>
                 <div class="col-md-3">
                     <button class="btn btn-primary" id="btnCari">
@@ -90,11 +85,7 @@ $akhirBulan = date('Y-m-t');
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
-                <tbody id="tbodyPinjaman" class="table-border-bottom-0">
-                    <tr>
-                        <td colspan="9" class="text-center py-4">Memuat data...</td>
-                    </tr>
-                </tbody>
+                <tbody id="tbodyPinjaman" class="table-border-bottom-0"></tbody>
             </table>
         </div>
     </div>
@@ -247,9 +238,15 @@ $akhirBulan = date('Y-m-t');
 
     // ===================== TABEL =====================
     async function loadTablePinjaman() {
+        const periode = getPeriodeBulan('#filterBulan');
+        if (!periode.awal) {
+            showToast('Pilih bulan terlebih dahulu.', 'info');
+            return;
+        }
+
         const body = new URLSearchParams({
-            startDate: document.getElementById('filterAwal').value,
-            endDate: document.getElementById('filterAkhir').value
+            startDate: periode.awal,
+            endDate: periode.akhir
         });
 
         try {
