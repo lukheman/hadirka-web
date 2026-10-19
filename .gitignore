@@ -16,3 +16,4 @@ error_log.txt
 # File upload lokal jangan di-push (template kontrak, kontrak, profil, dsb.)
 # Struktur folder tetap terjaga via .gitkeep di tiap subfolder (tracked).
 /app/uploads/*
+*.apk
