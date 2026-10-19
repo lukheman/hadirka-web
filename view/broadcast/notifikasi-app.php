@@ -42,11 +42,7 @@
                             <th class="text-center">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="tbodyNotifikasi" class="table-border-bottom-0">
-                        <tr>
-                            <td colspan="6" class="text-center py-4">Memuat data...</td>
-                        </tr>
-                    </tbody>
+                    <tbody id="tbodyNotifikasi" class="table-border-bottom-0"></tbody>
                 </table>
             </div>
         </div>
@@ -141,12 +137,22 @@
             $('.tabelNotifikasi').DataTable().destroy();
         }
 
-        document.getElementById('tbodyNotifikasi').innerHTML = html;
+        const tbody = document.getElementById('tbodyNotifikasi');
+        tbody.innerHTML = html;
+
+        // Baris colspan tidak valid untuk DataTables. Saat data kosong,
+        // biarkan tbody kosong agar DataTables menampilkan pesan bawaan.
+        if (tbody.querySelector('td[colspan]')) {
+            tbody.innerHTML = '';
+        }
 
         $('.tabelNotifikasi').DataTable({
             responsive: true,
             pageLength: 10,
-            order: []
+            order: [],
+            language: {
+                emptyTable: 'Belum ada notifikasi terkirim.'
+            }
         });
     }
 
