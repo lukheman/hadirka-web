@@ -1,7 +1,6 @@
 <?php
-// Default filter: awal bulan s/d hari ini
-$awalBulan = date('Y-m-01');
-$hariIni = date('Y-m-d');
+// Default filter: bulan berjalan
+$bulanIni = date('Y-m');
 ?>
 <style>
     .preview-thumbnail {
@@ -37,12 +36,8 @@ $hariIni = date('Y-m-d');
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Tanggal Awal</label>
-                    <input type="date" id="filterAwal" class="form-control" value="<?= $awalBulan ?>">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Tanggal Akhir</label>
-                    <input type="date" id="filterAkhir" class="form-control" value="<?= $hariIni ?>">
+                    <label class="form-label">Bulan</label>
+                    <input type="month" id="filterBulan" class="form-control" value="<?= $bulanIni ?>">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Site Absen</label>
@@ -83,11 +78,7 @@ $hariIni = date('Y-m-d');
                         <th class="text-center">Foto Selfie</th>
                     </tr>
                 </thead>
-                <tbody id="tbodyAbsenMobile" class="table-border-bottom-0">
-                    <tr>
-                        <td colspan="8" class="text-center py-4">Memuat data...</td>
-                    </tr>
-                </tbody>
+                <tbody id="tbodyAbsenMobile" class="table-border-bottom-0"></tbody>
             </table>
         </div>
     </div>
@@ -127,14 +118,17 @@ $hariIni = date('Y-m-d');
     }
 
     async function loadTabelAbsenMobile() {
-        const awal = document.getElementById('filterAwal').value;
-        const akhir = document.getElementById('filterAkhir').value;
+        const periode = getPeriodeBulan('#filterBulan');
+        if (!periode.awal) {
+            showToast('Pilih bulan terlebih dahulu.', 'info');
+            return;
+        }
         const site = document.getElementById('filterSite').value;
         const status = document.getElementById('filterStatus').value;
 
         const params = new URLSearchParams({
-            start_date: awal,
-            end_date: akhir,
+            start_date: periode.awal,
+            end_date: periode.akhir,
             site: site,
             status: status,
             _: new Date().getTime()
@@ -147,7 +141,13 @@ $hariIni = date('Y-m-d');
             $('.tabelAbsenMobile').DataTable().destroy();
         }
 
-        document.getElementById('tbodyAbsenMobile').innerHTML = html;
+        const tbody = document.getElementById('tbodyAbsenMobile');
+        tbody.innerHTML = html;
+
+        // Baris colspan membuat jumlah kolom baris tidak sama dengan thead.
+        if (tbody.querySelector('td[colspan]')) {
+            tbody.innerHTML = '';
+        }
 
         // Hitung jumlah baris data (bukan baris "belum ada data")
         const rows = document.querySelectorAll('#tbodyAbsenMobile tr').length;
@@ -157,7 +157,10 @@ $hariIni = date('Y-m-d');
         $('.tabelAbsenMobile').DataTable({
             responsive: true,
             pageLength: 25,
-            order: [] // pertahankan urutan dari server (tanggal terbaru dulu)
+            order: [], // pertahankan urutan dari server (tanggal terbaru dulu)
+            language: {
+                emptyTable: 'Belum ada log absensi aplikasi pada filter ini.'
+            }
         });
     }
 
@@ -165,7 +168,7 @@ $hariIni = date('Y-m-d');
         await loadFilterSiteAbsen();
         await loadTabelAbsenMobile();
 
-        ['filterAwal', 'filterAkhir', 'filterSite', 'filterStatus'].forEach(id => {
+        ['filterBulan', 'filterSite', 'filterStatus'].forEach(id => {
             document.getElementById(id).addEventListener('change', loadTabelAbsenMobile);
         });
     });
