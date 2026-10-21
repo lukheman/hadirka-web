@@ -9,7 +9,7 @@ $no = 1;
 
 while ($r = $q->fetch()) {
     $jam = !empty($r['jam_kerja_mulai']) && !empty($r['jam_kerja_selesai'])
-        ? date('h.i', strtotime($r['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($r['jam_kerja_selesai']))
+        ? date('h.i', strtotime($r['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($r['jam_kerja_selesai'])) . ' (' . ((strtotime($r['jam_kerja_selesai']) - strtotime($r['jam_kerja_mulai'])) / 3600) . ' jam)'
         : '-';
     echo "
     <tr>
