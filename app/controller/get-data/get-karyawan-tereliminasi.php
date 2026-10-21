@@ -154,7 +154,7 @@ try {
                 <tr>
                     <td><strong>Jam Kerja</strong></td>
                     <td>: " . (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
-                        ? date('H:i', strtotime($row['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($row['jam_kerja_selesai']))
+                        ? date('h.i', strtotime($row['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($row['jam_kerja_selesai']))
                         : 'Ikuti aturan tipe (' . htmlspecialchars($tipe_karyawan) . ')') . "</td>
                 </tr>
             </table>

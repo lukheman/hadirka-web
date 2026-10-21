@@ -519,7 +519,7 @@
                                 $tipeKaryawans = $koneksi->query("SELECT id_tipe_karyawan, nama_tipe, jam_kerja_mulai, jam_kerja_selesai FROM tb_tipe_karyawan ORDER BY nama_tipe ASC");
                                 while ($tp = $tipeKaryawans->fetch()) {
                                     $jam = !empty($tp['jam_kerja_mulai']) && !empty($tp['jam_kerja_selesai'])
-                                        ? ' (' . date('H:i', strtotime($tp['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($tp['jam_kerja_selesai'])) . ')'
+                                        ? ' (' . date('h.i', strtotime($tp['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($tp['jam_kerja_selesai'])) . ')'
                                         : '';
                                     echo "<option value='" . htmlspecialchars($tp['id_tipe_karyawan']) . "' data-jam='" . htmlspecialchars($jam) . "'>" . htmlspecialchars($tp['nama_tipe']) . $jam . "</option>";
                                 }

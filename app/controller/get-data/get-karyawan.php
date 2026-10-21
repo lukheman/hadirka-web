@@ -215,7 +215,7 @@ try {
                             <tr><td><strong>Jenis Kelamin</strong></td><td>: " . ($row['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "</td></tr>
                             <tr><td><strong>Tipe Karyawan</strong></td><td>: <span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span></td></tr>
                             <tr><td><strong>Jam Kerja</strong></td><td>: " . (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
-                                ? date('H:i', strtotime($row['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($row['jam_kerja_selesai']))
+                                ? date('h.i', strtotime($row['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($row['jam_kerja_selesai']))
                                 : 'Ikuti aturan tipe (' . htmlspecialchars($tipe_karyawan) . ')') . "</td></tr>
                             <tr><td><strong>Agama</strong></td><td>: " . htmlspecialchars($row['agama'] ?? '-') . "</td></tr>
                             <tr><td><strong>Status Pernikahan</strong></td><td>: " . htmlspecialchars($row['status_pernikahan'] ?? '-') . "</td></tr>
@@ -356,7 +356,7 @@ try {
             'jabatan' => htmlspecialchars($row['nama_jabatan'] ?? '-'),
             'tipe_karyawan' => "<span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span>",
             'jam_kerja' => (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
-                ? date('H:i', strtotime($row['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($row['jam_kerja_selesai']))
+                ? date('h.i', strtotime($row['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($row['jam_kerja_selesai']))
                 : '-'),
             'status_karyawan' => htmlspecialchars($row['status_karyawan'] ?? '-'),
             'status_akun' => $statusAkunBadge,
