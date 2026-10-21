@@ -66,8 +66,12 @@ try {
             kon1.no_telp_darurat AS no_telp_darurat1,
             kon2.nama_kontak AS nama_kontak2,
             kon2.hubungan AS hubungan2,
-            kon2.no_telp_darurat AS no_telp_darurat2
+            kon2.no_telp_darurat AS no_telp_darurat2,
+            tipe.nama_tipe,
+            tipe.jam_kerja_mulai,
+            tipe.jam_kerja_selesai
         FROM tb_karyawan kar
+        LEFT JOIN tb_tipe_karyawan tipe ON kar.id_tipe_karyawan = tipe.id_tipe_karyawan
         INNER JOIN tb_tereliminasi te ON kar.id_karyawan = te.id_karyawan
         LEFT JOIN m_jenis_keluar jk ON te.id_jenis_keluar = jk.id_jenis_keluar
         LEFT JOIN tb_identitas i ON kar.id_karyawan = i.id_karyawan
@@ -120,6 +124,10 @@ try {
 
         $jenis_keluar = $row['jenis_keluar'] ?? $row['status_karyawan'];
 
+        // Tipe karyawan: Kontrak / Harian (data lama default Kontrak).
+        $tipe_karyawan = $row['nama_tipe'] ?? $row['tipe_karyawan'] ?? 'Kontrak';
+        $tipe_badge = ($tipe_karyawan === 'Harian') ? 'bg-warning text-dark' : 'bg-primary';
+
         $eliminasiHtml = "
             <h6 class='text-danger'><i class='fa fa-user-slash'></i> Data Eliminasi</h6>
             <table class='table table-sm table-borderless info-table' style='font-size: 13px;'>
@@ -138,6 +146,16 @@ try {
                 <tr>
                     <td><strong>Alasan Keluar</strong></td>
                     <td>: " . htmlspecialchars($row['alasan_keluar'] ?? '-') . "</td>
+                </tr>
+                <tr>
+                    <td><strong>Tipe Karyawan</strong></td>
+                    <td>: <span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Jam Kerja</strong></td>
+                    <td>: " . (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
+                        ? date('H:i', strtotime($row['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($row['jam_kerja_selesai']))
+                        : 'Ikuti aturan tipe (' . htmlspecialchars($tipe_karyawan) . ')') . "</td>
                 </tr>
             </table>
         ";
@@ -181,6 +199,7 @@ try {
                     <div class='col-md-4 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-briefcase'></i> Penempatan Terakhir</h6>
                         <table class='table table-sm table-borderless info-table'>
+                            <tr><td><strong>Tipe Karyawan</strong></td><td>: <span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span></td></tr>
                             <tr><td><strong>Tgl Mulai</strong></td><td>: $tgl_mulai_format</td></tr>
                             <tr><td><strong>Tgl Selesai</strong></td><td>: $tgl_selesai_format</td></tr>
                         </table>

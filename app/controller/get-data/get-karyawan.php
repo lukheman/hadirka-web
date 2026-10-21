@@ -25,6 +25,7 @@ try {
     $filter_site = isset($_POST['site']) ? $_POST['site'] : '';
     $filter_jabatan = isset($_POST['jabatan']) ? $_POST['jabatan'] : '';
     $filter_status = isset($_POST['status']) ? $_POST['status'] : '';
+    $filter_tipe = isset($_POST['tipe_karyawan']) ? $_POST['tipe_karyawan'] : '';
     $filter_bulan = isset($_POST['bulan']) ? $_POST['bulan'] : '';
 
 
@@ -51,6 +52,11 @@ try {
     if (!empty($filter_jabatan)) {
         $where[] = "k.id_jabatan = ?";
         $params[] = $filter_jabatan;
+    }
+
+    if (!empty($filter_tipe) && in_array($filter_tipe, ['Kontrak', 'Harian'], true)) {
+        $where[] = "tipe.nama_tipe = ?";
+        $params[] = $filter_tipe;
     }
 
     if (!empty($filter_bulan)) {
@@ -81,8 +87,12 @@ try {
 
             kon2.nama_kontak AS nama_kontak2,
             kon2.hubungan AS hubungan2,
-            kon2.no_telp_darurat AS no_telp_darurat2
+            kon2.no_telp_darurat AS no_telp_darurat2,
+            tipe.nama_tipe,
+            tipe.jam_kerja_mulai,
+            tipe.jam_kerja_selesai
         FROM tb_karyawan kar
+        LEFT JOIN tb_tipe_karyawan tipe ON kar.id_tipe_karyawan = tipe.id_tipe_karyawan
         LEFT JOIN tb_identitas i ON kar.id_karyawan = i.id_karyawan
         LEFT JOIN tb_karier k ON kar.id_karyawan = k.id_karyawan
             AND k.id_karier = (SELECT MAX(k2.id_karier) FROM tb_karier k2 WHERE k2.id_karyawan = kar.id_karyawan)
@@ -151,6 +161,10 @@ try {
         // Cek status apakah karyawan aktif atau bukan, klo bukan tampilkan alasan keluar dan tanggal keluar
         $isNonAktif = ($row['status_karyawan'] !== 'Aktif');
 
+        // Tipe karyawan: Kontrak / Harian (data lama default Kontrak).
+        $tipe_karyawan = $row['nama_tipe'] ?? $row['tipe_karyawan'] ?? 'Kontrak';
+        $tipe_badge = ($tipe_karyawan === 'Harian') ? 'bg-warning text-dark' : 'bg-primary';
+
         $eliminasiHtml = '';
 
         if ($isNonAktif) {
@@ -199,6 +213,10 @@ try {
                             <tr><td><strong>Tempat Lahir</strong></td><td>: " . htmlspecialchars($row['tempat_lahir'] ?? '-') . "</td></tr>
                             <tr><td><strong>Tanggal Lahir</strong></td><td>: $tgl_lahir_format ($usia)</td></tr>
                             <tr><td><strong>Jenis Kelamin</strong></td><td>: " . ($row['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "</td></tr>
+                            <tr><td><strong>Tipe Karyawan</strong></td><td>: <span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span></td></tr>
+                            <tr><td><strong>Jam Kerja</strong></td><td>: " . (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
+                                ? date('H:i', strtotime($row['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($row['jam_kerja_selesai']))
+                                : 'Ikuti aturan tipe (' . htmlspecialchars($tipe_karyawan) . ')') . "</td></tr>
                             <tr><td><strong>Agama</strong></td><td>: " . htmlspecialchars($row['agama'] ?? '-') . "</td></tr>
                             <tr><td><strong>Status Pernikahan</strong></td><td>: " . htmlspecialchars($row['status_pernikahan'] ?? '-') . "</td></tr>
                             <tr><td><strong>Status PTKP</strong></td><td>: " . htmlspecialchars($row['status_ptkp'] ?? '-') . "</td></tr>
@@ -336,6 +354,10 @@ try {
             'nama' => htmlspecialchars($row['nama_lengkap']),
             'nik' => htmlspecialchars($row['nik_karyawan'] ?? '-'),
             'jabatan' => htmlspecialchars($row['nama_jabatan'] ?? '-'),
+            'tipe_karyawan' => "<span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span>",
+            'jam_kerja' => (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
+                ? date('H:i', strtotime($row['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($row['jam_kerja_selesai']))
+                : '-'),
             'status_karyawan' => htmlspecialchars($row['status_karyawan'] ?? '-'),
             'status_akun' => $statusAkunBadge,
             'action' => $action,

@@ -13,7 +13,7 @@
 //   G REKENING   <- tb_identitas.no_rek (selalu ditulis sebagai TEKS: nol depan aman)
 //   H A/N        <- tb_identitas.atas_nama_rek
 //
-// Filter yang dipakai SAMA dengan halaman Data Karyawan (site, jabatan, status, bulan),
+// Filter yang dipakai SAMA dengan halaman Data Karyawan (site, jabatan, tipe, status, bulan),
 // jadi data yang diexport = data yang sedang tampil di daftar.
 //
 // Catatan: halaman Data Karyawan Tereliminasi masih memakai export-karyawan.php (44 kolom).
@@ -47,6 +47,7 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
 // Tangkap parameter filter dari GET (sama seperti daftar karyawan)
 $site    = $_GET['site'] ?? '';
 $jabatan = $_GET['jabatan'] ?? '';
+$tipe    = $_GET['tipe_karyawan'] ?? '';
 $status  = $_GET['status'] ?? '';
 $bulan   = $_GET['bulan'] ?? '';
 
@@ -71,6 +72,11 @@ if (!empty($site)) {
 if (!empty($jabatan)) {
     $where[] = "k.id_jabatan = ?";
     $params[] = $jabatan;
+}
+
+if (!empty($tipe) && in_array($tipe, ['Kontrak', 'Harian'], true)) {
+    $where[] = "kar.tipe_karyawan = ?";
+    $params[] = $tipe;
 }
 
 if (!empty($bulan)) {

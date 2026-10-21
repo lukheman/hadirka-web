@@ -233,6 +233,28 @@ if ($action == "add") {
             throw new Exception("Jenis kelamin wajib dipilih (Laki-laki/Perempuan).");
         }
 
+        // Tipe karyawan: Kontrak (bulanan) atau Harian. Default Kontrak
+        // agar data lama/import tetap valid.
+        $tipe_input = input('tipe_karyawan');
+        if ($tipe_input === '') {
+            $tipe_input = 'Kontrak';
+        }
+        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
+            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
+        }
+
+        // Resolve id_tipe_karyawan dari tb_tipe_karyawan (FK).
+        $idTipeInput = input('id_tipe_karyawan');
+        if ($idTipeInput === '') {
+            // Fallback: ambil dari nama_tipe jika id tidak dikirim
+            $stTipe = $koneksi->prepare("SELECT id_tipe_karyawan FROM tb_tipe_karyawan WHERE nama_tipe = ? LIMIT 1");
+            $stTipe->execute([$tipe_input]);
+            $tRow = $stTipe->fetch();
+            $idTipeInput = $tRow ? (int)$tRow['id_tipe_karyawan'] : 1;
+        } else {
+            $idTipeInput = (int)$idTipeInput;
+        }
+
         // Password opsional. Jika kosong, akun tetap belum diaktifkan.
         // Aktivasi dilakukan karyawan melalui aplikasi atau HRD mengisi password.
         $add_password = $_POST['password_karyawan'] ?? '';
@@ -251,8 +273,8 @@ if ($action == "add") {
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
 
         $st1 = $koneksi->prepare("INSERT INTO tb_karyawan
-        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, status_karyawan, foto, password)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktif', '', ?)");
+        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, tipe_karyawan, id_tipe_karyawan, status_karyawan, foto, password)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktif', '', ?)");
         $ok1 = $st1->execute([
             input('nik_karyawan'),
             input('nama_lengkap'),
@@ -265,6 +287,8 @@ if ($action == "add") {
             input('agama'),
             input('status_pernikahan'),
             input('status_ptkp'),
+            $tipe_input,
+            $idTipeInput,
             $password_sql
         ]);
 
@@ -461,6 +485,27 @@ if ($action == "edit") {
             }
         }
 
+        // Tipe karyawan: Kontrak / Harian. Form lama yang belum mengirim field
+        // ini tetap aman karena default-nya Kontrak.
+        $tipe_input = input('tipe_karyawan');
+        if ($tipe_input === '') {
+            $tipe_input = 'Kontrak';
+        }
+        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
+            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
+        }
+
+        // Resolve id_tipe_karyawan dari tb_tipe_karyawan (FK).
+        $idTipeInput = input('id_tipe_karyawan');
+        if ($idTipeInput === '') {
+            $stTipe = $koneksi->prepare("SELECT id_tipe_karyawan FROM tb_tipe_karyawan WHERE nama_tipe = ? LIMIT 1");
+            $stTipe->execute([$tipe_input]);
+            $tRow = $stTipe->fetch();
+            $idTipeInput = $tRow ? (int)$tRow['id_tipe_karyawan'] : 1;
+        } else {
+            $idTipeInput = (int)$idTipeInput;
+        }
+
         // 1. UPDATE tb_karyawan
         $k_data = [
             'nik_karyawan'      => $nik_input,
@@ -473,7 +518,9 @@ if ($action == "edit") {
             'nationality'       => input('nationality'),
             'agama'             => input('agama'),
             'status_pernikahan' => input('status_pernikahan'),
-            'status_ptkp'       => input('status_ptkp')
+            'status_ptkp'       => input('status_ptkp'),
+            'tipe_karyawan'     => $tipe_input,
+            'id_tipe_karyawan'  => $idTipeInput
         ];
 
         // --- PROSES UPLOAD FOTO (EDIT) ---
@@ -724,6 +771,7 @@ if ($action == "delete_all") {
     $filter_site    = $_POST['site'] ?? '';
     $filter_jabatan = $_POST['jabatan'] ?? '';
     $filter_status  = $_POST['status'] ?? '';
+    $filter_tipe    = $_POST['tipe_karyawan'] ?? '';
     $filter_bulan   = $_POST['bulan'] ?? '';
 
     // WHERE harus identik dengan filter tabel di get-data/get-karyawan.php
@@ -748,6 +796,11 @@ if ($action == "delete_all") {
     if (!empty($filter_jabatan)) {
         $where[] = "k.id_jabatan = ?";
         $params[] = $filter_jabatan;
+    }
+
+    if (!empty($filter_tipe) && in_array($filter_tipe, ['Kontrak', 'Harian'], true)) {
+        $where[] = "kar.tipe_karyawan = ?";
+        $params[] = $filter_tipe;
     }
 
     if (!empty($filter_bulan)) {

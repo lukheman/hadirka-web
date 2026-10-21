@@ -179,7 +179,7 @@
                     <?php endif; ?>
                 </div>
 
-                <div class="d-flex align-items-center gap-2" style="max-width: 520px;">
+                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end" style="max-width: 640px;">
                     <select id="filterSite" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site">
                         <option value="">-- Semua Site --</option>
                         <?php foreach (data_site() as $d) { ?>
@@ -192,6 +192,12 @@
                         <?php foreach (data_jabatan() as $d) {
                             echo "<option value='" . htmlspecialchars($d['id_jabatan']) . "'>" . htmlspecialchars($d['nama_jabatan']) . "</option>";
                         } ?>
+                    </select>
+
+                    <select id="filterTipe" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan tipe karyawan">
+                        <option value="">-- Semua Tipe --</option>
+                        <option value="Kontrak">Kontrak</option>
+                        <option value="Harian">Harian</option>
                     </select>
 
                     <select id="filterStatus" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan status">
@@ -248,6 +254,7 @@
                                 <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
                                 <th class="text-center"><i class="fa fa-id-card"></i> NIK</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
+                                <th class="text-center"><i class="fa fa-file-contract"></i> Tipe Karyawan</th>
                                 <th class="text-center"><i class="fa fa-users"></i> Status</th>
                                 <th class="text-center"><i class="fa fa-key"></i> Status Akun</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
@@ -505,6 +512,30 @@
                     <h6>PENEMPATAN KERJA</h6>
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipe Karyawan <span class="text-danger">*</span></label>
+                            <select class="form-control select2" name="id_tipe_karyawan" id="idTipeKaryawanAdd" required>
+                                <option value="">-- Pilih Tipe Karyawan --</option>
+                                <?php
+                                $tipeKaryawans = $koneksi->query("SELECT id_tipe_karyawan, nama_tipe, jam_kerja_mulai, jam_kerja_selesai FROM tb_tipe_karyawan ORDER BY nama_tipe ASC");
+                                while ($tp = $tipeKaryawans->fetch()) {
+                                    $jam = !empty($tp['jam_kerja_mulai']) && !empty($tp['jam_kerja_selesai'])
+                                        ? ' (' . date('H:i', strtotime($tp['jam_kerja_mulai'])) . ' – ' . date('H:i', strtotime($tp['jam_kerja_selesai'])) . ')'
+                                        : '';
+                                    echo "<option value='" . htmlspecialchars($tp['id_tipe_karyawan']) . "' data-jam='" . htmlspecialchars($jam) . "'>" . htmlspecialchars($tp['nama_tipe']) . $jam . "</option>";
+                                }
+                                ?>
+                            </select>
+                            <input type="text" class="form-control mt-2" id="addJamKerjaInfo" readonly placeholder="Pilih tipe karyawan untuk melihat jam kerja">
+                            <input type="hidden" name="tipe_karyawan" id="tipeKaryawanAddHidden" value="Kontrak">
+                            <div class="form-text">Tipe karyawan menentukan jenis gaji (bulanan/harian) dan jam kerja bawaan.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Site</label>
+                            <select class="form-control" name="id_site" id="siteSelectAdd">
+                                <option value="">-- Pilih Site --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Site</label>
                             <select class="form-control" name="id_site" id="siteSelectAdd">
                                 <option value="">-- Pilih Site --</option>
@@ -635,6 +666,29 @@
                 </ul>
                 <div class="tab-content pt-3">
                     <div class="tab-pane fade show active" id="pane-data-karyawan" role="tabpanel" aria-labelledby="tab-data-karyawan">
+                <h6>DATA KEPEGAWAIAN</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label>Tipe Karyawan <span class="text-danger">*</span></label>
+                        <select class="form-control select2" name="id_tipe_karyawan" id="edit_id_tipe_karyawan" required>
+                            <option value="">-- Pilih Tipe Karyawan --</option>
+                            <?php
+                            $tipeKaryawansEdit = $koneksi->query("SELECT id_tipe_karyawan, nama_tipe FROM tb_tipe_karyawan ORDER BY nama_tipe ASC");
+                            while ($tp = $tipeKaryawansEdit->fetch()) {
+                                $sel = '';
+                                echo "<option value='" . htmlspecialchars($tp['id_tipe_karyawan']) . "' $sel>" . htmlspecialchars($tp['nama_tipe']) . "</option>";
+                            }
+                            ?>
+                        </select>
+                        <input type="hidden" name="tipe_karyawan" id="edit_tipe_karyawan_hidden" value="Kontrak">
+                        <div class="form-text">Tipe karyawan menentukan jenis gaji dan jam kerja bawaan.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label>Jam Kerja (dari tipe)</label>
+                        <input type="text" class="form-control" id="edit_jam_kerja_info" readonly placeholder="Pilih tipe karyawan untuk melihat jam kerja">
+                    </div>
+                </div>
+                <hr>
                 <h6>DATA PRIBADI</h6>
                 <div class="row mb-3">
                     <div class="col-md-12">
@@ -1130,6 +1184,10 @@
         // Pemanggilan Load Site Jabatan
         $('#modalTambahKaryawan').on('shown.bs.modal', function() {
             loadSiteJabatan();
+            // Set nilai awal hidden tipe_karyawan dari opsi pertama yang dipilih
+            const $opt = $('#idTipeKaryawanAdd option:selected');
+            $('input[name="tipe_karyawan"]').val($opt.text().replace(/\s*\(.*/, ''));
+            updateJamKerjaInfo($('#idTipeKaryawanAdd'), $('#addJamKerjaInfo'), $('input[name="tipe_karyawan"]'));
         });
 
 
@@ -1179,6 +1237,15 @@
                 className: "text-center"
             },
             {
+                data: "tipe_karyawan",
+                className: "text-center"
+            },
+            {
+                data: "jam_kerja",
+                className: "text-center",
+                width: "110px"
+            },
+            {
                 data: "status_karyawan",
                 className: "text-center"
             },
@@ -1196,7 +1263,7 @@
         );
 
         // Index kolom status bergantung pada ada/tidaknya kolom checkbox di depan.
-        const idxKolomStatus = isMasterKaryawan ? 6 : 5;
+        const idxKolomStatus = isMasterKaryawan ? 8 : 7;
 
         // Perbarui label tombol "Hapus Terpilih" + status checkbox header.
         function updateSelectionKaryawan() {
@@ -1212,6 +1279,24 @@
             head.checked = $baris.length > 0 && checked === $baris.length;
             head.indeterminate = checked > 0 && checked < $baris.length;
         }
+
+        // Tampilkan info jam kerja berdasarkan tipe karyawan yang dipilih (add & edit form)
+        function updateJamKerjaInfo($select, $infoEl, $hiddenNamaEl) {
+            const $opt = $select.find('option:selected');
+            const jam = $opt.data('jam') || '';
+            if ($infoEl.length) $infoEl.val(jam ? jam : '(belum diatur)');
+            if ($hiddenNamaEl.length) $hiddenNamaEl.val($opt.text().replace(/\s*\(.*/, ''));
+        }
+
+        // Form Tambah: saat tipe dipilih, tampilkan jam kerja
+        $('#idTipeKaryawanAdd').on('change', function() {
+            updateJamKerjaInfo($(this), $('#addJamKerjaInfo'), $('input[name="tipe_karyawan"]'));
+        });
+
+        // Form Edit: saat tipe dipilih, tampilkan jam kerja + update hidden nama
+        $('#edit_id_tipe_karyawan').on('change', function() {
+            updateJamKerjaInfo($(this), $('#edit_jam_kerja_info'), $('#edit_tipe_karyawan_hidden'));
+        });
 
         // Bersihkan pilihan (mis. setelah ganti filter atau selesai hapus massal).
         function clearSelectionKaryawan() {
@@ -1235,6 +1320,7 @@
                 data: function(d) {
                     d.site = $("#filterSite").val();
                     d.jabatan = $("#filterJabatan").val();
+                    d.tipe_karyawan = $("#filterTipe").val();
                     d.status = $("#filterStatus").val();
                     d.bulan = $("#filterBulan").val();
                 },
@@ -1283,7 +1369,7 @@
         // Satu handler filter: tahan posisi pagination (null, false) agar
         // ganti filter tidak me-reset halaman secara paksa lewat reload ganda.
         // Pilihan checkbox direset karena baris yang tampil berubah.
-        $("#filterSite, #filterJabatan, #filterStatus, #filterBulan").on("change", function() {
+        $("#filterSite, #filterJabatan, #filterTipe, #filterStatus, #filterBulan").on("change", function() {
             if (this.id === "filterStatus") {
                 syncStatusColumn(false);
             }
@@ -1377,6 +1463,8 @@
                             $("#edit_id_karyawan").val(d.id_karyawan);
                             $("#edit_nik_karyawan").val(res.data.nik_karyawan);
                             $("#edit_nama_lengkap").val(d.nama_lengkap);
+                            $("#edit_id_tipe_karyawan").val(d.id_tipe_karyawan).trigger('change');
+                            $("input[name='tipe_karyawan']").val(d.tipe_karyawan || "Kontrak");
                             $("#edit_jenis_kelamin").val(d.jenis_kelamin);
                             $("#edit_agama").val(d.agama);
                             $("#edit_tempat_lahir").val(d.tempat_lahir);
@@ -1654,9 +1742,10 @@
         function deskripsiFilterAktif() {
             const site = $("#filterSite option:selected").text().trim();
             const jabatan = $("#filterJabatan option:selected").text().trim();
+            const tipe = $("#filterTipe option:selected").text().trim();
             const status = $("#filterStatus option:selected").text().trim();
             const bulan = $("#filterBulan option:selected").text().trim();
-            return `- Site: ${site}\n- Jabatan: ${jabatan}\n- Status: ${status}\n- Bulan: ${bulan}`;
+            return `- Site: ${site}\n- Jabatan: ${jabatan}\n- Tipe Karyawan: ${tipe}\n- Status: ${status}\n- Bulan: ${bulan}`;
         }
 
         // Tampilkan daftar karyawan yang gagal dihapus (jika ada).
@@ -1764,6 +1853,7 @@
                     action: "delete_all",
                     site: $("#filterSite").val(),
                     jabatan: $("#filterJabatan").val(),
+                    tipe_karyawan: $("#filterTipe").val(),
                     status: $("#filterStatus").val(),
                     bulan: $("#filterBulan").val()
                 },
@@ -1957,11 +2047,12 @@
         window.exportKaryawanCSV = function() {
             let site = document.getElementById("filterSite").value;
             let jabatan = document.getElementById("filterJabatan").value;
+            let tipe = document.getElementById("filterTipe").value;
             let status = document.getElementById("filterStatus").value;
             let bulan = document.getElementById("filterBulan").value;
 
             // Arahkan ke file export format template import (8 kolom, bisa di-import balik)
-            let url = `app/controller/export/export-karyawan-template.php?site=${site}&jabatan=${jabatan}&status=${status}&bulan=${bulan}`;
+            let url = `app/controller/export/export-karyawan-template.php?site=${site}&jabatan=${jabatan}&tipe_karyawan=${tipe}&status=${status}&bulan=${bulan}`;
             window.location.href = url;
         };
     });
