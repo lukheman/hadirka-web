@@ -1,294 +1,184 @@
 <?php
-// slip_helper.php — HELPER perhitungan slip gaji (satu-satunya sumber, DRY).
+// slip_helper.php — DISPATCHER perhitungan slip gaji (satu-satunya entri, DRY).
 //
-// RUMUS SEDERHANA (berlaku sejak penyederhanaan Okt 2026, revisi panjar):
-//   gaji_bersih = total_nilai_kehadiran x gaji_pokok_harian - panjar
-// - gaji_pokok di tb_karier dianggap UPAH HARIAN.
-// - total_nilai_kehadiran = SUM(tb_absen.jam_kerja) untuk hari berbayar
-//   (HADIR + SPL; nilai per hari 0/0.5/1/1.5/2 dari import PAYROLL ANTAM).
-// - IZIN/SAKIT/CUTI/OFF(murni)/MANGKIR/ALPHA/RESIGN/NEW = tidak dibayar (0).
-// - panjar = SUM(tb_potongan_tidak_tetap.nominal_potongan)
-//   WHERE jenis_potongan='PANJAR' AND tgl_potongan BETWEEN start AND end.
-// - Tunjangan, potongan tetap, lembur-multiplier, rapel, pinjaman, THR: DIABAIKAN (0).
-// - Kolom overtime/lembur di tb_karier (lembur, ot_pertama, ot_kedua, spl,
-//   ot1_spl, ot2_spl, pot_izin, pot_mangkir) SUDAH DIHAPUS dari DB.
+// Deteksi otomatis tipe_karyawan dari tb_karyawan lalu mendelegasikan ke:
+//   - slip_helper_kontrak.php  -> gaji bulanan tetap
+//   - slip_helper_harian.php   -> upah harian × hari kerja
 //
-// Cara pakai ulang di mana saja (controller / API / view), cukup:
-//   global $koneksi; // pastikan koneksi PDO $koneksi sudah ada
-//   require_once __DIR__ . '/../helpers/slip_helper.php'; // sesuaikan path relatif dari file pemanggil
-//   $slip = generateSlipGajiById($id_karyawan, $startDate, $endDate); // by ID, atau
-//   $slip = generateSlipGaji($nik, $startDate, $endDate);             // by NIK (wrapper)
+// Semua fungsi publik di sini (generateSlipGajiById, generateSlipGaji,
+// generateSlipGajiBatch) tetap kompatibel dengan pemanggil lama.
+// Perhitungan murni ada di hitungSlipGajiKontrak / hitungSlipGajiHarian
+// (tanpa query database) agar single & batch hasilnya identik.
 //
-// Return: array slip canonical (snake_case) atau ['error' => ...] / ['skip' => true, ...].
-// Key lama dipertahankan (bernilai 0/array kosong) agar semua konsumen
-// (get-payrol, get-slip, posting-payroll, slip print, API mobile) tetap jalan.
-// File lama app/config/function-slip.php kini hanya shim yang me-require file ini.
-// header('Content-Type: application/json; charset=utf-8');
+// Cara pakai:
+//   global $koneksi; // PDO
+//   require_once __DIR__ . '/slip_helper.php';
+//   $slip = generateSlipGajiById($id_karyawan, $startDate, $endDate);
+//   $slip = generateSlipGaji($nik, $startDate, $endDate);
+//
+// Return: array slip canonical atau ['error'=>...] / ['skip'=>true,...].
+
+require_once __DIR__ . '/slip_helper_kontrak.php';
+require_once __DIR__ . '/slip_helper_harian.php';
+
+if (!function_exists('_resolveTipeKaryawan')) {
+    /**
+     * Ambil tipe_karyawan + id_karyawan dari tb_karyawan berdasarkan id.
+     * @return array|null ['id_karyawan'=>int, 'tipe_karyawan'=>string] atau null
+     */
+    function _resolveTipeKaryawan(int $id_karyawan): ?array
+    {
+        global $koneksi;
+        try {
+            $stmt = $koneksi->prepare("SELECT id_karyawan, tipe_karyawan FROM tb_karyawan WHERE id_karyawan = ? LIMIT 1");
+            $stmt->execute([$id_karyawan]);
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log('slip_helper resolveTipe: ' . $e->getMessage());
+            return null;
+        }
+        return $row ? ['id_karyawan' => (int)$row['id_karyawan'], 'tipe_karyawan' => $row['tipe_karyawan'] ?? 'Kontrak'] : null;
+    }
+}
+
+if (!function_exists('_resolveTipeKaryawanByNik')) {
+    /**
+     * Ambil id_karyawan + tipe_karyawan dari NIK.
+     * @return array|null
+     */
+    function _resolveTipeKaryawanByNik(string $nik): ?array
+    {
+        global $koneksi;
+        try {
+            $stmt = $koneksi->prepare("SELECT id_karyawan, tipe_karyawan FROM tb_karyawan WHERE nik_karyawan = ? ORDER BY (status_karyawan='Aktif') DESC, id_karyawan DESC LIMIT 1");
+            $stmt->execute([$nik]);
+            $row = $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log('slip_helper resolveTipeByNik: ' . $e->getMessage());
+            return null;
+        }
+        return $row ? ['id_karyawan' => (int)$row['id_karyawan'], 'tipe_karyawan' => $row['tipe_karyawan'] ?? 'Kontrak'] : null;
+    }
+}
 
 if (!function_exists('generateSlipGajiById')) {
-    // SATU-SATUNYA perhitungan slip gaji (DRY). Semua jalur (sistem + API) wajib pakai ini.
+    /**
+     * SATU-SATUNYA entri perhitungan slip gaji (DRY).
+     * Deteksi tipe_karyawan lalu delegasi ke kontrak atau harian.
+     */
     function generateSlipGajiById($id_karyawan, $startDate, $endDate)
+    {
+        $id_karyawan = (int)$id_karyawan;
+        if ($id_karyawan <= 0) return ['error' => 'ID karyawan tidak valid'];
+
+        $info = _resolveTipeKaryawan($id_karyawan);
+        if (!$info) return ['error' => 'Karyawan tidak ditemukan'];
+
+        $tipe = $info['tipe_karyawan'] ?? 'Kontrak';
+
+        if ($tipe === 'Harian') {
+            return generateSlipGajiByIdHarian($id_karyawan, $startDate, $endDate);
+        }
+
+        // Default: Kontrak
+        return generateSlipGajiByIdKontrak($id_karyawan, $startDate, $endDate);
+    }
+}
+
+if (!function_exists('generateSlipGajiBatch')) {
+    /**
+     * Versi BULK: deteksi tipe per karyawan, lalu delegasi ke batch masing-masing.
+     * Grouping per tipe untuk efisiensi query.
+     * Return: [id_karyawan => slip canonical | error | skip].
+     */
+    function generateSlipGajiBatch(array $id_karyawans, $startDate, $endDate)
     {
         global $koneksi;
 
-        $id_karyawan = (int)$id_karyawan;
-        if ($id_karyawan <= 0) return ['error' => 'ID karyawan tidak valid'];
-        $d1 = DateTime::createFromFormat('!Y-m-d', (string)$startDate);
-        $d2 = DateTime::createFromFormat('!Y-m-d', (string)$endDate);
-        if (!$d1 || !$d2 || $d1 > $d2) return ['error' => 'Rentang periode tidak valid (YYYY-MM-DD).'];
-        $startDate = $d1->format('Y-m-d');
-        $endDate = $d2->format('Y-m-d');
+        $ids = array_values(array_unique(array_filter(array_map('intval', $id_karyawans), fn($v) => $v > 0)));
+        if (empty($ids)) return [];
 
-        // ================= 1) Get Karyawan =================
+        $in = implode(',', $ids);
+
+        // Ambil tipe_karyawan untuk semua id sekaligus
+        $tipeMap = [];
         try {
-            $stmt = $koneksi->prepare("SELECT k.*, t.tgl_keluar
-                FROM tb_karyawan k
-                LEFT JOIN tb_tereliminasi t ON k.id_karyawan = t.id_karyawan
-                WHERE k.id_karyawan = ? LIMIT 1");
-            $stmt->execute([$id_karyawan]);
-            $k = $stmt->fetch();
-        } catch (PDOException $e) {
-            error_log('slip_helper karyawan: ' . $e->getMessage());
-            return ['error' => 'Gagal mengambil data karyawan'];
-        }
-
-        if (!$k) return ['error' => 'Karyawan tidak ditemukan'];
-
-        // Karyawan keluar sebelum periode -> skip (tetap dipertahankan)
-        if ($k['status_karyawan'] !== 'Aktif' && !empty($k['tgl_keluar'])) {
-            if (strtotime($k['tgl_keluar']) < strtotime($startDate)) {
-                return [
-                    'skip' => true,
-                    'error' => 'Karyawan telah keluar sebelum rentang periode ini.'
-                ];
-            }
-        }
-
-        $id_karyawan = (int)$k['id_karyawan'];
-
-        // ================= 2) Get Karier terbaru =================
-        try {
-            $stmt = $koneksi->prepare("SELECT kar.*, jab.nama_jabatan
-            FROM tb_karier kar
-            LEFT JOIN tb_jabatan jab ON kar.id_jabatan = jab.id_jabatan
-            WHERE kar.id_karyawan = ?
-            ORDER BY kar.tgl_mulai DESC LIMIT 1");
-            $stmt->execute([$id_karyawan]);
-            $karier = $stmt->fetch();
-        } catch (PDOException $e) {
-            error_log('slip_helper karier: ' . $e->getMessage());
-            return ['error' => 'Gagal mengambil data karier'];
-        }
-        if (!$karier) return ['error' => 'Data karier karyawan tidak ditemukan'];
-
-        $gaji_pokok = floatval($karier['gaji_pokok'] ?? 0);
-        if ($gaji_pokok <= 0) {
-            return [
-                'error' => 'Slip gaji tidak dapat dibuat karena gaji pokok karyawan belum terisi.'
-            ];
-        }
-
-        $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
-
-        // ================= 3) Get Absen =================
-        try {
-            $stmt = $koneksi->prepare("SELECT tgl_absen, jam_kerja, ket_absen
-           FROM tb_absen
-           WHERE id_karyawan = ?
-           AND tgl_absen BETWEEN ? AND ?
-           ORDER BY tgl_absen ASC");
-            $stmt->execute([$id_karyawan, $startDate, $endDate]);
-            $absenRows = [];
+            $stmt = $koneksi->prepare("SELECT id_karyawan, tipe_karyawan FROM tb_karyawan WHERE id_karyawan IN ($in)");
+            $stmt->execute();
             while ($r = $stmt->fetch()) {
-                $absenRows[$r['tgl_absen']] = $r; // index tanggal
+                $tipeMap[(int)$r['id_karyawan']] = $r['tipe_karyawan'] ?? 'Kontrak';
             }
         } catch (PDOException $e) {
-            error_log('slip_helper absen: ' . $e->getMessage());
-            return ['error' => 'Gagal mengambil data absensi'];
+            error_log('slip_helper batch resolveTipe: ' . $e->getMessage());
         }
 
-        // ================= 4) Klasifikasi per hari =================
-        $absenForUI = [];
-        $hadir_count = 0;   // jumlah hari HADIR + SPL (info tampilan)
-        $total_nilai_kehadiran = 0.0; // SUM nilai jam_kerja hari berbayar (untuk rumus gaji)
-        $spl_count = 0;     // subset hadir (info)
-        $mangkir_count = 0;
-        $izin_days = 0;
-        $sakit_days = 0;
-        $cuti_days = 0;
-        $off_days = 0;
-        $resign_count = 0;
-        $new_count = 0;
+        $idsKontrak = [];
+        $idsHarian = [];
 
-        $period = new DatePeriod(
-            new DateTime($startDate),
-            new DateInterval('P1D'),
-            (new DateTime($endDate))->modify('+1 day')
-        );
-
-        foreach ($period as $date) {
-            $tgl = $date->format('Y-m-d');
-            $ket = 'MANGKIR';
-            $jam = 0;
-
-            if (isset($absenRows[$tgl])) {
-                $ketAbsen = strtoupper(trim((string)$absenRows[$tgl]['ket_absen']));
-                $jamRaw = trim((string)$absenRows[$tgl]['jam_kerja']);
-                $jam = is_numeric($jamRaw) ? floatval($jamRaw) : 0;
-
-                if ($ketAbsen === 'NEW') {
-                    $ket = 'NEW';
-                    $new_count++;
-                } elseif ($ketAbsen === 'RESIGN' || $ketAbsen === 'R') {
-                    $ket = 'RESIGN';
-                    $resign_count++;
-                } elseif (in_array($ketAbsen, ['IZIN', 'SAKIT', 'CUTI'], true)) {
-                    $ket = $ketAbsen;
-                    if ($ketAbsen === 'IZIN') $izin_days++;
-                    elseif ($ketAbsen === 'SAKIT') $sakit_days++;
-                    else $cuti_days++;
-                } elseif ($ketAbsen === 'ALPHA' || ($jam <= 0 && $ketAbsen !== 'OFF')) {
-                    // ALPHA atau tanpa jam (selain OFF murni) = mangkir
-                    $ket = 'MANGKIR';
-                    $mangkir_count++;
-                } elseif ($ketAbsen === 'OFF' && $jam <= 0) {
-                    $ket = 'OFF';
-                    $off_days++;
-                } elseif ($jam > 0 && (strpos($ketAbsen, 'OFF') !== false || strpos($ketAbsen, 'SPL') !== false || strpos($ketAbsen, 'LEMBUR') !== false)) {
-                    // SPL/lembur: nilai jam_kerja dijumlahkan apa adanya, tanpa multiplier
-                    $ket = 'SPL';
-                    $spl_count++;
-                    $hadir_count++;
-                    $total_nilai_kehadiran += $jam;
-                } elseif ($jam > 0) {
-                    // HADIR: ket HADIR, kosong, atau lainnya dengan jam > 0
-                    // Nilai bisa 0.5/1/1.5/2 (PAYROLL ANTAM) -> jumlahkan apa adanya.
-                    $ket = 'HADIR';
-                    $hadir_count++;
-                    $total_nilai_kehadiran += $jam;
-                } else {
-                    $ket = 'MANGKIR';
-                    $mangkir_count++;
-                }
+        foreach ($ids as $id) {
+            $tipe = $tipeMap[$id] ?? 'Kontrak';
+            if ($tipe === 'Harian') {
+                $idsHarian[] = $id;
             } else {
-                // Tanpa data absen: resign bila lewat tgl selesai karier, selain itu mangkir
-                if (!empty($tgl_selesai_karier) && $tgl > $tgl_selesai_karier) {
-                    $ket = 'RESIGN';
-                    $resign_count++;
-                } else {
-                    $ket = 'MANGKIR';
-                    $mangkir_count++;
-                }
+                $idsKontrak[] = $id;
             }
-
-            $absenForUI[] = [
-                'tanggal' => $tgl,
-                'jam' => $jam,
-                'wl' => 0,
-                'ot' => 0,
-                'ket' => $ket,
-            ];
         }
 
-        // ================= 5) RUMUS: total_nilai_kehadiran x gaji pokok - panjar =================
-        $panjar = 0.0;
-        try {
-            $stmt = $koneksi->prepare("SELECT COALESCE(SUM(nominal_potongan), 0)
-                FROM tb_potongan_tidak_tetap
-                WHERE id_karyawan = ?
-                AND UPPER(TRIM(jenis_potongan)) = 'PANJAR'
-                AND tgl_potongan BETWEEN ? AND ?");
-            $stmt->execute([$id_karyawan, $startDate, $endDate]);
-            $panjar = (float)$stmt->fetchColumn();
-        } catch (Throwable $e) {
-            error_log('slip_helper panjar: ' . $e->getMessage());
-            $panjar = 0.0;
+        $out = [];
+
+        if (!empty($idsKontrak)) {
+            $out = array_merge($out, generateSlipGajiBatchKontrak($idsKontrak, $startDate, $endDate));
+        }
+        if (!empty($idsHarian)) {
+            $out = array_merge($out, generateSlipGajiBatchHarian($idsHarian, $startDate, $endDate));
         }
 
-        $total_nilai_kehadiran = round($total_nilai_kehadiran, 2);
-        $gaji_kotor = $total_nilai_kehadiran * $gaji_pokok;
-        $gaji_bersih = $gaji_kotor - $panjar;
+        // Pastikan semua id memiliki entri (karyawan tidak ditemukan di DB)
+        foreach ($ids as $id) {
+            if (!isset($out[$id])) {
+                $out[$id] = ['error' => 'Karyawan tidak ditemukan'];
+            }
+        }
 
-        // ================= Build response (key lama dipertahankan) =================
-        return [
-            'nik' => $k['nik_karyawan'],
-            'nama' => $k['nama_lengkap'],
-            'jabatan' => $karier['nama_jabatan'] ?? '',
-            'period' => "$startDate - $endDate",
-            'new' => $new_count,
-            'resign' => $resign_count,
-            'rapel' => [],
-            'total_rapel' => 0,
-
-            'basic' => $gaji_pokok,
-
-            'total_lembur' => 0,
-            'total_overtime' => 0,
-            'total_spl_1_7' => 0,
-            'total_spl_8' => 0,
-            'total_spl_9_up' => 0,
-
-            'total_jam_wl' => 0,
-            'total_jam_ot' => 0,
-            'total_jam_spl_1_7' => 0,
-            'total_jam_spl_8' => 0,
-            'total_jam_spl_9_up' => 0,
-
-            'bpjs_kesehatan' => 0,
-            'jht' => 0,
-            'pph21' => 0,
-            'pot_pkwt' => 0,
-
-            'pot_izin' => 0,
-            'pot_mangkir' => 0,
-            'panjar' => $panjar,
-            'total_nilai_kehadiran' => $total_nilai_kehadiran,
-            'total_pendapatan' => $gaji_kotor,
-            'total_potongan' => $panjar,
-            'gaji_bersih' => $gaji_bersih,
-            'hari_kerja' => $total_nilai_kehadiran,
-            'hadir' => $hadir_count,
-            'hadir_hari' => $hadir_count,
-            'spl' => $spl_count,
-            'off' => $off_days,
-            'izin' => $izin_days,
-            'sakit' => $sakit_days,
-            'cuti' => $cuti_days,
-
-            'tunjangan_pendapatan' => [],
-            'total_tunjangan_pendapatan' => 0,
-            'potongan_tunjangan' => [],
-            'total_potongan_tunjangan' => 0,
-
-            'pinjaman' => [],
-            'total_potongan_pinjaman' => 0,
-            'potongan_lain' => $panjar > 0 ? [['nama' => 'Panjar', 'jumlah' => $panjar]] : [],
-            'total_potongan_lainnya' => $panjar,
-            'mangkir' => $mangkir_count,
-            'total_jam_kurang' => 0,
-            'potongan_perjam' => 0,
-            'potongan_cuti_khusus' => 0,
-            'absen' => $absenForUI,
-        ];
+        return $out;
     }
 }
 
 if (!function_exists('generateSlipGaji')) {
-    // Wrapper kompatibilitas: pemanggil lama pakai NIK. DRY: delegasi ke generateSlipGajiById().
+    /**
+     * Wrapper kompatibilitas: pemanggil lama pakai NIK.
+     * Deteksi tipe_karyawan lalu delegasi.
+     */
     function generateSlipGaji($nik, $startDate, $endDate)
     {
         global $koneksi;
         $nik = trim((string)$nik);
         if ($nik === '') return ['error' => 'NIK tidak valid'];
-        try {
-            $stmt = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ? LIMIT 1");
-            $stmt->execute([$nik]);
-            $row = $stmt->fetch();
-        } catch (PDOException $e) {
-            error_log('slip_helper nik: ' . $e->getMessage());
-            return ['error' => 'Gagal mencari karyawan'];
+
+        $info = _resolveTipeKaryawanByNik($nik);
+        if (!$info) return ['error' => 'Karyawan tidak ditemukan'];
+
+        $tipe = $info['tipe_karyawan'] ?? 'Kontrak';
+        $id_karyawan = $info['id_karyawan'];
+
+        if ($tipe === 'Harian') {
+            return generateSlipGajiByIdHarian($id_karyawan, $startDate, $endDate);
         }
-        if (!$row) return ['error' => 'Karyawan tidak ditemukan'];
-        return generateSlipGajiById((int)$row['id_karyawan'], $startDate, $endDate);
+
+        return generateSlipGajiByIdKontrak($id_karyawan, $startDate, $endDate);
+    }
+}
+
+// Alias kompatibilitas dengan kode lama yang mungkin memanggil hitungSlipGaji()
+// (versi sederhana lama). Dipertahankan agar tidak ada Fatal Error undefined function.
+if (!function_exists('hitungSlipGaji')) {
+    function hitungSlipGaji($k, $karier, $tunjanganRawRows, $potonganRows, $rapelRows, $pinjamanRows, $potonganLainRows, $absenRows, $startDate, $endDate)
+    {
+        // Delegasikan ke kontrak (default) untuk kompatibilitas lamanya.
+        $tipe = $k['tipe_karyawan'] ?? 'Kontrak';
+        if ($tipe === 'Harian') {
+            return hitungSlipGajiHarian($k, $karier, $tunjanganRawRows, $potonganRows, $rapelRows, $pinjamanRows, $potonganLainRows, $absenRows, $startDate, $endDate);
+        }
+        return hitungSlipGajiKontrak($k, $karier, $tunjanganRawRows, $potonganRows, $rapelRows, $pinjamanRows, $potonganLainRows, $absenRows, $startDate, $endDate);
     }
 }
