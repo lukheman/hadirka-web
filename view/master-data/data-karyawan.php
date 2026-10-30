@@ -255,6 +255,7 @@
                                 <th class="text-center"><i class="fa fa-id-card"></i> NIK</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
                                 <th class="text-center"><i class="fa fa-file-contract"></i> Tipe Karyawan</th>
+                                <th class="text-center"><i class="fa fa-clock"></i> Jam Kerja</th>
                                 <th class="text-center"><i class="fa fa-users"></i> Status</th>
                                 <th class="text-center"><i class="fa fa-key"></i> Status Akun</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
