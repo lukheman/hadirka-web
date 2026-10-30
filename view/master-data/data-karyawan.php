@@ -1317,15 +1317,25 @@
             ajax: {
                 url: "app/controller/get-data/get-karyawan.php",
                 type: "POST",
-                data: function(d) {
-                    d.site = $("#filterSite").val();
-                    d.jabatan = $("#filterJabatan").val();
-                    d.tipe_karyawan = $("#filterTipe").val();
-                    d.status = $("#filterStatus").val();
-                    d.bulan = $("#filterBulan").val();
-                },
-                dataSrc: "data"
-            },
+                 data: function(d) {
+                     d.site = $("#filterSite").val();
+                     d.jabatan = $("#filterJabatan").val();
+                     d.tipe_karyawan = $("#filterTipe").val();
+                     d.status = $("#filterStatus").val();
+                     d.bulan = $("#filterBulan").val();
+                 },
+                 error: function(xhr) {
+                     let message = 'Data karyawan gagal dimuat.';
+                     if (xhr.responseJSON && xhr.responseJSON.error) {
+                         message = xhr.responseJSON.error;
+                     }
+                     console.error('Get karyawan error:', xhr.status, xhr.responseText);
+                     if (typeof iziToast !== 'undefined') {
+                         iziToast.error({title: 'Data Karyawan', message: message});
+                     }
+                 },
+                 dataSrc: "data"
+             },
             columns: kolomKaryawan,
             // Pulihkan centang saat baris digambar ulang (pindah halaman/sort).
             rowCallback: function(row, data) {

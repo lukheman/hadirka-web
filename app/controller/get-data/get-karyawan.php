@@ -372,14 +372,17 @@ try {
         'recordsTotal' => count($data),
         'recordsFiltered' => count($data)
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     // Log error
     error_log("Get Karyawan Error: " . $e->getMessage());
 
-    // Return empty data dengan error message
+    // Jangan menyamarkan error DB sebagai data kosong. DataTables perlu menerima
+    // HTTP 500 agar masalah konfigurasi database terlihat saat hosting.
+    http_response_code(500);
     echo json_encode([
         'data' => [],
-        'error' => 'Terjadi kesalahan saat mengambil data',
-        'debug' => $e->getMessage() // Hapus di production
+        'recordsTotal' => 0,
+        'recordsFiltered' => 0,
+        'error' => 'Terjadi kesalahan saat mengambil data. Periksa koneksi database hosting.'
     ]);
 }
