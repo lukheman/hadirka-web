@@ -1,25 +1,32 @@
 <?php
-// Import Data Karyawan — mendukung 2 template (otomatis dikenali):
+// Import Data Karyawan — mendukung 3 format (otomatis dikenali):
 //
-// (1) SEDERHANA 8 kolom (A-H):
+// (1) FORMAT UTAMA 11 kolom (A-K):
+//       NO. | ID KARYAWAN | NIK KARYAWAN | NAMA | JABATAN | TIPE KARYAWAN |
+//       PROYEK | GAJI POKOK | BANK | REKENING | A/N
+//       ID KARYAWAN berisi IPM-xxxxx; NIK KARYAWAN berisi NIK kependudukan.
+// (2) FORMAT LAMA 8 kolom (A-H), tipe otomatis Kontrak:
 //       Baris 1 header: NO. | NAMA | JABATAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N
 //       Baris 2 dst data. Kolom NO. diabaikan (tidak unik, direset per proyek).
-// (2) ABSENSI Payroll ANTAM (template Rekap Absensi):
+// (3) ABSENSI Payroll ANTAM (template Rekap Absensi):
 //       Baris 5 header: NO. | NAMA | JABATAN | PROYEK | ... | HARI | POKOK | GAJI | PANJAR
 //                     | BERSIH | BANK | REKENING | A/N ; baris 8 dst data.
 //       Yang diambil hanya data karyawan: B NAMA, C JABATAN, D PROYEK, AJ POKOK,
 //       AN BANK, AO REKENING, AP A/N. Kolom harian & panjar DIABAIKAN
 //       (itu ranah import Rekap Absensi).
 //
-// Pemetaan (berlaku untuk kedua template):
-//   NAMA       -> tb_karyawan.nama_lengkap (kunci pencocokan, UPPER; baru -> NIK IPM-xxxxx)
-//   C JABATAN    -> tb_jabatan + tb_karier.id_jabatan (kosong = HL; belum ada = dibuat otomatis)
-//   D PROYEK     -> dicocokkan ke tb_site (nama persis / "PT. <proyek>"); tidak cocok = site NULL
-//   E GAJI POKOK -> tb_karier.gaji_pokok
-//   F BANK       -> tb_identitas.nama_bank      (kosong = tidak diubah / '' untuk baru)
-//   G REKENING   -> tb_identitas.no_rek         (selalu dibaca sebagai TEKS: nol depan aman,
+// Pemetaan format utama:
+//   B ID KARYAWAN -> tb_karyawan.nik_karyawan (IPM-xxxxx)
+//   C NIK KARYAWAN -> tb_identitas.nik_ktp (NIK kependudukan)
+//   D NAMA       -> tb_karyawan.nama_lengkap
+//   E JABATAN    -> tb_jabatan + tb_karier.id_jabatan
+//   F TIPE KARYAWAN -> tb_karyawan.tipe_karyawan + id_tipe_karyawan
+//   G PROYEK     -> dicocokkan ke tb_site
+//   H GAJI POKOK -> tb_karier.gaji_pokok
+//   I BANK       -> tb_identitas.nama_bank
+//   J REKENING   -> tb_identitas.no_rek         (selalu dibaca sebagai TEKS: nol depan aman,
 //                                                format ilmiah 5.1E+14 dinormalisasi bila presisi utuh)
-//   H A/N        -> tb_identitas.atas_nama_rek  (boleh beda dari NAMA; 1 rekening boleh dipakai >1 orang)
+//   K A/N        -> tb_identitas.atas_nama_rek
 //
 // Perilaku: NAMA yang sudah ada di database DIUPDATE (jabatan, gaji, rekening);
 // NAMA baru DIBUAT (karyawan + karier + identitas). Baris tanpa NAMA dilewati.
@@ -123,6 +130,18 @@ function kimpBank($v) {
     if ($s === '' || $s === '-' || strtoupper($s) === 'X') return null;
     return $s;
 }
+function kimpIdKaryawan($v) {
+    $s = kimpUpper($v);
+    if ($s === '' || $s === '-' || $s === 'X') return null;
+    return preg_match('/^IPM-\d+$/', $s) ? $s : null;
+}
+function kimpNikKtp($v) {
+    if ($v === null || $v === '') return null;
+    $s = trim((string)$v);
+    if ($s === '' || $s === '-' || strtoupper($s) === 'X') return null;
+    $s = preg_replace('/\D+/', '', $s);
+    return $s === '' ? null : $s;
+}
 function kimpNikBaru($koneksi) {
     $max = 0;
     try {
@@ -162,10 +181,16 @@ try {
     $sheet = $spreadsheet->getActiveSheet()->toArray(null, true, false, true);
 
     $normH = function ($h) { return kimpUpper($h ?? ''); };
+    $isModern = false;
     $isSimple = false;
-    $headers = array_slice(array_map($normH, array_values($sheet[1] ?? [])), 0, 8);
+    $headers = array_map($normH, array_values($sheet[1] ?? []));
+    $expectedModern = ['NO.', 'ID KARYAWAN', 'NIK KARYAWAN', 'NAMA', 'JABATAN', 'TIPE KARYAWAN', 'PROYEK', 'GAJI POKOK', 'BANK', 'REKENING', 'A/N'];
+    if (count($headers) >= 11 && array_slice($headers, 0, 11) === $expectedModern) {
+        $isModern = true;
+    }
+    $headers = array_slice($headers, 0, 8);
     $expected = ['NO.', 'NAMA', 'JABATAN', 'PROYEK', 'GAJI POKOK', 'BANK', 'REKENING', 'A/N'];
-    if (count($headers) === 8) {
+    if (!$isModern && count($headers) === 8) {
         $isSimple = true;
         foreach ($expected as $i => $exp) {
             $got = $headers[$i];
@@ -185,42 +210,58 @@ try {
             $normH($r5['AI'] ?? '') === 'HARI' &&
             $normH($r5['AJ'] ?? '') === 'POKOK';
     }
-    if (!$isSimple && !$isPayroll) {
-        throw new Exception('Format template tidak sesuai. Gunakan (1) template sederhana 8 kolom A-H (baris 1: NO. | NAMA | JABATAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N), atau (2) template absensi Payroll ANTAM (baris 5: ... HARI | POKOK | ... | BANK | REKENING | A/N).');
+    if (!$isModern && !$isSimple && !$isPayroll) {
+        throw new Exception('Format template tidak sesuai. Gunakan format utama 11 kolom (NO. | ID KARYAWAN | NIK KARYAWAN | NAMA | JABATAN | TIPE KARYAWAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N), format lama 8 kolom, atau template Payroll ANTAM.');
     }
-    $response['format'] = $isPayroll ? 'PAYROLL-ANTAM' : 'SEDERHANA';
+    $response['format'] = $isPayroll ? 'PAYROLL-ANTAM' : ($isModern ? 'UTAMA-10-KOLOM' : 'LAMA-8-KOLOM');
 
-    // Normalisasi ke bentuk yang sama: B nama, C jabatan, D proyek,
-    // E gaji, F bank, G rekening, H a/n.
+    // Normalisasi: B ID, C NIK KTP, D nama, E jabatan, F tipe,
+    // G proyek, H gaji, I bank, J rekening, K a/n.
     $dataRows = [];
-    if ($isSimple) {
+    if ($isModern) {
         foreach ($sheet as $rowNum => $row) {
             if ($rowNum == 1) continue;
             $dataRows[$rowNum] = $row;
+        }
+    } elseif ($isSimple) {
+        foreach ($sheet as $rowNum => $row) {
+            if ($rowNum == 1) continue;
+            $dataRows[$rowNum] = [
+                'B' => null, 'C' => null, 'D' => $row['B'] ?? null,
+                'E' => $row['C'] ?? null, 'F' => 'Kontrak', 'G' => $row['D'] ?? null,
+                'H' => $row['E'] ?? null, 'I' => $row['F'] ?? null,
+                'J' => $row['G'] ?? null, 'K' => $row['H'] ?? null,
+            ];
         }
     } else {
         foreach ($sheet as $rowNum => $row) {
             if ($rowNum < 8) continue;
             $dataRows[$rowNum] = [
-                'B' => $row['B'] ?? null,   // NAMA
-                'C' => $row['C'] ?? null,   // JABATAN
-                'D' => $row['D'] ?? null,   // PROYEK
-                'E' => $row['AJ'] ?? null,  // POKOK -> gaji pokok
-                'F' => $row['AN'] ?? null,  // BANK
-                'G' => $row['AO'] ?? null,  // REKENING
-                'H' => $row['AP'] ?? null,  // A/N
+                'B' => null,                // ID KARYAWAN tidak tersedia
+                'C' => null,                // NIK KTP tidak tersedia
+                'D' => $row['B'] ?? null,   // NAMA
+                'E' => $row['C'] ?? null,   // JABATAN
+                'F' => 'Kontrak',
+                'G' => $row['D'] ?? null,   // PROYEK
+                'H' => $row['AJ'] ?? null,  // POKOK -> gaji pokok
+                'I' => $row['AN'] ?? null,  // BANK
+                'J' => $row['AO'] ?? null,  // REKENING
+                'K' => $row['AP'] ?? null,  // A/N
             ];
         }
     }
 
-    $stmtFindByName = $koneksi->prepare("SELECT id_karyawan, nik_karyawan FROM tb_karyawan WHERE UPPER(TRIM(nama_lengkap))=? ORDER BY id_karyawan ASC");
-    $stmtInsKaryawan = $koneksi->prepare("INSERT INTO tb_karyawan (nik_karyawan, nama_lengkap, jenis_kelamin, status_karyawan, password) VALUES (?,?,NULL,'Aktif','')");
+    $stmtFindById = $koneksi->prepare("SELECT id_karyawan, nik_karyawan, nama_lengkap FROM tb_karyawan WHERE UPPER(nik_karyawan)=? LIMIT 1");
+    $stmtFindByName = $koneksi->prepare("SELECT id_karyawan, nik_karyawan, nama_lengkap FROM tb_karyawan WHERE UPPER(TRIM(nama_lengkap))=? ORDER BY id_karyawan ASC");
+    $stmtFindTipe = $koneksi->prepare("SELECT id_tipe_karyawan, nama_tipe FROM tb_tipe_karyawan WHERE UPPER(nama_tipe)=? LIMIT 1");
+    $stmtInsKaryawan = $koneksi->prepare("INSERT INTO tb_karyawan (nik_karyawan, nama_lengkap, jenis_kelamin, tipe_karyawan, id_tipe_karyawan, status_karyawan, password) VALUES (?,?,NULL,?,?,'Aktif','')");
+    $stmtUpdTipe = $koneksi->prepare("UPDATE tb_karyawan SET tipe_karyawan=?, id_tipe_karyawan=? WHERE id_karyawan=?");
     $stmtFindKarier = $koneksi->prepare("SELECT id_karier, id_site, gaji_pokok, id_jabatan FROM tb_karier WHERE id_karyawan=? ORDER BY tgl_mulai DESC LIMIT 1");
     $stmtInsKarier = $koneksi->prepare("INSERT INTO tb_karier (id_karyawan, id_site, id_departemen, id_jabatan, gaji_pokok, tgl_mulai, tgl_selesai) VALUES (?,?,NULL,?,?,NULL,NULL)");
     $stmtUpdKarier = $koneksi->prepare("UPDATE tb_karier SET id_jabatan=?, gaji_pokok=?, id_site=? WHERE id_karier=?");
-    $stmtFindIdent = $koneksi->prepare("SELECT id_identitas, nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan=? LIMIT 1");
-    $stmtInsIdent = $koneksi->prepare("INSERT INTO tb_identitas (id_karyawan, nama_bank, no_rek, atas_nama_rek) VALUES (?,?,?,?)");
-    $stmtUpdIdent = $koneksi->prepare("UPDATE tb_identitas SET nama_bank=?, no_rek=?, atas_nama_rek=? WHERE id_karyawan=?");
+    $stmtFindIdent = $koneksi->prepare("SELECT id_identitas, nik_ktp, nama_bank, no_rek, atas_nama_rek FROM tb_identitas WHERE id_karyawan=? LIMIT 1");
+    $stmtInsIdent = $koneksi->prepare("INSERT INTO tb_identitas (id_karyawan, nik_ktp, nama_bank, no_rek, atas_nama_rek) VALUES (?,?,?,?,?)");
+    $stmtUpdIdent = $koneksi->prepare("UPDATE tb_identitas SET nik_ktp=?, nama_bank=?, no_rek=?, atas_nama_rek=? WHERE id_karyawan=?");
 
     // Alias kolom PROYEK -> nama site di tb_site.
     // File Payroll ANTAM memakai kode lokasi kerja (BG, CCR, P3, P5) yang
@@ -238,7 +279,9 @@ try {
     $proyekLiar = [];
 
     foreach ($dataRows as $rowNum => $row) {
-        $nama = kimpNorm($row['B'] ?? '');
+        $idIpm = kimpIdKaryawan($row['B'] ?? null);
+        $nikKtp = kimpNikKtp($row['C'] ?? null);
+        $nama = kimpNorm($row['D'] ?? '');
         if ($nama === '') { $response['dilewati']++; continue; } // baris kosong/pemisah
         if (strpos(strtoupper($nama), 'TOTAL') !== false || strpos(strtoupper($nama), 'JUMLAH') !== false) {
             $response['dilewati']++;
@@ -248,16 +291,24 @@ try {
 
         $transOk = false;
         try {
-            $jabRaw = kimpUpper($row['C'] ?? '');
-            $jabatan = $jabRaw === '' ? 'HL' : $jabRaw;
-            $proyek = kimpUpper($row['D'] ?? '');
-            $gaji = kimpGaji($row['E'] ?? null);
-            if (($row['E'] ?? null) !== null && trim((string)($row['E'] ?? '')) !== '' && $gaji === null) {
-                throw new Exception("Gaji pokok '" . kimpNorm($row['E']) . "' tidak valid (harus angka).");
+            if (($row['B'] ?? null) !== null && kimpNorm($row['B']) !== '' && $idIpm === null) {
+                throw new Exception('ID Karyawan harus berformat IPM-xxxxx.');
             }
-            $bank = kimpBank($row['F'] ?? null);
-            $norek = kimpRekening($row['G'] ?? null);
-            $an = kimpNorm($row['H'] ?? '');
+            if ($nikKtp !== null && !preg_match('/^\d{16}$/', $nikKtp)) {
+                throw new Exception('NIK Karyawan harus 16 digit.');
+            }
+            $jabRaw = kimpUpper($row['E'] ?? '');
+            $jabatan = $jabRaw === '' ? 'HL' : $jabRaw;
+            $tipe = kimpUpper($row['F'] ?? 'KONTRAK');
+            if ($tipe === '') $tipe = 'KONTRAK';
+            $proyek = kimpUpper($row['G'] ?? '');
+            $gaji = kimpGaji($row['H'] ?? null);
+            if (($row['H'] ?? null) !== null && trim((string)($row['H'] ?? '')) !== '' && $gaji === null) {
+                throw new Exception("Gaji pokok '" . kimpNorm($row['H']) . "' tidak valid (harus angka).");
+            }
+            $bank = kimpBank($row['I'] ?? null);
+            $norek = kimpRekening($row['J'] ?? null);
+            $an = kimpNorm($row['K'] ?? '');
             if ($an === '') $an = null;
 
             // Jabatan: buat otomatis bila belum ada (seperti import absen).
@@ -286,8 +337,20 @@ try {
             $koneksi->beginTransaction();
             $transOk = true;
 
-            $stmtFindByName->execute([$namaKey]);
-            $cands = $stmtFindByName->fetchAll();
+            $cands = [];
+            if ($idIpm !== null) {
+                $stmtFindById->execute([$idIpm]);
+                $foundById = $stmtFindById->fetch();
+                if ($foundById) $cands = [$foundById];
+            }
+            if (empty($cands)) {
+                $stmtFindByName->execute([$namaKey]);
+                $cands = $stmtFindByName->fetchAll();
+            }
+            $stmtFindTipe->execute([$tipe]);
+            $tipeRow = $stmtFindTipe->fetch();
+            if (!$tipeRow) throw new Exception("Tipe karyawan '$tipe' tidak ditemukan di master.");
+            $idTipe = (int)$tipeRow['id_tipe_karyawan'];
             if (!empty($cands)) {
                 $idKaryawan = (int)$cands[0]['id_karyawan'];
                 if (count($cands) > 1) {
@@ -295,9 +358,13 @@ try {
                 }
                 $isBaru = false;
             } else {
-                $stmtInsKaryawan->execute([kimpNikBaru($koneksi), $namaKey]);
+                $idIpm = $idIpm ?? kimpNikBaru($koneksi);
+                $stmtInsKaryawan->execute([$idIpm, $namaKey, $tipeRow['nama_tipe'], $idTipe]);
                 $idKaryawan = (int)$koneksi->lastInsertId();
                 $isBaru = true;
+            }
+            if (!$isBaru) {
+                $stmtUpdTipe->execute([$tipeRow['nama_tipe'], $idTipe, $idKaryawan]);
             }
 
             // Karier: baru -> insert (site bila cocok, gaji bila diisi); ada -> update jabatan + gaji (bila diisi).
@@ -321,13 +388,14 @@ try {
             $stmtFindIdent->execute([$idKaryawan]);
             $ident = $stmtFindIdent->fetch();
             if (!$ident) {
-                $stmtInsIdent->execute([$idKaryawan, (string)($bank ?? ''), (string)($norek ?? ''), (string)($an ?? '')]);
-            } elseif ($bank !== null || $norek !== null || $an !== null) {
+                $stmtInsIdent->execute([$idKaryawan, $nikKtp ?? '', (string)($bank ?? ''), (string)($norek ?? ''), (string)($an ?? '')]);
+            } elseif ($nikKtp !== null || $bank !== null || $norek !== null || $an !== null) {
+                $nk = $nikKtp ?? ($ident['nik_ktp'] ?? '');
                 $nb = $bank ?? ($ident['nama_bank'] ?? '');
                 $nr = $norek ?? ($ident['no_rek'] ?? '');
                 $na = $an ?? ($ident['atas_nama_rek'] ?? '');
-                if ($nb !== ($ident['nama_bank'] ?? '') || $nr !== ($ident['no_rek'] ?? '') || $na !== ($ident['atas_nama_rek'] ?? '')) {
-                    $stmtUpdIdent->execute([(string)$nb, (string)$nr, (string)$na, $idKaryawan]);
+                if ($nk !== ($ident['nik_ktp'] ?? '') || $nb !== ($ident['nama_bank'] ?? '') || $nr !== ($ident['no_rek'] ?? '') || $na !== ($ident['atas_nama_rek'] ?? '')) {
+                    $stmtUpdIdent->execute([(string)$nk, (string)$nb, (string)$nr, (string)$na, $idKaryawan]);
                 }
             }
 

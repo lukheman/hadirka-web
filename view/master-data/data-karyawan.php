@@ -252,7 +252,7 @@
                                 <th class="text-center"><i class="fa fa-hashtag"></i> No</th>
                                 <th class="text-center"><i class="fa fa-image"></i> Foto</th>
                                 <th class="text-center"><i class="fa fa-user"></i> Nama Karyawan</th>
-                                <th class="text-center"><i class="fa fa-id-card"></i> NIK</th>
+                                <th class="text-center"><i class="fa fa-id-card"></i> ID Karyawan</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Jabatan</th>
                                 <th class="text-center"><i class="fa fa-file-contract"></i> Tipe Karyawan</th>
                                 <th class="text-center"><i class="fa fa-clock"></i> Jam Kerja</th>
@@ -301,7 +301,7 @@
                 <label for="file_excel" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
                 <input type="file" name="file_excel" id="file_excel" class="form-control" accept=".xls,.xlsx" required data-bs-toggle="tooltip" title="Pilih file Excel untuk import data karyawan">
                 <a href="assets/template-csv/Format_Impor_Database_Karyawan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
-                <div class="form-text">2 template didukung: (1) sederhana 8 kolom A–H (NO. | NAMA | JABATAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N, header baris 1, data baris 2+); (2) template absensi Payroll ANTAM (header baris 5, data baris 8+, yang diambil hanya NAMA/JABATAN/PROYEK/POKOK/BANK/REKENING/A-N). NAMA yang sudah ada akan diupdate.</div>
+                <div class="form-text">Format utama: 11 kolom (NO. | ID KARYAWAN | NIK KARYAWAN | NAMA | JABATAN | TIPE KARYAWAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N). ID KARYAWAN berisi IPM-xxxxx, NIK KARYAWAN berisi NIK kependudukan 16 digit. Format lama 8 kolom dan template Payroll ANTAM tetap didukung. Data yang sudah ada akan diupdate.</div>
                 <div id="progressWrapper" class="progress mt-2" style="display:none;height:20px;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
                 </div>
@@ -2062,7 +2062,7 @@
             let status = document.getElementById("filterStatus").value;
             let bulan = document.getElementById("filterBulan").value;
 
-            // Arahkan ke file export format template import (8 kolom, bisa di-import balik)
+            // Arahkan ke file export format template import (11 kolom, bisa di-import balik)
             let url = `app/controller/export/export-karyawan-template.php?site=${site}&jabatan=${jabatan}&tipe_karyawan=${tipe}&status=${status}&bulan=${bulan}`;
             window.location.href = url;
         };

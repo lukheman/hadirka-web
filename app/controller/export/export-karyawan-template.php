@@ -1,17 +1,22 @@
 <?php
-// Export Data Karyawan — mengikuti TEMPLATE IMPORT "format utama" (8 kolom):
-//     NO. | NAMA | JABATAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N
+// Export Data Karyawan — harus identik dengan format utama yang dibaca
+// app/controller/csv-control/csv-karyawan.php:
+//     NO. | ID KARYAWAN | NIK KARYAWAN | NAMA | JABATAN | TIPE KARYAWAN |
+//     PROYEK | GAJI POKOK | BANK | REKENING | A/N
 //
 // Tujuan: hasil export bisa langsung diedit di Excel lalu di-import kembali
 // lewat fitur Import Data (app/controller/csv-control/csv-karyawan.php).
 // Pemetaan nilai = kebalikan dari import:
-//   B NAMA       <- tb_karyawan.nama_lengkap
-//   C JABATAN    <- jabatan karier TERAKHIR (id_karier terbesar, sama seperti daftar karyawan)
-//   D PROYEK     <- nama site apa adanya (mis. "PT. Antam"); import mencocokkan nama site persis
-//   E GAJI POKOK <- gaji_pokok karier terakhir (angka polos, tanpa titik pemisah ribuan)
-//   F BANK       <- tb_identitas.nama_bank
-//   G REKENING   <- tb_identitas.no_rek (selalu ditulis sebagai TEKS: nol depan aman)
-//   H A/N        <- tb_identitas.atas_nama_rek
+//   B ID KARYAWAN <- tb_karyawan.nik_karyawan (IPM-xxxxx)
+//   C NIK KARYAWAN <- tb_identitas.nik_ktp (NIK kependudukan)
+//   D NAMA       <- tb_karyawan.nama_lengkap
+//   E JABATAN       <- jabatan karier TERAKHIR
+//   F TIPE KARYAWAN <- tb_tipe_karyawan.nama_tipe
+//   G PROYEK        <- nama site
+//   H GAJI POKOK    <- gaji_pokok karier terakhir
+//   I BANK          <- tb_identitas.nama_bank
+//   J REKENING      <- tb_identitas.no_rek (TEKS: nol depan aman)
+//   K A/N           <- tb_identitas.atas_nama_rek
 //
 // Filter yang dipakai SAMA dengan halaman Data Karyawan (site, jabatan, tipe, status, bulan),
 // jadi data yang diexport = data yang sedang tampil di daftar.
@@ -75,7 +80,8 @@ if (!empty($jabatan)) {
 }
 
 if (!empty($tipe) && in_array($tipe, ['Kontrak', 'Harian'], true)) {
-    $where[] = "kar.tipe_karyawan = ?";
+    // Samakan filter dengan daftar Data Karyawan: tipe berasal dari master tipe.
+    $where[] = "tipe.nama_tipe = ?";
     $params[] = $tipe;
 }
 
@@ -88,20 +94,24 @@ if (!empty($bulan)) {
 $where_sql = implode(" AND ", $where);
 
 // Karier yang dipakai = baris terakhir (id_karier terbesar), konsisten dengan daftar.
-$query = "SELECT
+    $query = "SELECT
+        kar.nik_karyawan,
         kar.nama_lengkap,
         j.nama_jabatan,
+        tipe.nama_tipe,
         s.nama_site,
         k.gaji_pokok,
+        i.nik_ktp,
         i.nama_bank,
         i.no_rek,
         i.atas_nama_rek
     FROM tb_karyawan kar
     LEFT JOIN tb_karier k ON kar.id_karyawan = k.id_karyawan
         AND k.id_karier = (SELECT MAX(k2.id_karier) FROM tb_karier k2 WHERE k2.id_karyawan = kar.id_karyawan)
-    LEFT JOIN tb_site s ON k.id_site = s.id_site
-    LEFT JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
-    LEFT JOIN tb_identitas i ON kar.id_karyawan = i.id_karyawan
+        LEFT JOIN tb_site s ON k.id_site = s.id_site
+        LEFT JOIN tb_jabatan j ON k.id_jabatan = j.id_jabatan
+        LEFT JOIN tb_tipe_karyawan tipe ON kar.id_tipe_karyawan = tipe.id_tipe_karyawan
+        LEFT JOIN tb_identitas i ON kar.id_karyawan = i.id_karyawan
     WHERE $where_sql
     ORDER BY kar.nik_karyawan ASC";
 
@@ -118,35 +128,50 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('Karyawan'); // sama seperti sheet template import
 
-// Header PERSIS seperti baris 1 template import.
-$headers = ['NO.', 'NAMA', 'JABATAN', 'PROYEK', 'GAJI POKOK', 'BANK', 'REKENING', 'A/N'];
-foreach ($headers as $idx => $val) {
-    $col = chr(65 + $idx); // A..H
-    $sheet->setCellValue($col . '1', $val);
-    $sheet->getStyle($col . '1')->getFont()->setBold(true);
+// Header PERSIS seperti format utama yang divalidasi import.
+$headers = [
+    'A1' => 'NO.',
+    'B1' => 'ID KARYAWAN',
+    'C1' => 'NIK KARYAWAN',
+    'D1' => 'NAMA',
+    'E1' => 'JABATAN',
+    'F1' => 'TIPE KARYAWAN',
+    'G1' => 'PROYEK',
+    'H1' => 'GAJI POKOK',
+    'I1' => 'BANK',
+    'J1' => 'REKENING',
+    'K1' => 'A/N',
+];
+foreach ($headers as $cell => $value) {
+    $sheet->setCellValue($cell, $value);
+    $sheet->getStyle($cell)->getFont()->setBold(true);
 }
 
 $rowNum = 2;
 $no = 1;
 foreach ($rows as $row) {
     $sheet->setCellValue('A' . $rowNum, $no++);
-    $sheet->setCellValue('B' . $rowNum, $row['nama_lengkap'] ?? '');
-    $sheet->setCellValue('C' . $rowNum, $row['nama_jabatan'] ?? '');
-    $sheet->setCellValue('D' . $rowNum, $row['nama_site'] ?? '');
+    $sheet->setCellValueExplicit('B' . $rowNum, (string)($row['nik_karyawan'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValueExplicit('C' . $rowNum, (string)($row['nik_ktp'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValue('D' . $rowNum, $row['nama_lengkap'] ?? '');
+    $sheet->setCellValue('E' . $rowNum, $row['nama_jabatan'] ?? '');
+    $sheet->setCellValue('F' . $rowNum, $row['nama_tipe'] ?? 'Kontrak');
+    $sheet->setCellValue('G' . $rowNum, $row['nama_site'] ?? '');
 
     // Angka polos (tanpa pemisah ribuan) agar aman dibaca ulang saat di-import.
     if ($row['gaji_pokok'] !== null && $row['gaji_pokok'] !== '') {
-        $sheet->setCellValue('E' . $rowNum, (float)$row['gaji_pokok']);
+        $sheet->setCellValue('H' . $rowNum, (int)round((float)$row['gaji_pokok']));
     }
 
-    $sheet->setCellValue('F' . $rowNum, $row['nama_bank'] ?? '');
-    $sheet->setCellValueExplicit('G' . $rowNum, (string)($row['no_rek'] ?? ''), DataType::TYPE_STRING);
-    $sheet->setCellValue('H' . $rowNum, $row['atas_nama_rek'] ?? '');
+    $sheet->setCellValue('I' . $rowNum, $row['nama_bank'] ?? '');
+    // Nomor rekening wajib teks agar nol depan tidak hilang saat diedit di Excel.
+    $sheet->setCellValueExplicit('J' . $rowNum, (string)($row['no_rek'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValue('K' . $rowNum, $row['atas_nama_rek'] ?? '');
     $rowNum++;
 }
 
-// Rapikan lebar kolom A-H
-foreach (range('A', 'H') as $col) {
+// Rapikan lebar kolom A-K
+foreach (range('A', 'K') as $col) {
     $sheet->getColumnDimension($col)->setAutoSize(true);
 }
 

@@ -95,7 +95,7 @@ $sheet = $spreadsheet->getActiveSheet();
 // Tulis Header Kolom
 $headers = [
     'A1' => 'No',
-    'B1' => 'NIK Karyawan',
+    'B1' => 'ID Karyawan',
     'C1' => 'Nama Lengkap',
     'D1' => 'Jenis Kelamin (L/P)',
     'E1' => 'Site',
