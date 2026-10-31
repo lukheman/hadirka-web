@@ -45,7 +45,7 @@ require_once 'app/controller/login.php'; // logic login ada di sini
                         </a>
                     </div>
 
-                    <h4 class="mb-2">Selamat Datang! 👋</h4>
+                    <h4 class="mb-2">Selamat Datang! akmal👋</h4>
                     <p class="mb-4">Silahkan Masukkan username Dan Password anda</p>
 
                     <form id="formAuthentication" class="mb-3" action="" method="POST">
