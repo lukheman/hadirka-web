@@ -522,13 +522,20 @@
                                     $jam = !empty($tp['jam_kerja_mulai']) && !empty($tp['jam_kerja_selesai'])
                                         ? ' (' . date('h.i', strtotime($tp['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($tp['jam_kerja_selesai'])) . ')'
                                         : '';
-                                    echo "<option value='" . htmlspecialchars($tp['id_tipe_karyawan']) . "' data-jam='" . htmlspecialchars($jam) . "'>" . htmlspecialchars($tp['nama_tipe']) . $jam . "</option>";
+                                    echo "<option value='" . htmlspecialchars($tp['id_tipe_karyawan']) . "' data-tipe='" . htmlspecialchars($tp['nama_tipe']) . "' data-jam='" . htmlspecialchars($jam) . "'>" . htmlspecialchars($tp['nama_tipe']) . $jam . "</option>";
                                 }
                                 ?>
                             </select>
-                            <input type="text" class="form-control mt-2" id="addJamKerjaInfo" readonly placeholder="Pilih tipe karyawan untuk melihat jam kerja">
+                            <div class="mt-2" id="addJamKerjaField">
+                                <label class="form-label">Jam Kerja <span class="text-danger">*</span></label>
+                                <select class="form-control" name="jam_kerja" id="addJamKerja" required>
+                                    <option value="">-- Pilih Jam Kerja --</option>
+                                    <option value="7" selected>7 jam</option>
+                                    <option value="8">8 jam</option>
+                                </select>
+                            </div>
                             <input type="hidden" name="tipe_karyawan" id="tipeKaryawanAddHidden" value="Kontrak">
-                            <div class="form-text">Tipe karyawan menentukan jenis gaji (bulanan/harian) dan jam kerja bawaan.</div>
+                            <div class="form-text">Jam kerja hanya tersedia untuk karyawan Kontrak.</div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Site</label>
@@ -677,16 +684,22 @@
                             $tipeKaryawansEdit = $koneksi->query("SELECT id_tipe_karyawan, nama_tipe FROM tb_tipe_karyawan ORDER BY nama_tipe ASC");
                             while ($tp = $tipeKaryawansEdit->fetch()) {
                                 $sel = '';
-                                echo "<option value='" . htmlspecialchars($tp['id_tipe_karyawan']) . "' $sel>" . htmlspecialchars($tp['nama_tipe']) . "</option>";
+                                echo "<option value='" . htmlspecialchars($tp['id_tipe_karyawan']) . "' data-tipe='" . htmlspecialchars($tp['nama_tipe']) . "' $sel>" . htmlspecialchars($tp['nama_tipe']) . "</option>";
                             }
                             ?>
                         </select>
                         <input type="hidden" name="tipe_karyawan" id="edit_tipe_karyawan_hidden" value="Kontrak">
-                        <div class="form-text">Tipe karyawan menentukan jenis gaji dan jam kerja bawaan.</div>
+                        <div class="form-text">Jam kerja hanya tersedia untuk karyawan Kontrak.</div>
                     </div>
                     <div class="col-md-6">
-                        <label>Jam Kerja (dari tipe)</label>
-                        <input type="text" class="form-control" id="edit_jam_kerja_info" readonly placeholder="Pilih tipe karyawan untuk melihat jam kerja">
+                        <div id="editJamKerjaField">
+                            <label>Jam Kerja <span class="text-danger">*</span></label>
+                            <select class="form-control" name="jam_kerja" id="edit_jam_kerja" required>
+                                <option value="">-- Pilih Jam Kerja --</option>
+                                <option value="7">7 jam</option>
+                                <option value="8">8 jam</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <hr>
@@ -1187,8 +1200,8 @@
             loadSiteJabatan();
             // Set nilai awal hidden tipe_karyawan dari opsi pertama yang dipilih
             const $opt = $('#idTipeKaryawanAdd option:selected');
-            $('input[name="tipe_karyawan"]').val($opt.text().replace(/\s*\(.*/, ''));
-            updateJamKerjaInfo($('#idTipeKaryawanAdd'), $('#addJamKerjaInfo'), $('input[name="tipe_karyawan"]'));
+            $('#tipeKaryawanAddHidden').val($opt.data('tipe') || 'Kontrak');
+            updateJamKerjaInfo($('#idTipeKaryawanAdd'), $('#addJamKerjaField'), $('#addJamKerja'), $('#tipeKaryawanAddHidden'));
         });
 
 
@@ -1282,21 +1295,23 @@
         }
 
         // Tampilkan info jam kerja berdasarkan tipe karyawan yang dipilih (add & edit form)
-        function updateJamKerjaInfo($select, $infoEl, $hiddenNamaEl) {
+        function updateJamKerjaInfo($select, $fieldEl, $inputEl, $hiddenNamaEl) {
             const $opt = $select.find('option:selected');
-            const jam = $opt.data('jam') || '';
-            if ($infoEl.length) $infoEl.val(jam ? jam : '(belum diatur)');
+            const tipe = String($opt.data('tipe') || '').trim();
+            const isKontrak = tipe === 'Kontrak';
+            if ($fieldEl.length) $fieldEl.toggle(isKontrak);
+            if ($inputEl.length) $inputEl.prop('disabled', !isKontrak).prop('required', isKontrak);
             if ($hiddenNamaEl.length) $hiddenNamaEl.val($opt.text().replace(/\s*\(.*/, ''));
         }
 
         // Form Tambah: saat tipe dipilih, tampilkan jam kerja
         $('#idTipeKaryawanAdd').on('change', function() {
-            updateJamKerjaInfo($(this), $('#addJamKerjaInfo'), $('input[name="tipe_karyawan"]'));
+            updateJamKerjaInfo($(this), $('#addJamKerjaField'), $('#addJamKerja'), $('#tipeKaryawanAddHidden'));
         });
 
         // Form Edit: saat tipe dipilih, tampilkan jam kerja + update hidden nama
         $('#edit_id_tipe_karyawan').on('change', function() {
-            updateJamKerjaInfo($(this), $('#edit_jam_kerja_info'), $('#edit_tipe_karyawan_hidden'));
+            updateJamKerjaInfo($(this), $('#editJamKerjaField'), $('#edit_jam_kerja'), $('#edit_tipe_karyawan_hidden'));
         });
 
         // Bersihkan pilihan (mis. setelah ganti filter atau selesai hapus massal).
@@ -1474,8 +1489,9 @@
                             $("#edit_id_karyawan").val(d.id_karyawan);
                             $("#edit_nik_karyawan").val(res.data.nik_karyawan);
                             $("#edit_nama_lengkap").val(d.nama_lengkap);
-                            $("#edit_id_tipe_karyawan").val(d.id_tipe_karyawan).trigger('change');
-                            $("input[name='tipe_karyawan']").val(d.tipe_karyawan || "Kontrak");
+                             $("#edit_id_tipe_karyawan").val(d.id_tipe_karyawan).trigger('change');
+                             $("#edit_tipe_karyawan_hidden").val(d.tipe_karyawan || "Kontrak");
+                             $("#edit_jam_kerja").val(d.jam_kerja || "");
                             $("#edit_jenis_kelamin").val(d.jenis_kelamin);
                             $("#edit_agama").val(d.agama);
                             $("#edit_tempat_lahir").val(d.tempat_lahir);

@@ -255,6 +255,27 @@ if ($action == "add") {
             $idTipeInput = (int)$idTipeInput;
         }
 
+        $stSelectedTipe = $koneksi->prepare("SELECT nama_tipe FROM tb_tipe_karyawan WHERE id_tipe_karyawan = ? LIMIT 1");
+        $stSelectedTipe->execute([$idTipeInput]);
+        $selectedTipe = $stSelectedTipe->fetch();
+        if (!$selectedTipe) {
+            throw new Exception("Tipe karyawan tidak ditemukan.");
+        }
+        $tipe_input = $selectedTipe['nama_tipe'];
+        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
+            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
+        }
+
+        // Durasi jam kerja hanya berlaku untuk karyawan Kontrak.
+        $jam_kerja_input = input('jam_kerja');
+        if ($tipe_input === 'Kontrak') {
+            if (!in_array($jam_kerja_input, ['7', '8'], true)) {
+                throw new Exception("Jam kerja karyawan Kontrak wajib dipilih (7 jam atau 8 jam).");
+            }
+        } else {
+            $jam_kerja_input = null;
+        }
+
         // Password opsional. Jika kosong, akun tetap belum diaktifkan.
         // Aktivasi dilakukan karyawan melalui aplikasi atau HRD mengisi password.
         $add_password = $_POST['password_karyawan'] ?? '';
@@ -273,8 +294,8 @@ if ($action == "add") {
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
 
         $st1 = $koneksi->prepare("INSERT INTO tb_karyawan
-        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, tipe_karyawan, id_tipe_karyawan, status_karyawan, foto, password)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktif', '', ?)");
+        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, tipe_karyawan, id_tipe_karyawan, jam_kerja, status_karyawan, foto, password)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktif', '', ?)");
         $ok1 = $st1->execute([
             input('nik_karyawan'),
             input('nama_lengkap'),
@@ -289,6 +310,7 @@ if ($action == "add") {
             input('status_ptkp'),
             $tipe_input,
             $idTipeInput,
+            $jam_kerja_input,
             $password_sql
         ]);
 
@@ -506,6 +528,27 @@ if ($action == "edit") {
             $idTipeInput = (int)$idTipeInput;
         }
 
+        $stSelectedTipe = $koneksi->prepare("SELECT nama_tipe FROM tb_tipe_karyawan WHERE id_tipe_karyawan = ? LIMIT 1");
+        $stSelectedTipe->execute([$idTipeInput]);
+        $selectedTipe = $stSelectedTipe->fetch();
+        if (!$selectedTipe) {
+            throw new Exception("Tipe karyawan tidak ditemukan.");
+        }
+        $tipe_input = $selectedTipe['nama_tipe'];
+        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
+            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
+        }
+
+        // Durasi jam kerja hanya berlaku untuk karyawan Kontrak.
+        $jam_kerja_input = input('jam_kerja');
+        if ($tipe_input === 'Kontrak') {
+            if (!in_array($jam_kerja_input, ['7', '8'], true)) {
+                throw new Exception("Jam kerja karyawan Kontrak wajib dipilih (7 jam atau 8 jam).");
+            }
+        } else {
+            $jam_kerja_input = null;
+        }
+
         // 1. UPDATE tb_karyawan
         $k_data = [
             'nik_karyawan'      => $nik_input,
@@ -520,7 +563,8 @@ if ($action == "edit") {
             'status_pernikahan' => input('status_pernikahan'),
             'status_ptkp'       => input('status_ptkp'),
             'tipe_karyawan'     => $tipe_input,
-            'id_tipe_karyawan'  => $idTipeInput
+            'id_tipe_karyawan'  => $idTipeInput,
+            'jam_kerja'         => $jam_kerja_input
         ];
 
         // --- PROSES UPLOAD FOTO (EDIT) ---

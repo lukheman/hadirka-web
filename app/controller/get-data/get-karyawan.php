@@ -164,6 +164,9 @@ try {
         // Tipe karyawan: Kontrak / Harian (data lama default Kontrak).
         $tipe_karyawan = $row['nama_tipe'] ?? $row['tipe_karyawan'] ?? 'Kontrak';
         $tipe_badge = ($tipe_karyawan === 'Harian') ? 'bg-warning text-dark' : 'bg-primary';
+        $jam_kerja_karyawan = $tipe_karyawan === 'Kontrak' && in_array((string)($row['jam_kerja'] ?? ''), ['7', '8'], true)
+            ? htmlspecialchars((string)$row['jam_kerja']) . ' jam'
+            : '-';
 
         $eliminasiHtml = '';
 
@@ -214,9 +217,7 @@ try {
                             <tr><td><strong>Tanggal Lahir</strong></td><td>: $tgl_lahir_format ($usia)</td></tr>
                             <tr><td><strong>Jenis Kelamin</strong></td><td>: " . ($row['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "</td></tr>
                             <tr><td><strong>Tipe Karyawan</strong></td><td>: <span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span></td></tr>
-                            <tr><td><strong>Jam Kerja</strong></td><td>: " . (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
-                                ? date('h.i', strtotime($row['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($row['jam_kerja_selesai']))
-                                : 'Ikuti aturan tipe (' . htmlspecialchars($tipe_karyawan) . ')') . "</td></tr>
+                            <tr><td><strong>Jam Kerja</strong></td><td>: {$jam_kerja_karyawan}</td></tr>
                             <tr><td><strong>Agama</strong></td><td>: " . htmlspecialchars($row['agama'] ?? '-') . "</td></tr>
                             <tr><td><strong>Status Pernikahan</strong></td><td>: " . htmlspecialchars($row['status_pernikahan'] ?? '-') . "</td></tr>
                             <tr><td><strong>Status PTKP</strong></td><td>: " . htmlspecialchars($row['status_ptkp'] ?? '-') . "</td></tr>
@@ -355,9 +356,7 @@ try {
             'nik' => htmlspecialchars($row['nik_karyawan'] ?? '-'),
             'jabatan' => htmlspecialchars($row['nama_jabatan'] ?? '-'),
             'tipe_karyawan' => "<span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span>",
-            'jam_kerja' => (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
-                ? date('h.i', strtotime($row['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($row['jam_kerja_selesai']))
-                : '-'),
+            'jam_kerja' => $jam_kerja_karyawan,
             'status_karyawan' => htmlspecialchars($row['status_karyawan'] ?? '-'),
             'status_akun' => $statusAkunBadge,
             'action' => $action,

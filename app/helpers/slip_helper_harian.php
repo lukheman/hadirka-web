@@ -43,10 +43,13 @@ if (!function_exists('hitungSlipGajiHarian')) {
         $tgl_mulai_karier  = $karier['tgl_mulai'];
         $tgl_selesai_karier = $karier['tgl_selesai']; // bisa NULL
 
-        // Normal hours per hari dari jam kerja tipe karyawan (default 7, Jumat 5)
+        // Normal hours per hari dari jam kerja karyawan (default 7, Jumat 5).
         $normal_hours_default = 7;
         $normal_hours_friday = 5;
-        if (!empty($k['jam_kerja_mulai']) && !empty($k['jam_kerja_selesai'])) {
+        if (in_array((string)($k['jam_kerja'] ?? ''), ['7', '8'], true)) {
+            $normal_hours_default = (float)$k['jam_kerja'];
+            $normal_hours_friday = max(1, $normal_hours_default - 2);
+        } elseif (!empty($k['jam_kerja_mulai']) && !empty($k['jam_kerja_selesai'])) {
             $jm = strtotime($k['jam_kerja_mulai']);
             $js = strtotime($k['jam_kerja_selesai']);
             $diff_hours = ($js - $jm) / 3600;
@@ -121,7 +124,7 @@ if (!function_exists('hitungSlipGajiHarian')) {
         foreach ($period as $date) {
             $tgl = $date->format('Y-m-d');
             $hariNama = strtolower(date('l', strtotime($tgl)));
-            $normal_hours = ($hariNama === 'friday') ? 5 : 7;
+            $normal_hours = ($hariNama === 'friday') ? $normal_hours_friday : $normal_hours_default;
 
             if (isset($absenRows[$tgl])) {
                 $ketAbsen = strtoupper(trim((string)($absenRows[$tgl]['ket_absen'] ?? '')));

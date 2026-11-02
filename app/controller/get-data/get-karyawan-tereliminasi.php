@@ -127,6 +127,9 @@ try {
         // Tipe karyawan: Kontrak / Harian (data lama default Kontrak).
         $tipe_karyawan = $row['nama_tipe'] ?? $row['tipe_karyawan'] ?? 'Kontrak';
         $tipe_badge = ($tipe_karyawan === 'Harian') ? 'bg-warning text-dark' : 'bg-primary';
+        $jam_kerja_karyawan = $tipe_karyawan === 'Kontrak' && in_array((string)($row['jam_kerja'] ?? ''), ['7', '8'], true)
+            ? htmlspecialchars((string)$row['jam_kerja']) . ' jam'
+            : '-';
 
         $eliminasiHtml = "
             <h6 class='text-danger'><i class='fa fa-user-slash'></i> Data Eliminasi</h6>
@@ -153,9 +156,7 @@ try {
                 </tr>
                 <tr>
                     <td><strong>Jam Kerja</strong></td>
-                    <td>: " . (!empty($row['jam_kerja_mulai']) && !empty($row['jam_kerja_selesai'])
-                        ? date('h.i', strtotime($row['jam_kerja_mulai'])) . ' - ' . date('h.i', strtotime($row['jam_kerja_selesai']))
-                        : 'Ikuti aturan tipe (' . htmlspecialchars($tipe_karyawan) . ')') . "</td>
+                    <td>: {$jam_kerja_karyawan}</td>
                 </tr>
             </table>
         ";
