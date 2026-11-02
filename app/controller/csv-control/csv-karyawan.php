@@ -4,7 +4,7 @@
 // (1) FORMAT UTAMA 11 kolom (A-K):
 //       NO. | ID KARYAWAN | NIK KARYAWAN | NAMA | JABATAN | TIPE KARYAWAN |
 //       PROYEK | GAJI POKOK | BANK | REKENING | A/N
-//       ID KARYAWAN berisi IPM-xxxxx; NIK KARYAWAN berisi NIK kependudukan.
+//       ID KARYAWAN opsional; bila kosong disimpan NULL. NIK KARYAWAN berisi NIK kependudukan.
 // (2) FORMAT LAMA 8 kolom (A-H), tipe otomatis Kontrak:
 //       Baris 1 header: NO. | NAMA | JABATAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N
 //       Baris 2 dst data. Kolom NO. diabaikan (tidak unik, direset per proyek).
@@ -16,7 +16,7 @@
 //       (itu ranah import Rekap Absensi).
 //
 // Pemetaan format utama:
-//   B ID KARYAWAN -> tb_karyawan.nik_karyawan (IPM-xxxxx)
+//   B ID KARYAWAN -> tb_karyawan.nik_karyawan (opsional, tidak dibuat otomatis)
 //   C NIK KARYAWAN -> tb_identitas.nik_ktp (NIK kependudukan)
 //   D NAMA       -> tb_karyawan.nama_lengkap
 //   E JABATAN    -> tb_jabatan + tb_karier.id_jabatan
@@ -142,28 +142,6 @@ function kimpNikKtp($v) {
     $s = preg_replace('/\D+/', '', $s);
     return $s === '' ? null : $s;
 }
-function kimpNikBaru($koneksi) {
-    $max = 0;
-    try {
-        $q = $koneksi->query("SELECT nik_karyawan FROM tb_karyawan WHERE nik_karyawan LIKE 'IPM-%'");
-        while ($r = $q->fetch()) {
-            if (preg_match('/IPM-0*(\d+)$/i', trim((string)$r['nik_karyawan']), $m)) {
-                $n = (int)$m[1];
-                if ($n > $max) $max = $n;
-            }
-        }
-    } catch (Throwable $t) { /* abaikan, pakai max=0 */ }
-    for ($i = 1; $i <= 2000; $i++) {
-        $cand = sprintf('IPM-%05d', $max + $i);
-        try {
-            $s = $koneksi->prepare("SELECT 1 FROM tb_karyawan WHERE nik_karyawan=? LIMIT 1");
-            $s->execute([$cand]);
-            if (!$s->fetch()) return $cand;
-        } catch (Throwable $t) { return $cand; }
-    }
-    return sprintf('IPM-%05d', $max + 1) . '-' . time();
-}
-
 try {
     // Cache jabatan + site agar tidak query berulang di dalam loop.
     $cache_jabatan = [];
@@ -358,7 +336,6 @@ try {
                 }
                 $isBaru = false;
             } else {
-                $idIpm = $idIpm ?? kimpNikBaru($koneksi);
                 $stmtInsKaryawan->execute([$idIpm, $namaKey, $tipeRow['nama_tipe'], $idTipe]);
                 $idKaryawan = (int)$koneksi->lastInsertId();
                 $isBaru = true;

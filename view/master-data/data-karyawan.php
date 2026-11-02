@@ -301,7 +301,7 @@
                 <label for="file_excel" class="form-label"><i class="fa fa-file-excel"></i> Upload File (XLS/XLSX)</label>
                 <input type="file" name="file_excel" id="file_excel" class="form-control" accept=".xls,.xlsx" required data-bs-toggle="tooltip" title="Pilih file Excel untuk import data karyawan">
                 <a href="assets/template-csv/Format_Impor_Database_Karyawan.xlsx" style="font-size: 2vh;">Download Template Format .xlsx</a>
-                <div class="form-text">Format utama: 11 kolom (NO. | ID KARYAWAN | NIK KARYAWAN | NAMA | JABATAN | TIPE KARYAWAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N). ID KARYAWAN berisi IPM-xxxxx, NIK KARYAWAN berisi NIK kependudukan 16 digit. Format lama 8 kolom dan template Payroll ANTAM tetap didukung. Data yang sudah ada akan diupdate.</div>
+                <div class="form-text">Format utama: 11 kolom (NO. | ID KARYAWAN | NIK KARYAWAN | NAMA | JABATAN | TIPE KARYAWAN | PROYEK | GAJI POKOK | BANK | REKENING | A/N). ID KARYAWAN opsional dan tidak dibuat otomatis. NIK KARYAWAN berisi NIK kependudukan 16 digit. Format lama 8 kolom dan template Payroll ANTAM tetap didukung. Data yang sudah ada akan diupdate.</div>
                 <div id="progressWrapper" class="progress mt-2" style="display:none;height:20px;">
                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width:0%;">0%</div>
                 </div>
