@@ -188,7 +188,6 @@ $apkSize = $apkAvailable ? number_format(filesize($apkFile) / 1048576, 1, ',', '
                     <span class="brand-subtitle">Employee app</span>
                 </span>
             </a>
-            <a href="login.php" class="login-link">Masuk ke HRIS web &rarr;</a>
         </header>
 
         <main>
