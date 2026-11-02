@@ -70,8 +70,7 @@ function api_input(): array
 }
 
 /**
- * Cari karyawan berdasarkan: id_karyawan (angka), NIK karyawan,
- * atau NIK KTP (tb_identitas.nik_ktp).
+ * Cari karyawan berdasarkan NIK karyawan atau NIK KTP (tb_identitas.nik_ktp).
  */
 function api_find_karyawan(string $identifier): ?array
 {
@@ -90,17 +89,7 @@ function api_find_karyawan(string $identifier): ?array
         return $row;
     }
 
-    // 2. id_karyawan numerik
-    if (ctype_digit($identifier)) {
-        $st = $db->prepare('SELECT * FROM tb_karyawan WHERE id_karyawan = ? LIMIT 1');
-        $st->execute([(int)$identifier]);
-        $row = $st->fetch();
-        if ($row) {
-            return $row;
-        }
-    }
-
-    // 3. NIK KTP pada tb_identitas (alur login aplikasi lama)
+    // NIK KTP pada tb_identitas (alur login aplikasi lama)
     $st = $db->prepare(
         'SELECT k.* FROM tb_identitas i
          JOIN tb_karyawan k ON k.id_karyawan = i.id_karyawan
@@ -109,6 +98,24 @@ function api_find_karyawan(string $identifier): ?array
     $st->execute([$identifier]);
 
     return $st->fetch() ?: null;
+}
+
+/** Ambil NIK KTP dari identitas karyawan untuk respons aktivasi/login. */
+function api_nik_ktp(int $idKaryawan): string
+{
+    if ($idKaryawan <= 0) {
+        return '';
+    }
+
+    $st = api_db()->prepare(
+        'SELECT nik_ktp FROM tb_identitas
+         WHERE id_karyawan = ? AND TRIM(COALESCE(nik_ktp, \'\')) <> \'\'
+         LIMIT 1'
+    );
+    $st->execute([$idKaryawan]);
+    $row = $st->fetch();
+
+    return trim((string)($row['nik_ktp'] ?? ''));
 }
 
 /**
@@ -161,11 +168,15 @@ function api_karyawan_boleh_login(array $karyawan): bool
 function api_user_payload(array $karyawan): array
 {
     $nik = (string)($karyawan['nik_karyawan'] ?? '');
+    $nikKtp = api_nik_ktp((int)$karyawan['id_karyawan']);
     [$jabatan, $departemen] = api_jabatan_departemen((int)$karyawan['id_karyawan']);
 
     return [
         'id'         => (int)$karyawan['id_karyawan'],
+        'id_karyawan' => (int)$karyawan['id_karyawan'],
         'nik'        => $nik,
+        'nik_karyawan' => $nik,
+        'nik_ktp'    => $nikKtp,
         'username'   => $nik,
         'nama'       => (string)($karyawan['nama_lengkap'] ?? ''),
         'email'      => $nik . '@ipm.local',

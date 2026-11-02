@@ -7,7 +7,8 @@ declare(strict_types=1);
  *
  * Kontrak mengikuti backend Node.js lama:
  *   POST /auth/login     { identifier, password }
- *   POST /auth/register  { nik, nama, password, noHp }  (di sini: aktivasi akun)
+ *   POST /auth/register  { identifier|nik, nama, password, noHp }
+ *                         (di sini: aktivasi akun)
  *   PUT  /user/profile   { username, nama, noHp, fotoProfil }
  *   PUT  /user/password  { username, oldPassword, newPassword }
  */
@@ -16,7 +17,7 @@ function api_auth_login(): void
 {
     $in = api_input();
 
-    $identifier = trim((string)($in['identifier'] ?? ''));
+    $identifier = api_auth_identifier($in);
     $password   = (string)($in['password'] ?? '');
 
     if ($identifier === '' || $password === '') {
@@ -46,15 +47,15 @@ function api_auth_login(): void
 function api_auth_check(): void
 {
     $in = api_input();
-    $identifier = trim((string)($in['identifier'] ?? ($in['nik'] ?? '')));
+    $identifier = api_auth_identifier($in);
 
     if ($identifier === '') {
-        api_error(400, 'NIK / ID karyawan wajib diisi.');
+        api_error(400, 'NIK karyawan / NIK KTP wajib diisi.');
     }
 
     $karyawan = api_find_karyawan($identifier);
     if ($karyawan === null) {
-        api_error(404, 'NIK / ID karyawan belum terdaftar di HRD.');
+        api_error(404, 'NIK karyawan / NIK KTP belum terdaftar di HRD.');
     }
 
     if (!api_karyawan_boleh_login($karyawan)) {
@@ -70,7 +71,10 @@ function api_auth_check(): void
         'data' => [
             'eligible' => true,
             'id' => (int)$karyawan['id_karyawan'],
+            'id_karyawan' => (int)$karyawan['id_karyawan'],
             'nik' => (string)($karyawan['nik_karyawan'] ?? ''),
+            'nik_karyawan' => (string)($karyawan['nik_karyawan'] ?? ''),
+            'nik_ktp' => api_nik_ktp((int)$karyawan['id_karyawan']),
             'nama' => (string)($karyawan['nama_lengkap'] ?? ''),
             'noHp' => (string)($karyawan['no_telp'] ?? ''),
             'jabatan' => (string)($karyawan['jabatan'] ?? '-'),
@@ -88,20 +92,21 @@ function api_auth_register(): void
 {
     $in = api_input();
 
+    $identifier = api_auth_identifier($in);
     $nik      = strtoupper(trim((string)($in['nik'] ?? '')));
     $nama     = trim((string)($in['nama'] ?? ''));
     $password = (string)($in['password'] ?? '');
     $noHp     = trim((string)($in['noHp'] ?? ''));
 
-    if ($nik === '' || $nama === '' || $password === '') {
-        api_error(400, 'NIK, Nama Lengkap, & Password wajib diisi.');
+    if ($identifier === '' || $nama === '' || $password === '') {
+        api_error(400, 'NIK karyawan / NIK KTP, Nama Lengkap, & Password wajib diisi.');
     }
 
     if (strlen($password) < 6) {
         api_error(400, 'Password minimal 6 karakter.');
     }
 
-    $karyawan = api_find_karyawan($nik);
+    $karyawan = api_find_karyawan($identifier);
     if ($karyawan === null) {
         api_error(404, 'NIK belum terdaftar di HRD. Hubungi HRD untuk mendaftarkan data Anda terlebih dahulu.');
     }
@@ -130,6 +135,19 @@ function api_auth_register(): void
         'message' => 'Pendaftaran berhasil! Akun Anda sudah aktif, silakan masuk.',
         'user'    => api_user_payload($karyawan),
     ]);
+}
+
+/** Ambil identifier dari kontrak lama maupun field eksplisit baru. */
+function api_auth_identifier(array $input): string
+{
+    foreach (['identifier', 'nik'] as $key) {
+        $value = trim((string)($input[$key] ?? ''));
+        if ($value !== '') {
+            return $value;
+        }
+    }
+
+    return '';
 }
 
 function api_user_profile(): void
