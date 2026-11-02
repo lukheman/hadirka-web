@@ -133,7 +133,7 @@ function kimpBank($v) {
 function kimpIdKaryawan($v) {
     $s = kimpUpper($v);
     if ($s === '' || $s === '-' || $s === 'X') return null;
-    return preg_match('/^IPM-\d+$/', $s) ? $s : null;
+    return $s;
 }
 function kimpNikKtp($v) {
     if ($v === null || $v === '') return null;
@@ -269,9 +269,6 @@ try {
 
         $transOk = false;
         try {
-            if (($row['B'] ?? null) !== null && kimpNorm($row['B']) !== '' && $idIpm === null) {
-                throw new Exception('ID Karyawan harus berformat IPM-xxxxx.');
-            }
             if ($nikKtp !== null && !preg_match('/^\d{16}$/', $nikKtp)) {
                 throw new Exception('NIK Karyawan harus 16 digit.');
             }
