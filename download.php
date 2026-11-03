@@ -8,8 +8,8 @@ $apkSize = $apkAvailable ? number_format(filesize($apkFile) / 1048576, 1, ',', '
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Download aplikasi HRIS-TJS untuk presensi dan layanan karyawan.">
-    <title>Download Aplikasi | HRIS-TJS</title>
+    <meta name="description" content="Download aplikasi HRIS-IPM untuk presensi dan layanan karyawan.">
+    <title>Download Aplikasi | HRIS-IPM</title>
     <link rel="icon" type="image/png" href="assets/img/logo/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -181,10 +181,10 @@ $apkSize = $apkAvailable ? number_format(filesize($apkFile) / 1048576, 1, ',', '
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="download.php" class="brand" aria-label="HRIS-TJS">
+            <a href="download.php" class="brand" aria-label="HRIS-IPM">
                 <img src="assets/img/logo/ipm-logo.png" alt="Logo IPM">
                 <span class="brand-text">
-                    <span class="brand-name">HRIS-TJS</span>
+                    <span class="brand-name">HRIS-IPM</span>
                     <span class="brand-subtitle">Employee app</span>
                 </span>
             </a>
@@ -195,10 +195,10 @@ $apkSize = $apkAvailable ? number_format(filesize($apkFile) / 1048576, 1, ',', '
                 <div class="hero-copy">
                     <span class="eyebrow">Aplikasi resmi karyawan</span>
                     <h1>Semua kebutuhan kerja, <em>dalam genggaman.</em></h1>
-                    <p class="intro">Gunakan aplikasi HRIS-TJS untuk presensi berbasis lokasi, pengajuan izin dan cuti, melihat slip gaji, serta menerima informasi perusahaan.</p>
+                    <p class="intro">Gunakan aplikasi HRIS-IPM untuk presensi berbasis lokasi, pengajuan izin dan cuti, melihat slip gaji, serta menerima informasi perusahaan.</p>
                     <div class="actions">
                         <?php if ($apkAvailable): ?>
-                            <a class="download-button" href="ipm-absen.apk" download="HRIS-TJS.apk">
+                            <a class="download-button" href="ipm-absen.apk" download="HRIS-IPM.apk">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>
                                 </svg>
@@ -221,7 +221,7 @@ $apkSize = $apkAvailable ? number_format(filesize($apkFile) / 1048576, 1, ',', '
                         <div class="phone-screen">
                             <div class="phone-notch"></div>
                             <div class="app-screen">
-                                <div class="app-header"><span>HRIS-TJS</span><span class="app-avatar"></span></div>
+                                <div class="app-header"><span>HRIS-IPM</span><span class="app-avatar"></span></div>
                                 <div class="welcome">Selamat datang kembali,</div>
                                 <strong class="welcome">Karyawan IPM</strong>
                                 <div class="attendance-card">
@@ -250,12 +250,12 @@ $apkSize = $apkAvailable ? number_format(filesize($apkFile) / 1048576, 1, ',', '
                 </div>
                 <div class="step">
                     <span class="step-number">03</span>
-                    <div><h2>Mulai gunakan</h2><p>Buka aplikasi HRIS-TJS dan masuk memakai akun karyawan Anda.</p></div>
+                    <div><h2>Mulai gunakan</h2><p>Buka aplikasi HRIS-IPM dan masuk memakai akun karyawan Anda.</p></div>
                 </div>
             </section>
         </main>
 
-        <footer>&copy; <?= date('Y') ?> PT Indoteknik Prima Mekongga &middot; HRIS-TJS</footer>
+        <footer>&copy; <?= date('Y') ?> PT Indoteknik Prima Mekongga &middot; HRIS-IPM</footer>
     </div>
 </body>
 </html>

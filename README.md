@@ -11,7 +11,7 @@ untuk aplikasi mobile karyawan.
 |---|---|
 | Backend | PHP (PDO MySQL + prepared statements), MySQL/MariaDB |
 | Frontend | Bootstrap 5 (template Sneat), jQuery, DataTables, Select2, SweetAlert2, Toastr, Flatpickr |
-| Cetak/Unduh | html2pdf.js, JSZip + FileSaver, SheetJS (XLSX) |
+| Cetak/Unduh | html2pdf.js, JSZip + FileSaver, Sheeipm (XLSX) |
 | Import/Export server | PhpSpreadsheet (`composer.json` root) |
 | Mobile API | `app/api/index.php` — satu route `app/api/` (aplikasi absen mobile, dipasang di `/api/*`) |
 

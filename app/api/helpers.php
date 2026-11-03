@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * API mobile — Helper bersama.
  *
- * API ini adalah pengganti backend Node.js (db_absen_tjs) untuk aplikasi
+ * API ini adalah pengganti backend Node.js (db_absen_ipm) untuk aplikasi
  * absensi Flutter. Kontrak request/response sengaja dipertahankan sama
  * dengan backend Node.js supaya aplikasi tidak perlu banyak diubah:
  *   - Sukses : {"success": true, "data": ...} (login memakai key "user")

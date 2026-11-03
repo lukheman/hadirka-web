@@ -8,7 +8,7 @@ use Phinx\Migration\AbstractMigration;
  * Integrasi aplikasi absensi mobile (GPS + selfie + geofence) ke database website.
  *
  * Latar belakang: aplikasi Flutter "Absensi" sebelumnya berdiri sendiri dengan
- * database db_absen_tjs + backend Node.js. Mulai sekarang seluruh datanya
+ * database db_absen_ipm + backend Node.js. Mulai sekarang seluruh datanya
  * disatukan ke database website (satu sistem penuh):
  *
  *  - tb_site          : + kolom geofence (kode_lokasi, latitude, longitude,

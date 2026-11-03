@@ -215,7 +215,7 @@ if (!function_exists('hitungSlipGajiKontrak')) {
         // ================= Tunjangan dinamis =================
         $tunjanganRows = [];
         $total_tunjangan = 0;
-        $nik_khusus = ['TJS-00168', 'TJS-00169', 'TJS-00245', 'TJS-00275'];
+        $nik_khusus = ['IPM-00168', 'IPM-00169', 'IPM-00245', 'IPM-00275'];
         $is_khusus = in_array($k['nik_karyawan'] ?? '', $nik_khusus, true);
 
         if ($is_khusus) {

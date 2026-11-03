@@ -9,7 +9,7 @@ aplikasi hanya sebagai klien.
 **Sebelum**
 
 ```
-Aplikasi Flutter ──► Node.js backend (port 3000) ──► MySQL db_absen_tjs (terpisah)
+Aplikasi Flutter ──► Node.js backend (port 3000) ──► MySQL db_absen_ipm (terpisah)
 Website HRIS      ──► PHP + MySQL                    (database website)
 ```
 
@@ -20,7 +20,7 @@ Aplikasi Flutter ──► Website IPM HRIS ──► MySQL (database website, s
                      /api/*  →  app/api/index.php  (satu route / satu front controller)
 ```
 
-* Backend Node.js (`ipm-hris-karyawan/backend_server`) dan database `db_absen_tjs` **tidak
+* Backend Node.js (`ipm-hris-karyawan/backend_server`) dan database `db_absen_ipm` **tidak
   dipakai lagi** (simpan sebagai cadangan sampai aplikasi versi baru terbukti stabil).
 * Semua data (karyawan, absensi, pengajuan, slip, notifikasi, geofence) tersimpan di
   database website sehingga rekap HRD dan aplikasi selalu sinkron.
@@ -163,7 +163,7 @@ Pengajuan pinjaman memakai controller yang sudah ada
    buka/tutup).
 7. Di aplikasi: set alamat server, lalu uji login, geofence, check-in/out, pengajuan,
    notifikasi, slip.
-8. Nonaktifkan service Node.js lama (dan simpan backup `db_absen_tjs`).
+8. Nonaktifkan service Node.js lama (dan simpan backup `db_absen_ipm`).
 
 ## 7. Keputusan Desain & Catatan
 

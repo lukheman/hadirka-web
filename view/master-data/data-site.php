@@ -57,7 +57,7 @@
                     <input type="text" name="lokasi" class="form-control mb-3" required>
 
                     <label>Kode Lokasi <small class="text-muted">(opsional)</small></label>
-                    <input type="text" name="kode_lokasi" class="form-control mb-3" placeholder="Contoh: TJS-01">
+                    <input type="text" name="kode_lokasi" class="form-control mb-3" placeholder="Contoh: IPM-01">
 
                     <label>Link Google Maps</label>
                     <input type="url" name="google_maps_url" class="form-control mb-1 maps-url-input"
@@ -103,7 +103,7 @@
                     <input type="text" name="lokasi" class="form-control mb-3" required>
 
                     <label>Kode Lokasi <small class="text-muted">(opsional)</small></label>
-                    <input type="text" name="kode_lokasi" class="form-control mb-3" placeholder="Contoh: TJS-01">
+                    <input type="text" name="kode_lokasi" class="form-control mb-3" placeholder="Contoh: IPM-01">
 
                     <label>Link Google Maps</label>
                     <input type="url" name="google_maps_url" class="form-control mb-1 maps-url-input"
