@@ -9,8 +9,10 @@
             <div class="card-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> Untuk karyawan baru yang datanya belum diinput.
-                    Tambahkan <strong>baris per jabatan</strong> → pilih <strong>template</strong> → <strong>jumlah</strong> tiap baris.
-                    Periode (Tgl Mulai + Durasi) berlaku untuk semua baris.
+                    Tambahkan <strong>baris per jabatan</strong> → pilih <strong>jenis kontrak</strong> (KARYAWAN BARU / PERPANJANGAN) →
+                    pilih <strong>jabatan</strong> →
+                    pilih <strong>template</strong> yang tersedia → <strong>jumlah</strong> tiap baris.
+                    Nilai kontrak, tunjangan, dan potongan sudah tercantum di dalam file template.
                     Nomor kontrak berurutan langsung <strong>dikonsumsi</strong> dari counter
                     (<code>tb_nomor_urut</code>) dan tidak bisa dibatalkan.
                     Nomor mulai terisi otomatis mengikuti nomor berikutnya, tetapi bisa diubah manual.
@@ -20,56 +22,41 @@
                 <form id="formCetakKontrak" action="app/controller/act-cetak-kontrak.php" method="POST" target="_blank">
                     <input type="hidden" name="action" value="generate">
                     <div class="row g-3 mb-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Tgl Mulai</label>
-                            <input type="date" name="tgl_mulai" id="cetakTglMulai" class="form-control" value="<?= date('Y-m-d') ?>" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Durasi Kontrak</label>
-                            <select name="durasi_bulan" id="cetakDurasi" class="form-select" required>
-                                <option value="3">3 Bulan</option>
-                                <option value="6" selected>6 Bulan</option>
-                                <option value="12">12 Bulan (1 Tahun)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Tgl Selesai <small class="text-muted">(otomatis)</small></label>
-                            <input type="text" id="cetakTglSelesai" class="form-control" readonly placeholder="—">
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label class="form-label">Tahun Nomor</label>
                             <input type="number" name="tahun" id="cetakTahun" class="form-control" value="<?= date('Y') ?>" min="2000" max="2100" required>
                         </div>
-                    </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Nomor Mulai <small class="text-muted">(berikutnya, bisa diubah)</small></label>
                             <input type="number" name="nomor_mulai" id="cetakNomorMulai" class="form-control" min="1" max="999999" placeholder="—">
                             <small class="text-muted" id="cetakNomorHint">Terisi otomatis dari counter; kosongkan untuk otomatis.</small>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="mb-2">
                         <label class="form-label fw-bold mb-0">Daftar Jabatan <small class="text-muted">(maks 10 baris, total maks 100 file)</small></label>
-                        <button type="button" class="btn btn-sm btn-primary" id="btnAddBaris">
-                            <i class="bx bx-plus me-1"></i> Tambah Jabatan
-                        </button>
                     </div>
                     <div id="repeaterJabatan"></div>
                     <select id="cetakJabatanSource" class="d-none" aria-hidden="true" tabindex="-1">
                         <option value="">-- Pilih Jabatan --</option>
                         <?php
                         $jabatans = $koneksi->query("SELECT * FROM tb_jabatan ORDER BY nama_jabatan ASC");
-                        while ($j = $jabatans->fetch()) {
+                         while ($j = $jabatans->fetch(PDO::FETCH_ASSOC)) {
                             $__kj = trim((string)($j['kode_jabatan'] ?? ''));
                             echo "<option value='{$j['id_jabatan']}'>" . htmlspecialchars($j['nama_jabatan'] . ($__kj !== '' ? " ($__kj)" : '')) . "</option>";
                         }
                         ?>
                     </select>
 
-                    <div class="mt-3">
+                    <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
+                        <button type="button" class="btn btn-primary" id="btnAddBaris">
+                            <i class="bx bx-plus me-1"></i> Tambah Jabatan
+                        </button>
                         <button type="submit" class="btn btn-success" id="btnCetakKontrak">
                             <i class="bx bx-download me-1"></i> Generate &amp; Unduh ZIP
+                        </button>
+                        <button type="button" class="btn btn-outline-danger ms-auto" id="btnHapusSemuaBaris">
+                            <i class="bx bx-trash me-1"></i> Hapus Semua
                         </button>
                     </div>
                 </form>
@@ -93,44 +80,9 @@
     document.addEventListener("DOMContentLoaded", () => {
         const API = "app/controller/act-cetak-kontrak.php";
         const inTahun = document.getElementById("cetakTahun");
-        const inMulai = document.getElementById("cetakTglMulai");
-        const inDurasi = document.getElementById("cetakDurasi");
-        const inSelesai = document.getElementById("cetakTglSelesai");
         const boxRepeater = document.getElementById("repeaterJabatan");
         const jabOptionsHTML = document.getElementById("cetakJabatanSource").innerHTML;
         let globalNext = null;
-
-        const NAMA_BULAN = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-            "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-
-        // Tgl Selesai = Tgl Mulai + N bulan, mundur 1 hari
-        // (sama seperti tombol durasi di form karier).
-        function hitungTglSelesai() {
-            if (!inMulai.value) { inSelesai.value = "—"; return ""; }
-            const bulan = parseInt(inDurasi.value, 10) || 0;
-            const d = new Date(inMulai.value + "T00:00:00");
-            if (isNaN(d.getTime()) || bulan <= 0) { inSelesai.value = "—"; return ""; }
-            const tanggal = d.getDate();
-            d.setDate(1);
-            d.setMonth(d.getMonth() + bulan);
-            const maks = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-            d.setDate(Math.min(tanggal - 1, maks));
-            const pad = n => String(n).padStart(2, "0");
-            const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-            inSelesai.value = `${d.getDate()} ${NAMA_BULAN[d.getMonth() + 1]} ${d.getFullYear()}`;
-            return iso;
-        }
-
-        function tglIndo(iso) {
-            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
-            if (!m) return "—";
-            return `${parseInt(m[3], 10)} ${NAMA_BULAN[parseInt(m[2], 10)] || m[2]} ${m[1]}`;
-        }
-
-        function syncTahun() {
-            const m = /^(\d{4})-\d{2}-\d{2}$/.exec(inMulai.value || "");
-            if (m) inTahun.value = m[1];
-        }
 
         function escHtml(s) {
             return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -141,7 +93,30 @@
             return "Rp " + Number(v || 0).toLocaleString("id-ID");
         }
 
-        // Preview nilai kontrak + jabatan langsung di baris (bentuk tabel).
+        function isMakan(nama) {
+            return ["tunjangan makan", "tunjangan uang makan"].includes(String(nama || "").toLowerCase().trim());
+        }
+
+        // Filter jenis kontrak per baris ('' = semua jenis).
+        function rowJenis(row) {
+            const el = row.querySelector(".cetak-jenis");
+            return el ? el.value : "";
+        }
+
+        function jenisBadgeHtml(jenis) {
+            const j = String(jenis || "").toUpperCase();
+            if (j === "PERPANJANGAN") return ' <span class="badge bg-warning text-dark">PERPANJANGAN</span>';
+            if (j === "KARYAWAN BARU") return ' <span class="badge bg-success">KARYAWAN BARU</span>';
+            return "";
+        }
+
+        function templateLabel(t) {
+            const nama = t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template);
+            const j = String(t.jenis_kontrak || "").toUpperCase();
+            return (j === "KARYAWAN BARU" || j === "PERPANJANGAN") ? `${nama} (${j})` : nama;
+        }
+
+        // Preview nilai kontrak + tunjangan + jabatan langsung di baris (bentuk tabel).
         function renderRowPreview(row) {
             const box = row.querySelector(".row-preview");
             const jabSel = row.querySelector(".cetak-jabatan");
@@ -162,13 +137,44 @@
                         ? ` s/d <strong>TPJS-KONTRAK-${escHtml(row.dataset.kode)}/${b}/${escHtml(th)}</strong>`
                         : "");
             }
+            const tunjRows = (t.tunjangan || []).map(x => {
+                const jenis = x.jenis_tunjangan === "tidak_tetap"
+                    ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
+                    : '<span class="badge bg-success">Tetap</span>';
+                const tampil = String(x.tampil_template ?? "1") === "0"
+                    ? '<span class="badge bg-secondary">Tidak</span>'
+                    : '<span class="badge bg-info text-dark">Ya</span>';
+                return `<tr><td>${escHtml(x.nama_tunjangan)}</td><td class="text-center">${jenis}</td>` +
+                    `<td class="text-end">${fmtRpPrev(x.jumlah_tunjangan)}${isMakan(x.nama_tunjangan) ? "/hari" : ""}</td>` +
+                    `<td class="text-center">${tampil}</td></tr>`;
+            }).join("");
+            const potRows = (t.potongan || []).map(x =>
+                `<tr><td>${escHtml(x.jenis_potongan)}</td>` +
+                `<td class="text-end">${fmtRpPrev(x.jumlah_potongan)}</td></tr>`
+            ).join("");
             box.innerHTML =
                 `<div class="table-responsive mt-1"><table class="table table-bordered table-sm mb-0">` +
                 `<tbody>` +
                 `<tr><th style="width:28%">Nomor Kontrak</th><td>${nomorCell}</td></tr>` +
                 `<tr><th style="width:28%">Jabatan</th><td>${escHtml(jabText)}</td></tr>` +
-                `<tr><th>Template</th><td>${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}</td></tr>` +
+                `<tr><th>Template</th><td>${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}${jenisBadgeHtml(t.jenis_kontrak)}</td></tr>` +
                 `<tr><th>Gaji Pokok</th>${tdRp(d.gaji_pokok)}</tr>` +
+                `<tr><th>Upah Lembur</th>${tdRp(d.upah_lembur)}</tr>` +
+                `<tr><th>Potongan Izin</th>${tdRp(d.potongan_izin)}</tr>` +
+                `<tr><th>Potongan Mangkir</th>${tdRp(d.potongan_mangkir)}</tr>` +
+                `<tr><th>Tunjangan (${(t.tunjangan || []).length})</th><td>` +
+                (tunjRows
+                    ? `<table class="table table-bordered table-sm mb-0"><thead class="table-info">` +
+                      `<tr><th>Nama</th><th class="text-center">Jenis</th><th class="text-end">Jumlah</th>` +
+                      `<th class="text-center">Tampil</th></tr></thead><tbody>${tunjRows}</tbody></table>`
+                    : '<span class="text-muted">-</span>') +
+                `</td></tr>` +
+                `<tr><th>Potongan (${(t.potongan || []).length})</th><td>` +
+                (potRows
+                    ? `<table class="table table-bordered table-sm mb-0"><thead class="table-info">` +
+                      `<tr><th>Nama</th><th class="text-end">Jumlah</th></tr></thead><tbody>${potRows}</tbody></table>`
+                    : '<span class="text-muted">-</span>') +
+                `</td></tr>` +
                 `</tbody></table></div>`;
         }
 
@@ -247,8 +253,7 @@
                 `nomor ${mulaiPakai} s/d ${akhir} (counter menyesuaikan, tidak mundur).` +
                 (manual ? `<br><small>Nomor mulai diubah manual dari default ${globalNext}.</small>` : "") +
                 (rawan ? `<br><small><strong>Perhatian:</strong> mulai di bawah nomor berikutnya (${globalNext}) — berisiko duplikat dengan nomor yang sudah terpakai.</small>` : "") +
-                `<br><small>Periode: ${tglIndo(inMulai.value)} s/d ${tglIndo(hitungTglSelesai() || "")} ` +
-                `(${escHtml(inDurasi.options[inDurasi.selectedIndex].text)})</small></div>`;
+                `</div>`;
         }
 
         function loadRowInfo(row) {
@@ -265,6 +270,7 @@
             const fd = new FormData();
             fd.append("action", "info");
             fd.append("id_jabatan", id);
+            fd.append("jenis_kontrak", rowJenis(row));
             fetch(API, { method: "POST", body: fd })
                 .then(async res => {
                     const text = await res.text();
@@ -276,12 +282,15 @@
                     if (globalNext == null && res.berikutnya) { globalNext = res.berikutnya; }
                     row.dataset.kode = res.kode_jabatan || "";
                     row._templates = res.templates || [];
+                    const keepTpl = tplSel.value;
                     if (!res.templates.length) {
-                        tplSel.innerHTML = `<option value="">Belum ada template untuk jabatan ini</option>`;
+                        const jlbl = rowJenis(row) ? ` jenis ${rowJenis(row)}` : "";
+                        tplSel.innerHTML = `<option value="">Belum ada template${escHtml(jlbl)} untuk jabatan ini</option>`;
                     } else {
                         tplSel.innerHTML = res.templates.map(t =>
-                            `<option value="${t.id_template}">${escHtml(t.nama_kontrak || t.nama_asli || ("Template #" + t.id_template))}</option>`
+                            `<option value="${t.id_template}">${escHtml(templateLabel(t))}</option>`
                         ).join("");
+                        if (res.templates.some(t => String(t.id_template) === String(keepTpl))) tplSel.value = keepTpl;
                     }
                     renderRowPreview(row);
                     if (!res.kode_jabatan) {
@@ -312,9 +321,14 @@
                 `<i class="bx bx-trash me-1"></i>Hapus</button></div>` +
                 `<div class="card-body">` +
                 `<div class="row g-2">` +
-                `<div class="col-md-5"><label class="form-label">Jabatan <span class="text-danger">*</span></label>` +
+                `<div class="col-md-3"><label class="form-label">Jenis Kontrak</label>` +
+                `<select name="jenis_kontrak[]" class="form-control cetak-jenis">` +
+                `<option value="">Semua Jenis</option>` +
+                `<option value="KARYAWAN BARU">KARYAWAN BARU</option>` +
+                `<option value="PERPANJANGAN">PERPANJANGAN</option></select></div>` +
+                `<div class="col-md-4"><label class="form-label">Jabatan <span class="text-danger">*</span></label>` +
                 `<select name="id_jabatan[]" class="form-control select-search cetak-jabatan" required>${jabOptionsHTML}</select></div>` +
-                `<div class="col-md-5"><label class="form-label">Template <span class="text-danger">*</span></label>` +
+                `<div class="col-md-3"><label class="form-label">Template <span class="text-danger">*</span></label>` +
                 `<select name="id_template[]" class="form-control cetak-template" required>` +
                 `<option value="">-- Pilih jabatan terlebih dahulu --</option></select></div>` +
                 `<div class="col-md-2"><label class="form-label">Jumlah</label>` +
@@ -329,6 +343,14 @@
                 });
             }
             refreshRanges();
+        }
+
+        async function hapusSemuaBaris() {
+            const rows = collectRows();
+            if (!rows.length) return;
+            if (!(await confirmDialog("Hapus semua baris jabatan?"))) return;
+            boxRepeater.innerHTML = "";
+            addRow();
         }
 
         function loadCounter() {
@@ -360,6 +382,9 @@
             $(boxRepeater).on("change", ".cetak-jabatan", function() {
                 loadRowInfo($(this).closest(".repeater-row")[0]);
             });
+            $(boxRepeater).on("change", ".cetak-jenis", function() {
+                loadRowInfo($(this).closest(".repeater-row")[0]);
+            });
             $(boxRepeater).on("change", ".cetak-template", function() {
                 renderRowPreview($(this).closest(".repeater-row")[0]);
             });
@@ -373,9 +398,11 @@
                 refreshRanges();
             });
             $("#btnAddBaris").on("click", addRow);
+            $("#btnHapusSemuaBaris").on("click", hapusSemuaBaris);
         } else {
             boxRepeater.addEventListener("change", e => {
                 if (e.target.classList.contains("cetak-jabatan")) loadRowInfo(e.target.closest(".repeater-row"));
+                else if (e.target.classList.contains("cetak-jenis")) loadRowInfo(e.target.closest(".repeater-row"));
                 else refreshRanges();
             });
             boxRepeater.addEventListener("input", refreshRanges);
@@ -388,13 +415,36 @@
                 }
             });
             document.getElementById("btnAddBaris").addEventListener("click", addRow);
+            document.getElementById("btnHapusSemuaBaris").addEventListener("click", hapusSemuaBaris);
         }
         inTahun.addEventListener("input", refreshRangeCompat);
         document.getElementById("cetakNomorMulai").addEventListener("input", refreshRanges);
-        inMulai.addEventListener("change", () => { syncTahun(); hitungTglSelesai(); refreshRanges(); });
-        inDurasi.addEventListener("change", () => { hitungTglSelesai(); refreshRanges(); });
         function refreshRangeCompat() { refreshRanges(); }
-        hitungTglSelesai();
+
+        function hasPrintData() {
+            return collectRows().some(row => {
+                const jabatan = row.querySelector(".cetak-jabatan")?.value || "";
+                const template = row.querySelector(".cetak-template")?.value || "";
+                const jumlah = row.querySelector(".cetak-jumlah")?.value || "1";
+                return jabatan !== "" || template !== "" || String(jumlah) !== "1";
+            });
+        }
+
+        async function confirmLeave(event) {
+            const link = event.target.closest("a[href]");
+            if (!link || !hasPrintData()) return;
+            const href = link.getAttribute("href") || "";
+            if (!href || href.startsWith("#") || link.target === "_blank" || href.startsWith("javascript:")) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const leave = await confirmDialog("Data cetak kontrak yang sudah dibuat akan dihapus. Yakin ingin meninggalkan halaman ini?");
+            if (!leave) return;
+            boxRepeater.innerHTML = "";
+            addRow();
+            window.location.href = link.href;
+        }
+
+        document.addEventListener("click", confirmLeave, true);
         addRow();
         loadCounter();
 
@@ -432,8 +482,18 @@
                 showToast("Nomor Mulai harus angka 1 s/d 999999, atau dikosongkan.", "warning");
                 return;
             }
+            // Rincian per jenis dari template terpilih tiap baris (untuk konfirmasi).
+            const perJenis = {};
+            rows.forEach(r => {
+                const tplId = r.querySelector(".cetak-template").value;
+                const t = (r._templates || []).find(x => String(x.id_template) === String(tplId));
+                const j = t && t.jenis_kontrak ? String(t.jenis_kontrak).toUpperCase() : "";
+                const key = (j === "KARYAWAN BARU" || j === "PERPANJANGAN") ? j : "Campuran";
+                perJenis[key] = (perJenis[key] || 0) + rowJumlah(r);
+            });
+            const rincian = Object.entries(perJenis).map(([k, v]) => `${v} file ${k}`).join(" + ");
             const ok = await confirmDialog(
-                `Cetak ${total} file dalam ${rows.length} baris? Nomor kontrak akan langsung dikonsumsi dan tidak bisa dibatalkan.`
+                `Cetak ${total} file (${rincian}) dalam ${rows.length} baris? Nomor kontrak akan langsung dikonsumsi dan tidak bisa dibatalkan.`
             );
             if (!ok) e.preventDefault();
         });

@@ -22,8 +22,9 @@
                             <tr>
                                 <th class="text-center" style="width: 5%;"><i class="fa fa-hashtag"></i> No</th>
                                 <th class="text-center"><i class="fa fa-file-contract"></i> Nama Kontrak</th>
+                                <th class="text-center"><i class="fa fa-tags"></i> Jenis Kontrak</th>
                                 <th class="text-center"><i class="fa fa-briefcase"></i> Berlaku Untuk</th>
-                                <th class="text-center"><i class="fa fa-money-bill"></i> Nilai Kontrak</th>
+                                <th class="text-center"><i class="fa fa-file"></i> File</th>
                                 <th class="text-center"><i class="fa fa-cogs"></i> Actions</th>
                             </tr>
                         </thead>
@@ -44,27 +45,31 @@
                 </div>
 
                 <div class="modal-body">
-                    <ul class="nav nav-tabs" id="tabUploadTemplate" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="tab-up-template-tab" data-bs-toggle="tab" data-bs-target="#tab-up-template" type="button" role="tab" aria-controls="tab-up-template" aria-selected="true">Template</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-up-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-up-nilai" type="button" role="tab" aria-controls="tab-up-nilai" aria-selected="false">Nilai Kontrak</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content pt-3">
-                        <div class="tab-pane fade show active" id="tab-up-template" role="tabpanel" aria-labelledby="tab-up-template-tab">
+                    <div class="alert alert-info py-2">
+                        <i class="fas fa-info-circle"></i> Nilai kontrak, tunjangan, dan potongan sudah tercantum di dalam file Word yang diupload — tidak perlu diinput ulang di sini.
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Nama Kontrak <span class="text-danger">*</span></label>
                         <input type="text" name="nama_kontrak" class="form-control" maxlength="150" placeholder="cth: Kontrak Kerja Operator 2026" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Jenis Kontrak <span class="text-danger">*</span></label>
+                        <select name="jenis_kontrak" class="form-control" required>
+                            <option value="KARYAWAN BARU">KARYAWAN BARU</option>
+                            <option value="PERPANJANGAN">PERPANJANGAN</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Pilih File Word <span class="text-danger">*</span></label>
                         <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
-                        <small class="text-muted">Format .doc/.docx, maksimal 2 MB.</small>
+                        <small class="text-muted">Format .doc/.docx, maksimal 2 MB. Dokumen wajib memuat placeholder <code>${nomor_kontrak}</code>.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Berlaku Untuk Jabatan <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text"><i class="bx bx-search"></i></span>
+                            <input type="text" id="cariJabatan" class="form-control" placeholder="Cari jabatan..." autocomplete="off">
+                        </div>
                         <div class="form-check mb-2">
                             <input type="checkbox" class="form-check-input" id="checkAllJabatan">
                             <label class="form-check-label fw-bold" for="checkAllJabatan">Pilih Semua</label>
@@ -72,22 +77,6 @@
                         <div id="listJabatan" class="border rounded p-3" style="max-height: 260px; overflow-y: auto;">
                             <span class="text-muted">Memuat jabatan...</span>
                         </div>
-                    </div>
-                        </div>
-                        <div class="tab-pane fade" id="tab-up-nilai" role="tabpanel" aria-labelledby="tab-up-nilai-tab">
-                    <label class="form-label fw-bold">Nilai Kontrak</label>
-                    <div class="row g-2">
-                        <div class="col-md-12">
-                            <label class="form-label">Gaji Pokok (Harian)</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="text" name="gaji_pokok" class="form-control nominal-mask" value="0">
-                            </div>
-                        </div>
-
-                    </div>
-                        </div>
-                        
                     </div>
                 </div>
 
@@ -102,7 +91,7 @@
     </div>
 
     <div class="modal fade" id="modalEditTemplate" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
                     <h5 class="modal-title"><i class="bx bx-edit me-1"></i> Edit Template Kontrak</h5>
@@ -110,68 +99,47 @@
                 </div>
 
                 <div class="modal-body">
-                    <ul class="nav nav-tabs" id="tabEditTemplate" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="tab-et-template-tab" data-bs-toggle="tab" data-bs-target="#tab-et-template" type="button" role="tab" aria-controls="tab-et-template" aria-selected="true">Template</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tab-et-nilai-tab" data-bs-toggle="tab" data-bs-target="#tab-et-nilai" type="button" role="tab" aria-controls="tab-et-nilai" aria-selected="false">Nilai Kontrak</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content pt-3">
-                        <div class="tab-pane fade show active" id="tab-et-template" role="tabpanel" aria-labelledby="tab-et-template-tab">
-                            <form id="formEditTemplate" enctype="multipart/form-data">
-                                <input type="hidden" name="id_template" id="editTemplateId">
-                                <div class="mb-3">
-                                    <label class="form-label">Nama Kontrak <span class="text-danger">*</span></label>
-                                    <input type="text" name="nama_kontrak" id="editTemplateNama" class="form-control" maxlength="150" placeholder="cth: Kontrak Kerja Operator 2026" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Ganti File Word <small class="text-muted">(opsional — kosongkan bila tidak diganti)</small></label>
-                                    <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-                                    <small class="text-muted">File saat ini: <span id="editTemplateFile">-</span>. Format .doc/.docx, maksimal 2 MB.</small>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Berlaku Untuk Jabatan <span class="text-danger">*</span></label>
-                                    <div class="form-check mb-2">
-                                        <input type="checkbox" class="form-check-input" id="checkAllJabatanEdit">
-                                        <label class="form-check-label fw-bold" for="checkAllJabatanEdit">Pilih Semua</label>
-                                    </div>
-                                    <div id="listJabatanEdit" class="border rounded p-3" style="max-height: 260px; overflow-y: auto;">
-                                        <span class="text-muted">Memuat jabatan...</span>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <button type="submit" class="btn btn-warning" id="btnUpdateTemplate">
-                                        <i class="bx bx-save me-1"></i> Simpan Template
-                                    </button>
-                                </div>
-                            </form>
+                    <div class="alert alert-info py-2">
+                        <i class="fas fa-info-circle"></i> Nilai kontrak, tunjangan, dan potongan sudah tercantum di dalam file Word — cukup perbarui file bila ada perubahan nilai.
+                    </div>
+                    <form id="formEditTemplate" enctype="multipart/form-data">
+                        <input type="hidden" name="id_template" id="editTemplateId">
+                        <div class="mb-3">
+                            <label class="form-label">Nama Kontrak <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_kontrak" id="editTemplateNama" class="form-control" maxlength="150" placeholder="cth: Kontrak Kerja Operator 2026" required>
                         </div>
-                        <div class="tab-pane fade" id="tab-et-nilai" role="tabpanel" aria-labelledby="tab-et-nilai-tab">
-                            <div class="alert alert-info py-2 mb-2" id="infoNilaiSekarang">
-                                <i class="fas fa-info-circle"></i> <span>Nilai saat ini: -</span>
+                        <div class="mb-3">
+                            <label class="form-label">Jenis Kontrak <span class="text-danger">*</span></label>
+                            <select name="jenis_kontrak" id="editTemplateJenis" class="form-control" required>
+                                <option value="KARYAWAN BARU">KARYAWAN BARU</option>
+                                <option value="PERPANJANGAN">PERPANJANGAN</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ganti File Word <small class="text-muted">(opsional — kosongkan bila tidak diganti)</small></label>
+                            <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                            <small class="text-muted">File saat ini: <span id="editTemplateFile">-</span>. Format .doc/.docx, maksimal 2 MB. File pengganti wajib memuat placeholder <code>${nomor_kontrak}</code>.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Berlaku Untuk Jabatan <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                <input type="text" id="cariJabatanEdit" class="form-control" placeholder="Cari jabatan..." autocomplete="off">
                             </div>
-                            <form id="formEditDetail">
-                                <input type="hidden" name="id_template">
-                                <div class="row g-2">
-                                    <div class="col-md-12">
-                                        <label class="form-label">Gaji Pokok (Harian)</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">Rp</span>
-                                            <input type="text" name="gaji_pokok" class="form-control nominal-mask">
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <div class="mt-2 text-end">
-                                    <button type="submit" class="btn btn-warning" id="btnSaveDetail">
-                                        <i class="bx bx-save me-1"></i> Simpan Nilai
-                                    </button>
-                                </div>
-                            </form>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="checkAllJabatanEdit">
+                                <label class="form-check-label fw-bold" for="checkAllJabatanEdit">Pilih Semua</label>
+                            </div>
+                            <div id="listJabatanEdit" class="border rounded p-3" style="max-height: 260px; overflow-y: auto;">
+                                <span class="text-muted">Memuat jabatan...</span>
+                            </div>
                         </div>
-                                            </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-warning" id="btnUpdateTemplate">
+                                <i class="bx bx-save me-1"></i> Simpan Template
+                            </button>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -233,6 +201,8 @@
                         </div>`
                     ).join("");
                     document.getElementById("checkAllJabatan").checked = false;
+                    const cari = document.getElementById("cariJabatan");
+                    if (cari) { cari.value = ""; filterJabatan("listJabatan", ""); }
                     btnSave.disabled = false;
                 })
                 .catch(err => {
@@ -243,7 +213,41 @@
         }
 
         document.getElementById("checkAllJabatan").addEventListener("change", function() {
-            document.querySelectorAll(".chk-jabatan").forEach(c => c.checked = this.checked);
+            document.querySelectorAll("#listJabatan .chk-jabatan").forEach(c => {
+                if (c.closest(".form-check").style.display !== "none") c.checked = this.checked;
+            });
+        });
+
+        // Pencarian jabatan pada kedua daftar checkbox (upload & edit).
+        function filterJabatan(boxId, keyword) {
+            const box = document.getElementById(boxId);
+            if (!box) return;
+            const key = String(keyword || "").toLowerCase().trim();
+            let visible = 0;
+            box.querySelectorAll(".form-check").forEach(wrap => {
+                const label = wrap.querySelector("label");
+                const match = !key || (label && label.textContent.toLowerCase().includes(key));
+                wrap.style.display = match ? "" : "none";
+                if (match) visible++;
+            });
+            let empty = box.querySelector(".jabatan-empty");
+            if (!visible) {
+                if (!empty) {
+                    empty = document.createElement("div");
+                    empty.className = "jabatan-empty text-muted text-center py-2";
+                    empty.textContent = "Jabatan tidak ditemukan.";
+                    box.appendChild(empty);
+                }
+                empty.style.display = "";
+            } else if (empty) {
+                empty.style.display = "none";
+            }
+        }
+        document.getElementById("cariJabatan").addEventListener("input", function() {
+            filterJabatan("listJabatan", this.value);
+        });
+        document.getElementById("cariJabatanEdit").addEventListener("input", function() {
+            filterJabatan("listJabatanEdit", this.value);
         });
 
         // Checkbox daftar jabatan untuk modal edit (dengan pra-pilih tautan saat ini)
@@ -283,6 +287,8 @@
                     const all = box.querySelectorAll(".chk-jabatan-edit");
                     document.getElementById("checkAllJabatanEdit").checked =
                         all.length > 0 && box.querySelectorAll(".chk-jabatan-edit:checked").length === all.length;
+                    const cariEdit = document.getElementById("cariJabatanEdit");
+                    if (cariEdit) { cariEdit.value = ""; filterJabatan("listJabatanEdit", ""); }
                 })
                 .catch(err => {
                     console.error("loadJabatanEdit:", err);
@@ -292,10 +298,12 @@
         }
 
         document.getElementById("checkAllJabatanEdit").addEventListener("change", function() {
-            document.querySelectorAll(".chk-jabatan-edit").forEach(c => c.checked = this.checked);
+            document.querySelectorAll("#listJabatanEdit .chk-jabatan-edit").forEach(c => {
+                if (c.closest(".form-check").style.display !== "none") c.checked = this.checked;
+            });
         });
 
-        // Buka modal edit template (template + nilai kontrak) dengan prefill
+        // Buka modal edit template (nama, file, jabatan) dengan prefill
         document.addEventListener("click", e => {
             const btn = e.target.closest(".btnEditTemplate");
             if (!btn) return;
@@ -303,19 +311,11 @@
             document.getElementById("editTemplateId").value = btn.dataset.id;
             document.getElementById("editTemplateNama").value = btn.dataset.namaKontrak || "";
             document.getElementById("editTemplateFile").textContent = btn.dataset.file || "-";
+            const jenisAwal = String(btn.dataset.jenis || "KARYAWAN BARU").toUpperCase();
+            document.getElementById("editTemplateJenis").value =
+                jenisAwal === "PERPANJANGAN" ? "PERPANJANGAN" : "KARYAWAN BARU";
             const ids = (btn.dataset.jabatanIds || "").split(",").map(s => s.trim()).filter(Boolean);
             loadJabatanEdit(ids);
-            const formD = document.getElementById("formEditDetail");
-            formD.querySelector("input[name=id_template]").value = btn.dataset.id;
-            formD.querySelector("input[name=gaji_pokok]").value = formatIndo(btn.dataset.gajiPokok);
-            const fmtRpNow = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
-            const infoNow = document.getElementById("infoNilaiSekarang");
-            if (infoNow) {
-                infoNow.querySelector("span").innerHTML =
-                    `Nilai saat ini: Gaji <strong>${fmtRpNow(btn.dataset.gajiPokok)}</strong> (harian)`;
-            }
-            const tabTpl = document.querySelector('#tabEditTemplate button[data-bs-target="#tab-et-template"]');
-            if (tabTpl) bootstrap.Tab.getOrCreateInstance(tabTpl).show();
             new bootstrap.Modal(document.getElementById("modalEditTemplate")).show();
         });
 
@@ -345,6 +345,14 @@
             }
         });
 
+        // Badge jenis kontrak: KARYAWAN BARU (hijau) / PERPANJANGAN (kuning).
+        function jenisBadge(jenis) {
+            const j = String(jenis || "").toUpperCase();
+            if (j === "PERPANJANGAN") return `<span class="badge bg-warning text-dark">PERPANJANGAN</span>`;
+            if (j === "KARYAWAN BARU") return `<span class="badge bg-success">KARYAWAN BARU</span>`;
+            return `<span class="badge bg-secondary">${escHtml(jenis || "-")}</span>`;
+        }
+
         // Tabel template
         function loadTable() {
             fetch(API, {
@@ -359,11 +367,11 @@
                     }
                     const tbody = document.getElementById("tbodyTemplate");
                     if (res.status !== "success") {
-                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Gagal memuat data.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Gagal memuat data.</td></tr>`;
                         return;
                     }
                     if (!res.data.length) {
-                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada template. Klik Upload Template.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada template. Klik Upload Template.</td></tr>`;
                         return;
                     }
                     tbody.innerHTML = res.data.map((r, i) => {
@@ -375,24 +383,25 @@
                                   ? `<span class="badge bg-secondary me-1 mb-1" title="${escHtml(daftarJab.map(jabatanLabel).join(", "))}">+${daftarJab.length - maksTampil} lainnya</span>`
                                   : "")
                             : '<span class="badge bg-secondary">Tanpa jabatan</span>';
-                        const d = r.detail || {};
-                        const fmtRp = v => "Rp " + Number(v || 0).toLocaleString("id-ID");
-                        const nilai = `<small>Gaji: <strong>${fmtRp(d.gaji_pokok)}</strong> (harian)</small>`;
+                        const ukuranKb = r.ukuran ? (Number(r.ukuran) / 1024).toFixed(0) + " KB" : "-";
+                        const fileInfo = `<small><strong>${escHtml(r.nama_asli || r.file || "-")}</strong><br>` +
+                            `<span class="text-muted">${ukuranKb}</span></small>`;
                         return `<tr>
                             <td class="text-center">${i + 1}</td>
                             <td><strong>${escHtml(r.nama_kontrak || "-")}</strong></td>
+                            <td class="text-center">${jenisBadge(r.jenis_kontrak)}</td>
                             <td>${badges}<br><small class="text-muted">${r.jml_jabatan} jabatan</small></td>
-                            <td>${nilai}</td>
+                            <td>${fileInfo}</td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
                                 <a href="app/uploads/template-kontrak/${escHtml(r.file)}" target="_blank"
                                     class="btn btn-sm btn-info" title="Lihat file"><i class="bx bx-show me-1"></i>Lihat</a>
                                 <button type="button" class="btn btn-sm btn-warning btnEditTemplate" data-id="${r.id_template}"
                                     data-nama-kontrak="${escHtml(r.nama_kontrak || "")}"
+                                    data-jenis="${escHtml(r.jenis_kontrak || "KARYAWAN BARU")}"
                                     data-file="${escHtml(r.nama_asli || r.file)}"
                                     data-jabatan-ids="${(r.jabatan || []).map(j => j.id_jabatan).join(",")}"
-                                    data-gaji-pokok="${escHtml(d.gaji_pokok ?? 0)}"
-                                    title="Edit template & nilai"><i class="bx bx-edit me-1"></i>Edit</button>
+                                    title="Edit template"><i class="bx bx-edit me-1"></i>Edit</button>
                                 <button type="button" class="btn btn-sm btn-danger btnDeleteTemplate" data-id="${r.id_template}"
                                     data-nama="${escHtml(r.nama_kontrak || r.nama_asli || r.file)}" title="Hapus template">
                                     <i class="bx bx-trash me-1"></i>Hapus
@@ -405,53 +414,9 @@
                 })
                 .catch(() => {
                     document.getElementById("tbodyTemplate").innerHTML =
-                        `<tr><td colspan="5" class="text-center text-danger">Gagal menghubungi server.</td></tr>`;
+                        `<tr><td colspan="6" class="text-center text-danger">Gagal menghubungi server.</td></tr>`;
                 });
         }
-
-        // Format masking nominal (titik ribuan, koma desimal) ala halaman karier
-        function formatIndo(val) {
-            if (val === undefined || val === null || val === '') return "0";
-            let parts = val.toString().split(".");
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            return parts.join(",");
-        }
-        document.addEventListener("input", e => {
-            if (e.target.classList && e.target.classList.contains("nominal-mask")) {
-                let input = e.target;
-                let cursorPos = input.selectionStart;
-                let prevLength = input.value.length;
-                let val = input.value.replace(/[^0-9,]/g, "");
-                let parts = val.split(",");
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                input.value = parts.length > 2 ? parts[0] + "," + parts[1] : parts.join(",");
-                let diff = input.value.length - prevLength;
-                try { input.setSelectionRange(cursorPos + diff, cursorPos + diff); } catch (err) {}
-            }
-        });
-
-        // Simpan nilai kontrak (upsert, modal tetap terbuka)
-        document.getElementById("formEditDetail").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById("btnSaveDetail");
-            btn.disabled = true;
-            try {
-                const fd = new FormData(this);
-                fd.append("action", "save_detail");
-                const res = await fetch(API, { method: "POST", body: fd });
-                const data = await res.json();
-                if (data.status === "success") {
-                    showToast(data.msg || "Nilai kontrak berhasil disimpan.", "success");
-                    loadTable();
-                } else {
-                    showToast(data.msg || "Gagal menyimpan.", "error");
-                }
-            } catch (err) {
-                showToast("Terjadi kesalahan sistem.", "error");
-            } finally {
-                btn.disabled = false;
-            }
-        });
 
         document.getElementById("btnTambahTemplate").addEventListener("click", () => {
             document.getElementById("formUploadTemplate").reset();
