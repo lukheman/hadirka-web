@@ -14,7 +14,7 @@
             <div class="card-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> Satu template bisa berlaku untuk <strong>beberapa jabatan</strong>
-                    sekaligus. File harus Word (.doc/.docx), maksimal 2 MB.
+                    sekaligus. File harus Word (.doc/.docx), maksimal 2 MB dan wajib memuat placeholder yang diperlukan.
                 </div>
                 <div class="table-responsive text-nowrap">
                     <table class="table table-bordered MyTableTemplate">
@@ -62,7 +62,11 @@
                     <div class="mb-3">
                         <label class="form-label">Pilih File Word <span class="text-danger">*</span></label>
                         <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
-                        <small class="text-muted">Format .doc/.docx, maksimal 2 MB. Dokumen wajib memuat placeholder <code>${nomor_kontrak}</code>.</small>
+                        <small class="text-muted">
+                            <strong>Ketentuan file:</strong> format <code>.doc</code>/<code>.docx</code>, maksimal 2 MB.
+                            Dokumen wajib memuat placeholder <code>${nomor_kontrak}</code> untuk nomor kontrak dan
+                            <code>${durasi}</code> untuk durasi kontrak pada Pasal 2, misalnya <code>3 (Tiga) bulan</code>.
+                        </small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Berlaku Untuk Jabatan <span class="text-danger">*</span></label>
@@ -118,7 +122,11 @@
                         <div class="mb-3">
                             <label class="form-label">Ganti File Word <small class="text-muted">(opsional — kosongkan bila tidak diganti)</small></label>
                             <input type="file" name="file_pdf" class="form-control" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-                            <small class="text-muted">File saat ini: <span id="editTemplateFile">-</span>. Format .doc/.docx, maksimal 2 MB. File pengganti wajib memuat placeholder <code>${nomor_kontrak}</code>.</small>
+                            <small class="text-muted">
+                                File saat ini: <span id="editTemplateFile">-</span>.<br>
+                                File pengganti harus format <code>.doc</code>/<code>.docx</code>, maksimal 2 MB,
+                                dan wajib memuat <code>${nomor_kontrak}</code> serta <code>${durasi}</code>.
+                            </small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Berlaku Untuk Jabatan <span class="text-danger">*</span></label>

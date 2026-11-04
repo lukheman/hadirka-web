@@ -10,13 +10,13 @@
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> Untuk karyawan baru yang datanya belum diinput.
                     Tambahkan <strong>baris per jabatan</strong> → pilih <strong>jenis kontrak</strong> (KARYAWAN BARU / PERPANJANGAN) →
-                    pilih <strong>jabatan</strong> →
+                    pilih <strong>jabatan</strong> → isi <strong>durasi kontrak dalam bulan</strong> →
                     pilih <strong>template</strong> yang tersedia → <strong>jumlah</strong> tiap baris.
-                    Nilai kontrak, tunjangan, dan potongan sudah tercantum di dalam file template.
+                    Nilai kontrak, tunjangan, dan potongan sudah tercantum di dalam file template. Durasi mengisi placeholder <code>${durasi}</code> pada Pasal 2, misalnya <strong>3 (Tiga) bulan</strong>.
                     Nomor kontrak berurutan langsung <strong>dikonsumsi</strong> dari counter
                     (<code>tb_nomor_urut</code>) dan tidak bisa dibatalkan.
                     Nomor mulai terisi otomatis mengikuti nomor berikutnya, tetapi bisa diubah manual.
-                    Isian personal (nama, NIK, alamat) berupa titik-titik.
+                    Isian personal (nama, NIK, alamat, dan tanggal) berupa titik-titik.
                 </div>
 
                 <form id="formCetakKontrak" action="app/controller/act-cetak-kontrak.php" method="POST" target="_blank">
@@ -124,9 +124,6 @@
             const jabText = jabSel.selectedIndex >= 0 ? jabSel.options[jabSel.selectedIndex].text : "-";
             const tpls = row._templates || [];
             const t = tpls.find(x => String(x.id_template) === String(tplSel.value));
-            if (!jabSel.value || !t) { box.innerHTML = ""; return; }
-            const d = t.detail || {};
-            const tdRp = v => `<td class="text-end">${fmtRpPrev(v)}</td>`;
             const th = tahunStr();
             let nomorCell = '<span class="text-muted">—</span>';
             if (row._mulai != null && row.dataset.kode) {
@@ -137,6 +134,16 @@
                         ? ` s/d <strong>IPM-KONTRAK-${escHtml(row.dataset.kode)}/${b}/${escHtml(th)}</strong>`
                         : "");
             }
+            if (!jabSel.value) { box.innerHTML = ""; return; }
+            if (!t) {
+                box.innerHTML = `<div class="table-responsive mt-1"><table class="table table-bordered table-sm mb-0"><tbody>` +
+                    `<tr><th style="width:28%">Nomor Kontrak</th><td>${nomorCell}</td></tr>` +
+                    `<tr><th>Jabatan</th><td>${escHtml(jabText)}</td></tr>` +
+                    `</tbody></table></div>`;
+                return;
+            }
+            const d = t.detail || {};
+            const tdRp = v => `<td class="text-end">${fmtRpPrev(v)}</td>`;
             const tunjRows = (t.tunjangan || []).map(x => {
                 const jenis = x.jenis_tunjangan === "tidak_tetap"
                     ? '<span class="badge bg-warning text-dark">Tidak Tetap</span>'
@@ -311,6 +318,9 @@
                 showToast("Maksimal 10 baris per sekali cetak.", "warning");
                 return;
             }
+            const durasiDefault = rows
+                .map(row => row.querySelector(".cetak-bulan")?.value.trim() || "")
+                .find(value => value !== "") || "";
             const div = document.createElement("div");
             div.className = "card mb-3 repeater-row";
             div.dataset.kode = "";
@@ -321,14 +331,16 @@
                 `<i class="bx bx-trash me-1"></i>Hapus</button></div>` +
                 `<div class="card-body">` +
                 `<div class="row g-2">` +
-                `<div class="col-md-3"><label class="form-label">Jenis Kontrak</label>` +
+                 `<div class="col-md-2"><label class="form-label">Jenis Kontrak</label>` +
                 `<select name="jenis_kontrak[]" class="form-control cetak-jenis">` +
                 `<option value="">Semua Jenis</option>` +
                 `<option value="KARYAWAN BARU">KARYAWAN BARU</option>` +
                 `<option value="PERPANJANGAN">PERPANJANGAN</option></select></div>` +
-                `<div class="col-md-4"><label class="form-label">Jabatan <span class="text-danger">*</span></label>` +
-                `<select name="id_jabatan[]" class="form-control select-search cetak-jabatan" required>${jabOptionsHTML}</select></div>` +
-                `<div class="col-md-3"><label class="form-label">Template <span class="text-danger">*</span></label>` +
+                 `<div class="col-md-3"><label class="form-label">Jabatan <span class="text-danger">*</span></label>` +
+                 `<select name="id_jabatan[]" class="form-control select-search cetak-jabatan" required>${jabOptionsHTML}</select></div>` +
+                 `<div class="col-md-2"><label class="form-label">Durasi (Bulan)</label>` +
+                 `<input type="number" name="bulan[]" class="form-control cetak-bulan" min="1" max="120" placeholder="Contoh: 3" value="${escHtml(durasiDefault)}" required></div>` +
+                 `<div class="col-md-3"><label class="form-label">Template <span class="text-danger">*</span></label>` +
                 `<select name="id_template[]" class="form-control cetak-template" required>` +
                 `<option value="">-- Pilih jabatan terlebih dahulu --</option></select></div>` +
                 `<div class="col-md-2"><label class="form-label">Jumlah</label>` +
@@ -424,9 +436,10 @@
         function hasPrintData() {
             return collectRows().some(row => {
                 const jabatan = row.querySelector(".cetak-jabatan")?.value || "";
+                const bulan = row.querySelector(".cetak-bulan")?.value.trim() || "";
                 const template = row.querySelector(".cetak-template")?.value || "";
                 const jumlah = row.querySelector(".cetak-jumlah")?.value || "1";
-                return jabatan !== "" || template !== "" || String(jumlah) !== "1";
+                return jabatan !== "" || bulan !== "" || template !== "" || String(jumlah) !== "1";
             });
         }
 
