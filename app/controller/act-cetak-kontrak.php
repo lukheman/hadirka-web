@@ -19,6 +19,8 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_WARNING);
 ini_set('display_errors', '0');
 
 require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../config/kontrak_schema.php';
+ensure_kontrak_schema($koneksi);
 require_once __DIR__ . '/../config/nomor_surat.php';
 require_once __DIR__ . '/../config/kontrak_helper.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -53,25 +55,34 @@ if ($action === 'info') {
 
         $templates = [];
         $stt = $koneksi->prepare(
-            "SELECT t.id_template, t.nama_kontrak, t.nama_asli, t.`file` FROM tb_template_kontrak_jabatan p " .
+            "SELECT t.id_template, t.nama_kontrak, t.jenis_kontrak, t.nama_asli, t.`file` FROM tb_template_kontrak_jabatan p " .
             "JOIN tb_template_kontrak t ON t.id_template = p.id_template " .
-            "WHERE p.id_jabatan = ? ORDER BY t.id_template DESC"
+            "WHERE p.id_jabatan = ? AND (? = '' OR t.jenis_kontrak = ?) ORDER BY t.id_template DESC"
         );
-        $stt->execute([$id_jabatan]);
+        $jenis = strtoupper(trim((string)($_POST['jenis_kontrak'] ?? '')));
+        if (!in_array($jenis, ['', 'KARYAWAN BARU', 'PERPANJANGAN'], true)) $jenis = '';
+        $stt->execute([$id_jabatan, $jenis, $jenis]);
         while ($tr = $stt->fetch()) {
             $id_tpl = (int)$tr['id_template'];
             $std = $koneksi->prepare(
-                "SELECT gaji_pokok " .
+                "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
                 "FROM tb_detail_kontrak WHERE id_template = ? LIMIT 1"
             );
             $std->execute([$id_tpl]);
             $detRow = $std->fetch();
             $tr['detail'] = $detRow === false ? null : $detRow;
-            $tr['jml_tunjangan'] = 0;
-            $tr['jml_potongan'] = 0;
             $tr['tunjangan'] = [];
             $tr['potongan'] = [];
-            // Tabel tunjangan/potongan kontrak dihapus (penyederhanaan gaji Okt 2026).
+            if ($detRow !== false) {
+                $stx = $koneksi->prepare('SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = ? AND tampil_template = 1 ORDER BY id_tunjangan_kontrak');
+                $stx->execute([(int)$detRow['id_detail']]);
+                $tr['tunjangan'] = $stx->fetchAll();
+                $stx = $koneksi->prepare('SELECT jenis_potongan, jumlah_potongan FROM tb_potongan_kontrak WHERE id_detail_kontrak = ? ORDER BY id_potongan_kontrak');
+                $stx->execute([(int)$detRow['id_detail']]);
+                $tr['potongan'] = $stx->fetchAll();
+            }
+            $tr['jml_tunjangan'] = count($tr['tunjangan']);
+            $tr['jml_potongan'] = count($tr['potongan']);
             $templates[] = $tr;
         }
 
@@ -83,7 +94,7 @@ if ($action === 'info') {
         $terbesar = 0;
         $stm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+            "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
         $rowM = $stm->fetch();
         if ($rowM) $terbesar = (int)$rowM['mx'];
@@ -113,7 +124,7 @@ if ($action === 'counter') {
         $terbesar = 0;
         $stm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+            "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
         $rowM = $stm->fetch();
         if ($rowM) $terbesar = (int)$rowM['mx'];
@@ -145,20 +156,6 @@ if ($action === 'generate') {
         $n_rows = max(count($rows_jab), count($rows_tpl), count($rows_jml));
         if ($n_rows < 1) throw new Exception('Tambahkan minimal satu baris jabatan.');
         if ($n_rows > 10) throw new Exception('Maksimal 10 baris jabatan per sekali cetak.');
-
-        // Periode kontrak blanko: Tgl Mulai + Durasi (3/6/12 bulan).
-        // Tgl Selesai = mulai + N bulan, mundur 1 hari (sama seperti form karier).
-        $tgl_mulai = (string)($_POST['tgl_mulai'] ?? '');
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl_mulai)) throw new Exception('Tgl Mulai tidak valid.');
-        $durasi_bulan = (int)($_POST['durasi_bulan'] ?? 0);
-        if (!in_array($durasi_bulan, [3, 6, 12], true)) throw new Exception('Durasi kontrak harus 3, 6, atau 12 bulan.');
-        $d_selesai = new DateTime($tgl_mulai);
-        $tgl_mulai_bln = (int)$d_selesai->format('j');
-        $d_selesai->modify('first day of this month');
-        $d_selesai->modify('+' . $durasi_bulan . ' months');
-        $maks_bln = (int)$d_selesai->format('t');
-        $d_selesai->setDate((int)$d_selesai->format('Y'), (int)$d_selesai->format('n'), min($tgl_mulai_bln - 1, $maks_bln));
-        $tgl_selesai = $d_selesai->format('Y-m-d');
 
         // Validasi + siapkan spesifikasi tiap baris (jabatan, template, nilai).
         $specs = [];
@@ -201,7 +198,7 @@ if ($action === 'generate') {
 
             // Nilai kontrak dari detail template.
             $std = $koneksi->prepare(
-                "SELECT id_detail, gaji_pokok " .
+                "SELECT id_detail, gaji_pokok, upah_lembur, potongan_izin, potongan_mangkir " .
                 "FROM tb_detail_kontrak WHERE id_template = ? LIMIT 1"
             );
             $std->execute([$id_template]);
@@ -209,10 +206,21 @@ if ($action === 'generate') {
             $det = $detRow === false ? ['gaji_pokok' => 0] : $detRow;
             $id_det = (int)($det['id_detail'] ?? 0);
 
-            // Tabel tunjangan kontrak dihapus (penyederhanaan gaji Okt 2026).
             $tun = [];
-            $tun_tetap = [];
-            $tun_tidak = [];
+            $stTun = $koneksi->prepare('SELECT nama_tunjangan, jenis_tunjangan, jumlah_tunjangan, tampil_template FROM tb_tunjangan_kontrak WHERE id_detail_kontrak = ? AND tampil_template = 1 ORDER BY id_tunjangan_kontrak');
+            if ($id_det > 0) { $stTun->execute([$id_det]); $tun = $stTun->fetchAll(); }
+            $tun_tetap = $tun_tidak = [];
+            foreach ($tun as $x) {
+                $row = [
+                    $x['nama_tunjangan'],
+                    kontrak_rupiah_makan($x['jumlah_tunjangan'] ?? 0),
+                ];
+                if (strtolower((string)$x['jenis_tunjangan']) === 'tidak_tetap') $tun_tidak[] = $row;
+                else $tun_tetap[] = $row;
+            }
+            $stPot = $koneksi->prepare('SELECT jenis_potongan, jumlah_potongan FROM tb_potongan_kontrak WHERE id_detail_kontrak = ? ORDER BY id_potongan_kontrak');
+            $potongan = [];
+            if ($id_det > 0) { $stPot->execute([$id_det]); $potongan = $stPot->fetchAll(); }
             $specs[] = [
                 'kode' => $kode,
                 'nama_jabatan' => $nama_jabatan,
@@ -221,6 +229,7 @@ if ($action === 'generate') {
                 'tun' => $tun,
                 'tun_tetap' => $tun_tetap,
                 'tun_tidak' => $tun_tidak,
+                'potongan' => $potongan,
                 'jumlah' => $jumlah,
             ];
             $total += $jumlah;
@@ -247,7 +256,7 @@ if ($action === 'generate') {
             $last = (int)$lockRow['terakhir'];
             $stm = $koneksi->query(
                 "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-                "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+                "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
             );
             $mxRow = $stm->fetch();
             if ($mxRow === false) throw new Exception('Gagal membaca nomor terakhir.');
@@ -271,18 +280,15 @@ if ($action === 'generate') {
         // Isian blanko: titik-titik untuk diisi kemudian, kecuali jabatan,
         // nilai kontrak (dari template tiap baris), dan periode (dari pilihan).
         $kosong_panjang = '........................................................';
-        $durasi_teks = $durasi_bulan . ' (' . terbilang_id($durasi_bulan) . ') bulan';
-        $tgl_mulai_teks = kontrak_tgl_id($tgl_mulai);
-        $tgl_selesai_teks = kontrak_tgl_id($tgl_selesai);
         $vars_bersama = [
             'alamat' => $kosong_panjang,
             'desa ' => '........................',
             'desa' => '........................',
             'kecamatan' => '........................',
             'kabupaten' => '........................',
-            'durasi' => $durasi_teks,
-            'tgl_mulai' => $tgl_mulai_teks,
-            'tgl_selesai' => $tgl_selesai_teks,
+            'durasi' => '........................................................',
+            'tgl_mulai' => '........................................................',
+            'tgl_selesai' => '........................................................',
             'nama' => $kosong_panjang,
             'nik' => $kosong_panjang,
             'jenis_kelamin' => '........................',
@@ -326,7 +332,7 @@ if ($action === 'generate') {
                     'tunjangan_uang_makan' => kontrak_rupiah_makan($tun_nilai($tun, ['tunjangan uang makan', 'tunjangan makan'])),
                 ];
                 for ($i = 0; $i < $sp['jumlah']; $i++, $seq++) {
-                    $no_surat = sprintf('TPJS-KONTRAK-%s/%04d/%s', $sp['kode'], $seq, $tahun);
+                    $no_surat = sprintf('IPM-KONTRAK-%s/%04d/%s', $sp['kode'], $seq, $tahun);
                     $fname = preg_replace('/[^A-Za-z0-9\-]+/', '-', $no_surat) . '.docx';
                     $dst = $tmpdir . '/' . $fname;
                     kontrak_patch_docx($sp['src'], $dst);

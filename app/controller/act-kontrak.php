@@ -6,17 +6,6 @@ error_reporting(E_ALL);
 
 header('Content-Type: application/json');
 
-// Guard sesi: hanya level yang boleh membuka halaman Karier (Master, Direktur,
-// HRD, Supervisor, Admin) yang boleh upload/hapus file kontrak.
-// Finance (6) read-only & pengguna tanpa sesi ditolak.
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-if (!in_array((int)($_SESSION['level'] ?? 99), [0, 1, 2, 3, 5], true)) {
-    echo json_encode(["status" => "error", "message" => "Akses ditolak."]);
-    exit;
-}
-
 $response = ["status" => "error", "message" => "Aksi tidak dikenal"];
 
 try {
@@ -52,8 +41,10 @@ try {
         }
 
         $stmt = $koneksi->prepare("SELECT id_karyawan, file_kontrak FROM tb_karier WHERE id_karier = ?");
-        $stmt->execute([$id_karier]);
-        $kar = $stmt->fetch();
+        $stmt->bind_param("i", $id_karier);
+        $stmt->execute();
+        $kar = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
 
         if (!$kar) {
             throw new Exception("Data karier tidak ditemukan.");
@@ -77,10 +68,13 @@ try {
         }
 
         $upd = $koneksi->prepare("UPDATE tb_karier SET file_kontrak = ? WHERE id_karier = ?");
-        if (!$upd->execute([$new_name, $id_karier])) {
+        $upd->bind_param("si", $new_name, $id_karier);
+        if (!$upd->execute()) {
             @unlink($upload_dir . $new_name);
+            $upd->close();
             throw new Exception("Gagal memperbarui database.");
         }
+        $upd->close();
 
         $response = ["status" => "success", "message" => "File kontrak berhasil diunggah.", "file" => $new_name];
     } elseif ($action === "delete") {
@@ -90,8 +84,10 @@ try {
         }
 
         $stmt = $koneksi->prepare("SELECT file_kontrak FROM tb_karier WHERE id_karier = ?");
-        $stmt->execute([$id_karier]);
-        $kar = $stmt->fetch();
+        $stmt->bind_param("i", $id_karier);
+        $stmt->execute();
+        $kar = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
 
         if (!$kar) {
             throw new Exception("Data karier tidak ditemukan.");
@@ -105,9 +101,12 @@ try {
         }
 
         $upd = $koneksi->prepare("UPDATE tb_karier SET file_kontrak = NULL WHERE id_karier = ?");
-        if (!$upd->execute([$id_karier])) {
+        $upd->bind_param("i", $id_karier);
+        if (!$upd->execute()) {
+            $upd->close();
             throw new Exception("Gagal memperbarui database.");
         }
+        $upd->close();
 
         $response = ["status" => "success", "message" => "File kontrak berhasil dihapus."];
     }

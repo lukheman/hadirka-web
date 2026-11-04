@@ -464,7 +464,7 @@
         // --- PREVIEW NO SURAT LIVE DI MODAL TAMBAH ---
         // --- NOMOR URUT MANUAL (hanya 4 digit, input di atas preview) ---
         // Bila diisi, nomor lengkap disusun sebagai
-        // TPJS-KONTRAK-{kode_jabatan}/{urut}/{tahun} memakai kode dari server.
+        // IPM-KONTRAK-{kode_jabatan}/{urut}/{tahun} memakai kode dari server.
         function manualUrutVal(form) {
             const el = form.querySelector("input[name=no_urut]");
             return el ? el.value.replace(/\D/g, "").slice(0, 4) : "";
@@ -474,7 +474,7 @@
             if (!urut || !info || !info.kode_jabatan) return "";
             const tgl = form.querySelector("input[name=tgl_mulai]").value || "";
             const tahun = /^\d{4}/.test(tgl) ? tgl.slice(0, 4) : String(new Date().getFullYear());
-            return `TPJS-KONTRAK-${info.kode_jabatan}/${urut.padStart(4, "0")}/${tahun}`;
+            return `IPM-KONTRAK-${info.kode_jabatan}/${urut.padStart(4, "0")}/${tahun}`;
         }
 
         // --- DURASI KONTRAK CEPAT: isi Tgl Selesai dari Tgl Mulai + N bulan ---
