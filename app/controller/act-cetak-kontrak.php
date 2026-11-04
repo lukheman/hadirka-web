@@ -94,7 +94,7 @@ if ($action === 'info') {
         $terbesar = 0;
         $stm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+            "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
         $rowM = $stm->fetch();
         if ($rowM) $terbesar = (int)$rowM['mx'];
@@ -124,7 +124,7 @@ if ($action === 'counter') {
         $terbesar = 0;
         $stm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+            "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
         $rowM = $stm->fetch();
         if ($rowM) $terbesar = (int)$rowM['mx'];
@@ -256,7 +256,7 @@ if ($action === 'generate') {
             $last = (int)$lockRow['terakhir'];
             $stm = $koneksi->query(
                 "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-                "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+                "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
             );
             $mxRow = $stm->fetch();
             if ($mxRow === false) throw new Exception('Gagal membaca nomor terakhir.');
@@ -332,7 +332,7 @@ if ($action === 'generate') {
                     'tunjangan_uang_makan' => kontrak_rupiah_makan($tun_nilai($tun, ['tunjangan uang makan', 'tunjangan makan'])),
                 ];
                 for ($i = 0; $i < $sp['jumlah']; $i++, $seq++) {
-                    $no_surat = sprintf('TPJS-KONTRAK-%s/%04d/%s', $sp['kode'], $seq, $tahun);
+                    $no_surat = sprintf('IPM-KONTRAK-%s/%04d/%s', $sp['kode'], $seq, $tahun);
                     $fname = preg_replace('/[^A-Za-z0-9\-]+/', '-', $no_surat) . '.docx';
                     $dst = $tmpdir . '/' . $fname;
                     kontrak_patch_docx($sp['src'], $dst);

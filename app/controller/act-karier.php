@@ -160,7 +160,7 @@ try {
             // ----------------------------------------
 
             // Nomor surat: bila Nomor Urut manual (4 digit) diisi, susun
-            // TPJS-KONTRAK-{kode_jabatan}/{urut}/{tahun tgl_mulai} tanpa
+            // IPM-KONTRAK-{kode_jabatan}/{urut}/{tahun tgl_mulai} tanpa
             // mengurangi counter; selain itu nomor dibuat otomatis.
             // Gagal bila jabatan belum punya kode_jabatan.
             $no_urut_manual = substr(preg_replace('/\D/', '', (string)($_POST['no_urut'] ?? '')), 0, 4);
@@ -170,7 +170,7 @@ try {
                 $kodeRow = $qKode->fetch();
                 $kode_jabatan = $kodeRow ? trim((string)($kodeRow['kode_jabatan'] ?? '')) : '';
                 if ($kode_jabatan === '') throw new Exception('Kode jabatan belum diisi. Lengkapi kode jabatan terlebih dahulu.');
-                $no_surat = sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode_jabatan, (int)$no_urut_manual, substr($tgl_mulai, 0, 4));
+                $no_surat = sprintf('IPM-KONTRAK-%s/%04d/%s', $kode_jabatan, (int)$no_urut_manual, substr($tgl_mulai, 0, 4));
                 $cekNo = $koneksi->prepare("SELECT id_karier FROM tb_karier WHERE no_surat = ? LIMIT 1");
                 $cekNo->execute([$no_surat]);
                 if ($cekNo->fetch()) throw new Exception("Nomor surat sudah dipakai, gunakan nomor urut lain.");

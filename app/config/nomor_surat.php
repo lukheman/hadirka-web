@@ -1,5 +1,5 @@
 <?php
-// Helper nomor surat kontrak otomatis: TPJS-KONTRAK-{kode_jabatan}/{urut 4 digit}/{tahun tgl_mulai}.
+// Helper nomor surat kontrak otomatis: IPM-KONTRAK-{kode_jabatan}/{urut 4 digit}/{tahun tgl_mulai}.
 // Urutan = terbesar yang terpakai (counter tb_nomor_urut vs data tb_karier) + 1,
 // dengan kunci baris counter saat generate agar aman dari duplikat walau request bersamaan.
 
@@ -17,7 +17,7 @@ if (!function_exists('peek_no_urut')) {
         $mx = 0;
         $qm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+            "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
         if ($qm) {
             $rowM = $qm->fetch();
@@ -50,7 +50,7 @@ function generate_no_surat($koneksi, $kode_jabatan, $tgl_mulai)
 
         $qm = $koneksi->query(
             "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(no_surat, '/', 2), '/', -1) AS UNSIGNED)), 0) AS mx " .
-            "FROM tb_karier WHERE no_surat REGEXP '^TPJS-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
+            "FROM tb_karier WHERE no_surat REGEXP '^IPM-KONTRAK-[^/]+/[0-9]+/[0-9]{4}$'"
         );
         $mxRow = $qm ? $qm->fetch() : false;
         if ($mxRow === false) throw new Exception('Gagal membaca nomor terakhir.');
@@ -66,6 +66,6 @@ function generate_no_surat($koneksi, $kode_jabatan, $tgl_mulai)
         throw $e instanceof Exception ? $e : new Exception($e->getMessage());
     }
 
-    return sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode, $seq, $tahun);
+    return sprintf('IPM-KONTRAK-%s/%04d/%s', $kode, $seq, $tahun);
 }
 }

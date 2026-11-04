@@ -132,9 +132,9 @@
             if (row._mulai != null && row.dataset.kode) {
                 const a = String(row._mulai).padStart(4, "0");
                 const b = String(row._akhir).padStart(4, "0");
-                nomorCell = `<strong>TPJS-KONTRAK-${escHtml(row.dataset.kode)}/${a}/${escHtml(th)}</strong>` +
+                nomorCell = `<strong>IPM-KONTRAK-${escHtml(row.dataset.kode)}/${a}/${escHtml(th)}</strong>` +
                     (row._akhir > row._mulai
-                        ? ` s/d <strong>TPJS-KONTRAK-${escHtml(row.dataset.kode)}/${b}/${escHtml(th)}</strong>`
+                        ? ` s/d <strong>IPM-KONTRAK-${escHtml(row.dataset.kode)}/${b}/${escHtml(th)}</strong>`
                         : "");
             }
             const tunjRows = (t.tunjangan || []).map(x => {

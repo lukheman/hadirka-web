@@ -653,7 +653,7 @@ if ($action === 'preview_info') {
         'kode_jabatan' => $kode,
         'nama_jabatan' => $jab['nama_jabatan'] ?? '',
         'tahun' => $tahun,
-        'no_surat_preview' => $kode !== '' ? sprintf('TPJS-KONTRAK-%s/%04d/%s', $kode, $next, $tahun) : null,
+        'no_surat_preview' => $kode !== '' ? sprintf('IPM-KONTRAK-%s/%04d/%s', $kode, $next, $tahun) : null,
         'template' => $tpl,
         'templates' => $templates,
         'detail' => $detail,

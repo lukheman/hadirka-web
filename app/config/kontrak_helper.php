@@ -229,7 +229,7 @@ if (!function_exists('kontrak_patch_docx')) {
         for ($i = 1; $i <= 9; $i++) $targets[] = "word/header{$i}.xml";
         for ($i = 1; $i <= 3; $i++) $targets[] = "word/footer{$i}.xml";
         $rules = [
-            ['/TPJS-KONTRAK-[.\/]+/', '${nomor_kontrak}'],
+            ['/IPM-KONTRAK-[.\/]+/', '${nomor_kontrak}'],
             ['/Alamat:\s*[.\s]*,\s*Kel\/Desa\s*[.\s]*,\s*Kec\s*[.\s]*,\s*Kab\s*[.\s]*/u', 'Alamat: ${alamat}'],
             ['/berlaku sejak tanggal sampai dengan tanggal atau selama\s*\d+\s*\([^)]*\)\s*bulan/u', 'berlaku sejak ${tgl_mulai} sampai dengan ${tgl_selesai} atau selama ${durasi}'],
             ['/\$\{[^}]+\}/', null], // normalisasi placeholder terpecah antar-run (isi tetap)
