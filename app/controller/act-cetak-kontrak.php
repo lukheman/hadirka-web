@@ -151,6 +151,7 @@ if ($action === 'generate') {
         $rows_jab = $to_arr($_POST['id_jabatan'] ?? []);
         $rows_tpl = $to_arr($_POST['id_template'] ?? []);
         $rows_jml = $to_arr($_POST['jumlah'] ?? []);
+        $rows_bulan = $to_arr($_POST['bulan'] ?? []);
         $tahun = preg_replace('/\D/', '', (string)($_POST['tahun'] ?? ''));
         if (strlen($tahun) !== 4) $tahun = date('Y');
         $n_rows = max(count($rows_jab), count($rows_tpl), count($rows_jml));
@@ -165,6 +166,8 @@ if ($action === 'generate') {
             $id_jabatan = (int)($rows_jab[$ri] ?? 0);
             $id_template = (int)($rows_tpl[$ri] ?? 0);
             $jumlah = (int)($rows_jml[$ri] ?? 0);
+            $bulan = (int)($rows_bulan[$ri] ?? 0);
+            if ($bulan < 1 || $bulan > 120) throw new Exception("Baris $no_baris: durasi kontrak harus 1 s/d 120 bulan.");
             if ($id_jabatan <= 0) throw new Exception("Baris $no_baris: pilih jabatan terlebih dahulu.");
             if ($id_template <= 0) throw new Exception("Baris $no_baris: pilih template terlebih dahulu.");
             if ($jumlah < 1 || $jumlah > 50) throw new Exception("Baris $no_baris: jumlah harus 1 s/d 50.");
@@ -218,9 +221,6 @@ if ($action === 'generate') {
                 if (strtolower((string)$x['jenis_tunjangan']) === 'tidak_tetap') $tun_tidak[] = $row;
                 else $tun_tetap[] = $row;
             }
-            $stPot = $koneksi->prepare('SELECT jenis_potongan, jumlah_potongan FROM tb_potongan_kontrak WHERE id_detail_kontrak = ? ORDER BY id_potongan_kontrak');
-            $potongan = [];
-            if ($id_det > 0) { $stPot->execute([$id_det]); $potongan = $stPot->fetchAll(); }
             $specs[] = [
                 'kode' => $kode,
                 'nama_jabatan' => $nama_jabatan,
@@ -229,8 +229,8 @@ if ($action === 'generate') {
                 'tun' => $tun,
                 'tun_tetap' => $tun_tetap,
                 'tun_tidak' => $tun_tidak,
-                'potongan' => $potongan,
                 'jumlah' => $jumlah,
+                'bulan' => $bulan,
             ];
             $total += $jumlah;
         }
@@ -286,9 +286,8 @@ if ($action === 'generate') {
             'desa' => '........................',
             'kecamatan' => '........................',
             'kabupaten' => '........................',
-            'durasi' => '........................................................',
-            'tgl_mulai' => '........................................................',
-            'tgl_selesai' => '........................................................',
+            'tgl_mulai' => '',
+            'tgl_selesai' => '',
             'nama' => $kosong_panjang,
             'nik' => $kosong_panjang,
             'jenis_kelamin' => '........................',
@@ -320,7 +319,8 @@ if ($action === 'generate') {
                 $det = $sp['det'];
                 $tun = $sp['tun'];
                 $vars = $vars_bersama + [
-                    'jabatan' => kontrak_title($sp['nama_jabatan']),
+                     'jabatan' => kontrak_title($sp['nama_jabatan']),
+                     'durasi' => $sp['bulan'] . ' (' . terbilang_id($sp['bulan']) . ') bulan',
                     'gaji_pokok' => kontrak_rupiah($det['gaji_pokok'] ?? 0),
                     'upah_lembur' => kontrak_rupiah($det['upah_lembur'] ?? 0),
                     'izin' => kontrak_rupiah($det['potongan_izin'] ?? 0),

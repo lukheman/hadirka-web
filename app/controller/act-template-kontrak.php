@@ -80,7 +80,7 @@ function tpl_json($status, $msg, array $extra = [])
     exit;
 }
 
-// Validasi isi file template: wajib memuat placeholder ${nomor_kontrak}.
+// Validasi isi file template: wajib memuat nomor kontrak dan durasi.
 // DOCX dibaca sebagai ZIP (teks digabung dari semua <w:t> agar placeholder
 // yang terpecah antar-run tetap terdeteksi); DOC dicek mentah biner.
 function tpl_has_nomor_placeholder($tmp_path, $ext)
@@ -106,18 +106,19 @@ function tpl_has_nomor_placeholder($tmp_path, $ext)
             $full .= "\n";
         }
         $zip->close();
-        return (bool)preg_match('/\$\{\s*nomor_kontrak\s*\}/', $full);
+        return (bool)preg_match('/\$\{\s*nomor_kontrak\s*\}/', $full)
+            && (bool)preg_match('/\$\{\s*durasi\s*\}/', $full);
     }
     // DOC biner: cari teks mentah (Word menyimpan ASCII berurutan).
     $raw = @file_get_contents($tmp_path, false, null, 0, 8 * 1024 * 1024);
     if ($raw === false) return false;
-    return stripos($raw, 'nomor_kontrak') !== false;
+    return stripos($raw, 'nomor_kontrak') !== false && stripos($raw, 'durasi') !== false;
 }
 
 function tpl_assert_nomor_placeholder($tmp_path, $ext)
 {
     if (!tpl_has_nomor_placeholder($tmp_path, $ext)) {
-        throw new Exception('File template wajib memuat placeholder ${nomor_kontrak}. Tambahkan dulu di dokumen Word lalu upload ulang.');
+        throw new Exception('File template wajib memuat placeholder ${nomor_kontrak} dan ${durasi}. Tambahkan keduanya di dokumen Word lalu upload ulang.');
     }
 }
 
