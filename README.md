@@ -128,6 +128,7 @@ Panduan lengkap (endpoint, deploy, checklist go-live): `docs/INTEGRASI-ABSEN-MOB
 ## Dokumen Terkait
 
 * `docs/INTEGRASI-ABSEN-MOBILE.md` — integrasi aplikasi absen mobile (satu API `app/api/`, geofence, deploy)
+* `docs/PANDUAN-SURAT-PENGALAMAN-KERJA.md` — cara memakai template, placeholder, cetak, input manual, dan arsip Surat Pengalaman Kerja
 * `docs/ARSITEKTUR-APLIKASI.md` — arsitektur & alur data
 * `docs/RENCANA-REFACTOR-DRY.md` — status refactor DRY (toast, confirm,
   Excel.php, periode.js, hapus file mati)
