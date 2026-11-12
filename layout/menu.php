@@ -35,7 +35,7 @@ function isMenuOpen($pages_array, $current_page)
         </li>
 
         <?php
-        $master_pages = ['data-karyawan', 'data-karyawan-tereliminasi', 'karier', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-tipe-karyawan', 'data-template-kontrak', 'data-arsip-kontrak', 'cetak-kontrak', 'data-bpjs-tk'];
+        $master_pages = ['data-karyawan', 'data-karyawan-tereliminasi', 'karier', 'import-karier', 'data-site', 'data-departemen', 'data-jabatan', 'data-tipe-karyawan', 'data-template-kontrak', 'data-arsip-kontrak', 'cetak-kontrak', 'surat-pengalaman-kerja', 'data-bpjs-tk'];
         ?>
         <li class="menu-item <?= isMenuOpen($master_pages, $current_page); ?>" data-menu="master">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
@@ -91,6 +91,11 @@ function isMenuOpen($pages_array, $current_page)
                 <li class="menu-item <?= isActive('cetak-kontrak', $current_page); ?>">
                     <a class="menu-link" href="?page=cetak-kontrak">
                         <div>Cetak Kontrak</div>
+                    </a>
+                </li>
+                <li class="menu-item <?= isActive('surat-pengalaman-kerja', $current_page); ?>">
+                    <a class="menu-link" href="?page=surat-pengalaman-kerja">
+                        <div>Surat Pengalaman Kerja</div>
                     </a>
                 </li>
                 <li class="menu-item <?= isActive('data-bpjs-tk', $current_page); ?>">
