@@ -13,28 +13,6 @@ $bulanIni = date("Y-m");
     </button> -->
 
 
-    <!-- Import Payroll ANTAM -->
-    <div class="mb-4 p-3 bg-light rounded-3 shadow-sm">
-        <p class="instruction-text mb-3">
-            Unggah file Excel format <b>Payroll ANTAM</b> (sheet bulan, mis. <code>09</code>):
-            <code>B NAMA | C JABATAN | D PROYEK | E-AH tgl 1-30 | AI HARI | AJ POKOK | AK GAJI | AL PANJAR | AM BERSIH | AN BANK | AO REKENING | AP A/N</code>,
-            baris 8-45, baris dengan kolom B kosong dilewati. Nilai absen = <b>hari</b> (0 / 0,5 / 1 / 1,5 / 2) disimpan apa adanya;
-            Minggu &gt; 0 = <code>OFF</code> (SPL), Minggu 0 = <code>OFF</code>, hari kerja 0 = <code>ALPHA</code>.
-            Nama baru otomatis dibuatkan karyawan (NIK <code>IPM-xxxxx</code>), <code>POKOK</code> disinkron ke karier,
-            <code>PANJAR</code> ke potongan tidak tetap (<code>PANJAR</code>), rekening ke identitas (string, nol depan utuh).
-        </p>
-        <label for="file_csv" class="form-label fw-bold text-primary">
-            <i class="fa fa-upload fa-lg"></i> Import File Excel Absensi
-        </label>
-        <form id="formImportCSV" enctype="multipart/form-data">
-            <div class="input-group mb-2">
-                <input type="file" name="file_csv" id="file_csv" class="form-control" required data-bs-toggle="tooltip" title="Pilih file Excel untuk import data absensi">
-                <button type="submit" class="btn btn-success" id="btnImportCSV" data-bs-toggle="tooltip" title="Klik untuk mengimpor data dari file CSV">
-                    <i class="fa fa-upload"></i> Import CSV
-                </button>
-            </div>
-        </form>
-    </div>
 
     <!-- Filter Tanggal -->
     <div class="row mb-4 g-3">
@@ -325,62 +303,6 @@ $bulanIni = date("Y-m");
             loadAbsensi();
         }
 
-        // Event CSV Import
-        document.getElementById("formImportCSV").addEventListener("submit", function(e) {
-            e.preventDefault();
-
-            const fileInput = document.getElementById("file_csv");
-            const btnImport = document.getElementById("btnImportCSV");
-            const container = document.querySelector(".container-xxl");
-
-            if (!fileInput.files.length)
-                return showToast("Pilih file CSV terlebih dahulu!", "info");
-
-            const formData = new FormData();
-            formData.append("file_csv", fileInput.files[0]);
-            // Bulan target = bulan yang tampil di filter.
-            if (filterBulan.value) formData.append("bulan", filterBulan.value);
-
-            // 🔵 TOMBOL BERUBAH LOADING
-            btnImport.disabled = true;
-            btnImport.innerHTML = `
-        <span class="spinner-border spinner-border-sm" role="status"></span> Mengimpor...
-    `;
-
-            // 🔵 HALAMAN JADI BURAM SELAMA PROSES IMPORT
-            container.classList.add("blur-loading");
-
-            fetch("app/controller/csv-control/csv-absen.php", {
-                    method: "POST",
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        showToast(data.message, "success");
-                        // Langsung arahkan filter ke bulan yang baru diimport.
-                        // Tanpa ini tabel tetap menampilkan bulan berjalan (yang
-                        // belum ada datanya) sehingga semua terbaca mangkir.
-                        if (data.periode && data.periode.mulai) {
-                            filterBulan.value = data.periode.mulai.slice(0, 7);
-                        }
-                        loadAbsensi();
-                    } else {
-                        showToast(data.message, "error");
-                    }
-                })
-                .catch(() => {
-                    showToast("Terjadi kesalahan saat import CSV", "error");
-                })
-                .finally(() => {
-                    // 🔵 KEMBALIKAN TOMBOL NORMAL
-                    btnImport.disabled = false;
-                    btnImport.innerHTML = `<i class="fa fa-upload"></i> Import CSV`;
-
-                    // 🔵 HILANGKAN EFEK BLUR
-                    container.classList.remove("blur-loading");
-                });
-        });
 
         // Event Export Excel
         document.getElementById("btnExportExcel").addEventListener("click", function() {

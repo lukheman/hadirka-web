@@ -20,7 +20,7 @@ require_once 'app/controller/login.php'; // logic login ada di sini
           content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
     <title>Login || PT. IPM</title>
 
-    <link rel="icon" type="image/x-icon" href="assets/img/logo/ipm-logo.png"/>
+    <link rel="icon" type="image/jpeg" href="assets/img/logo/ipm-logo.jpeg"/>
     <link rel="stylesheet" href="assets/vendor/fonts/boxicons.css"/>
     <link rel="stylesheet" href="assets/vendor/css/core.css" class="template-customizer-core-css"/>
     <link rel="stylesheet" href="assets/vendor/css/theme-default.css" class="template-customizer-theme-css"/>
@@ -41,7 +41,7 @@ require_once 'app/controller/login.php'; // logic login ada di sini
                 <div class="card-body">
                     <div class="app-brand justify-content-center">
                         <a href="index.php" class="app-brand-link gap-2">
-                            <img src="assets/img/logo/ipm-logo.png" width="280" style="max-width:100%;height:auto;" alt="">
+                            <img src="assets/img/logo/ipm-logo.jpeg" width="280" style="max-width:100%;height:auto;" alt="Logo IPM">
                         </a>
                     </div>
 

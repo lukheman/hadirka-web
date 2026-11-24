@@ -20,159 +20,28 @@ if ($page === 'logout') {
     exit;
 }
 
+// Modul absensi dan data pendukungnya saja.
 $routes = [
-    // Master Data
     'data-karyawan'   => 'view/master-data/data-karyawan.php',
-    'data-karyawan-tereliminasi' => 'view/master-data/data-karyawan-tereliminasi.php',
     'data-site'       => 'view/master-data/data-site.php',
-    'data-departemen' => 'view/master-data/data-departemen.php',
-    'karier'          => 'view/master-data/data-karier.php',
-    'data-jabatan'    => 'view/master-data/data-jabatan.php',
-    'data-tipe-karyawan' => 'view/master-data/data-tipe-karyawan.php',
-    'import-karier'   => 'view/master-akses/import-karier.php',
-    'data-template-kontrak' => 'view/master-data/data-template-kontrak.php',
-    'data-arsip-kontrak' => 'view/master-data/data-arsip-kontrak.php',
-    'cetak-kontrak' => 'view/master-data/cetak-kontrak.php',
-    'surat-pengalaman-kerja' => 'view/master-data/surat-pengalaman-kerja.php',
-    'data-bpjs-tk'   => 'view/master-data/data-bpjs-tk.php',
-    'data-calon-karyawan' => 'view/master-data/data-calon-karyawan.php',
-    'data-loker' => 'view/master-data/data-loker.php',
-
-    // Surat Peringatan
-    'master-pelanggaran' => 'view/surat/master-pelanggaran.php',
-    'surat-peringatan'   => 'view/surat/surat-peringatan.php',
-
-    // Kehadiran
     'rekapan-absensi' => 'view/kehadiran/rekapan-absensi.php',
     'dayli-absen'     => 'view/kehadiran/dayli-absen.php',
     'pengajuan-izin'  => 'view/kehadiran/pengajuan-izin.php',
     'pengajuan-cuti'  => 'view/kehadiran/pengajuan-cuti.php',
     'bukti-sks'       => 'view/kehadiran/bukti-sks.php',
     'absen-mobile'    => 'view/kehadiran/absen-mobile.php',
-
-    // Penggajian & Finance
-    'data-periode'    => 'view/finance-payrol/data-periode.php',
-    'payroll'         => 'view/penggajian/data-payrol.php',
-    // 'slipgajinew'       => 'view/penggajian/slipgajinew.php',
-    'data-thr'        => 'view/penggajian/data-thr.php',
-    'pengajuan-pinjaman' => 'view/penggajian/pengajuan-pinjaman.php',
-
-    // --- ROUTE BARU AKUNTANSI ---
-    'data-coa' => 'view/finance-payrol/data-coa.php',
-    'kelola-transaksi' => 'view/finance-payrol/kelola-transaksi.php',
-    'jurnal-umum'     => 'view/finance-payrol/jurnal-umum.php',
-    'buku-besar'      => 'view/finance-payrol/buku-besar.php',
-    'neraca-saldo'    => 'view/finance-payrol/neraca-saldo.php',
-    'laporan-keuangan' => 'view/finance-payrol/laporan-keuangan.php',
-
-    // APD
-    'master-apd'      => 'view/k3/master-apd.php',
-    'transaksi-apd'   => 'view/k3/transaksi-apd.php',
-    'pengajuan-apd'   => 'view/k3/pengajuan-apd.php',
-
-    // Lainnya
-    'pengumuman'      => 'view/broadcast/broadcast.php',
-    'notifikasi-app'  => 'view/broadcast/notifikasi-app.php',
-    'data-users-login' => 'view/users.php',
-
-    // Sistem
     'logout'          => 'app/controller/logout.php',
     'home'            => 'view/home.php'
 ];
 
-
-// Ambil level user dari session saat login. Jika tidak ada, anggap level 99 (tidak punya akses khusus)
+// Akses seluruh halaman absensi untuk role HRD/admin terkait.
 $user_level = $_SESSION['level'] ?? 99;
-
-// 1. Modul HRD Umum (Hanya Master, Direktur, HRD, Supervisor, Admin)
-// CATATAN: 'data-karyawan' dikeluarkan dari daftar ini agar Finance (level 6)
-// bisa akses read-only. Lihat $karyawan_view_pages di bawah.
-$hrd_pages = [
-    'data-karyawan-tereliminasi',
-    'data-site',
-    'data-departemen',
-    'karier',
-    'data-jabatan',
-    'data-tipe-karyawan',
-    'import-karier',
-    'data-template-kontrak',
-    'data-arsip-kontrak',
-    'cetak-kontrak',
-    'surat-pengalaman-kerja',
-    'data-bpjs-tk',
-    'data-calon-karyawan',
-    'data-loker',
-    'rekapan-absensi',
-    'dayli-absen',
-    'pengajuan-izin',
-    'pengajuan-cuti',
-    'bukti-sks',
-    'absen-mobile',
-    'pengumuman',
-    'notifikasi-app',
-    'master-pelanggaran',
-    'surat-peringatan'
-];
-
-if (!in_array($user_level, [0, 1, 2, 3, 5]) && in_array($page, $hrd_pages)) {
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master, Direktur, HRD, Supervisor, dan Admin.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
+$absensi_pages = ['data-karyawan', 'data-site', 'rekapan-absensi', 'dayli-absen', 'pengajuan-izin', 'pengajuan-cuti', 'bukti-sks', 'absen-mobile'];
+if (!in_array($user_level, [0, 1, 2, 3, 5, 6], true) && in_array($page, $absensi_pages, true)) {
+    header('Location: ?page=home');
     exit;
 }
 
-// 1.a Data Karyawan read-only untuk Finance (Master, Direktur, HRD, Supervisor, Admin, Finance)
-$karyawan_view_pages = ['data-karyawan'];
-if (!in_array($user_level, [0, 1, 2, 3, 5, 6]) && in_array($page, $karyawan_view_pages)) {
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master, Direktur, HRD, Supervisor, Admin, dan Finance.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
-    exit;
-}
-
-// 1.b Modul Finance & Payroll (Hanya Master, Direktur, HRD, Finance)
-$finance_pages = [
-    'data-periode',
-    'payroll',
-    'data-thr',
-    'pengajuan-pinjaman',
-    'laporan-keuangan',
-    'kelola-transaksi',
-    'data-coa',
-    'jurnal-umum',
-    'buku-besar',
-    'neraca-saldo'
-];
-
-// DISEMBUNYIKAN (Okt 2026): Fitur Manajemen Keuangan disembunyikan sesuai permintaan.
-// Blokir akses langsung via URL agar tidak bisa dibuka walau URL diketahui.
-$hidden_finance_pages = [
-    'data-coa',
-    'kelola-transaksi',
-    'jurnal-umum',
-    'buku-besar',
-    'neraca-saldo',
-    'laporan-keuangan'
-];
-if (in_array($page, $hidden_finance_pages)) {
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'info',title:'Fitur Disembunyikan',text:'Fitur Manajemen Keuangan saat ini disembunyikan.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
-    exit;
-}
-
-if (!in_array($user_level, [0, 1, 2, 6]) && in_array($page, $finance_pages)) {
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Modul Keuangan khusus Master, Direktur, HRD, dan Finance.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
-    exit;
-}
-
-// 2. Modul K3 (Hanya Master, Direktur, Safety, Supervisor)
-$k3_pages = ['master-apd', 'transaksi-apd', 'pengajuan-apd'];
-if (!in_array($user_level, [0, 1, 3, 4]) && in_array($page, $k3_pages)) {
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus tim K3 dan Supervisor.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
-    exit;
-}
-
-// 3. Modul Sistem & Setup (Hanya Master)
-$system_pages = ['data-users-login'];
-if (!in_array($user_level, [0]) && in_array($page, $system_pages)) {
-    echo "<script src=\"https://cdn.jsdelivr.net/npm/sweetalert2@11\"></script><script>Swal.fire({icon:'error',title:'Akses Ditolak!',text:'Khusus Master Data.',confirmButtonText:'OK'}).then(()=>{window.location.href='?page=home';});</script>";
-    exit;
-}
 
 // ======= AMBIL DATA USER YANG SEDANG LOGIN =======
 $id_session = $_SESSION['id_user'] ?? 0;
@@ -200,7 +69,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
 
     <title>Dashboard | Outsourcing System</title>
 
-    <link rel="icon" type="image/x-icon" href="assets/img/logo/ipm-logo.png" />
+    <link rel="icon" type="image/jpeg" href="assets/img/logo/ipm-logo.jpeg" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -380,7 +249,7 @@ if (!empty($active_user['foto']) && file_exists('assets/img/user-pic/' . $active
             <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
                 <div class="app-brand demo">
                     <a href="?page=home" class="app-brand-link">
-                        <img src="assets/img/logo/ipm-logo.png" alt="Logo IPM">
+                        <img src="assets/img/logo/ipm-logo.jpeg" alt="Logo IPM">
                     </a>
                     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
                         <i class="bx bx-chevron-left bx-sm align-middle"></i>

@@ -28,7 +28,6 @@ date_default_timezone_set('Asia/Makassar');
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/handlers_auth.php';
 require_once __DIR__ . '/handlers_attendance.php';
-require_once __DIR__ . '/handlers_services.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -54,24 +53,8 @@ $routes = [
     ['GET', '#^/attendance$#', 'api_attendance_list'],
     ['POST', '#^/attendance/submit$#', 'api_attendance_submit'],
 
-    ['GET', '#^/leave$#', 'api_leave_list'],
-    ['POST', '#^/leave$#', 'api_leave_create'],
-    ['PUT', '#^/leave/(\d+)/status$#', 'api_leave_status'],
-
-    ['GET', '#^/loan$#', 'api_loan_list'],
-    ['POST', '#^/loan$#', 'api_loan_create'],
-    ['PUT', '#^/loan/(\d+)/status$#', 'api_loan_status'],
-
     ['GET', '#^/geofence$#', 'api_geofence_list'],
     ['PUT', '#^/geofence/(\d+)$#', 'api_geofence_update'],
-
-    ['GET', '#^/payslip$#', 'api_payslip_list'],
-
-    ['GET', '#^/users$#', 'api_users_list'],
-    ['POST', '#^/users$#', 'api_users_create'],
-    ['DELETE', '#^/users/(\d+)$#', 'api_users_delete'],
-
-    ['GET', '#^/notifications$#', 'api_notifications_list'],
 ];
 
 foreach ($routes as [$m, $re, $fn]) {

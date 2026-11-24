@@ -173,3 +173,48 @@ table.dataTable thead th { color: var(--ipm-orange-dark); }
 .bg-footer-theme { background-color: #fff !important; color: var(--ipm-muted); border-top: 3px solid var(--ipm-orange); }
 .bg-footer-theme .footer-link { color: var(--ipm-orange-dark); }
 .content-wrapper { background-color: var(--ipm-bg); }
+
+/* Primary aplikasi mengikuti biru logo: #1D5C96. */
+:root {
+  --bs-primary: #1D5C96;
+  --bs-primary-rgb: 29, 92, 150;
+  --bs-link-color: #1D5C96;
+  --bs-link-hover-color: #123F68;
+}
+.text-primary { color: #1D5C96 !important; }
+.bg-primary { background-color: #1D5C96 !important; }
+.border-primary { border-color: #1D5C96 !important; }
+.btn-primary, .btn-primary:focus, .btn-primary:hover,
+.btn-primary:active, .btn-primary.active,
+.show > .btn-primary.dropdown-toggle {
+  background-color: #1D5C96 !important;
+  border-color: #1D5C96 !important;
+  color: #fff !important;
+}
+.btn-outline-primary { color: #123F68 !important; border-color: #1D5C96 !important; }
+.btn-outline-primary:hover, .btn-outline-primary:focus,
+.btn-outline-primary:active, .btn-outline-primary.active {
+  background-color: #1D5C96 !important;
+  border-color: #1D5C96 !important;
+  color: #fff !important;
+}
+.bg-label-primary { background-color: #CFE3F2 !important; color: #123F68 !important; }
+.border-label-primary { border-color: #2E7BB8 !important; }
+.alert-primary { background-color: #CFE3F2; border-color: #2E7BB8; color: #123F68; }
+.table-primary { --bs-table-bg: #CFE3F2; color: #123F68; }
+.page-item.active .page-link, .pagination li.active > a:not(.page-link),
+.nav-pills .nav-link.active { background-color: #1D5C96 !important; border-color: #1D5C96 !important; }
+.page-link { color: #123F68; }
+.progress-bar { background-color: #1D5C96; }
+.form-control:focus, .form-select:focus,
+.input-group:focus-within .form-control, .input-group:focus-within .input-group-text,
+.form-check-input:focus { border-color: #1D5C96; }
+.form-check-input:checked { background-color: #1D5C96; border-color: #1D5C96; }
+.bg-menu-theme .menu-inner > .menu-item.active > .menu-link { color: #123F68 !important; background-color: rgba(29, 92, 150, .16) !important; }
+.bg-menu-theme .menu-inner > .menu-item.active:before { background: #1D5C96; }
+.bg-menu-theme .menu-sub > .menu-item.active > .menu-link:not(.menu-toggle) { color: #123F68 !important; background-color: rgba(29, 92, 150, .16) !important; }
+.bg-menu-theme .menu-sub > .menu-item.active > .menu-link:not(.menu-toggle):before { background-color: #1D5C96 !important; border-color: #CFE3F2 !important; }
+.app-brand .layout-menu-toggle { background-color: #1D5C96; border-color: #CFE3F2; }
+.select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: #1D5C96 !important; }
+.swal2-confirm, div:where(.swal2-container) button:where(.swal2-styled):where(.swal2-confirm) { background-color: #1D5C96 !important; }
+.bg-footer-theme { border-top-color: #1D5C96; }

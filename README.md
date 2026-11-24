@@ -1,9 +1,7 @@
 # IPM HRIS & Payroll
+Sistem IPM HRIS dengan scope aktif **absensi karyawan**: data karyawan pendukung, site/geofence, absensi web, absensi mobile GPS + selfie, rekap, izin, cuti, dan SKS.
 
-Sistem informasi outsourcing **PT Indoteknik Prima Mekongga**: database karyawan & kandidat,
-kehadiran (absensi, izin, cuti, SKS), penggajian (payroll, pinjaman, rapel, THR, potongan),
-keuangan (kas, jurnal, buku besar, laporan), K3/APD, surat peringatan, plus REST API
-untuk aplikasi mobile karyawan.
+Modul payroll, finance, pinjaman, K3/APD, kontrak, rekrutmen, surat, dan broadcast tidak lagi tersedia pada route aplikasi.
 
 ## Tech Stack
 
