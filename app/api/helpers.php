@@ -100,7 +100,10 @@ function api_find_karyawan(string $identifier): ?array
     return $st->fetch() ?: null;
 }
 
-/** Ambil NIK KTP dari identitas karyawan untuk respons aktivasi/login. */
+/**
+ * Ambil NIK untuk respons aktivasi/login.
+ * Memakai NIK KTP lama bila ada, otherwise fallback ke NIK karyawan.
+ */
 function api_nik_ktp(int $idKaryawan): string
 {
     if ($idKaryawan <= 0) {
@@ -108,14 +111,15 @@ function api_nik_ktp(int $idKaryawan): string
     }
 
     $st = api_db()->prepare(
-        'SELECT nik_ktp FROM tb_identitas
-         WHERE id_karyawan = ? AND TRIM(COALESCE(nik_ktp, \'\')) <> \'\'
-         LIMIT 1'
+        'SELECT COALESCE(NULLIF(TRIM(i.nik_ktp), \'\'), k.nik_karyawan) AS nik
+         FROM tb_karyawan k
+         LEFT JOIN tb_identitas i ON i.id_karyawan = k.id_karyawan
+         WHERE k.id_karyawan = ? LIMIT 1'
     );
     $st->execute([$idKaryawan]);
     $row = $st->fetch();
 
-    return trim((string)($row['nik_ktp'] ?? ''));
+    return trim((string)($row['nik'] ?? ''));
 }
 
 /**

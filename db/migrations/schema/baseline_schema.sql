@@ -434,7 +434,7 @@ CREATE TABLE `tb_karyawan` (
   `foto` varchar(225) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id_karyawan`),
-  UNIQUE KEY `nik_karyawan` (`nik_karyawan`)
+  KEY `nik_karyawan` (`nik_karyawan`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8899 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

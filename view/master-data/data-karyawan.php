@@ -141,6 +141,23 @@
     .collapse-toggle.collapsed .caret {
         transform: rotate(-90deg);
     }
+
+    /* Judul grup field pada form karyawan */
+    .form-section-title {
+        font-size: .8125rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #566a7f;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: .5rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-section-title i {
+        color: var(--bs-primary);
+        margin-right: .35rem;
+    }
 </style>
 <div class="content-wrapper">
     <div class="container-xxl flex-grow-1 container-p-y py-4">
@@ -156,51 +173,60 @@
         </div>
         <?php endif; ?>
         <div class="pb-3">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div>
-                    <?php if (!$is_finance_readonly): ?>
-                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalTambahKaryawan">
-                        <i class="fa fa-plus"></i> Tambah Karyawan
-                    </button>
-                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#ModalImport" title="Klik untuk mengimpor data karyawan dari file Excel (format template import)">
-                        <i class="fa fa-upload"></i> Import Data
-                    </button>
-                    <?php endif; ?>
-                    <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel (format template import — hasilnya bisa diedit lalu di-import kembali)">
-                        <i class="fa fa-file-export"></i> Export Data
-                    </button>
-                    <?php if ($is_master): ?>
-                    <button class="btn btn-sm btn-outline-danger" id="btnHapusTerpilih" disabled data-bs-toggle="tooltip" title="Hapus karyawan yang dicentang (bisa lintas halaman)">
-                        <i class="fa fa-trash"></i> Hapus Terpilih (<span id="jumlahTerpilih">0</span>)
-                    </button>
-                    <button class="btn btn-sm btn-danger" id="btnHapusSemua" data-bs-toggle="tooltip" title="Hapus SEMUA karyawan sesuai filter aktif">
-                        <i class="fa fa-trash"></i> Hapus Semua
-                    </button>
-                    <?php endif; ?>
-                </div>
+            <!-- Baris aksi -->
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <?php if (!$is_finance_readonly): ?>
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalTambahKaryawan">
+                    <i class="fa fa-plus"></i> Tambah Karyawan
+                </button>
+                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#ModalImport" title="Klik untuk mengimpor data karyawan dari file Excel (format template import)">
+                    <i class="fa fa-upload"></i> Import Data
+                </button>
+                <?php endif; ?>
+                <button class="btn btn-sm btn-info" onclick="exportKaryawanCSV()" title="Export data ke Excel (format template import — hasilnya bisa diedit lalu di-import kembali)">
+                    <i class="fa fa-file-export"></i> Export Data
+                </button>
+                <?php if ($is_master): ?>
+                <button class="btn btn-sm btn-outline-danger" id="btnHapusTerpilih" disabled data-bs-toggle="tooltip" title="Hapus karyawan yang dicentang (bisa lintas halaman)">
+                    <i class="fa fa-trash"></i> Hapus Terpilih (<span id="jumlahTerpilih">0</span>)
+                </button>
+                <button class="btn btn-sm btn-danger" id="btnHapusSemua" data-bs-toggle="tooltip" title="Hapus SEMUA karyawan sesuai filter aktif">
+                    <i class="fa fa-trash"></i> Hapus Semua
+                </button>
+                <?php endif; ?>
+            </div>
 
-                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end" style="max-width: 640px;">
-                    <select id="filterSite" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan site">
+            <!-- Baris filter: satu baris penuh pada layar besar -->
+            <div class="row g-2 align-items-end filter-karyawan">
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1" for="filterSite">Site</label>
+                    <select id="filterSite" class="form-select form-select-sm w-100" data-bs-toggle="tooltip" title="Filter berdasarkan site">
                         <option value="">-- Semua Site --</option>
                         <?php foreach (data_site() as $d) { ?>
                             <option value="<?= htmlspecialchars($d['id_site']) ?>"><?= htmlspecialchars($d['nama_site']) ?></option>
                         <?php } ?>
                     </select>
-
-                    <select id="filterJabatan" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan jabatan">
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1" for="filterJabatan">Jabatan</label>
+                    <select id="filterJabatan" class="form-select form-select-sm w-100" data-bs-toggle="tooltip" title="Filter berdasarkan jabatan">
                         <option value="">-- Semua Jabatan --</option>
                         <?php foreach (data_jabatan() as $d) {
                             echo "<option value='" . htmlspecialchars($d['id_jabatan']) . "'>" . htmlspecialchars($d['nama_jabatan']) . "</option>";
                         } ?>
                     </select>
-
-                    <select id="filterTipe" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan tipe karyawan">
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1" for="filterTipe">Tipe Karyawan</label>
+                    <select id="filterTipe" class="form-select form-select-sm w-100" data-bs-toggle="tooltip" title="Filter berdasarkan tipe karyawan">
                         <option value="">-- Semua Tipe --</option>
                         <option value="Kontrak">Kontrak</option>
                         <option value="Harian">Harian</option>
                     </select>
-
-                    <select id="filterStatus" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter berdasarkan status">
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1" for="filterStatus">Status</label>
+                    <select id="filterStatus" class="form-select form-select-sm w-100" data-bs-toggle="tooltip" title="Filter berdasarkan status">
                         <option value="Semua">-- Semua Status --</option>
                         <option value="Aktif" selected>Karyawan Aktif</option>
                         <option value="Habis Kontrak">Habis Kontrak</option>
@@ -209,8 +235,10 @@
                         <option value="Resign">Resign</option>
                         <option value="Black List">Black List</option>
                     </select>
-
-                    <select id="filterBulan" class="form-select form-select-sm" data-bs-toggle="tooltip" title="Filter Bulan Habis Kontrak Tahun Sekarang">
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1" for="filterBulan">Bulan Habis Kontrak</label>
+                    <select id="filterBulan" class="form-select form-select-sm w-100" data-bs-toggle="tooltip" title="Filter Bulan Habis Kontrak Tahun Sekarang">
                         <option value="">-- Semua Bulan --</option>
                         <option value="01">Januari</option>
                         <option value="02">Februari</option>
@@ -225,6 +253,12 @@
                         <option value="11">November</option>
                         <option value="12">Desember</option>
                     </select>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small text-muted mb-1" for="btnResetFilter">&nbsp;</label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="btnResetFilter" title="Kembalikan semua filter ke nilai awal">
+                        <i class="fa fa-rotate-left me-1"></i> Reset Filter
+                    </button>
                 </div>
             </div>
         </div>
@@ -380,27 +414,32 @@
             </div>
             <form id="formTambahKaryawan" enctype="multipart/form-data">
                 <div class="modal-body">
-                    <h6>DATA PRIBADI</h6>
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label class="form-label ">Foto Karyawan</label>
-                            <input type="file" class="form-control" name="foto" accept="image/*">
+                    <h6 class="form-section-title"><i class="fa fa-user"></i> Data Pribadi</h6>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label" for="addFotoKaryawan">Foto Karyawan</label>
+                            <input type="file" class="form-control" id="addFotoKaryawan" name="foto" accept="image/*">
+                            <div class="form-text">Opsional.</div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Nama Lengkap</label>
-                            <input type="text" class="form-control" name="nama_lengkap" required>
-                            <label class="form-label mt-3">NIK Karyawan</label>
-                            <input type="text" class="form-control" name="nik_karyawan" required>
-                            <label class="form-label mt-3">Jenis Kelamin</label>
-                            <select class="form-control" name="jenis_kelamin" required>
-                                <option value="">-- Pilih Jenis Kelamin</option>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label" for="addNamaLengkap">Nama Lengkap <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="addNamaLengkap" name="nama_lengkap" required placeholder="Nama sesuai identitas">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label" for="addNikKaryawan">NIK Karyawan <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="addNikKaryawan" name="nik_karyawan" required placeholder="Nomor induk karyawan">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addJenisKelamin">Jenis Kelamin</label>
+                            <select class="form-control" id="addJenisKelamin" name="jenis_kelamin">
+                                <option value="">-- Pilih Jenis Kelamin --</option>
                                 <option value="L">Laki-laki</option>
                                 <option value="P">Perempuan</option>
                             </select>
-                            <label class="form-label mt-3">Agama</label>
-                            <select class="form-control" name="agama">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addAgama">Agama</label>
+                            <select class="form-control" id="addAgama" name="agama">
                                 <option value="">-- Pilih Agama --</option>
                                 <option value="Islam">Islam</option>
                                 <option value="Kristen">Kristen</option>
@@ -409,112 +448,30 @@
                                 <option value="Buddha">Buddha</option>
                                 <option value="Konghucu">Konghucu</option>
                             </select>
-                            <label class="form-label mt-3">Tempat Lahir</label>
-                            <input type="text" class="form-control" name="tempat_lahir">
-                            <label class="form-label mt-3">Tanggal Lahir</label>
-                            <input type="date" class="form-control" name="tgl_lahir">
-                            <label class="form-label mt-3">No. Telp</label>
-                            <input type="text" class="form-control" name="no_telp">
-                            <label class="form-label mt-3">Email Pribadi</label>
-                            <input type="email" class="form-control" name="email_pribadi">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label ">Nationality</label>
-                            <input type="text" class="form-control" name="nationality">
-                            <label class="form-label mt-3">NIK (KTP)</label>
-                            <input type="text" class="form-control" name="nik_ktp">
-                            <label class="form-label mt-3">No. KK</label>
-                            <input type="text" class="form-control" name="kk_number">
-                            <label class="form-label mt-3">NPWP</label>
-                            <input type="text" class="form-control" name="npwp">
-                            <label class="form-label mt-3">BPJS TK</label>
-                            <input type="text" class="form-control" name="bpjs_tk">
-                            <label class="form-label mt-3">BPJS KES</label>
-                            <input type="text" class="form-control" name="bpjs_kes">
-                            <label class="form-label mt-3">Status Pernikahan</label>
-                            <select class="form-control" name="status_pernikahan">
-                                <option value="">-- Pilih --</option>
-                                <option value="Menikah">Menikah</option>
-                                <option value="Belum Menikah">Belum Menikah</option>
-                                <option value="Cerai Hidup">Cerai Hidup</option>
-                                <option value="Cerai Mati">Cerai Mati</option>
-                            </select>
-                            <label class="form-label mt-3">Status PTKP</label>
-                            <select class="form-control" name="status_ptkp">
-                                <option value="">-- Pilih --</option>
-                                <option value="TK/0">TK/0</option>
-                                <option value="TK/1">TK/1</option>
-                                <option value="TK/2">TK/2</option>
-                                <option value="TK/3">TK/3</option>
-                                <option value="K/0">K/0</option>
-                                <option value="K/1">K/1</option>
-                                <option value="K/2">K/2</option>
-                                <option value="K/3">K/3</option>
-                            </select>
-                            <label class="form-label mt-3">Nama Ibu Kandung</label>
-                            <input type="text" class="form-control" name="nama_ibu">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addTempatLahir">Tempat Lahir</label>
+                            <input type="text" class="form-control" id="addTempatLahir" name="tempat_lahir">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addTglLahir">Tanggal Lahir</label>
+                            <input type="date" class="form-control" id="addTglLahir" name="tgl_lahir">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addNoTelp">No. Telp</label>
+                            <input type="text" class="form-control" id="addNoTelp" name="no_telp">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addEmail">Email Pribadi</label>
+                            <input type="email" class="form-control" id="addEmail" name="email_pribadi">
                         </div>
                     </div>
 
-                    <hr>
-                    <h6>ALAMAT KTP</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Alamat</label>
-                            <textarea class="form-control" name="alamat_ktp"></textarea>
-                            <label class="form-label mt-3">Provinsi</label>
-                            <input type="text" class="form-control" name="provinsi">
-                            <label class="form-label mt-3">Kabupaten/Kota</label>
-                            <input type="text" class="form-control" name="kabupaten">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kecamatan</label>
-                            <input type="text" class="form-control" name="kecamatan">
-                            <label class="form-label mt-3">Desa</label>
-                            <input type="text" class="form-control" name="desa">
-                            <label class="form-label mt-3">RT/RW</label>
-                            <input type="text" class="form-control" name="rt_rw">
-                        </div>
-                    </div>
-
-                    <hr>
-                    <h6>PENDIDIKAN</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Pendidikan Terakhir</label>
-                            <input type="text" class="form-control" name="last_education">
-                            <label class="form-label mt-3">Jurusan</label>
-                            <input type="text" class="form-control" name="major">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Tingkat Pendidikan</label>
-                            <input type="text" class="form-control" name="education_level">
-                        </div>
-                    </div>
-
-                    <hr>
-                    <h6>AKUN BANK</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Nama Bank</label>
-                            <input type="text" class="form-control" name="nama_bank">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Atas Nama Rekening</label>
-                            <input type="text" class="form-control" name="atas_nama_rek">
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <label class="form-label">Nomor Rekening</label>
-                        <input type="text" class="form-control" name="no_rek">
-                    </div>
-
-                    <hr>
-                    <h6>PENEMPATAN KERJA</h6>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tipe Karyawan <span class="text-danger">*</span></label>
-                            <select class="form-control select2" name="id_tipe_karyawan" id="idTipeKaryawanAdd" required>
+                    <h6 class="form-section-title mt-4"><i class="fa fa-briefcase"></i> Penempatan Kerja</h6>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="idTipeKaryawanAdd">Tipe Karyawan <small class="text-muted">(opsional)</small></label>
+                            <select class="form-control select2" name="id_tipe_karyawan" id="idTipeKaryawanAdd">
                                 <option value="">-- Pilih Tipe Karyawan --</option>
                                 <?php
                                 $tipeKaryawans = $koneksi->query("SELECT id_tipe_karyawan, nama_tipe, jam_kerja_mulai, jam_kerja_selesai FROM tb_tipe_karyawan ORDER BY nama_tipe ASC");
@@ -526,114 +483,79 @@
                                 }
                                 ?>
                             </select>
-                            <div class="mt-2" id="addJamKerjaField">
-                                <label class="form-label">Jam Kerja <span class="text-danger">*</span></label>
-                                <select class="form-control" name="jam_kerja" id="addJamKerja" required>
+                            <input type="hidden" name="tipe_karyawan" id="tipeKaryawanAddHidden" value="Kontrak">
+                            <div class="mt-3" id="addJamKerjaField">
+                                <label class="form-label" for="addJamKerja">Jam Kerja <small class="text-muted">(opsional)</small></label>
+                                <select class="form-control" name="jam_kerja" id="addJamKerja">
                                     <option value="">-- Pilih Jam Kerja --</option>
                                     <option value="7" selected>7 jam</option>
                                     <option value="8">8 jam</option>
                                 </select>
+                                <div class="form-text">Hanya tersedia untuk tipe Kontrak.</div>
                             </div>
-                            <input type="hidden" name="tipe_karyawan" id="tipeKaryawanAddHidden" value="Kontrak">
-                            <div class="form-text">Jam kerja hanya tersedia untuk karyawan Kontrak.</div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Site</label>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="siteSelectAdd">Site</label>
                             <select class="form-control" name="id_site" id="siteSelectAdd">
                                 <option value="">-- Pilih Site --</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Site</label>
-                            <select class="form-control" name="id_site" id="siteSelectAdd">
-                                <option value="">-- Pilih Site --</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Departemen</label>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="departemenSelectAdd">Departemen</label>
                             <select class="form-control" name="id_departemen" id="departemenSelectAdd">
                                 <option value="">-- Pilih Departemen --</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Jabatan</label>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="jabatanSelectAdd">Jabatan</label>
                             <select class="form-control" name="id_jabatan" id="jabatanSelectAdd">
                                 <option value="">-- Pilih Jabatan --</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label ">Tanggal Mulai</label>
-                            <input type="date" class="form-control" name="tgl_mulai">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addTglMulai">Tanggal Mulai</label>
+                            <input type="date" class="form-control" id="addTglMulai" name="tgl_mulai">
                         </div>
-                    </div>
-                    <div>
-                        <label class="form-label">Tanggal Kontrak Selesai</label>
-                        <input type="date" class="form-control" name="tgl_selesai">
-                    </div>
-
-                    <hr>
-                    <h6>KONTAK DARURAT 1</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">NAMA KONTAK</label>
-                            <input type="text" class="form-control" name="nama_kontak1">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label" for="addTglSelesai">Tanggal Kontrak Selesai</label>
+                            <input type="date" class="form-control" id="addTglSelesai" name="tgl_selesai">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">HUBUNGAN</label>
-                            <input type="text" class="form-control" name="hubungan1">
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <label class="form-label">Nomor Telepon</label>
-                        <input type="text" class="form-control" name="no_telp_darurat1">
-                    </div>
-
-                    <hr>
-                    <h6>KONTAK DARURAT 2</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">NAMA KONTAK</label>
-                            <input type="text" class="form-control" name="nama_kontak2">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">HUBUNGAN</label>
-                            <input type="text" class="form-control" name="hubungan2">
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <label class="form-label">Nomor Telepon</label>
-                        <input type="text" class="form-control" name="no_telp_darurat2">
                     </div>
 
                     <?php if ($can_manage_employee_accounts): ?>
-                        <hr>
-                        <h6>AKUN LOGIN</h6>
-                        <div class="alert alert-warning py-2">
-                            Kosongkan bila sandi ingin diisi otomatis (default = NIK Karyawan). Sandi minimal 8 karakter.
+                        <h6 class="form-section-title mt-4"><i class="fa fa-key"></i> Akun Login</h6>
+                        <div class="alert alert-warning py-2 small" role="alert">
+                            Isi sandi jika akun karyawan ingin langsung aktif. Boleh kosong; panjang sandi tidak dibatasi.
                         </div>
-                        <label class="form-label" for="add_password_karyawan">Password</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" name="password_karyawan" id="add_password_karyawan"
-                                minlength="8" autocomplete="new-password">
-                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_add_password"
-                                data-target="#add_password_karyawan"
-                                aria-label="Tampilkan password" title="Tampilkan password">
-                                <i class="bx bx-hide"></i>
-                            </button>
-                            <button type="button" class="btn btn-primary" id="btn_generate_password_add"
-                                title="Buatkan password otomatis (8 karakter)">
-                                <i class="bx bx-refresh"></i> Generate
-                            </button>
-                        </div>
-                        <label class="form-label mt-3" for="add_password_confirm">Konfirmasi Password</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="add_password_confirm"
-                                minlength="8" autocomplete="new-password">
-                            <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_add_password_confirm"
-                                data-target="#add_password_confirm"
-                                aria-label="Tampilkan password" title="Tampilkan password">
-                                <i class="bx bx-hide"></i>
-                            </button>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="add_password_karyawan">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" name="password_karyawan" id="add_password_karyawan"
+                                        autocomplete="new-password">
+                                    <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_add_password"
+                                        data-target="#add_password_karyawan"
+                                        aria-label="Tampilkan password" title="Tampilkan password">
+                                        <i class="bx bx-hide"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-primary" id="btn_generate_password_add"
+                                        title="Buatkan password otomatis">
+                                        <i class="bx bx-refresh"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="add_password_confirm">Konfirmasi Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="add_password_confirm"
+                                        autocomplete="new-password">
+                                    <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_add_password_confirm"
+                                        data-target="#add_password_confirm"
+                                        aria-label="Tampilkan password" title="Tampilkan password">
+                                        <i class="bx bx-hide"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -677,8 +599,8 @@
                 <h6>DATA KEPEGAWAIAN</h6>
                 <div class="row">
                     <div class="col-md-6">
-                        <label>Tipe Karyawan <span class="text-danger">*</span></label>
-                        <select class="form-control select2" name="id_tipe_karyawan" id="edit_id_tipe_karyawan" required>
+                        <label>Tipe Karyawan <small>(opsional)</small></label>
+                        <select class="form-control select2" name="id_tipe_karyawan" id="edit_id_tipe_karyawan">
                             <option value="">-- Pilih Tipe Karyawan --</option>
                             <?php
                             $tipeKaryawansEdit = $koneksi->query("SELECT id_tipe_karyawan, nama_tipe FROM tb_tipe_karyawan ORDER BY nama_tipe ASC");
@@ -693,8 +615,8 @@
                     </div>
                     <div class="col-md-6">
                         <div id="editJamKerjaField">
-                            <label>Jam Kerja <span class="text-danger">*</span></label>
-                            <select class="form-control" name="jam_kerja" id="edit_jam_kerja" required>
+                            <label>Jam Kerja <small>(opsional)</small></label>
+                            <select class="form-control" name="jam_kerja" id="edit_jam_kerja">
                                 <option value="">-- Pilih Jam Kerja --</option>
                                 <option value="7">7 jam</option>
                                 <option value="8">8 jam</option>
@@ -719,6 +641,7 @@
                         <input type="text" name="nik_karyawan" id="edit_nik_karyawan" class="form-control" required>
                         <label class="mt-3">Jenis Kelamin</label>
                         <select class="form-control" name="jenis_kelamin" id="edit_jenis_kelamin">
+                            <option value="">-- Pilih --</option>
                             <option value="L">Laki-laki</option>
                             <option value="P">Perempuan</option>
                         </select>
@@ -728,138 +651,15 @@
                         <input type="text" id="edit_tempat_lahir" name="tempat_lahir" class="form-control">
                         <label class="mt-3">Tanggal Lahir</label>
                         <input type="date" id="edit_tgl_lahir" name="tgl_lahir" class="form-control">
-                        <label class="mt-3">Status Pernikahan</label>
-                        <select id="edit_status_pernikahan" name="status_pernikahan" class="form-control">
-                            <option value="">-- Pilih --</option>
-                            <option value="Menikah">Menikah</option>
-                            <option value="Belum Menikah">Belum Menikah</option>
-                            <option value="Cerai Hidup">Cerai Hidup</option>
-                            <option value="Cerai Mati">Cerai Mati</option>
-                        </select>
-                        <label class="mt-3">Status PTKP</label>
-                        <select id="edit_status_ptkp" name="status_ptkp" class="form-control">
-                            <option value="">-- Pilih --</option>
-                            <option value="TK/0">TK/0</option>
-                            <option value="TK/1">TK/1</option>
-                            <option value="TK/2">TK/2</option>
-                            <option value="TK/3">TK/3</option>
-                            <option value="K/0">K/0</option>
-                            <option value="K/1">K/1</option>
-                            <option value="K/2">K/2</option>
-                            <option value="K/3">K/3</option>
-                        </select>
-                        <label class="mt-3">Nama Ibu Kandung</label>
-                        <input type="text" id="edit_nama_ibu" name="nama_ibu" class="form-control">
                     </div>
-
                     <div class="col-md-6">
-                        <label>Nationality</label>
-                        <input type="text" id="edit_nationality" name="nationality" class="form-control">
-                        <label class="mt-3">NIK (KTP)</label>
-                        <input type="text" id="edit_nik_ktp" name="nik_ktp" class="form-control">
-                        <label class="mt-3">No. KK</label>
-                        <input type="text" id="edit_kk_number" name="kk_number" class="form-control">
-                        <label class="mt-3">NPWP</label>
-                        <input type="text" id="edit_npwp" name="npwp" class="form-control">
-                        <label class="mt-3">BPJS TK</label>
-                        <input type="text" id="edit_bpjs_tk" name="bpjs_tk" class="form-control">
-                        <label class="mt-3">BPJS Kesehatan</label>
-                        <input type="text" id="edit_bpjs_kes" name="bpjs_kes" class="form-control">
-                        <label class="mt-3">Email Pribadi</label>
+                        <label>Email Pribadi</label>
                         <input type="email" id="edit_email_pribadi" name="email_pribadi" class="form-control">
                         <label class="mt-3">No Telp</label>
                         <input type="text" id="edit_no_telp" name="no_telp" class="form-control">
                     </div>
                 </div>
-                <hr>
 
-                <h6>ALAMAT KTP</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label>Alamat</label>
-                        <textarea id="edit_alamat_ktp" name="alamat_ktp" class="form-control"></textarea>
-                        <label class="mt-3">Provinsi</label>
-                        <input type="text" id="edit_provinsi" name="provinsi" class="form-control">
-                        <label class="mt-3">Kabupaten/Kota</label>
-                        <input type="text" id="edit_kabupaten" name="kabupaten" class="form-control">
-                    </div>
-
-                    <div class="col-md-6">
-                        <label>Kecamatan</label>
-                        <input type="text" id="edit_kecamatan" name="kecamatan" class="form-control">
-                        <label class="mt-3">Desa</label>
-                        <input type="text" id="edit_desa" name="desa" class="form-control">
-                        <label class="mt-3">RT / RW</label>
-                        <input type="text" id="edit_rt_rw" name="rt_rw" class="form-control">
-                    </div>
-                </div>
-
-                <hr>
-                <h6>PENDIDIKAN</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="mt-3">Pendidikan Terakhir</label>
-                        <input type="text" id="edit_last_education" name="last_education" class="form-control">
-                        <label class="mt-3">Jurusan</label>
-                        <input type="text" id="edit_major" name="major" class="form-control">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="mt-3">Tingkat Pendidikan</label>
-                        <input type="text" id="edit_education_level" name="education_level" class="form-control">
-                    </div>
-                </div>
-
-                <hr>
-                <h6>AKUN BANK</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Nama Bank</label>
-                        <input type="text" class="form-control" name="nama_bank" id="edit_nama_bank">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Atas Nama Rekening</label>
-                        <input type="text" class="form-control" name="atas_nama_rek" id="edit_atas_nama_rek">
-                    </div>
-                </div>
-
-                <div class="mt-3">
-                    <label class="form-label">Nomor Rekening</label>
-                    <input type="text" class="form-control" name="no_rek" id="edit_no_rek">
-                </div>
-
-                <hr>
-                <h6>KONTAK DARURAT 1</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Nama Kontak</label>
-                        <input type="text" class="form-control" name="nama_kontak1" id="edit_nama_kontak1">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Hubungan</label>
-                        <input type="text" class="form-control" name="hubungan1" id="edit_hubungan1">
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <label class="form-label">Nomor Telepon</label>
-                    <input type="text" class="form-control" name="no_telp_darurat1" id="edit_no_telp_darurat1">
-                </div>
-
-                <hr>
-                <h6>KONTAK DARURAT 2</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Nama Kontak</label>
-                        <input type="text" class="form-control" name="nama_kontak2" id="edit_nama_kontak2">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Hubungan</label>
-                        <input type="text" class="form-control" name="hubungan2" id="edit_hubungan2">
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <label class="form-label">Nomor Telepon</label>
-                    <input type="text" class="form-control" name="no_telp_darurat2" id="edit_no_telp_darurat2">
-                </div>
                     </div><!-- /pane-data-karyawan -->
                     <?php if ($can_manage_employee_accounts): ?>
                     <div class="tab-pane fade" id="pane-ubah-sandi" role="tabpanel" aria-labelledby="tab-ubah-sandi">
@@ -869,12 +669,12 @@
                             (<span id="info_nik_karyawan">-</span>).
                         </div>
                         <div class="alert alert-warning py-2">
-                            Kosongkan kedua kolom jika sandi tidak ingin diubah. Sandi minimal 8 karakter.
+                            Kosongkan kedua kolom jika sandi tidak ingin diubah. Panjang sandi bebas.
                         </div>
                         <label class="form-label" for="edit_password_karyawan">Password Baru</label>
                         <div class="input-group">
                             <input type="password" class="form-control" name="password_karyawan" id="edit_password_karyawan"
-                                minlength="8" autocomplete="new-password">
+                                autocomplete="new-password">
                             <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_password_karyawan"
                                 data-target="#edit_password_karyawan"
                                 aria-label="Tampilkan password" title="Tampilkan password">
@@ -888,7 +688,7 @@
                         <label class="form-label mt-3" for="edit_password_confirm">Konfirmasi Password Baru</label>
                         <div class="input-group">
                             <input type="password" class="form-control" id="edit_password_confirm"
-                                minlength="8" autocomplete="new-password">
+                                autocomplete="new-password">
                             <button type="button" class="btn btn-outline-secondary toggle-password" id="toggle_password_confirm"
                                 data-target="#edit_password_confirm"
                                 aria-label="Tampilkan password" title="Tampilkan password">
@@ -1300,7 +1100,7 @@
             const tipe = String($opt.data('tipe') || '').trim();
             const isKontrak = tipe === 'Kontrak';
             if ($fieldEl.length) $fieldEl.toggle(isKontrak);
-            if ($inputEl.length) $inputEl.prop('disabled', !isKontrak).prop('required', isKontrak);
+            if ($inputEl.length) $inputEl.prop('disabled', !isKontrak).prop('required', false);
             if ($hiddenNamaEl.length) $hiddenNamaEl.val($opt.text().replace(/\s*\(.*/, ''));
         }
 
@@ -1405,6 +1205,18 @@
             tableKaryawan.ajax.reload(null, false);
         });
 
+        // Kembalikan seluruh filter ke nilai awal (Status = Aktif).
+        $("#btnResetFilter").on("click", function() {
+            $("#filterSite").val("");
+            $("#filterJabatan").val("");
+            $("#filterTipe").val("");
+            $("#filterStatus").val("Aktif");
+            $("#filterBulan").val("");
+            syncStatusColumn(false);
+            if (isMasterKaryawan) clearSelectionKaryawan();
+            tableKaryawan.ajax.reload(null, false);
+        });
+
 
         // 4. Handle Detail Modal
         $('#tableKaryawan tbody').on('click', '.btnDetail', function() {
@@ -1433,14 +1245,11 @@
         $("#formTambahKaryawan").on("submit", function(e) {
             e.preventDefault();
 
-            // Validasi password (hanya ada untuk Master)
+            // Validasi password (hanya ada untuk Master): konfirmasi harus sama,
+            // panjang sandi tidak dibatasi.
             if ($("#add_password_karyawan").length) {
                 const pwAdd = $("#add_password_karyawan").val();
                 if (pwAdd !== "") {
-                    if (pwAdd.length < 8) {
-                        showToast("Password minimal 8 karakter.", "warning");
-                        return;
-                    }
                     if (pwAdd !== $("#add_password_confirm").val()) {
                         showToast("Konfirmasi password tidak cocok.", "warning");
                         return;
@@ -1462,6 +1271,10 @@
                     if (res.status === "ok") {
                         $("#modalTambahKaryawan").modal("hide");
                         $("#formTambahKaryawan")[0].reset();
+                        $("#idTipeKaryawanAdd").val("").trigger("change");
+                        $("#add_password_karyawan, #add_password_confirm").attr("type", "password");
+                        $("#toggle_add_password, #toggle_add_password_confirm").find("i")
+                            .removeClass("bx-show").addClass("bx-hide");
                         tableKaryawan.ajax.reload(null, false);
                         showToast("Data karyawan berhasil ditambahkan!");
                     } else {
@@ -1496,40 +1309,13 @@
                             $("#edit_agama").val(d.agama);
                             $("#edit_tempat_lahir").val(d.tempat_lahir);
                             $("#edit_tgl_lahir").val(d.tgl_lahir);
-                            $("#edit_status_pernikahan").val(d.status_pernikahan);
-                            $("#edit_status_ptkp").val(d.status_ptkp);
-                            $("#edit_nama_ibu").val(d.nama_ibu);
                             if (d.foto && d.foto !== "") {
                                 $("#preview_foto_karyawan").html(`<img src="app/uploads/profil/${d.foto}" width="80" height="80" class="rounded-circle shadow-sm" style="object-fit: cover;">`);
                             } else {
                                 $("#preview_foto_karyawan").html('');
                             }
-                            $("#edit_nationality").val(d.nationality);
-                            $("#edit_nik_ktp").val(d.nik_ktp);
-                            $("#edit_kk_number").val(d.kk_number);
-                            $("#edit_npwp").val(d.npwp);
-                            $("#edit_bpjs_tk").val(d.bpjs_tk);
-                            $("#edit_bpjs_kes").val(d.bpjs_kes);
                             $("#edit_email_pribadi").val(d.email_pribadi);
                             $("#edit_no_telp").val(d.no_telp);
-                            $("#edit_alamat_ktp").val(d.alamat_ktp);
-                            $("#edit_provinsi").val(d.provinsi);
-                            $("#edit_kabupaten").val(d.kabupaten);
-                            $("#edit_kecamatan").val(d.kecamatan);
-                            $("#edit_desa").val(d.desa);
-                            $("#edit_rt_rw").val(d.rt_rw);
-                            $("#edit_last_education").val(d.last_education);
-                            $("#edit_major").val(d.major);
-                            $("#edit_education_level").val(d.education_level);
-                            $("#edit_nama_bank").val(d.nama_bank);
-                            $("#edit_atas_nama_rek").val(d.atas_nama_rek);
-                            $("#edit_no_rek").val(d.no_rek);
-                            $("#edit_nama_kontak1").val(d.nama_kontak1);
-                            $("#edit_hubungan1").val(d.hubungan1);
-                            $("#edit_no_telp_darurat1").val(d.no_telp_darurat1);
-                            $("#edit_nama_kontak2").val(d.nama_kontak2);
-                            $("#edit_hubungan2").val(d.hubungan2);
-                            $("#edit_no_telp_darurat2").val(d.no_telp_darurat2);
 
                             // Reset tab & field sandi agar tidak membawa nilai karyawan sebelumnya
                             $("#tab-data-karyawan").trigger("click");
@@ -1553,15 +1339,11 @@
         $("#formEdit").on("submit", function(e) {
             e.preventDefault();
 
-            // Validasi tab Ubah Sandi (hanya ada untuk user pengelola akun)
+            // Validasi tab Ubah Sandi (hanya ada untuk user pengelola akun):
+            // konfirmasi harus sama, panjang sandi tidak dibatasi.
             if ($("#edit_password_karyawan").length) {
                 const pwBaru = $("#edit_password_karyawan").val();
                 if (pwBaru !== "") {
-                    if (pwBaru.length < 8) {
-                        showToast("Password minimal 8 karakter.", "warning");
-                        $("#tab-ubah-sandi").trigger("click");
-                        return;
-                    }
                     if (pwBaru !== $("#edit_password_confirm").val()) {
                         showToast("Konfirmasi password tidak cocok.", "warning");
                         $("#tab-ubah-sandi").trigger("click");

@@ -209,68 +209,28 @@ try {
                 </ul>
                 <div class='tab-content pt-3'>
                     <div class='tab-pane fade show active' id='tab-info-pribadi' role='tabpanel'>
-                <div class='row '>
-                    <div class='col-md-4 mb-4'>
+                <div class='row'>
+                    <div class='col-md-6 mb-4'>
                         <h6 class='text-primary'><i class='fa fa-user'></i> Data Pribadi</h6>
                         <table class='table table-sm table-borderless info-table'>
+                            <tr><td><strong>NIK Karyawan</strong></td><td>: " . htmlspecialchars($row['nik_karyawan'] ?? '-') . "</td></tr>
                             <tr><td><strong>Tempat Lahir</strong></td><td>: " . htmlspecialchars($row['tempat_lahir'] ?? '-') . "</td></tr>
                             <tr><td><strong>Tanggal Lahir</strong></td><td>: $tgl_lahir_format ($usia)</td></tr>
                             <tr><td><strong>Jenis Kelamin</strong></td><td>: " . ($row['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "</td></tr>
+                            <tr><td><strong>Agama</strong></td><td>: " . htmlspecialchars($row['agama'] ?? '-') . "</td></tr>
                             <tr><td><strong>Tipe Karyawan</strong></td><td>: <span class='badge $tipe_badge'>" . htmlspecialchars($tipe_karyawan) . "</span></td></tr>
                             <tr><td><strong>Jam Kerja</strong></td><td>: {$jam_kerja_karyawan}</td></tr>
-                            <tr><td><strong>Agama</strong></td><td>: " . htmlspecialchars($row['agama'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Status Pernikahan</strong></td><td>: " . htmlspecialchars($row['status_pernikahan'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Status PTKP</strong></td><td>: " . htmlspecialchars($row['status_ptkp'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Nationality</strong></td><td>: " . htmlspecialchars($row['nationality'] ?? '-') . "</td></tr>
                         </table>
                     </div>
-                    
-                    <div class='col-md-4 mb-4'>
-                        <h6 class='text-primary'><i class='fa fa-id-card'></i> Identitas & Kontak</h6>
+                    <div class='col-md-6 mb-4'>
+                        <h6 class='text-primary'><i class='fa fa-id-card'></i> Kontak</h6>
                         <table class='table table-sm table-borderless info-table'>
-                            <tr><td><strong>NIK KTP</strong></td><td>: " . htmlspecialchars($row['nik_ktp'] ?? '-') . "</td></tr>
-                            <tr><td><strong>No. KK</strong></td><td>: " . htmlspecialchars($row['kk_number'] ?? '-') . "</td></tr>
-                            <tr><td><strong>NPWP</strong></td><td>: " . htmlspecialchars($row['npwp'] ?? '-') . "</td></tr>
-                            <tr><td><strong>BPJS TK</strong></td><td>: " . htmlspecialchars($row['bpjs_tk'] ?? '-') . "</td></tr>
-                            <tr><td><strong>BPJS KES</strong></td><td>: " . htmlspecialchars($row['bpjs_kes'] ?? '-') . "</td></tr>
                             <tr><td><strong>Email</strong></td><td>: " . htmlspecialchars($row['email_pribadi'] ?? '-') . "</td></tr>
                             <tr><td><strong>No. Telp</strong></td><td>: " . htmlspecialchars($row['no_telp'] ?? '-') . "</td></tr>
                         </table>
                     </div>
-                    
-                    <div class='col-md-4 mb-4'>
-                        <h6 class='text-primary'><i class='fa fa-graduation-cap'></i> Pendidikan</h6>
-                        <table class='table table-sm table-borderless info-table'>
-                            <tr><td><strong>Pendidikan</strong></td><td>: " . htmlspecialchars($row['last_education'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Jurusan</strong></td><td>: " . htmlspecialchars($row['major'] ?? '-') . "</td></tr>
-                        </table>
-                    </div>
-                </div>   
-
-                <div class='row'>
-                    <div class='col-md-4 mb-4'>
-                        <h6 class='text-primary'><i class='fa fa-map-marker'></i> Alamat KTP</h6>
-                        <p>" . htmlspecialchars($row['alamat_ktp'] ?? '-') . "<br>
-                        Desa " . htmlspecialchars($row['desa'] ?? '') . ", Kec. " . htmlspecialchars($row['kecamatan'] ?? '') . ", " . htmlspecialchars($row['kabupaten'] ?? '') . ", " . htmlspecialchars($row['provinsi'] ?? '') . " 
-                        (RT/RW: " . htmlspecialchars($row['rt_rw'] ?? '-') . ")</p>
-                    </div>
-                    <div class='col-md-4 mb-4'>
-                        <h6 class='text-primary'><i class='fa fa-phone'></i> Kontak Darurat 1</h6>
-                        <table class='table table-sm table-borderless info-table'>
-                            <tr><td><strong>Nama Kontak</strong></td><td>: " . htmlspecialchars($row['nama_kontak1'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Hubungan</strong></td><td>: " . htmlspecialchars($row['hubungan1'] ?? '-') . "</td></tr>
-                            <tr><td><strong>No. Telepon</strong></td><td>: " . htmlspecialchars($row['no_telp_darurat1'] ?? '-') . "</td></tr>
-                        </table>
-                    </div>
-                    <div class='col-md-4 mb-4'>
-                        <h6 class='text-primary'><i class='fa fa-phone'></i> Kontak Darurat 2</h6>
-                        <table class='table table-sm table-borderless info-table'>
-                            <tr><td><strong>Nama Kontak</strong></td><td>: " . htmlspecialchars($row['nama_kontak2'] ?? '-') . "</td></tr>
-                            <tr><td><strong>Hubungan</strong></td><td>: " . htmlspecialchars($row['hubungan2'] ?? '-') . "</td></tr>
-                            <tr><td><strong>No. Telepon</strong></td><td>: " . htmlspecialchars($row['no_telp_darurat2'] ?? '-') . "</td></tr>
-                        </table>
-                    </div>
                 </div>
+
                 <div class='row'>
                     <div class='col-md-12'>
                         $eliminasiHtml

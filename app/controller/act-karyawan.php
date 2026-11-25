@@ -44,6 +44,40 @@ function boleh_kelola_akun_karyawan(): bool
 }
 
 /**
+ * Tentukan tipe karyawan dari input form secara longgar.
+ * Jika id/nama tidak dikirim atau tidak dikenal, otomatis memakai tipe
+ * yang tersedia (utamakan Kontrak). Tidak pernah melempar error.
+ *
+ * @return array{id:int, nama:string}
+ */
+function resolve_tipe_karyawan(PDO $koneksi, string $idInput, string $namaInput): array
+{
+    if ($idInput !== '' && ctype_digit($idInput)) {
+        $st = $koneksi->prepare("SELECT id_tipe_karyawan, nama_tipe FROM tb_tipe_karyawan WHERE id_tipe_karyawan = ? LIMIT 1");
+        $st->execute([(int)$idInput]);
+        if ($row = $st->fetch()) {
+            return ['id' => (int)$row['id_tipe_karyawan'], 'nama' => (string)$row['nama_tipe']];
+        }
+    }
+
+    if ($namaInput !== '') {
+        $st = $koneksi->prepare("SELECT id_tipe_karyawan, nama_tipe FROM tb_tipe_karyawan WHERE nama_tipe = ? LIMIT 1");
+        $st->execute([$namaInput]);
+        if ($row = $st->fetch()) {
+            return ['id' => (int)$row['id_tipe_karyawan'], 'nama' => (string)$row['nama_tipe']];
+        }
+    }
+
+    // Fallback: tipe Kontrak bila ada, selain itu tipe pertama.
+    $q = $koneksi->query("SELECT id_tipe_karyawan, nama_tipe FROM tb_tipe_karyawan ORDER BY (nama_tipe = 'Kontrak') DESC, id_tipe_karyawan ASC LIMIT 1");
+    if ($q && ($row = $q->fetch())) {
+        return ['id' => (int)$row['id_tipe_karyawan'], 'nama' => (string)$row['nama_tipe']];
+    }
+
+    return ['id' => 1, 'nama' => 'Kontrak'];
+}
+
+/**
  * Hapus 1 karyawan beserta seluruh data turunannya.
  * - Tabel dengan ON DELETE CASCADE (tb_identitas, tb_karier, tb_kontak_darurat,
  *   tb_absen, tb_cuti, dll) ikut terhapus otomatis.
@@ -186,25 +220,7 @@ if ($action == "get") {
         // Never send the stored password hash to the browser.
         unset($r['password']);
 
-        // 2. Ambil data Kontak Darurat secara terpisah
-        $q_kontak = $koneksi->prepare("SELECT * FROM tb_kontak_darurat WHERE id_karyawan = ? ORDER BY nomor_urut ASC");
-        $q_kontak->execute([$id]);
-
-        $contacts = [];
-        while ($row = $q_kontak->fetch()) {
-            $contacts[] = $row;
-        }
-
-        // 3. Mapping data kontak ke format form (1 dan 2)
-        // Kontak 1
-        $r['nama_kontak1']       = $contacts[0]['nama_kontak'] ?? '';
-        $r['hubungan1']          = $contacts[0]['hubungan'] ?? '';
-        $r['no_telp_darurat1']   = $contacts[0]['no_telp_darurat'] ?? '';
-
-        // Kontak 2
-        $r['nama_kontak2']       = $contacts[1]['nama_kontak'] ?? '';
-        $r['hubungan2']          = $contacts[1]['hubungan'] ?? '';
-        $r['no_telp_darurat2']   = $contacts[1]['no_telp_darurat'] ?? '';
+        // Data kontak darurat tidak lagi dipakai form edit (biodata utama saja).
 
         echo json_encode(["status" => "ok", "data" => $r]);
     } else {
@@ -226,65 +242,35 @@ if ($action == "add") {
         // Ambil NIK dari inputan form
         $nik_input = input('nik_karyawan');
 
-        // Jenis kelamin wajib L/P sesuai enum kolom (string kosong ditolak
-        // MySQL strict mode dengan error "Data truncated").
+        // Jenis kelamin opsional: kosong/tidak valid otomatis L agar
+        // kolom enum tetap terisi tanpa memblokir penyimpanan.
         $jk_input = input('jenis_kelamin');
         if (!in_array($jk_input, ['L', 'P'], true)) {
-            throw new Exception("Jenis kelamin wajib dipilih (Laki-laki/Perempuan).");
+            $jk_input = 'L';
         }
 
-        // Tipe karyawan: Kontrak (bulanan) atau Harian. Default Kontrak
-        // agar data lama/import tetap valid.
-        $tipe_input = input('tipe_karyawan');
-        if ($tipe_input === '') {
-            $tipe_input = 'Kontrak';
-        }
-        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
-            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
-        }
+        // Tipe karyawan opsional: otomatis memakai tipe yang tersedia.
+        $tipeInfo    = resolve_tipe_karyawan($koneksi, input('id_tipe_karyawan'), input('tipe_karyawan'));
+        $tipe_input  = $tipeInfo['nama'];
+        $idTipeInput = $tipeInfo['id'];
 
-        // Resolve id_tipe_karyawan dari tb_tipe_karyawan (FK).
-        $idTipeInput = input('id_tipe_karyawan');
-        if ($idTipeInput === '') {
-            // Fallback: ambil dari nama_tipe jika id tidak dikirim
-            $stTipe = $koneksi->prepare("SELECT id_tipe_karyawan FROM tb_tipe_karyawan WHERE nama_tipe = ? LIMIT 1");
-            $stTipe->execute([$tipe_input]);
-            $tRow = $stTipe->fetch();
-            $idTipeInput = $tRow ? (int)$tRow['id_tipe_karyawan'] : 1;
-        } else {
-            $idTipeInput = (int)$idTipeInput;
-        }
-
-        $stSelectedTipe = $koneksi->prepare("SELECT nama_tipe FROM tb_tipe_karyawan WHERE id_tipe_karyawan = ? LIMIT 1");
-        $stSelectedTipe->execute([$idTipeInput]);
-        $selectedTipe = $stSelectedTipe->fetch();
-        if (!$selectedTipe) {
-            throw new Exception("Tipe karyawan tidak ditemukan.");
-        }
-        $tipe_input = $selectedTipe['nama_tipe'];
-        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
-            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
-        }
-
-        // Durasi jam kerja hanya berlaku untuk karyawan Kontrak.
+        // Jam kerja opsional. Hanya disimpan untuk tipe Kontrak dan
+        // otomatis 7 jam bila tidak dipilih.
         $jam_kerja_input = input('jam_kerja');
         if ($tipe_input === 'Kontrak') {
             if (!in_array($jam_kerja_input, ['7', '8'], true)) {
-                throw new Exception("Jam kerja karyawan Kontrak wajib dipilih (7 jam atau 8 jam).");
+                $jam_kerja_input = '7';
             }
         } else {
             $jam_kerja_input = null;
         }
 
-        // Password opsional. Jika kosong, akun tetap belum diaktifkan.
-        // Aktivasi dilakukan karyawan melalui aplikasi atau HRD mengisi password.
+        // Password opsional tanpa batas panjang minimal.
+        // Jika kosong, akun tetap belum diaktifkan.
         $add_password = $_POST['password_karyawan'] ?? '';
         if ($add_password !== '') {
             if (!boleh_kelola_akun_karyawan()) {
                 throw new Exception("Akses ditolak: Anda tidak boleh mengatur password karyawan.");
-            }
-            if (strlen($add_password) < 8) {
-                throw new Exception("Password minimal 8 karakter.");
             }
             $password_sql = password_hash($add_password, PASSWORD_DEFAULT);
         } else {
@@ -294,20 +280,17 @@ if ($action == "add") {
         $nama_bersih = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '', input('nama_lengkap')));
 
         $st1 = $koneksi->prepare("INSERT INTO tb_karyawan
-        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, nationality, agama, status_pernikahan, status_ptkp, tipe_karyawan, id_tipe_karyawan, jam_kerja, status_karyawan, foto, password)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktif', '', ?)");
+        (nik_karyawan, nama_lengkap, jenis_kelamin, tgl_lahir, tempat_lahir, email_pribadi, no_telp, agama, tipe_karyawan, id_tipe_karyawan, jam_kerja, status_karyawan, foto, password)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktif', '', ?)");
         $ok1 = $st1->execute([
             input('nik_karyawan'),
             input('nama_lengkap'),
-            input('jenis_kelamin'),
+            $jk_input,
             $tgl_lahir_val,
             input('tempat_lahir'),
             input('email_pribadi'),
             input('no_telp'),
-            input('nationality'),
             input('agama'),
-            input('status_pernikahan'),
-            input('status_ptkp'),
             $tipe_input,
             $idTipeInput,
             $jam_kerja_input,
@@ -336,31 +319,12 @@ if ($action == "add") {
             }
         }
 
-        // insert tb_identitas
+        // Data identitas lama tidak lagi dikumpulkan dari form. Baris tetap
+        // dibuat agar relasi/query lama (slip, API) tidak error.
         $st2 = $koneksi->prepare("INSERT INTO tb_identitas
-        (id_karyawan, nik_ktp, kk_number, npwp, bpjs_tk, bpjs_kes, alamat_ktp, provinsi, kabupaten, kecamatan, desa, rt_rw, nama_ibu, last_education, major, education_level, nama_bank, atas_nama_rek, no_rek)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $ok2 = $st2->execute([
-            $id_karyawan,
-            input('nik_ktp'),
-            input('kk_number'),
-            input('npwp'),
-            input('bpjs_tk'),
-            input('bpjs_kes'),
-            input('alamat_ktp'),
-            input('provinsi'),
-            input('kabupaten'),
-            input('kecamatan'),
-            input('desa'),
-            input('rt_rw'),
-            input('nama_ibu'),
-            input('last_education'),
-            input('major'),
-            input('education_level'),
-            input('nama_bank'),
-            input('atas_nama_rek'),
-            input('no_rek')
-        ]);
+        (id_karyawan, nama_bank, no_rek, atas_nama_rek)
+        VALUES (?, '', '', '')");
+        $ok2 = $st2->execute([$id_karyawan]);
 
         if (!$ok2) {
             throw new Exception("Gagal insert tb_identitas");
@@ -391,29 +355,7 @@ if ($action == "add") {
             throw new Exception("Gagal insert tb_karier");
         }
 
-        // insert tb_kontak_darurat
-        if (input('nama_kontak1') != "") {
-            $st_k1 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                ?, 1, ?, ?, ?)");
-            $st_k1->execute([
-                $id_karyawan,
-                input('nama_kontak1'),
-                input('hubungan1'),
-                input('no_telp_darurat1')
-            ]);
-        }
-
-        // Kontak 2
-        if (input('nama_kontak2') != "") {
-            $st_k2 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                ?, 2, ?, ?, ?)");
-            $st_k2->execute([
-                $id_karyawan,
-                input('nama_kontak2'),
-                input('hubungan2'),
-                input('no_telp_darurat2')
-            ]);
-        }
+        // Kontak darurat tidak lagi dikumpulkan (biodata utama saja).
 
         $koneksi->commit();
         echo json_encode(["status" => "ok"]);
@@ -441,8 +383,8 @@ if ($action == "change_password") {
         if (!boleh_kelola_akun_karyawan()) {
             throw new Exception("Akses ditolak: Anda tidak boleh mengubah password karyawan.");
         }
-        if (strlen($new_password) < 8) {
-            throw new Exception("Password minimal 8 karakter.");
+        if ($new_password === '') {
+            throw new Exception("Password baru belum diisi.");
         }
 
         $check = $koneksi->prepare('SELECT id_karyawan FROM tb_karyawan WHERE id_karyawan = ? LIMIT 1');
@@ -492,76 +434,43 @@ if ($action == "edit") {
             if (!boleh_kelola_akun_karyawan()) {
                 throw new Exception("Akses ditolak: Anda tidak boleh mengubah password karyawan.");
             }
-            if (strlen($new_password) < 8) {
-                throw new Exception("Password minimal 8 karakter.");
-            }
         }
 
-        // Cek NIK duplikat (selain karyawan sendiri) sebelum update.
+        // NIK boleh sama dengan karyawan lain (tidak divalidasi unik).
         $nik_input = trim(input('nik_karyawan'));
-        if ($nik_input !== '') {
-            $stNik = $koneksi->prepare("SELECT id_karyawan FROM tb_karyawan WHERE nik_karyawan = ? AND id_karyawan <> ? LIMIT 1");
-            $stNik->execute([$nik_input, $id]);
-            if ($stNik->fetch()) {
-                throw new Exception("NIK \"$nik_input\" sudah digunakan oleh karyawan lain.");
-            }
-        }
 
-        // Tipe karyawan: Kontrak / Harian. Form lama yang belum mengirim field
-        // ini tetap aman karena default-nya Kontrak.
-        $tipe_input = input('tipe_karyawan');
-        if ($tipe_input === '') {
-            $tipe_input = 'Kontrak';
-        }
-        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
-            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
-        }
+        // Tipe karyawan opsional: otomatis memakai tipe yang tersedia.
+        $tipeInfo    = resolve_tipe_karyawan($koneksi, input('id_tipe_karyawan'), input('tipe_karyawan'));
+        $tipe_input  = $tipeInfo['nama'];
+        $idTipeInput = $tipeInfo['id'];
 
-        // Resolve id_tipe_karyawan dari tb_tipe_karyawan (FK).
-        $idTipeInput = input('id_tipe_karyawan');
-        if ($idTipeInput === '') {
-            $stTipe = $koneksi->prepare("SELECT id_tipe_karyawan FROM tb_tipe_karyawan WHERE nama_tipe = ? LIMIT 1");
-            $stTipe->execute([$tipe_input]);
-            $tRow = $stTipe->fetch();
-            $idTipeInput = $tRow ? (int)$tRow['id_tipe_karyawan'] : 1;
-        } else {
-            $idTipeInput = (int)$idTipeInput;
-        }
-
-        $stSelectedTipe = $koneksi->prepare("SELECT nama_tipe FROM tb_tipe_karyawan WHERE id_tipe_karyawan = ? LIMIT 1");
-        $stSelectedTipe->execute([$idTipeInput]);
-        $selectedTipe = $stSelectedTipe->fetch();
-        if (!$selectedTipe) {
-            throw new Exception("Tipe karyawan tidak ditemukan.");
-        }
-        $tipe_input = $selectedTipe['nama_tipe'];
-        if (!in_array($tipe_input, ['Kontrak', 'Harian'], true)) {
-            throw new Exception("Tipe karyawan tidak valid (pilih Kontrak atau Harian).");
-        }
-
-        // Durasi jam kerja hanya berlaku untuk karyawan Kontrak.
+        // Jam kerja opsional. Hanya disimpan untuk tipe Kontrak dan
+        // otomatis 7 jam bila tidak dipilih.
         $jam_kerja_input = input('jam_kerja');
         if ($tipe_input === 'Kontrak') {
             if (!in_array($jam_kerja_input, ['7', '8'], true)) {
-                throw new Exception("Jam kerja karyawan Kontrak wajib dipilih (7 jam atau 8 jam).");
+                $jam_kerja_input = '7';
             }
         } else {
             $jam_kerja_input = null;
+        }
+
+        // Jenis kelamin opsional: kosong/tidak valid disimpan NULL.
+        $jk_val = input('jenis_kelamin');
+        if (!in_array($jk_val, ['L', 'P'], true)) {
+            $jk_val = null;
         }
 
         // 1. UPDATE tb_karyawan
         $k_data = [
             'nik_karyawan'      => $nik_input,
             'nama_lengkap'      => input('nama_lengkap'),
-            'jenis_kelamin'     => input('jenis_kelamin'),
+            'jenis_kelamin'     => $jk_val,
             'tgl_lahir'         => input('tgl_lahir'),
             'tempat_lahir'      => input('tempat_lahir'),
             'email_pribadi'     => input('email_pribadi'),
             'no_telp'           => input('no_telp'),
-            'nationality'       => input('nationality'),
             'agama'             => input('agama'),
-            'status_pernikahan' => input('status_pernikahan'),
-            'status_ptkp'       => input('status_ptkp'),
             'tipe_karyawan'     => $tipe_input,
             'id_tipe_karyawan'  => $idTipeInput,
             'jam_kerja'         => $jam_kerja_input
@@ -642,38 +551,8 @@ if ($action == "edit") {
             }
         }
 
-        // 2. UPDATE tb_identitas
-        $i_data = [
-            'nik_ktp'           => input('nik_ktp'),
-            'kk_number'         => input('kk_number'),
-            'npwp'              => input('npwp'),
-            'bpjs_tk'           => input('bpjs_tk'),
-            'bpjs_kes'          => input('bpjs_kes'),
-            'alamat_ktp'        => input('alamat_ktp'),
-            'provinsi'          => input('provinsi'),
-            'kabupaten'         => input('kabupaten'),
-            'kecamatan'         => input('kecamatan'),
-            'desa'              => input('desa'),
-            'rt_rw'             => input('rt_rw'),
-            'nama_ibu'          => input('nama_ibu'),
-            'last_education'    => input('last_education'),
-            'major'             => input('major'),
-            'education_level'   => input('education_level'),
-            'nama_bank'         => input('nama_bank'),
-            'atas_nama_rek'     => input('atas_nama_rek'),
-            'no_rek'            => input('no_rek')
-        ];
-
-        $upd_i = [];
-        $params_i = [];
-        foreach ($i_data as $key => $val) {
-            $upd_i[] = "$key = ?";
-            $params_i[] = $val;
-        }
-        $params_i[] = $id;
-        $sql_i = "UPDATE tb_identitas SET " . implode(", ", $upd_i) . " WHERE id_karyawan = ?";
-        $stmtUpI = $koneksi->prepare($sql_i);
-        $stmtUpI->execute($params_i);
+        // Data identitas lama tidak lagi ditimpa oleh form (biodata utama saja),
+        // agar data historis tetap terjaga.
 
         // 3. Update data karier (hanya jika field penempatan dikirim form;
         //    form edit karyawan tidak lagi memuatnya, jadi lewati agar tidak menimpa)
@@ -702,36 +581,8 @@ if ($action == "edit") {
             $stmtUpKar->execute($params_kar);
         }
 
-        // 4. Update data kontak darurat
-        // Strategi: Hapus semua kontak lama milik karyawan ini, lalu insert ulang yang baru dari form.
-        // Ini menangani kasus perubahan data, penambahan kontak ke-2, atau penghapusan kontak.
-        $delKon = $koneksi->prepare("DELETE FROM tb_kontak_darurat WHERE id_karyawan=?");
-        $delKon->execute([$id]);
-
-        // Insert Ulang Kontak 1
-        if (input('nama_kontak1') != "") {
-            $st_kon1 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                ?, 1, ?, ?, ?)");
-            $st_kon1->execute([
-                $id,
-                input('nama_kontak1'),
-                input('hubungan1'),
-                input('no_telp_darurat1')
-            ]);
-        }
-
-        // Insert Ulang Kontak 2
-        if (input('nama_kontak2') != "") {
-            $st_kon2 = $koneksi->prepare("INSERT INTO tb_kontak_darurat (id_karyawan, nomor_urut, nama_kontak, hubungan, no_telp_darurat) VALUES (
-                ?, 2, ?, ?, ?)");
-            $st_kon2->execute([
-                $id,
-                input('nama_kontak2'),
-                input('hubungan2'),
-                input('no_telp_darurat2')
-            ]);
-        }
-
+        // 4. Kontak darurat tidak lagi dikelola dari form (biodata utama saja),
+        //    data lama sengaja dibiarkan agar tidak hilang.
 
         $koneksi->commit();
         echo json_encode(["status" => "ok", "msg" => "Update berhasil untuk ID: $id"]);

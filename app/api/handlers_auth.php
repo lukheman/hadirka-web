@@ -102,10 +102,7 @@ function api_auth_register(): void
         api_error(400, 'NIK karyawan / NIK KTP, Nama Lengkap, & Password wajib diisi.');
     }
 
-    if (strlen($password) < 6) {
-        api_error(400, 'Password minimal 6 karakter.');
-    }
-
+    // Panjang sandi tidak dibatasi; yang wajib hanya tidak kosong (dicek di atas).
     $karyawan = api_find_karyawan($identifier);
     if ($karyawan === null) {
         api_error(404, 'NIK belum terdaftar di HRD. Hubungi HRD untuk mendaftarkan data Anda terlebih dahulu.');
@@ -210,10 +207,7 @@ function api_user_password(): void
         api_error(400, 'Username, password lama, & password baru wajib diisi.');
     }
 
-    if (strlen($newPassword) < 6) {
-        api_error(400, 'Password baru minimal 6 karakter.');
-    }
-
+    // Panjang sandi baru tidak dibatasi; yang wajib hanya tidak kosong (dicek di atas).
     $karyawan = api_find_karyawan($identifier);
     if ($karyawan === null) {
         api_error(404, 'Pengguna tidak ditemukan.');
